@@ -100,5 +100,35 @@ RELIC_CONFIG = {
         "rarity": "rare",
         "desc": "玩家使用的法术造成的伤害增加 1 点。",
         "price": 70
+    },
+    "unstable_crystal": {
+        "name": "不稳定水晶",
+        "rarity": "epic",
+        "desc": "玩家使用的法术伤害增加 1 点，且每回合开始时额外获得 1BA；但每当玩家使用法术牌时，玩家受到 1 点伤害。",
+        "price": 100
+    },
+    "vampiric_touch": {
+        "name": "吸血之触",
+        "rarity": "epic",
+        "desc": "玩家打出伤害法术时回复 1 点生命值，但最大生命值上限永久减少 4 点。",
+        "price": 100
+    },
+    "ancient_page": {
+        "name": "先古残页",
+        "rarity": "epic",
+        "desc": "战斗开始时，额外将 2 张【奥术星火】加入手牌，但战斗开始时玩家失去 4 点生命值。",
+        "price": 100
+    },
+    "blind_spot": {
+        "name": "盲目之障",
+        "rarity": "epic",
+        "desc": "每场战斗第一回合开始时，玩家少抽 2 张牌。",
+        "price": 80
+    },
+    "tax_contract": {
+        "name": "税收契约",
+        "rarity": "epic",
+        "desc": "每当进入下一个关卡时，玩家失去 6 金币。",
+        "price": 80
     }
 }

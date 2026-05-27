@@ -144,10 +144,19 @@ class BattleEngine:
             p.hp = max(1, p.hp - 4)
         if "greedy_contract" in p.relics:
             p.hp = max(1, p.hp - 3)
+        if "ancient_page" in p.relics:
+            p.hp = max(1, p.hp - 4)
         if "ready_pack" in p.relics:
             p.bonus_actions += 1
         init_draw = 5 + (2 if "ancient_eye" in p.relics else 0) + (1 if "ready_pack" in p.relics else 0)
+        if "blind_spot" in p.relics:
+            init_draw = max(0, init_draw - 2)
         self._draw_cards(p, init_draw)
+        if "ancient_page" in p.relics:
+            max_hand = 9 if "mask_of_void" in p.relics else 12
+            for _ in range(2):
+                if len(p.hand) < max_hand:
+                    p.hand.append("arcane_spark")
 
         run.node_data["difficulty"] = difficulty
 
@@ -301,6 +310,19 @@ class BattleEngine:
             p.discard_pile.append(cid)
 
         res = self._execute_card_effect(run, card, target)
+        if card.type == "spell":
+            if "unstable_crystal" in p.relics:
+                p.hp = max(1, p.hp - 1)
+                res += " ⚡ [不稳定水晶] 受到 1 点法术反噬伤害。"
+            if "vampiric_touch" in p.relics and card.id in (
+                "dagger_throw", "fire_bolt", "fireball", "thunderwave",
+                "magic_missile", "quick_strike", "arcane_spark", "doomsday_judgment", "meteor_swarm"
+            ):
+                old_hp = p.hp
+                self._heal_target(run, "p0", 1)
+                if p.hp > old_hp:
+                    res += " ❤️ [吸血之触] 回复了 1 点生命值。"
+
         echo_buff = next((b for b in p.buffs if b.id == "echo_form"), None)
         echo_stacks = echo_buff.stacks if echo_buff else 0
         played_count = run.node_data.get("cards_played_this_turn", 0)
@@ -491,7 +513,7 @@ class BattleEngine:
 
         p.buffs = [b for b in p.buffs if b.id != "magic_network"]
         p.actions = 2 + (1 if "energy_core" in p.relics else 0)
-        p.bonus_actions = 1
+        p.bonus_actions = 1 + (1 if "unstable_crystal" in p.relics else 0)
         focus_buff = next((b for b in p.buffs if b.id == "tactical_focus"), None)
         focus_stacks = focus_buff.stacks if focus_buff else 0
         p.bonus_actions += focus_stacks
@@ -572,7 +594,6 @@ class BattleEngine:
             p.relics.append("heavy_armor")
             quest_bonus = "\n🗡️ 任务完成！你帮奥术骑士夺回了长剑。作为谢礼，【盾卫】加入了你的卡组，你还获得了一个遗物【重装甲片】！"
         elif quest == "maze_fight":
-            import random
             got_relic = random.choice(["whetstone", "ready_pack", "arcane_rune"])
             p.relics.append(got_relic)
             from .relic_impl import get_relic_name

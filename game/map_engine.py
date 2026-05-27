@@ -20,25 +20,29 @@ class MapEngine:
         # 幸运硬币被动结算
         if "lucky_coin" in p.relics:
             p.gold += 5
+        if "tax_contract" in p.relics:
+            p.gold = max(0, p.gold - 6)
 
         if p.stage == 1:
             run.node_type = "start_ancient"
-            debuffs = ["rust_shackle", "fool_oath", "wither_seed"]
-            legends = ["doomsday_judgment", "time_warp", "magic_network"]
-            random.shuffle(debuffs)
-            random.shuffle(legends)
-            options = [
+            pool = [
                 {"type": "double", "relic": "mark_of_fury"},
                 {"type": "double", "relic": "greedy_contract"},
                 {"type": "double", "relic": "mask_of_void"},
-                {"type": "contract", "relic": debuffs[0], "card": legends[0]},
-                {"type": "contract", "relic": debuffs[1], "card": legends[1]},
-                {"type": "contract", "relic": debuffs[2], "card": legends[2]}
+                {"type": "double", "relic": "unstable_crystal"},
+                {"type": "double", "relic": "vampiric_touch"},
+                {"type": "double", "relic": "ancient_page"},
+                {"type": "contract", "relic": "rust_shackle", "card": "doomsday_judgment"},
+                {"type": "contract", "relic": "fool_oath", "card": "time_warp"},
+                {"type": "contract", "relic": "wither_seed", "card": "magic_network"},
+                {"type": "contract", "relic": "blind_spot", "card": "meteor_swarm"},
+                {"type": "contract", "relic": "tax_contract", "card": "archmage_wish"}
             ]
+            options = random.sample(pool, 3)
             run.node_data = {"options": options}
         elif p.stage == 11:
             run.node_type = "ancient"
-            legends_pool = ["doomsday_judgment", "time_warp", "magic_network"]
+            legends_pool = ["doomsday_judgment", "time_warp", "magic_network", "meteor_swarm", "archmage_wish"]
             relics_pool = ["ancient_eye", "gold_compass", "dragon_blood", "energy_core", "heavy_armor"]
             available_relics = [r for r in relics_pool if r not in p.relics]
             if not available_relics:
@@ -299,12 +303,15 @@ class MapEngine:
             if rid == "mark_of_fury":
                 p.max_hp = max(5, p.max_hp - 5)
                 p.hp = min(p.hp, p.max_hp)
+            elif rid == "vampiric_touch":
+                p.max_hp = max(5, p.max_hp - 4)
+                p.hp = min(p.hp, p.max_hp)
             
-            bonus_str = f"获得了先古契约遗物：【{get_relic_name(rid)}】"
+            bonus_str = f"获得了先古遗物：【{get_relic_name(rid)}】"
             if chosen["type"] == "contract":
                 cid = chosen["card"]
                 p.deck.append(cid)
-                bonus_str += f" ➕ 传奇卡牌：【{ALL_CARDS[cid].name}】"
+                bonus_str += f" ➕ 先古卡牌：【{ALL_CARDS[cid].name}】"
                 
             self.enter_next_stage(run)
             self.save_manager.save_save(run.user_id, run)

@@ -50,8 +50,8 @@ async def main():
     res = await run_cmd(plugin, ".rogue 开启 确认")
     print(res)
     
-    print("\n=== 2. 选择先古契约第 4 项 ===")
-    res = await run_cmd(plugin, ".rogue 选择 4")
+    print("\n=== 2. 选择先古契约第 1 项 ===")
+    res = await run_cmd(plugin, ".rogue 选择 1")
     print(res)
     
     print("\n=== 3. 查看当前状态 ===")

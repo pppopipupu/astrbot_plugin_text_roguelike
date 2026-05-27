@@ -500,7 +500,7 @@ class GameRenderer:
             "🌌 【第 1 关：先古契约】",
             f"玩家：❤️ HP {p.hp}/{p.max_hp} | 🪙 金币 {p.gold}",
             "",
-            "在你面前浮现出了六座石碑，每座石碑上都铭刻着不同的命运契约。选择其中的契约以获取力量，但命运总会索取它的代价：",
+            "在你面前浮现出了三座石碑，每座石碑上都铭刻着不同的命运契约。选择其中的契约以获取力量，但命运总会索取它的代价：",
             ""
         ]
         from .relic_impl import get_relic_name, get_relic_desc
@@ -510,12 +510,12 @@ class GameRenderer:
             rname = get_relic_name(rid)
             rdesc = get_relic_desc(rid)
             if opt["type"] == "double":
-                lines.append(f" [{idx}] ⚖️ 双刃剑契约：【{rname}】\n     效果：{rdesc}")
+                lines.append(f" [{idx}] ⚖️ 先古遗物：【{rname}】\n     效果：{rdesc}")
             else:
                 cid = opt["card"]
                 cname = ALL_CARDS[cid].name
                 cdesc = ALL_CARDS[cid].desc
-                lines.append(f" [{idx}] 🕸️ 代价契约：【{rname}】 ➕ 传奇卡牌【{cname}】\n     效果：{rdesc} 同时获得该强力卡牌 ({cdesc})")
+                lines.append(f" [{idx}] 🕸️ 先古卡牌：【{cname}】 ➕ 代价遗物【{rname}】\n     效果：获得该强力卡牌 ({cdesc}) 同时获得其伴随的代价 ({rdesc})")
                 
         lines.append("")
         lines.append("━━━━━━━━━━━━━━━━━━━━")

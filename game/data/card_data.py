@@ -405,5 +405,29 @@ CARD_CONFIG = {
         "desc": "本回合内，你每使用一张法术牌，便对所有敌人造成 3 点伤害，获得 3 点护盾。",
         "rarity": "legendary",
         "feedback": "使用了【魔网天成】，本回合内你的法术将与魔网产生共鸣。"
+    },
+    "meteor_swarm": {
+        "name": "流星爆",
+        "color": "wizard",
+        "type": "spell",
+        "cost_a": 2,
+        "cost_ba": 0,
+        "desc": "对所有敌人造成 8d12 随机火焰伤害。消耗。",
+        "rarity": "legendary",
+        "exhaust": True,
+        "base_dmg": 0,
+        "is_fire": True,
+        "feedback": "释放流星爆！滚烫的陨石砸落，对所有敌人造成了 {dmg} 点火焰伤害。"
+    },
+    "archmage_wish": {
+        "name": "大法师的祈愿",
+        "color": "wizard",
+        "type": "spell",
+        "cost_a": 1,
+        "cost_ba": 1,
+        "desc": "获得 10 点护盾，本场战斗中法术伤害 +4，并抽 2 张牌。消耗。",
+        "rarity": "legendary",
+        "exhaust": True,
+        "feedback": "完成了大法师的祈愿！获得了 10 点护盾，【祈愿奥术】法术伤害 +4，并抽了 2 张牌。"
     }
 }

@@ -21,6 +21,11 @@ class SpellDamageCard(Card):
             dmg += 1
         if "mark_of_fury" in run.player.relics:
             dmg += 2
+        if "unstable_crystal" in run.player.relics:
+            dmg += 1
+        wish_buff = next((b for b in run.player.buffs if b.id == "wish_power"), None)
+        wish_stacks = wish_buff.stacks if wish_buff else 0
+        dmg += wish_stacks * 4
         engine._damage_target(run, target, dmg)
         name = engine._get_target_name(run, target)
         
@@ -159,6 +164,11 @@ class FireballCard(Card):
             dmg += 1
         if "mark_of_fury" in run.player.relics:
             dmg += 2
+        if "unstable_crystal" in run.player.relics:
+            dmg += 1
+        wish_buff = next((b for b in run.player.buffs if b.id == "wish_power"), None)
+        wish_stacks = wish_buff.stacks if wish_buff else 0
+        dmg += wish_stacks * 4
         for enemy in run.enemies:
             if enemy.shield >= dmg:
                 enemy.shield -= dmg
@@ -185,6 +195,11 @@ class ThunderwaveCard(Card):
             dmg += 1
         if "mark_of_fury" in run.player.relics:
             dmg += 2
+        if "unstable_crystal" in run.player.relics:
+            dmg += 1
+        wish_buff = next((b for b in run.player.buffs if b.id == "wish_power"), None)
+        wish_stacks = wish_buff.stacks if wish_buff else 0
+        dmg += wish_stacks * 4
         for enemy in run.enemies:
             if enemy.shield >= dmg:
                 enemy.shield -= dmg
@@ -278,6 +293,11 @@ class ArcaneSparkCard(Card):
             dmg += 1
         if "mark_of_fury" in run.player.relics:
             dmg += 2
+        if "unstable_crystal" in run.player.relics:
+            dmg += 1
+        wish_buff = next((b for b in run.player.buffs if b.id == "wish_power"), None)
+        wish_stacks = wish_buff.stacks if wish_buff else 0
+        dmg += wish_stacks * 4
         engine._damage_target(run, target, dmg)
         engine._draw_cards(run.player, 1)
         name = engine._get_target_name(run, target)
@@ -310,6 +330,11 @@ class DoomsdayJudgmentCard(Card):
             dmg += 1
         if "mark_of_fury" in run.player.relics:
             dmg += 2
+        if "unstable_crystal" in run.player.relics:
+            dmg += 1
+        wish_buff = next((b for b in run.player.buffs if b.id == "wish_power"), None)
+        wish_stacks = wish_buff.stacks if wish_buff else 0
+        dmg += wish_stacks * 4
         for enemy in list(run.enemies):
             if enemy.shield >= dmg:
                 enemy.shield -= dmg
@@ -352,6 +377,55 @@ class MagicNetworkCard(Card):
         engine._add_buff_to(run.player, "magic_network", "魔网天成", "本回合内每使用一张法术牌，对所有敌人造成 3 点伤害，获得 3 点护盾。")
         cfg = CARD_CONFIG.get(self.id, {})
         return cfg.get("feedback", "使用了【魔网天成】，本回合内你的法术将与魔网产生共鸣。")
+
+class MeteorSwarmCard(Card):
+    def __init__(self, id, name, color, type, cost_a, cost_ba, base_dmg, is_fire=True, desc=""):
+        super().__init__(id, name, color, type, cost_a, cost_ba, desc=desc)
+        self.base_dmg = base_dmg
+        self.is_fire = is_fire
+
+    def execute(self, run, target, engine) -> str:
+        import random
+        dmg = sum(random.randint(1, 12) for _ in range(8))
+        charge_buff = next((b for b in run.player.buffs if b.id == "arcane_charge"), None)
+        charge_stacks = charge_buff.stacks if charge_buff else 0
+        dmg += charge_stacks * 3
+        if self.is_fire:
+            has_ring = any(av.id == "ring_of_elements" for av in run.player.amulets.values())
+            if has_ring:
+                dmg += 2
+        if "arcane_rune" in run.player.relics:
+            dmg += 1
+        if "mark_of_fury" in run.player.relics:
+            dmg += 2
+        if "unstable_crystal" in run.player.relics:
+            dmg += 1
+        wish_buff = next((b for b in run.player.buffs if b.id == "wish_power"), None)
+        wish_stacks = wish_buff.stacks if wish_buff else 0
+        dmg += wish_stacks * 4
+        for enemy in list(run.enemies):
+            if enemy.shield >= dmg:
+                enemy.shield -= dmg
+            else:
+                enemy.hp -= (dmg - enemy.shield)
+                enemy.shield = 0
+        dead_enemies = [e for e in run.enemies if e.hp <= 0]
+        for de in dead_enemies:
+            run.player.graveyard.append("enemy:" + de.name)
+        run.enemies = [e for e in run.enemies if e.hp > 0]
+        cfg = CARD_CONFIG.get(self.id, {})
+        feedback_tmpl = cfg.get("feedback")
+        if feedback_tmpl:
+            return feedback_tmpl.format(dmg=dmg)
+        return f"释放流星爆！对所有敌人造成了 {dmg} 点火焰伤害。"
+
+class ArchmageWishCard(Card):
+    def execute(self, run, target, engine) -> str:
+        run.player.shield += 10
+        engine._add_buff_to(run.player, "wish_power", "祈愿奥术", "本场战斗法术伤害 +4")
+        engine._draw_cards(run.player, 2)
+        cfg = CARD_CONFIG.get(self.id, {})
+        return cfg.get("feedback", "完成了大法师的祈愿！获得了 10 点护盾，【祈愿奥术】法术伤害 +4，并抽了 2 张牌。")
 
 ALL_CARDS = {}
 
@@ -413,5 +487,9 @@ for cid, cfg in CARD_CONFIG.items():
         ALL_CARDS[cid] = TimeWarpCard(cid, name, color, ctype, cost_a, cost_ba, desc=desc)
     elif cid == "magic_network":
         ALL_CARDS[cid] = MagicNetworkCard(cid, name, color, ctype, cost_a, cost_ba, desc=desc)
+    elif cid == "meteor_swarm":
+        ALL_CARDS[cid] = MeteorSwarmCard(cid, name, color, ctype, cost_a, cost_ba, cfg.get("base_dmg", 0), is_fire=True, desc=desc)
+    elif cid == "archmage_wish":
+        ALL_CARDS[cid] = ArchmageWishCard(cid, name, color, ctype, cost_a, cost_ba, desc=desc)
 
     ALL_CARDS[cid].rarity = rarity
