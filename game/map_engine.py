@@ -25,20 +25,26 @@ class MapEngine:
 
         if p.stage == 1:
             run.node_type = "start_ancient"
-            pool = [
+            relics_pool = [
                 {"type": "double", "relic": "mark_of_fury"},
                 {"type": "double", "relic": "greedy_contract"},
                 {"type": "double", "relic": "mask_of_void"},
                 {"type": "double", "relic": "unstable_crystal"},
                 {"type": "double", "relic": "vampiric_touch"},
-                {"type": "double", "relic": "ancient_page"},
+                {"type": "double", "relic": "ancient_page"}
+            ]
+            cards_pool = [
                 {"type": "contract", "relic": "rust_shackle", "card": "doomsday_judgment"},
                 {"type": "contract", "relic": "fool_oath", "card": "time_warp"},
                 {"type": "contract", "relic": "wither_seed", "card": "magic_network"},
                 {"type": "contract", "relic": "blind_spot", "card": "meteor_swarm"},
                 {"type": "contract", "relic": "tax_contract", "card": "archmage_wish"}
             ]
-            options = random.sample(pool, 3)
+            num_relics = random.choice([1, 2])
+            selected_relics = random.sample(relics_pool, num_relics)
+            selected_cards = random.sample(cards_pool, 3 - num_relics)
+            options = selected_relics + selected_cards
+            random.shuffle(options)
             run.node_data = {"options": options}
         elif p.stage == 11:
             run.node_type = "ancient"
@@ -183,7 +189,10 @@ class MapEngine:
         node_type = chosen["node_type"]
         node_id = chosen["node_id"]
         
-        run.node_type = node_type
+        if node_type in ("battle", "elite", "boss"):
+            run.node_type = "battle"
+        else:
+            run.node_type = node_type
         run.map_data["current_node_id"] = node_id
         run.node_data.clear()
         

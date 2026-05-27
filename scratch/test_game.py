@@ -48,6 +48,11 @@ async def test_auto():
     save_manager.delete_save("test_user")
     
     res = await run_command(plugin, ".rogue 开启")
+    if "进行中的游戏" in res:
+        res = await run_command(plugin, ".rogue 开启 确认")
+    print(res)
+    
+    res = await run_command(plugin, ".rogue 选择 1")
     print(res)
     
     actions_pool = [
@@ -61,7 +66,7 @@ async def test_auto():
         ".rogue 随从 1 攻击 0",
         ".rogue 随从 1 攻击 1",
         ".rogue 随从 1 技能 1",
-        ".rogue 随关 1 技能 2",
+        ".rogue 随从 1 技能 2",
         ".rogue 随从 1 技能 2",
         ".rogue 随从 1 技能 2 e0",
         ".rogue 选择 1",
@@ -84,6 +89,9 @@ async def test_auto():
         cmd = random.choice(actions_pool)
         try:
             res = await run_command(plugin, cmd)
+            print(f"Step {step}: {cmd}")
+            print(res)
+            print("=" * 50)
             if "冒险结束" in res or "击败" in res or "通关成功" in res or "当前进度已清空" in res:
                 await run_command(plugin, ".rogue 开启确认")
                 await run_command(plugin, ".rogue 开启")
