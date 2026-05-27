@@ -1,0 +1,12 @@
+{
+  "enable_shortcut": {
+    "description": "是否开启快捷触发模式",
+    "type": "bool",
+    "default": true
+  },
+  "shortcut_prefix": {
+    "description": "快捷触发前缀",
+    "type": "string",
+    "default": ".rogue"
+  }
+}
