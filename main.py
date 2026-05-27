@@ -36,7 +36,12 @@ class MyPlugin(Star):
     def __init__(self, context: Context, config: dict | None = None):
         super().__init__(context, config)
         self.config = config or {}
-        self.save_manager = SaveManager()
+        try:
+            from astrbot.api.star import StarTools
+            data_dir = str(StarTools.get_data_dir("astrbot_plugin_text_roguelike"))
+        except Exception:
+            data_dir = None
+        self.save_manager = SaveManager(data_dir)
         self.engine = GameEngine(self.save_manager)
 
     async def initialize(self):
