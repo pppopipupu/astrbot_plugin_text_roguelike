@@ -141,7 +141,7 @@ class SaveManager:
                     intent_ba_val=ed.get("intent_ba_val", 0),
                     intent_ba_desc=ed.get("intent_ba_desc", ""),
                     intent_ba2_type=ed.get("intent_ba2_type", ""),
-                    intent_val_ba2=ed.get("intent_ba2_val", 0),
+                    intent_ba2_val=ed.get("intent_ba2_val", 0),
                     intent_ba2_desc=ed.get("intent_ba2_desc", "")
                 ))
             
