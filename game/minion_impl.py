@@ -98,24 +98,24 @@ class MinionTemplate:
 
 ALL_MINIONS = {
     "mercenary": MinionTemplate("mercenary", "雇佣兵", [
-        MercenaryHeavyStrike("重击", 1, 0, "消耗 1A，造成 6 点伤害。"),
-        MercenaryBattlecry("战吼", 0, 1, "消耗 1BA，本回合随从攻击力增加 4。")
+        MercenaryHeavyStrike("重击", 2, 0, "消耗 2A，造成 6 点伤害。"),
+        MercenaryBattlecry("战吼", 2, 0, "消耗 2A，本回合随从攻击力增加 4。")
     ]),
     "shield_guard": MinionTemplate("shield_guard", "盾卫", [
-        ShieldGuardDefend("重整防线", 0, 1, "消耗 1BA，为玩家提供 2 点护盾。"),
-        ShieldGuardBash("持盾撞击", 1, 0, "消耗 1A，造成 3 点伤害，玩家获得 1 点护盾。")
+        ShieldGuardDefend("重整防线", 2, 0, "消耗 2A，为玩家提供 2 点护盾。"),
+        ShieldGuardBash("持盾撞击", 2, 0, "消耗 2A，造成 3 点伤害，玩家获得 1 点护盾。")
     ]),
     "find_familiar": MinionTemplate("find_familiar", "召唤魔宠", [
-        FamiliarAssist("奥术协助", 0, 1, "消耗 1BA，玩家抽 1 张牌。"),
-        FamiliarCharge("法力充能", 1, 0, "消耗 1A，为玩家提供 1BA。")
+        FamiliarAssist("奥术协助", 2, 0, "消耗 2A，玩家抽 1 张牌。"),
+        FamiliarCharge("法力充能", 2, 0, "消耗 2A，为玩家提供 1BA。")
     ]),
     "water_elemental": MinionTemplate("water_elemental", "寒冰元素", [
-        WaterTouch("寒冰触碰", 0, 1, "消耗 1BA，扣除敌方领主下回合 1BA。"),
-        WaterLance("霜冻冰枪", 1, 0, "消耗 1A，造成 4 点伤害，若目标是随从则使其本回合无法攻击，若为领主则扣除其下回合 1A。")
+        WaterTouch("寒冰触碰", 2, 0, "消耗 2A，扣除敌方领主下回合 1BA。"),
+        WaterLance("霜冻冰枪", 3, 0, "消耗 3A，造成 4 点伤害，若目标是随从则使其本回合无法攻击，若为领主则扣除其下回合 1A。")
     ]),
     "arcane_golem": MinionTemplate("arcane_golem", "奥术傀儡", [
-        GolemOverload("能量过载", 0, 1, "消耗 1BA，自身失去 4 生命，本回合攻击力 +3。"),
-        GolemRepair("自我修复", 1, 0, "消耗 1A，恢复自身 6 点生命值。")
+        GolemOverload("能量过载", 0, 2, "消耗 2BA，自身失去 4 生命，本回合攻击力 +3。"),
+        GolemRepair("自我修复", 2, 0, "消耗 2A，恢复自身 6 点生命值。")
     ])
 }
 

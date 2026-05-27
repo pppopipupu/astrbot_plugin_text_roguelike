@@ -79,6 +79,18 @@ class EnemyState:
     actions: int = 1
     bonus_actions: int = 1
     buffs: List[BuffState] = field(default_factory=list)
+    is_summon: bool = False
+    max_actions: int = 1
+    max_bonus_actions: int = 0
+    intent_a_type: str = ""
+    intent_a_val: int = 0
+    intent_a_desc: str = ""
+    intent_ba_type: str = ""
+    intent_ba_val: int = 0
+    intent_ba_desc: str = ""
+    intent_ba2_type: str = ""
+    intent_ba2_val: int = 0
+    intent_ba2_desc: str = ""
 
 @dataclass
 class GameRun:

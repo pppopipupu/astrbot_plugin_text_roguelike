@@ -9,7 +9,12 @@ class BattleEngine:
     def is_battle_won(self, run: GameRun) -> bool:
         if not run.enemies:
             return True
-        return all(e.hp <= 0 for e in run.enemies)
+        if all(e.hp <= 0 for e in run.enemies):
+            return True
+        alive_enemies = [e for e in run.enemies if e.hp > 0]
+        if all(e.is_summon for e in alive_enemies):
+            return True
+        return False
 
     def _get_first_alive_enemy(self, run: GameRun) -> str:
         for idx, enemy in enumerate(run.enemies, 1):
@@ -95,9 +100,29 @@ class BattleEngine:
         for enemy in run.enemies:
             template = get_enemy_template(enemy.name)
             itype, val, desc = template.roll_intent(run, self, enemy)
-            enemy.intent_type = itype
-            enemy.intent_val = val
-            enemy.intent_desc = desc
+            enemy.intent_a_type = itype
+            enemy.intent_a_val = val
+            enemy.intent_a_desc = desc
+            
+            if enemy.max_bonus_actions >= 1:
+                itype_ba, val_ba, desc_ba = template.roll_intent_ba(run, self, enemy)
+                enemy.intent_ba_type = itype_ba
+                enemy.intent_ba_val = val_ba
+                enemy.intent_ba_desc = desc_ba
+            else:
+                enemy.intent_ba_type = ""
+                enemy.intent_ba_val = 0
+                enemy.intent_ba_desc = ""
+                
+            if enemy.max_bonus_actions >= 2:
+                itype_ba2, val_ba2, desc_ba2 = template.roll_intent_ba2(run, self, enemy)
+                enemy.intent_ba2_type = itype_ba2
+                enemy.intent_ba2_val = val_ba2
+                enemy.intent_ba2_desc = desc_ba2
+            else:
+                enemy.intent_ba2_type = ""
+                enemy.intent_ba2_val = 0
+                enemy.intent_ba2_desc = ""
 
     def _init_battle_node(self, run: GameRun, difficulty: str):
         p = run.player
@@ -109,7 +134,7 @@ class BattleEngine:
         random.shuffle(p.draw_pile)
         p.discard_pile.clear()
         p.hand.clear()
-        p.actions = 1
+        p.actions = 2
         p.bonus_actions = 1
 
         for _ in range(5):
@@ -125,7 +150,9 @@ class BattleEngine:
                 max_hp=60,
                 shield=0,
                 actions=1,
-                bonus_actions=1
+                bonus_actions=2,
+                max_actions=1,
+                max_bonus_actions=2
             )]
         elif difficulty == "elite":
             elite_pool = [
@@ -138,7 +165,6 @@ class BattleEngine:
             ]
             base_name, base_hp, base_atk = random.choice(elite_pool)
             hp_scale = base_hp + (p.stage * 3)
-            atk_scale = base_atk + (p.stage // 2)
             
             run.enemies = [EnemyState(
                 name=base_name,
@@ -146,7 +172,9 @@ class BattleEngine:
                 max_hp=hp_scale,
                 shield=0,
                 actions=1,
-                bonus_actions=1
+                bonus_actions=1,
+                max_actions=1,
+                max_bonus_actions=1
             )]
             if random.random() < 0.5:
                 enemies_pool = [
@@ -169,7 +197,9 @@ class BattleEngine:
                     max_hp=n_hp,
                     shield=0,
                     actions=1,
-                    bonus_actions=1
+                    bonus_actions=0,
+                    max_actions=1,
+                    max_bonus_actions=0
                 ))
         else:
             enemies_pool = [
@@ -196,7 +226,9 @@ class BattleEngine:
                     max_hp=hp_scale,
                     shield=0,
                     actions=1,
-                    bonus_actions=1
+                    bonus_actions=0,
+                    max_actions=1,
+                    max_bonus_actions=0
                 ))
         self._roll_enemy_intent(run)
 
@@ -215,7 +247,7 @@ class BattleEngine:
 
         if card.type == "spell":
             if target is None:
-                if card.id in ("dagger_throw", "fire_bolt", "fireball", "thunderwave", "magic_missile"):
+                if card.id in ("dagger_throw", "fire_bolt", "fireball", "thunderwave", "magic_missile", "quick_strike", "arcane_spark"):
                     target = self._get_first_alive_enemy(run)
                 else:
                     target = "p0"
@@ -303,7 +335,7 @@ class BattleEngine:
             return f"❌ 你的动作资源不足（需要 {req_a}A {req_ba}BA，当前 {p.actions}A {p.bonus_actions}BA）。"
 
         if target is None:
-            if card.id in ("dagger_throw", "fire_bolt", "fireball", "thunderwave", "magic_missile"):
+            if card.id in ("dagger_throw", "fire_bolt", "fireball", "thunderwave", "magic_missile", "quick_strike", "arcane_spark"):
                 target = self._get_first_alive_enemy(run)
             else:
                 target = "p0"
@@ -442,14 +474,14 @@ class BattleEngine:
             self.save_manager.delete_save(run.user_id)
             return f"{enemy_actions}\n💀 冒险结束。你被击败了！存档已被清除。"
 
-        p.actions = 1
+        p.actions = 2
         p.bonus_actions = 1
         focus_buff = next((b for b in p.buffs if b.id == "tactical_focus"), None)
         focus_stacks = focus_buff.stacks if focus_buff else 0
         p.bonus_actions += focus_stacks
         for mk, mv in p.minions.items():
-            mv.actions = 1
-            mv.bonus_actions = 1
+            mv.actions += 1
+            mv.bonus_actions += 1 if mv.id == "arcane_golem" else 0
             mv.attack_actions = 1
             if mv.id == "mercenary":
                 mv.atk = 4
@@ -477,17 +509,30 @@ class BattleEngine:
         for idx, enemy in enumerate(active_enemies):
             if enemy.hp <= 0:
                 continue
-            if enemy.actions < 1:
-                logs.append(f"敌人【{enemy.name}】由于没有动作点，本回合无法行动。")
-                continue
-            enemy.actions -= 1
             from .enemy_impl import get_enemy_template
             template = get_enemy_template(enemy.name)
-            template.execute_intent(run, self, enemy, logs)
+            
+            if enemy.hp > 0 and enemy.actions >= 1 and enemy.intent_a_type:
+                enemy.actions -= 1
+                enemy.intent_type = enemy.intent_a_type
+                enemy.intent_val = enemy.intent_a_val
+                template.execute_intent(run, self, enemy, logs)
+                
+            if enemy.hp > 0 and enemy.bonus_actions >= 1 and enemy.intent_ba_type:
+                enemy.bonus_actions -= 1
+                enemy.intent_type = enemy.intent_ba_type
+                enemy.intent_val = enemy.intent_ba_val
+                template.execute_intent(run, self, enemy, logs)
+                
+            if enemy.hp > 0 and enemy.bonus_actions >= 1 and enemy.intent_ba2_type:
+                enemy.bonus_actions -= 1
+                enemy.intent_type = enemy.intent_ba2_type
+                enemy.intent_val = enemy.intent_ba2_val
+                template.execute_intent(run, self, enemy, logs)
 
         for enemy in run.enemies:
-            enemy.actions = 1
-            enemy.bonus_actions = 1
+            enemy.actions = enemy.max_actions
+            enemy.bonus_actions = enemy.max_bonus_actions
         return "\n".join(logs)
 
     def _handle_battle_win(self, run: GameRun):

@@ -18,6 +18,12 @@ class EnemyTemplate:
             desc = f"防御 (获得 {val} 护盾)"
         return itype, val, desc
 
+    def roll_intent_ba(self, run, engine, enemy) -> Tuple[str, int, str]:
+        return self.roll_intent(run, engine, enemy)
+
+    def roll_intent_ba2(self, run, engine, enemy) -> Tuple[str, int, str]:
+        return self.roll_intent(run, engine, enemy)
+
     def _perform_attack(self, run, engine, enemy, dmg: int, logs: List[str]):
         p = run.player
         import random
@@ -113,7 +119,10 @@ class BossRedDragonTemplate(EnemyTemplate):
                 intent_val=1,
                 intent_desc="准备攻击 (造成 1 伤害)",
                 actions=1,
-                bonus_actions=1
+                bonus_actions=0,
+                is_summon=True,
+                max_actions=1,
+                max_bonus_actions=0
             )
             run.enemies.append(new_goblin)
             logs.append(f"敌方领主【{enemy.name}】召唤了一个【魔仆】。")
@@ -205,7 +214,10 @@ class BeastMasterTemplate(EnemyTemplate):
                 intent_val=2,
                 intent_desc="扑咬 (造成 2 伤害)",
                 actions=1,
-                bonus_actions=1
+                bonus_actions=0,
+                is_summon=True,
+                max_actions=1,
+                max_bonus_actions=0
             )
             run.enemies.append(new_hound)
             logs.append(f"【{enemy.name}】召唤了一只【狂暴猎犬】加入战场。")

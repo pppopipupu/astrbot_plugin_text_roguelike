@@ -112,40 +112,61 @@ class MyPlugin(Star):
         elif sub in ("随从", "m"):
             if len(parts) < 3:
                 return "❌ 参数不足。用法：随从 <我方格子> 攻击/技能 <目标/序号>", False
-            my_grid = parts[1]
+            my_grid_raw = parts[1]
             action = parts[2]
-            if action in ("攻击", "a"):
-                if len(parts) < 4:
-                    return "❌ 请指定攻击的目标（格子编号，0表示领主）。", False
-                opp_grid = parts[3]
-                res = self.engine.minion_attack(run, my_grid, opp_grid)
-                if self.engine.is_battle_won(run):
-                    self.engine._handle_battle_win(run)
-                    if run.node_type == "victory":
-                        return f"{res}\n🎉 恭喜你击败了远古红龙，通关成功！", True
-                    else:
-                        return f"{res}\n🎉 战斗胜利！你击败了敌方所有单位。", True
-                return res, False
-            elif action in ("技能", "s"):
-                skill_idx = 1
-                target = None
-                if len(parts) > 3:
-                    try:
-                        skill_idx = int(parts[3])
-                        if len(parts) > 4:
-                            target = parts[4]
-                    except ValueError:
-                        target = parts[3]
-                res = self.engine.minion_skill(run, my_grid, skill_idx, target)
-                if self.engine.is_battle_won(run):
-                    self.engine._handle_battle_win(run)
-                    if run.node_type == "victory":
-                        return f"{res}\n🎉 恭喜你击败了远古红龙，通关成功！", True
-                    else:
-                        return f"{res}\n🎉 战斗胜利！你击败了敌方所有单位。", True
-                return res, False
+            
+            if my_grid_raw in ("all", "所有", "*"):
+                grids = sorted(list(run.player.minions.keys()))
             else:
-                return "❌ 未知的随从指令。", False
+                grids = []
+                for p_g in my_grid_raw.split(','):
+                    g = p_g.strip().replace("p", "")
+                    if g in run.player.minions:
+                        grids.append(g)
+                        
+            if not grids:
+                return f"❌ 找不到我方随从格子 [{my_grid_raw}]。", False
+
+            results = []
+            for g in grids:
+                if run.player.hp <= 0:
+                    return "\n".join(results) + "\n💀 你被击败了！当前进度已清空。", True
+                if self.engine.is_battle_won(run):
+                    return "\n".join(results) + "\n🎉 战斗胜利！", True
+
+                if action in ("攻击", "a"):
+                    if len(parts) < 4:
+                        return "❌ 请指定攻击的目标（格子编号，0表示领主）。", False
+                    opp_grid = parts[3]
+                    res = self.engine.minion_attack(run, g, opp_grid)
+                    results.append(res)
+                elif action in ("技能", "s"):
+                    skill_idx = 1
+                    target = None
+                    if len(parts) > 3:
+                        try:
+                            skill_idx = int(parts[3])
+                            if len(parts) > 4:
+                                target = parts[4]
+                        except ValueError:
+                            target = parts[3]
+                    res = self.engine.minion_skill(run, g, skill_idx, target)
+                    results.append(res)
+                else:
+                    return "❌ 未知的随从指令。", False
+                    
+            res_combined = "\n".join(results)
+            if run.player.hp <= 0:
+                self.save_manager.delete_save(user_id)
+                return f"{res_combined}\n💀 你被击败了！当前进度已清空。", True
+                
+            if self.engine.is_battle_won(run):
+                self.engine._handle_battle_win(run)
+                if run.node_type == "victory":
+                    return f"{res_combined}\n🎉 恭喜你击败了远古红龙，通关成功！", True
+                else:
+                    return f"{res_combined}\n🎉 战斗胜利！你击败了敌方所有单位。", True
+            return res_combined, False
 
         elif sub in ("选择", "c"):
             if len(parts) < 2:
@@ -302,11 +323,50 @@ class MyPlugin(Star):
             if not run:
                 yield event.plain_result("❌ 你当前没有正在进行的游戏。")
                 return
-            res, term = self._execute_sub_action(user_id, run, parts)
-            if term:
-                yield event.plain_result(res)
+            if len(parts) < 2:
+                yield event.plain_result("❌ 请提供随从指令，例如：/rogue 随从 1 攻击 e1")
+                return
+                
+            full_arg = " ".join(parts[1:])
+            is_queue = False
+            if "," in full_arg:
+                sub_parts = split_by_comma_with_brackets(full_arg)
+                is_queue = True
+                valid_parts_count = 0
+                for sp in sub_parts:
+                    sp_clean = sp.strip()
+                    if not sp_clean:
+                        continue
+                    valid_parts_count += 1
+                    words = sp_clean.split()
+                    if len(words) < 2:
+                        is_queue = False
+                        break
+                if valid_parts_count <= 1:
+                    is_queue = False
+                    
+            if is_queue:
+                items = split_by_comma_with_brackets(full_arg)
+                converted_items = []
+                for item in items:
+                    item_str = item.strip()
+                    if not item_str:
+                        continue
+                    if item_str.startswith("随从 ") or item_str.startswith("m "):
+                        converted_items.append(item_str)
+                    else:
+                        converted_items.append(f"随从 {item_str}")
+                queue_str = "[" + ", ".join(converted_items) + "]"
+                
+                results = []
+                await self._execute_queue(user_id, run, queue_str, results)
+                yield event.plain_result("\n".join(results) + "\n" + GameRenderer.render_game(run))
             else:
-                yield event.plain_result(res + "\n" + GameRenderer.render_game(run))
+                res, term = self._execute_sub_action(user_id, run, parts)
+                if term:
+                    yield event.plain_result(res)
+                else:
+                    yield event.plain_result(res + "\n" + GameRenderer.render_game(run))
                 
         elif sub in ("选择", "c"):
             run = self.save_manager.load_save(user_id)
@@ -330,7 +390,10 @@ class MyPlugin(Star):
                 yield event.plain_result("❌ 你当前没有正在进行的游戏。")
                 return
             res, term = self._execute_sub_action(user_id, run, parts)
-            yield event.plain_result(res)
+            if term:
+                yield event.plain_result(res)
+            else:
+                yield event.plain_result(res + "\n" + GameRenderer.render_game(run))
                 
         elif sub == "放弃":
             run = self.save_manager.load_save(user_id)

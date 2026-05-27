@@ -18,7 +18,12 @@ class SpellDamageCard(Card):
                 dmg += 2
         engine._damage_target(run, target, dmg)
         name = engine._get_target_name(run, target)
-        return f"对【{name}】造成了 {dmg} 点伤害。" if self.id == "dagger_throw" else f"释放火焰弹，对【{name}】造成了 {dmg} 点伤害。"
+        if self.id == "dagger_throw":
+            return f"对【{name}】造成了 {dmg} 点伤害。"
+        elif self.id == "fire_bolt":
+            return f"释放火焰弹，对【{name}】造成了 {dmg} 点伤害。"
+        else:
+            return f"使用了【{self.name}】，对【{name}】造成了 {dmg} 点伤害。"
 
 class SpellHealCard(Card):
     def __init__(self, id, name, color, type, cost_a, cost_ba, heal_amount, desc=""):
@@ -65,7 +70,8 @@ class SummonMinionCard(Card):
         grid = engine._get_free_grid(run.player)
         if grid:
             from .models import MinionState
-            run.player.minions[grid] = MinionState(self.id, self.name, self.minion_hp, self.minion_hp, self.minion_atk, 1, 1)
+            ba = 1 if self.id == "arcane_golem" else 0
+            run.player.minions[grid] = MinionState(self.id, self.name, self.minion_hp, self.minion_hp, self.minion_atk, 1, ba)
             return f"在格子 [{grid}] 召唤了【{self.name}】。"
         return "战场已满，召唤失败。"
 
@@ -185,11 +191,39 @@ class CalculatedGambleCard(Card):
             return f"丢弃了所有的手牌（共 {discard_count} 张），并重新抽取了 {discard_count} 张牌。"
         return "手牌已空，没有丢弃任何卡牌。"
 
+class ManaPotionCard(Card):
+    def __init__(self, id, name, color, type, cost_a, cost_ba, exhaust=False, desc=""):
+        super().__init__(id, name, color, type, cost_a, cost_ba, exhaust=exhaust, desc=desc)
+
+    def execute(self, run, target, engine) -> str:
+        run.player.bonus_actions += 1
+        engine._draw_cards(run.player, 1)
+        return "饮用了【魔力药水】，获得了 1BA 并抽了 1 张牌。"
+
+class ArcaneSparkCard(Card):
+    def execute(self, run, target, engine) -> str:
+        dmg = 2
+        charge_buff = next((b for b in run.player.buffs if b.id == "arcane_charge"), None)
+        charge_stacks = charge_buff.stacks if charge_buff else 0
+        dmg += charge_stacks * 3
+        engine._damage_target(run, target, dmg)
+        engine._draw_cards(run.player, 1)
+        name = engine._get_target_name(run, target)
+        return f"释放奥术星火，对【{name}】造成了 {dmg} 点伤害，并抽了 1 张牌。"
+
+class OverchargeCard(Card):
+    def __init__(self, id, name, color, type, cost_a, cost_ba, exhaust=False, desc=""):
+        super().__init__(id, name, color, type, cost_a, cost_ba, exhaust=exhaust, desc=desc)
+
+    def execute(self, run, target, engine) -> str:
+        engine._add_buff_to(run.player, "arcane_charge", "奥术充能", "法术伤害 +3")
+        return "使用了【过载充能】，获得了【奥术充能】buff（法术伤害 +3，可叠加）。"
+
 ALL_CARDS = {
     "dagger_throw": SpellDamageCard("dagger_throw", "匕首投掷", "neutral", "spell", 1, 0, 4, desc="造成 4 点伤害。"),
     "first_aid": SpellHealCard("first_aid", "绷带包扎", "neutral", "spell", 0, 1, 4, desc="恢复 4 点生命值。"),
     "get_ready": GetReadyCard("get_ready", "准备就绪", "neutral", "spell", 1, 0, desc="获得 2BA，抽 1 张牌。"),
-    "adrenaline": AdrenalineCard("adrenaline", "肾上腺素", "neutral", "spell", 0, 1, desc="获得 1A，失去 2 点生命。"),
+    "adrenaline": AdrenalineCard("adrenaline", "肾上腺素", "neutral", "spell", 0, 0, desc="获得 1A，失去 2 点生命。"),
     "lucky_coin": DeployAmuletCard("lucky_coin", "幸运金币", "neutral", "amulet", 1, 0, 3, "每回合结束时，玩家获得 3 金币。", desc="每回合结束时，玩家获得 3 金币。"),
     "thorns_necklace": DeployAmuletCard("thorns_necklace", "荆棘项链", "neutral", "amulet", 1, 0, 2, "受到伤害时，向伤害源反弹 2 点伤害。", desc="当玩家受到伤害时，对伤害来源造成 2 点伤害。"),
     "tactical_focus": AbilityCard("tactical_focus", "战术专注", "neutral", "ability", 1, 0, desc="本场战斗中，玩家每回合开始时额外获得 1BA。"),
@@ -199,10 +233,10 @@ ALL_CARDS = {
 
     "fire_bolt": SpellDamageCard("fire_bolt", "火焰弹", "wizard", "spell", 0, 1, 3, is_fire=True, desc="造成 3 点火焰伤害。"),
     "magic_missile": MagicMissileCard("magic_missile", "魔法飞弹", "wizard", "spell", 1, 0, desc="造成 3 次 3 点伤害，无视护盾。"),
-    "fireball": FireballCard("fireball", "火球术", "wizard", "spell", 1, 1, desc="造成 20 点火焰伤害。"),
-    "thunderwave": ThunderwaveCard("thunderwave", "雷鸣波", "wizard", "spell", 1, 0, desc="造成 6 点伤害，使敌人下回合减少 1A。"),
+    "fireball": FireballCard("fireball", "火球术", "wizard", "spell", 2, 0, desc="造成 20 点火焰伤害。"),
+    "thunderwave": ThunderwaveCard("thunderwave", "雷鸣波", "wizard", "spell", 2, 0, desc="造成 6 点伤害，使敌人下回合减少 1A。"),
     "shield": ShieldSpellCard("shield", "护盾术", "wizard", "spell", 0, 1, desc="获得 8 点护盾。"),
-    "misty_step": MistyStepCard("misty_step", "迷踪步", "wizard", "spell", 0, 1, desc="抽 2 张牌。"),
+    "misty_step": MistyStepCard("misty_step", "迷踪步", "wizard", "spell", 0, 0, desc="抽 2 张牌。"),
     "arcane_intellect": ArcaneIntellectCard("arcane_intellect", "奥术智慧", "wizard", "spell", 1, 0, desc="抽 3 张牌。"),
     "ring_of_elements": DeployAmuletCard("ring_of_elements", "元素指环", "wizard", "amulet", 1, 0, 4, "火焰伤害 +2", desc="玩家造成的火焰伤害 +2。"),
     "arcane_crystal": DeployAmuletCard("arcane_crystal", "奥术水晶", "wizard", "amulet", 1, 0, 3, "每使用一张法术牌回复 2 点生命值", desc="每当玩家使用法术牌，回复 2 点生命值。"),
@@ -214,7 +248,12 @@ ALL_CARDS = {
     "arcane_golem": SummonMinionCard("arcane_golem", "奥术傀儡", "wizard", "minion", 1, 1, 20, 6, desc="生命 20，攻击 6。仅有普通攻击。"),
     "water_elemental": SummonMinionCard("water_elemental", "寒冰元素", "wizard", "minion", 1, 0, 12, 3, desc="生命 12，攻击 3。技能：寒冰触碰（消耗 1BA，使一个敌方单位在下一回合减少 1BA）。"),
     "echo_form": EchoFormCard("echo_form", "回响形态", "neutral", "ability", 1, 1, desc="本场战斗中，你每回合打出的第一张牌将会额外打出一次。"),
-    "calculated_gamble": CalculatedGambleCard("calculated_gamble", "计算下注", "neutral", "spell", 0, 1, desc="丢弃所有手牌，重新抽等量牌。"),
+    "calculated_gamble": CalculatedGambleCard("calculated_gamble", "计算下注", "neutral", "spell", 0, 0, desc="丢弃所有手牌，重新抽等量牌。"),
+
+    "quick_strike": SpellDamageCard("quick_strike", "迅捷打击", "neutral", "spell", 0, 0, 3, desc="造成 3 点伤害。"),
+    "mana_potion": ManaPotionCard("mana_potion", "魔力药水", "neutral", "spell", 0, 0, exhaust=True, desc="获得 1BA，抽 1 张牌。消耗。"),
+    "arcane_spark": ArcaneSparkCard("arcane_spark", "奥术星火", "wizard", "spell", 0, 0, desc="造成 2 点伤害，抽 1 张牌。"),
+    "overcharge": OverchargeCard("overcharge", "过载充能", "wizard", "ability", 0, 0, exhaust=True, desc="本场战斗法术伤害 +3（即获得 1 层奥术充能 buff）。消耗。"),
 }
 
 card_rarities = {
@@ -245,7 +284,11 @@ card_rarities = {
     "arcane_charge": "epic",
     "find_familiar": "common",
     "arcane_golem": "epic",
-    "water_elemental": "rare"
+    "water_elemental": "rare",
+    "quick_strike": "common",
+    "mana_potion": "rare",
+    "arcane_spark": "common",
+    "overcharge": "rare"
 }
 for cid, rarity in card_rarities.items():
     if cid in ALL_CARDS:

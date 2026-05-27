@@ -181,7 +181,15 @@ class GameRenderer:
             lines.append("（空无一物）")
         else:
             for idx, enemy in enumerate(run.enemies, 1):
-                intent_str = enemy.intent_desc if enemy.intent_desc else "未知"
+                intent_parts = []
+                if enemy.intent_a_desc:
+                    intent_parts.append(f"A: {enemy.intent_a_desc}")
+                if enemy.intent_ba_desc:
+                    ba_desc = enemy.intent_ba_desc
+                    if enemy.intent_ba2_desc:
+                        ba_desc += f" + {enemy.intent_ba2_desc}"
+                    intent_parts.append(f"BA: {ba_desc}")
+                intent_str = f"({', '.join(intent_parts)})" if intent_parts else "无意图"
                 shield_str = f" | 🛡️ 护盾 {enemy.shield}" if enemy.shield > 0 else ""
                 buff_desc = ""
                 if getattr(enemy, "buffs", None):

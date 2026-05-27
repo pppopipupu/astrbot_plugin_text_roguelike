@@ -130,7 +130,19 @@ class SaveManager:
                     intent_desc=ed.get("intent_desc", ""),
                     actions=ed.get("actions", 1),
                     bonus_actions=ed.get("bonus_actions", 1),
-                    buffs=e_buffs
+                    buffs=e_buffs,
+                    is_summon=ed.get("is_summon", False),
+                    max_actions=ed.get("max_actions", 1),
+                    max_bonus_actions=ed.get("max_bonus_actions", 0),
+                    intent_a_type=ed.get("intent_a_type", ""),
+                    intent_a_val=ed.get("intent_a_val", 0),
+                    intent_a_desc=ed.get("intent_a_desc", ""),
+                    intent_ba_type=ed.get("intent_ba_type", ""),
+                    intent_ba_val=ed.get("intent_ba_val", 0),
+                    intent_ba_desc=ed.get("intent_ba_desc", ""),
+                    intent_ba2_type=ed.get("intent_ba2_type", ""),
+                    intent_val_ba2=ed.get("intent_ba2_val", 0),
+                    intent_ba2_desc=ed.get("intent_ba2_desc", "")
                 ))
             
         return GameRun(
