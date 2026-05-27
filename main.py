@@ -98,6 +98,8 @@ class MyPlugin(Star):
     def _execute_sub_action(self, user_id, run, parts: list[str]) -> tuple[str, bool]:
         if not parts:
             return "", False
+        if parts[0].isdigit():
+            parts = ["选择"] + parts
         sub = parts[0]
         if sub in ("使用", "p"):
             if len(parts) < 2:
@@ -260,6 +262,8 @@ class MyPlugin(Star):
                 yield event.plain_result(GameRenderer.render_menu())
             return
             
+        if parts[0].isdigit():
+            parts = ["选择"] + parts
         sub = parts[0]
         
         if sub == "开启":
