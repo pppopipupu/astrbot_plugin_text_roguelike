@@ -1,4 +1,5 @@
 from typing import Optional, List
+from .data.minion_data import MINION_CONFIG
 
 class BaseMinionSkill:
     def __init__(self, name: str, cost_a: int, cost_ba: int, desc: str):
@@ -12,40 +13,54 @@ class BaseMinionSkill:
 
 class MercenaryHeavyStrike(BaseMinionSkill):
     def execute(self, run, my_grid, target, engine) -> str:
-        engine._damage_target(run, target, 6)
+        cfg = MINION_CONFIG["mercenary"]["skills"][0]
+        damage = cfg["damage"]
+        engine._damage_target(run, target, damage)
         tname = engine._get_target_name(run, target)
-        return f"对【{tname}】造成了 6 点伤害。"
+        return cfg["feedback"].format(target=tname, damage=damage)
 
 class MercenaryBattlecry(BaseMinionSkill):
     def execute(self, run, my_grid, target, engine) -> str:
+        cfg = MINION_CONFIG["mercenary"]["skills"][1]
+        atk_buff = cfg["atk_buff"]
         m = run.player.minions[my_grid]
-        m.atk += 4
-        return "本回合攻击力提升了 4 点。"
+        m.atk += atk_buff
+        return cfg["feedback"].format(atk_buff=atk_buff)
 
 class ShieldGuardDefend(BaseMinionSkill):
     def execute(self, run, my_grid, target, engine) -> str:
-        run.player.shield += 2
-        return "为玩家提供了 2 点护盾。"
+        cfg = MINION_CONFIG["shield_guard"]["skills"][0]
+        shield = cfg["shield"]
+        run.player.shield += shield
+        return cfg["feedback"].format(shield=shield)
 
 class ShieldGuardBash(BaseMinionSkill):
     def execute(self, run, my_grid, target, engine) -> str:
-        engine._damage_target(run, target, 3)
-        run.player.shield += 1
+        cfg = MINION_CONFIG["shield_guard"]["skills"][1]
+        damage = cfg["damage"]
+        shield = cfg["shield"]
+        engine._damage_target(run, target, damage)
+        run.player.shield += shield
         tname = engine._get_target_name(run, target)
-        return f"对【{tname}】造成了 3 点伤害，并为玩家提供了 1 点护盾。"
+        return cfg["feedback"].format(target=tname, damage=damage, shield=shield)
 
 class FamiliarAssist(BaseMinionSkill):
     def execute(self, run, my_grid, target, engine) -> str:
-        engine._draw_cards(run.player, 1)
-        return "玩家抽取了 1 张牌。"
+        cfg = MINION_CONFIG["find_familiar"]["skills"][0]
+        draw = cfg["draw"]
+        engine._draw_cards(run.player, draw)
+        return cfg["feedback"].format(draw=draw)
 
 class FamiliarCharge(BaseMinionSkill):
     def execute(self, run, my_grid, target, engine) -> str:
-        run.player.bonus_actions += 1
-        return "玩家获得了 1 个附赠动作点 (BA)。"
+        cfg = MINION_CONFIG["find_familiar"]["skills"][1]
+        ba_gain = cfg["ba_gain"]
+        run.player.bonus_actions += ba_gain
+        return cfg["feedback"].format(ba_gain=ba_gain)
 
 class WaterTouch(BaseMinionSkill):
     def execute(self, run, my_grid, target, engine) -> str:
+        cfg = MINION_CONFIG["water_elemental"]["skills"][0]
         t = target or "e1"
         if t.startswith("e"):
             try:
@@ -55,13 +70,15 @@ class WaterTouch(BaseMinionSkill):
             if 0 <= grid_idx < len(run.enemies):
                 enemy = run.enemies[grid_idx]
                 enemy.bonus_actions = max(0, enemy.bonus_actions - 1)
-                return f"扣除了敌人【{enemy.name}】下回合 1 个附赠动作点。"
+                return cfg["feedback"].format(target=enemy.name)
         return "未找到敌方目标。"
 
 class WaterLance(BaseMinionSkill):
     def execute(self, run, my_grid, target, engine) -> str:
+        cfg = MINION_CONFIG["water_elemental"]["skills"][1]
+        damage = cfg["damage"]
         t = target or "e1"
-        engine._damage_target(run, t, 4)
+        engine._damage_target(run, t, damage)
         tname = engine._get_target_name(run, t)
         if t.startswith("e"):
             try:
@@ -71,24 +88,31 @@ class WaterLance(BaseMinionSkill):
             if 0 <= grid_idx < len(run.enemies):
                 enemy = run.enemies[grid_idx]
                 enemy.actions = max(0, enemy.actions - 1)
-                return f"对【{tname}】造成了 4 点伤害，并扣掉了其下回合 1 个动作点。"
-        return f"对【{tname}】造成了 4 点伤害。"
+                feedback_boss = cfg.get("feedback_boss")
+                if feedback_boss:
+                    return feedback_boss.format(target=tname, damage=damage)
+        return cfg["feedback"].format(target=tname, damage=damage)
 
 class GolemOverload(BaseMinionSkill):
     def execute(self, run, my_grid, target, engine) -> str:
+        cfg = MINION_CONFIG["arcane_golem"]["skills"][0]
+        self_damage = cfg["self_damage"]
+        atk_buff = cfg["atk_buff"]
         m = run.player.minions[my_grid]
-        m.hp -= 4
-        m.atk += 3
+        m.hp -= self_damage
+        m.atk += atk_buff
         if m.hp <= 0:
             del run.player.minions[my_grid]
-            return "自身失去 4 点生命值并过载死亡，本回合攻击力增加 3 点。"
-        return "自身失去 4 点生命值，本回合攻击力增加 3 点。"
+            return cfg["feedback_dead"].format(self_damage=self_damage, atk_buff=atk_buff)
+        return cfg["feedback"].format(self_damage=self_damage, atk_buff=atk_buff)
 
 class GolemRepair(BaseMinionSkill):
     def execute(self, run, my_grid, target, engine) -> str:
+        cfg = MINION_CONFIG["arcane_golem"]["skills"][1]
+        heal = cfg["heal"]
         m = run.player.minions[my_grid]
-        m.hp = min(m.max_hp, m.hp + 6)
-        return f"恢复了自身 6 点生命值，当前生命 {m.hp}/{m.max_hp}。"
+        m.hp = min(m.max_hp, m.hp + heal)
+        return cfg["feedback"].format(heal=heal, hp=m.hp, max_hp=m.max_hp)
 
 class MinionTemplate:
     def __init__(self, id: str, name: str, skills: List[BaseMinionSkill]):
@@ -96,27 +120,98 @@ class MinionTemplate:
         self.name = name
         self.skills = skills
 
+
 ALL_MINIONS = {
-    "mercenary": MinionTemplate("mercenary", "雇佣兵", [
-        MercenaryHeavyStrike("重击", 2, 0, "消耗 2A，造成 6 点伤害。"),
-        MercenaryBattlecry("战吼", 2, 0, "消耗 2A，本回合随从攻击力增加 4。")
-    ]),
-    "shield_guard": MinionTemplate("shield_guard", "盾卫", [
-        ShieldGuardDefend("重整防线", 2, 0, "消耗 2A，为玩家提供 2 点护盾。"),
-        ShieldGuardBash("持盾撞击", 2, 0, "消耗 2A，造成 3 点伤害，玩家获得 1 点护盾。")
-    ]),
-    "find_familiar": MinionTemplate("find_familiar", "召唤魔宠", [
-        FamiliarAssist("奥术协助", 2, 0, "消耗 2A，玩家抽 1 张牌。"),
-        FamiliarCharge("法力充能", 2, 0, "消耗 2A，为玩家提供 1BA。")
-    ]),
-    "water_elemental": MinionTemplate("water_elemental", "寒冰元素", [
-        WaterTouch("寒冰触碰", 2, 0, "消耗 2A，扣除敌方领主下回合 1BA。"),
-        WaterLance("霜冻冰枪", 3, 0, "消耗 3A，造成 4 点伤害，若目标是随从则使其本回合无法攻击，若为领主则扣除其下回合 1A。")
-    ]),
-    "arcane_golem": MinionTemplate("arcane_golem", "奥术傀儡", [
-        GolemOverload("能量过载", 0, 2, "消耗 2BA，自身失去 4 生命，本回合攻击力 +3。"),
-        GolemRepair("自我修复", 2, 0, "消耗 2A，恢复自身 6 点生命值。")
-    ])
+    "mercenary": MinionTemplate(
+        "mercenary",
+        MINION_CONFIG["mercenary"]["name"],
+        [
+            MercenaryHeavyStrike(
+                MINION_CONFIG["mercenary"]["skills"][0]["name"],
+                MINION_CONFIG["mercenary"]["skills"][0]["cost_a"],
+                MINION_CONFIG["mercenary"]["skills"][0]["cost_ba"],
+                MINION_CONFIG["mercenary"]["skills"][0]["desc"]
+            ),
+            MercenaryBattlecry(
+                MINION_CONFIG["mercenary"]["skills"][1]["name"],
+                MINION_CONFIG["mercenary"]["skills"][1]["cost_a"],
+                MINION_CONFIG["mercenary"]["skills"][1]["cost_ba"],
+                MINION_CONFIG["mercenary"]["skills"][1]["desc"]
+            )
+        ]
+    ),
+    "shield_guard": MinionTemplate(
+        "shield_guard",
+        MINION_CONFIG["shield_guard"]["name"],
+        [
+            ShieldGuardDefend(
+                MINION_CONFIG["shield_guard"]["skills"][0]["name"],
+                MINION_CONFIG["shield_guard"]["skills"][0]["cost_a"],
+                MINION_CONFIG["shield_guard"]["skills"][0]["cost_ba"],
+                MINION_CONFIG["shield_guard"]["skills"][0]["desc"]
+            ),
+            ShieldGuardBash(
+                MINION_CONFIG["shield_guard"]["skills"][1]["name"],
+                MINION_CONFIG["shield_guard"]["skills"][1]["cost_a"],
+                MINION_CONFIG["shield_guard"]["skills"][1]["cost_ba"],
+                MINION_CONFIG["shield_guard"]["skills"][1]["desc"]
+            )
+        ]
+    ),
+    "find_familiar": MinionTemplate(
+        "find_familiar",
+        MINION_CONFIG["find_familiar"]["name"],
+        [
+            FamiliarAssist(
+                MINION_CONFIG["find_familiar"]["skills"][0]["name"],
+                MINION_CONFIG["find_familiar"]["skills"][0]["cost_a"],
+                MINION_CONFIG["find_familiar"]["skills"][0]["cost_ba"],
+                MINION_CONFIG["find_familiar"]["skills"][0]["desc"]
+            ),
+            FamiliarCharge(
+                MINION_CONFIG["find_familiar"]["skills"][1]["name"],
+                MINION_CONFIG["find_familiar"]["skills"][1]["cost_a"],
+                MINION_CONFIG["find_familiar"]["skills"][1]["cost_ba"],
+                MINION_CONFIG["find_familiar"]["skills"][1]["desc"]
+            )
+        ]
+    ),
+    "water_elemental": MinionTemplate(
+        "water_elemental",
+        MINION_CONFIG["water_elemental"]["name"],
+        [
+            WaterTouch(
+                MINION_CONFIG["water_elemental"]["skills"][0]["name"],
+                MINION_CONFIG["water_elemental"]["skills"][0]["cost_a"],
+                MINION_CONFIG["water_elemental"]["skills"][0]["cost_ba"],
+                MINION_CONFIG["water_elemental"]["skills"][0]["desc"]
+            ),
+            WaterLance(
+                MINION_CONFIG["water_elemental"]["skills"][1]["name"],
+                MINION_CONFIG["water_elemental"]["skills"][1]["cost_a"],
+                MINION_CONFIG["water_elemental"]["skills"][1]["cost_ba"],
+                MINION_CONFIG["water_elemental"]["skills"][1]["desc"]
+            )
+        ]
+    ),
+    "arcane_golem": MinionTemplate(
+        "arcane_golem",
+        MINION_CONFIG["arcane_golem"]["name"],
+        [
+            GolemOverload(
+                MINION_CONFIG["arcane_golem"]["skills"][0]["name"],
+                MINION_CONFIG["arcane_golem"]["skills"][0]["cost_a"],
+                MINION_CONFIG["arcane_golem"]["skills"][0]["cost_ba"],
+                MINION_CONFIG["arcane_golem"]["skills"][0]["desc"]
+            ),
+            GolemRepair(
+                MINION_CONFIG["arcane_golem"]["skills"][1]["name"],
+                MINION_CONFIG["arcane_golem"]["skills"][1]["cost_a"],
+                MINION_CONFIG["arcane_golem"]["skills"][1]["cost_ba"],
+                MINION_CONFIG["arcane_golem"]["skills"][1]["desc"]
+            )
+        ]
+    )
 }
 
 MINION_SKILLS = {}
