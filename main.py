@@ -11,6 +11,11 @@ except ImportError:
     from game.engine import GameEngine
     from game.renderer import GameRenderer
 
+try:
+    from .game.models import current_user_id
+except ImportError:
+    from game.models import current_user_id
+
 def split_by_comma_with_brackets(s: str) -> list[str]:
     parts = []
     current = []
@@ -246,6 +251,7 @@ class MyPlugin(Star):
 
     async def _handle_rogue_logic(self, event: AstrMessageEvent, parts: list[str]):
         user_id = event.get_sender_id()
+        current_user_id.set(user_id)
         if not parts:
             run = self.save_manager.load_save(user_id)
             if run:
@@ -436,6 +442,10 @@ class MyPlugin(Star):
                 yield event.plain_result("\n".join(results))
             else:
                 yield event.plain_result("\n".join(results) + "\n" + GameRenderer.render_game(run))
+
+        elif sub in ("统计", "stat", "stats"):
+            stats = self.save_manager.load_stats(user_id)
+            yield event.plain_result(GameRenderer.render_stats(stats))
 
         elif sub in ("查询", "query", "info", "i"):
             run = self.save_manager.load_save(user_id)

@@ -10,6 +10,8 @@ class MapEngine:
     def enter_next_stage(self, run: GameRun):
         p = run.player
         p.stage += 1
+        if p.stage > 1:
+            self.save_manager.record_stage_passed(run.user_id)
         p.shield = 0
         p.minions.clear()
         p.amulets.clear()

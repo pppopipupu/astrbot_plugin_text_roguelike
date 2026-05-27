@@ -1,7 +1,7 @@
 import os
 import json
 from dataclasses import asdict
-from .models import GameRun, PlayerState, EnemyState, MinionState, AmuletState, BuffState
+from .models import GameRun, PlayerState, EnemyState, MinionState, AmuletState, BuffState, UserStats, current_user_id, register_stat_recorder
 
 class SaveManager:
     def __init__(self, data_dir: str = None):
@@ -16,6 +16,56 @@ class SaveManager:
     def get_save_path(self, user_id: str) -> str:
         safe_id = "".join([c for c in user_id if c.isalnum() or c in ("-", "_")])
         return os.path.join(self.data_dir, f"user_{safe_id}.json")
+
+    def get_stats_path(self, user_id: str) -> str:
+        safe_id = "".join([c for c in user_id if c.isalnum() or c in ("-", "_")])
+        return os.path.join(self.data_dir, f"stats_{safe_id}.json")
+
+    def load_stats(self, user_id: str) -> UserStats:
+        path = self.get_stats_path(user_id)
+        if not os.path.exists(path):
+            return UserStats()
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                d = json.load(f)
+            return UserStats(
+                total_damage=d.get("total_damage", 0),
+                total_kills=d.get("total_kills", 0),
+                total_stages=d.get("total_stages", 0)
+            )
+        except:
+            return UserStats()
+
+    def save_stats(self, user_id: str, stats: UserStats) -> bool:
+        path = self.get_stats_path(user_id)
+        try:
+            d = asdict(stats)
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(d, f, ensure_ascii=False, indent=2)
+            return True
+        except:
+            return False
+
+    def record_damage(self, user_id: str, amount: int):
+        if not user_id or amount <= 0:
+            return
+        stats = self.load_stats(user_id)
+        stats.total_damage += amount
+        self.save_stats(user_id, stats)
+
+    def record_kill(self, user_id: str):
+        if not user_id:
+            return
+        stats = self.load_stats(user_id)
+        stats.total_kills += 1
+        self.save_stats(user_id, stats)
+
+    def record_stage_passed(self, user_id: str):
+        if not user_id:
+            return
+        stats = self.load_stats(user_id)
+        stats.total_stages += 1
+        self.save_stats(user_id, stats)
 
     def load_save(self, user_id: str) -> GameRun:
         path = self.get_save_path(user_id)
@@ -154,3 +204,15 @@ class SaveManager:
             node_data=d.get("node_data", {}),
             map_data=d.get("map_data", {})
         )
+
+def stat_recorder_callback(enemy_name: str, amount: int, is_defeat: bool):
+    user_id = current_user_id.get()
+    if not user_id:
+        return
+    mgr = SaveManager()
+    if amount > 0:
+        mgr.record_damage(user_id, amount)
+    if is_defeat:
+        mgr.record_kill(user_id)
+
+register_stat_recorder(stat_recorder_callback)

@@ -1,5 +1,20 @@
 from dataclasses import dataclass, field, asdict
 from typing import List, Dict, Optional
+from contextvars import ContextVar
+
+current_user_id: ContextVar[str] = ContextVar("current_user_id", default="")
+
+@dataclass
+class UserStats:
+    total_damage: int = 0
+    total_kills: int = 0
+    total_stages: int = 0
+
+_stat_recorder = None
+
+def register_stat_recorder(recorder):
+    global _stat_recorder
+    _stat_recorder = recorder
 
 @dataclass
 class BuffState:
@@ -92,6 +107,27 @@ class EnemyState:
     intent_ba2_type: str = ""
     intent_ba2_val: int = 0
     intent_ba2_desc: str = ""
+
+    def __setattr__(self, key, value):
+        if key == "hp":
+            try:
+                old_hp = self.__dict__.get("hp")
+            except AttributeError:
+                old_hp = None
+            if old_hp is not None and value < old_hp:
+                dmg = old_hp - value
+                if _stat_recorder:
+                    _stat_recorder(self.name, dmg, (value <= 0 and old_hp > 0))
+        elif key == "shield":
+            try:
+                old_shield = self.__dict__.get("shield")
+            except AttributeError:
+                old_shield = None
+            if old_shield is not None and value < old_shield:
+                dmg = old_shield - value
+                if _stat_recorder:
+                    _stat_recorder(self.name, dmg, False)
+        super().__setattr__(key, value)
 
 @dataclass
 class GameRun:

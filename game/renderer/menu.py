@@ -1,4 +1,4 @@
-from ..models import GameRun
+from ..models import GameRun, UserStats
 from ..cards import ALL_CARDS
 
 def render_menu() -> str:
@@ -17,6 +17,7 @@ def render_menu() -> str:
         "👉 /rogue 总览  -- 查看全部卡牌信息",
         "👉 /rogue 状态  -- 查看当前局内状态",
         "👉 /rogue 牌组  -- 查看当前拥有的卡组",
+        "👉 /rogue 统计  -- 查看你的生涯统计数据",
         "👉 /rogue 放弃  -- 放弃当前局内游戏",
         "━━━━━━━━━━━━━━━━━━━━"
     ]
@@ -94,4 +95,18 @@ def render_deck(run: GameRun) -> str:
             lines.append(f"{idx}. {color_type} {card.name} <{rname}> x{count} ({card.desc})")
             idx += 1
     lines.append("━━━━━━━━━━━━━━━━━━━━")
+    return "\n".join(lines)
+
+def render_stats(stats: UserStats) -> str:
+    lines = [
+        "━━━━━━━━━━━━━━━━━━━━",
+        "📊 魔法肉鸽卡牌生涯统计",
+        "",
+        f"💥 累计输出伤害：{stats.total_damage} 点",
+        f"💀 累计击败怪物：{stats.total_kills} 只",
+        f"🧗 累计游玩层数：{stats.total_stages} 层",
+        "",
+        "这些数据属于你的勇士生涯，不会随着放弃游戏而消失。",
+        "━━━━━━━━━━━━━━━━━━━━"
+    ]
     return "\n".join(lines)
