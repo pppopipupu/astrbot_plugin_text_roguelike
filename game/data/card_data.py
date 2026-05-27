@@ -400,7 +400,7 @@ CARD_CONFIG = {
         "name": "魔网天成",
         "color": "wizard",
         "type": "ability",
-        "cost_a": 2,
+        "cost_a": 0,
         "cost_ba": 0,
         "desc": "本回合内，你每使用一张法术牌，便对所有敌人造成 3 点伤害，获得 3 点护盾。",
         "rarity": "legendary",

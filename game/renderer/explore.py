@@ -1,0 +1,145 @@
+from ..models import GameRun
+from ..relic_impl import get_relic_name, get_relic_desc
+from ..cards import ALL_CARDS
+
+def render_event(run: GameRun) -> str:
+    p = run.player
+    data = run.node_data
+    relics_str = ""
+    if p.relics:
+        relics_str = "\n🎒 遗物：" + " ".join([f"【{get_relic_name(r)}】" for r in p.relics])
+    lines = [
+        "━━━━━━━━━━━━━━━━━━━━",
+        f"✨ 【第 {p.stage} 关：随机事件】",
+        f"玩家：❤️ HP {p.hp}/{p.max_hp} | 🪙 金币 {p.gold}" + relics_str,
+        "",
+        data.get("description", "发生了一个神秘的事件。"),
+        "",
+        "请做出你的选择："
+    ]
+    options = data.get("options", [])
+    for idx, opt in enumerate(options, 1):
+        lines.append(f" [{idx}] {opt.get('text', '')}")
+    lines.append("━━━━━━━━━━━━━━━━━━━━")
+    if p.fold_guide:
+        lines.append("💬 提示：操作指南已折叠。输入 /rogue 折叠 可展开。")
+    else:
+        lines.append("💬 选择指令：/rogue 选择 <序号>")
+    lines.append("━━━━━━━━━━━━━━━━━━━━")
+    return "\n".join(lines)
+
+def render_shop(run: GameRun) -> str:
+    p = run.player
+    data = run.node_data
+    relics_str = ""
+    if p.relics:
+        relics_str = "\n🎒 遗物：" + " ".join([f"【{get_relic_name(r)}】" for r in p.relics])
+    lines = [
+        "━━━━━━━━━━━━━━━━━━━━",
+        f"🛒 【第 {p.stage} 关：奇妙商店】",
+        f"玩家：❤️ HP {p.hp}/{p.max_hp} | 🪙 金币 {p.gold}" + relics_str,
+        "",
+        "一位旅商展示着他的精致收藏：",
+        ""
+    ]
+    items = data.get("items", [])
+    for idx, item in enumerate(items, 1):
+        itype = item.get("type")
+        price = item.get("price")
+        sold = item.get("sold", False)
+        if sold:
+            lines.append(f" [{idx}] 【已售罄】")
+            continue
+        if itype == "card":
+            card = ALL_CARDS.get(item.get("card_id"))
+            if card:
+                color_ch = "🔵" if card.color == "wizard" else "⚪"
+                lines.append(f" [{idx}] {color_ch} {card.name} (卡牌) - 🪙 {price}金币 | {card.desc}")
+        elif itype == "relic":
+            rid = item.get("relic_id")
+            lines.append(f" [{idx}] 🎒 {get_relic_name(rid)} (遗物) - 🪙 {price}金币 | {get_relic_desc(rid)}")
+        elif itype == "remove":
+            lines.append(f" [{idx}] 🧹 净化服务 (移除卡组中任意一张牌) - 🪙 {price}金币")
+        elif itype == "leave":
+            lines.append(f" [{idx}] 🚪 离开商店，继续冒险")
+    lines.append("━━━━━━━━━━━━━━━━━━━━")
+    if p.fold_guide:
+        lines.append("💬 提示：操作指南已折叠。输入 /rogue 折叠 可展开。")
+    else:
+        lines.append("💬 购买/选择指令：/rogue 选择 <商品序号>")
+    lines.append("━━━━━━━━━━━━━━━━━━━━")
+    return "\n".join(lines)
+
+def render_rest(run: GameRun) -> str:
+    p = run.player
+    relics_str = ""
+    if p.relics:
+        relics_str = "\n🎒 遗物：" + " ".join([f"【{get_relic_name(r)}】" for r in p.relics])
+    lines = [
+        "━━━━━━━━━━━━━━━━━━━━",
+        f"🔥 【第 {p.stage} 关：篝火营地】",
+        f"玩家：❤️ HP {p.hp}/{p.max_hp}" + relics_str,
+        "",
+        "温暖的篝火跳跃着，你感到有些疲惫。你可以选择：",
+        " [1] 🍖 休息：恢复 50% 最大生命值",
+        " [2] 🔮 冥想：获得一张随机蓝色法术牌并加入卡组",
+        " [3] 🚪 离开：不做整顿直接出发",
+        "━━━━━━━━━━━━━━━━━━━━"
+    ]
+    if p.fold_guide:
+        lines.append("💬 提示：操作指南已折叠。输入 /rogue 折叠 可展开。")
+    else:
+        lines.append("💬 选择指令：/rogue 选择 <序号>")
+    lines.append("━━━━━━━━━━━━━━━━━━━━")
+    return "\n".join(lines)
+
+def render_reward(run: GameRun) -> str:
+    p = run.player
+    data = run.node_data
+    quest_bonus = data.get("quest_bonus", "")
+    lines = [
+        "━━━━━━━━━━━━━━━━━━━━",
+        "🎁 【战斗胜利！请选择你的战利品】",
+        ""
+    ]
+    if quest_bonus:
+        lines.append(quest_bonus)
+        lines.append("")
+    cards = data.get("cards", [])
+    for idx, cid in enumerate(cards, 1):
+        card = ALL_CARDS.get(cid)
+        if card:
+            color_ch = "🔵" if card.color == "wizard" else "⚪"
+            lines.append(f" [{idx}] {color_ch} {card.name} ({card.desc})")
+    skip_idx = len(cards) + 1
+    lines.append(f" [{skip_idx}] 🪙 跳过奖励卡牌 (获得 15 金币)")
+    lines.append("━━━━━━━━━━━━━━━━━━━━")
+    if p.fold_guide:
+        lines.append("💬 提示：操作指南已折叠。输入 /rogue 折叠 可展开。")
+    else:
+        lines.append("💬 选择指令：/rogue 选择 <序号>")
+    lines.append("━━━━━━━━━━━━━━━━━━━━")
+    return "\n".join(lines)
+
+def render_treasure(run: GameRun) -> str:
+    p = run.player
+    data = run.node_data
+    text = data.get("text", "")
+    state = data.get("state", "pending_remove")
+    lines = [
+        "━━━━━━━━━━━━━━━━━━━━",
+        f"🎁 【第 {p.stage} 关：古老宝箱】",
+        f"玩家：❤️ HP {p.hp}/{p.max_hp} | 🪙 金币 {p.gold}",
+        "",
+        text,
+        ""
+    ]
+    if state == "opened":
+        lines.append(" [1] 🚪 离开宝箱房，继续冒险")
+    lines.append("━━━━━━━━━━━━━━━━━━━━")
+    if state == "pending_remove":
+        lines.append("💬 选择要献祭（移除）的卡牌序号指令：/rogue 选择 <卡牌序号>")
+    else:
+        lines.append("💬 离开指令：/rogue 选择 1")
+    lines.append("━━━━━━━━━━━━━━━━━━━━")
+    return "\n".join(lines)

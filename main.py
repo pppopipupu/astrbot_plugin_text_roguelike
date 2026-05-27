@@ -436,6 +436,19 @@ class MyPlugin(Star):
                 yield event.plain_result("\n".join(results))
             else:
                 yield event.plain_result("\n".join(results) + "\n" + GameRenderer.render_game(run))
+
+        elif sub in ("查询", "query", "info", "i"):
+            run = self.save_manager.load_save(user_id)
+            if len(parts) > 1:
+                query_str = " ".join(parts[1:]).strip()
+                yield event.plain_result(GameRenderer.render_query_info(query_str))
+            else:
+                if not run:
+                    yield event.plain_result("❌ 你当前没有正在进行的游戏。输入 /rogue 开启 开始新游戏。")
+                elif run.node_type != "battle":
+                    yield event.plain_result("❌ 只有在战斗中才能查询详细战斗信息。请输入想要查询的随从、遗物、Buff名称。")
+                else:
+                    yield event.plain_result(GameRenderer.render_detailed_battle(run))
                 
         else:
             yield event.plain_result("❓ 未知子命令。输入 /rogue 获取帮助。")
