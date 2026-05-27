@@ -66,6 +66,7 @@ class PlayerState:
     abilities: List[str] = field(default_factory=list)
     fold_guide: bool = False
     buffs: List[BuffState] = field(default_factory=list)
+    relics: List[str] = field(default_factory=list)
 
 @dataclass
 class EnemyState:
@@ -99,3 +100,4 @@ class GameRun:
     player: PlayerState
     enemies: List[EnemyState] = field(default_factory=list)
     node_data: Dict = field(default_factory=dict)
+    map_data: Dict = field(default_factory=dict)

@@ -12,80 +12,326 @@ class EventOption:
 class DrinkFountainOption(EventOption):
     def execute(self, run, engine) -> str:
         p = run.player
-        cfg = EVENT_CONFIG["fountain"]["options"]["drink_fountain"]
-        heal = cfg.get("heal_amount", 10)
-        p.hp = min(p.max_hp, p.hp + heal)
+        p.hp = min(p.max_hp, p.hp + 10)
         engine.enter_next_stage(run)
         engine.save_manager.save_save(run.user_id, run)
-        return cfg["feedback"].format(heal_amount=heal)
+        return "你喝下了泉水，生命值回复了 10 点。已前往下一关。"
 
 class CoinFountainOption(EventOption):
     def execute(self, run, engine) -> str:
         p = run.player
-        cfg = EVENT_CONFIG["fountain"]["options"]["coin_fountain"]
-        cost = cfg.get("gold_cost", 10)
-        if p.gold < cost:
-            return cfg.get("feedback_insufficient", "❌ 你的金币不足 10。")
-        p.gold -= cost
+        if p.gold < 10:
+            return "❌ 你的金币不足 10。"
+        p.gold -= 10
         import random
         from .card_impl import ALL_CARDS
-        wizards = [cid for cid, c in ALL_CARDS.items() if c.color == "wizard"]
+        wizards = [cid for cid, c in ALL_CARDS.items() if c.color == "wizard" and c.rarity != "legendary"]
         cid = random.choice(wizards)
         p.deck.append(cid)
         engine.enter_next_stage(run)
         engine.save_manager.save_save(run.user_id, run)
-        return cfg["feedback"].format(gold_cost=cost, card_name=ALL_CARDS[cid].name)
+        return f"你在泉水中投入了 10 金币，泉水闪烁，你获得了【{ALL_CARDS[cid].name}】。已前往下一关。"
+
+class ObserveFountainOption(EventOption):
+    def execute(self, run, engine) -> str:
+        cfg = EVENT_CONFIG["fountain_observe"]
+        run.node_data["event_id"] = "fountain_observe"
+        run.node_data["description"] = cfg["description"]
+        run.node_data["options"] = [{"text": o["text"], "action": o["action"]} for o in cfg["options"]]
+        engine.save_manager.save_save(run.user_id, run)
+        return "你凑近池塘向下观察..."
+
+class TakeNecklaceOption(EventOption):
+    def execute(self, run, engine) -> str:
+        import random
+        p = run.player
+        if random.random() < 0.5:
+            p.relics.append("arcane_rune")
+            res = "🍀 运气不错！你安全地解除了符文陷阱，成功捞出了【奥术项链】，获得遗物【奥术符文】！"
+        else:
+            p.hp = max(1, p.hp - 6)
+            res = "⚡ 糟糕！捞取项链时触发了爆裂电弧陷阱，你受到了 6 点雷电伤害，且项链在电弧中化为了灰烬！"
+        engine.enter_next_stage(run)
+        engine.save_manager.save_save(run.user_id, run)
+        return res
 
 class HelpKnightOption(EventOption):
     def execute(self, run, engine) -> str:
         p = run.player
-        cfg = EVENT_CONFIG["knight"]["options"]["help_knight"]
-        consume = cfg.get("consume_card", "first_aid")
-        reward = cfg.get("reward_card", "shield_guard")
         has_aid = False
         for idx, cid in enumerate(p.deck):
-            if cid == consume:
+            if cid == "first_aid":
                 p.deck.pop(idx)
                 has_aid = True
                 break
         if not has_aid:
-            return cfg.get("feedback_insufficient", "❌ 你的卡组中没有【绷带包扎】卡牌！")
-        p.deck.append(reward)
+            return "❌ 你的卡组中没有【绷带包扎】卡牌！"
+        p.deck.append("shield_guard")
         engine.enter_next_stage(run)
         engine.save_manager.save_save(run.user_id, run)
-        return cfg["feedback"]
+        return "你将绷带给予骑士治疗。为了答谢，【盾卫】加入了你的卡组。已前往下一关。"
 
 class RobKnightOption(EventOption):
     def execute(self, run, engine) -> str:
         p = run.player
-        cfg = EVENT_CONFIG["knight"]["options"]["rob_knight"]
-        gain = cfg.get("gold_gain", 25)
-        p.gold += gain
+        p.gold += 25
         engine.enter_next_stage(run)
         engine.save_manager.save_save(run.user_id, run)
-        return cfg["feedback"].format(gold_gain=gain)
+        return "你不顾骑士的反抗夺走了他的财物，获得 25 金币。已前往下一关。"
+
+class AskKnightOption(EventOption):
+    def execute(self, run, engine) -> str:
+        cfg = EVENT_CONFIG["knight_story"]
+        run.node_data["event_id"] = "knight_story"
+        run.node_data["description"] = cfg["description"]
+        run.node_data["options"] = [{"text": o["text"], "action": o["action"]} for o in cfg["options"]]
+        engine.save_manager.save_save(run.user_id, run)
+        return "你向受伤的骑士询问缘由..."
+
+class CaveQuestOption(EventOption):
+    def execute(self, run, engine) -> str:
+        cfg = EVENT_CONFIG["knight_cave"]
+        run.node_data["event_id"] = "knight_cave"
+        run.node_data["description"] = cfg["description"]
+        run.node_data["options"] = [{"text": o["text"], "action": o["action"]} for o in cfg["options"]]
+        engine.save_manager.save_save(run.user_id, run)
+        return "你答应帮他去取回佩剑，顺着他的指引来到了山洞深处。"
+
+class CaveFightOption(EventOption):
+    def execute(self, run, engine) -> str:
+        run.node_data["quest"] = "knight_cave"
+        engine.battle_engine._init_battle_node(run, "normal")
+        run.node_type = "battle"
+        if run.enemies:
+            run.enemies[0].name = "魔仆"
+            run.enemies[0].hp = 15
+            run.enemies[0].max_hp = 15
+        engine.save_manager.save_save(run.user_id, run)
+        return "你跨入洞穴，一只面目狰狞的【魔仆】冲了过来！进入战斗。"
 
 class AbsorbAltarOption(EventOption):
     def execute(self, run, engine) -> str:
         p = run.player
-        cfg = EVENT_CONFIG["altar"]["options"]["absorb_altar"]
-        reward = cfg.get("reward_card", "arcane_charge")
-        p.deck.append(reward)
+        p.deck.append("arcane_charge")
         engine.enter_next_stage(run)
         engine.save_manager.save_save(run.user_id, run)
-        return cfg["feedback"]
+        return "你吸收了奥术波动的力量，将【奥术充能】加入卡组。已前往下一关。"
 
 class BreakAltarOption(EventOption):
     def execute(self, run, engine) -> str:
         p = run.player
-        cfg = EVENT_CONFIG["altar"]["options"]["break_altar"]
-        gold_gain = cfg.get("gold_gain", 20)
-        hp_loss = cfg.get("hp_loss", 4)
-        p.gold += gold_gain
-        p.hp -= hp_loss
+        p.gold += 20
+        p.hp = max(1, p.hp - 4)
         engine.enter_next_stage(run)
         engine.save_manager.save_save(run.user_id, run)
-        return cfg["feedback"].format(gold_gain=gold_gain, hp_loss=hp_loss)
+        return "你用法杖敲碎了祭坛上的水晶并收集了碎片（获得 20 金币），但被震荡的爆风伤及（失去 4 点生命值）。已前往下一关。"
+
+class MeditateAltarOption(EventOption):
+    def execute(self, run, engine) -> str:
+        cfg = EVENT_CONFIG["altar_portal"]
+        run.node_data["event_id"] = "altar_portal"
+        run.node_data["description"] = cfg["description"]
+        run.node_data["options"] = [{"text": o["text"], "action": o["action"]} for o in cfg["options"]]
+        engine.save_manager.save_save(run.user_id, run)
+        return "你在祭坛前盘膝坐下，闭目静思..."
+
+class EnterPortalOption(EventOption):
+    def execute(self, run, engine) -> str:
+        import random
+        if random.random() < 0.5:
+            run.node_type = "shop"
+            engine._init_shop_node(run)
+            if "items" in run.node_data:
+                for item in run.node_data["items"]:
+                    item["price"] = max(0, int(item["price"] * 0.5))
+            engine.save_manager.save_save(run.user_id, run)
+            return "🌀 传送门闪烁！你被一股平稳的引力吸入，竟然直接降落在了一个神秘的流浪旅商营地，且这次流浪旅商给予了你 5 折全店优惠！"
+        else:
+            run.node_type = "battle"
+            engine.battle_engine._init_battle_node(run, "elite")
+            if run.enemies:
+                run.enemies[0].name = "传送门守卫者"
+            engine.save_manager.save_save(run.user_id, run)
+            return "⚠️ 空间发生强烈扭曲！传送门能量崩溃，你被卷入一处荒野废墟，前方出现了一只凶猛的【传送门守卫者】！进入战斗。"
+
+class ShatterPortalOption(EventOption):
+    def execute(self, run, engine) -> str:
+        p = run.player
+        p.gold += 40
+        p.hp = max(1, p.hp - 6)
+        engine.enter_next_stage(run)
+        engine.save_manager.save_save(run.user_id, run)
+        return "💥 你用法术强行轰碎了虚空传送门！空间之门产生了剧烈爆炸，巨大的余波伤及了你（失去 6 生命值），但破碎的裂隙中掉落了一大袋金币（获得 40 金币）。"
+
+class MazeFireOption(EventOption):
+    def execute(self, run, engine) -> str:
+        cfg = EVENT_CONFIG["maze_guard"]
+        run.node_data["event_id"] = "maze_guard"
+        run.node_data["description"] = cfg["description"]
+        run.node_data["options"] = [{"text": o["text"], "action": o["action"]} for o in cfg["options"]]
+        engine.save_manager.save_save(run.user_id, run)
+        return "你跟着红色的火光，在湿润的石壁甬道中穿行..."
+
+class MazeWaterOption(EventOption):
+    def execute(self, run, engine) -> str:
+        cfg = EVENT_CONFIG["maze_pool"]
+        run.node_data["event_id"] = "maze_pool"
+        run.node_data["description"] = cfg["description"]
+        run.node_data["options"] = [{"text": o["text"], "action": o["action"]} for o in cfg["options"]]
+        engine.save_manager.save_save(run.user_id, run)
+        return "你顺着潺潺的水流声，在布满青苔的石墙中摸行..."
+
+class MazeMarkOption(EventOption):
+    def execute(self, run, engine) -> str:
+        p = run.player
+        p.gold += 10
+        engine.enter_next_stage(run)
+        engine.save_manager.save_save(run.user_id, run)
+        return "🧭 你在每个路口用小刀刻下记号。虽然多花了一些时间，但你安稳地走出了迷宫，且在出口处捡到了前人遗留的 10 金币。"
+
+class BribeGuardOption(EventOption):
+    def execute(self, run, engine) -> str:
+        p = run.player
+        if p.gold < 20:
+            return "❌ 你的金币不足 20 点，火元素守卫拒绝放行，并发出愤怒的嘶吼！"
+        p.gold -= 20
+        relics_pool = ["lucky_coin", "red_bottle", "leather_armor", "whetstone", "ready_pack", "arcane_rune"]
+        available_relics = [r for r in relics_pool if r not in p.relics]
+        got_relic = ""
+        if available_relics:
+            import random
+            got_relic = random.choice(available_relics)
+            p.relics.append(got_relic)
+            if got_relic == "red_bottle":
+                p.max_hp += 5
+                p.hp += 5
+        from .relic_impl import get_relic_name
+        relic_msg = f"，并在宝座后的石盒中获得遗物【{get_relic_name(got_relic)}】" if got_relic else ""
+        engine.enter_next_stage(run)
+        engine.save_manager.save_save(run.user_id, run)
+        return f"🪙 你向火元素守卫进献了 20 金币。它满意地让开道路{relic_msg}。已离开迷宫。"
+
+class FightGuardOption(EventOption):
+    def execute(self, run, engine) -> str:
+        run.node_data["quest"] = "maze_fight"
+        engine.battle_engine._init_battle_node(run, "elite")
+        run.node_type = "battle"
+        if run.enemies:
+            run.enemies[0].name = "火元素守卫"
+            run.enemies[0].hp = 30 + run.player.stage * 2
+            run.enemies[0].max_hp = run.enemies[0].hp
+        engine.save_manager.save_save(run.user_id, run)
+        return "🔥 谈和破裂！火元素守卫扬起法杖，滚滚热浪席卷而来！进入战斗。"
+
+class BathePoolOption(EventOption):
+    def execute(self, run, engine) -> str:
+        p = run.player
+        p.max_hp += 3
+        if "wither_seed" not in p.relics:
+            p.hp = min(p.max_hp, p.hp + 15)
+        engine.enter_next_stage(run)
+        engine.save_manager.save_save(run.user_id, run)
+        return "💚 泉水温热且充盈着生命气息。你在池中休整，最大生命值永久增加了 3 点，且生命值回复了 15 点（若有枯萎之种则只加生命上限不回血）。"
+
+class FishPoolOption(EventOption):
+    def execute(self, run, engine) -> str:
+        import random
+        p = run.player
+        if random.random() < 0.5:
+            relics_pool = ["lucky_coin", "red_bottle", "leather_armor", "whetstone", "ready_pack", "arcane_rune"]
+            available_relics = [r for r in relics_pool if r not in p.relics]
+            got_relic = ""
+            if available_relics:
+                got_relic = random.choice(available_relics)
+                p.relics.append(got_relic)
+                if got_relic == "red_bottle":
+                    p.max_hp += 5
+                    p.hp += 5
+            from .relic_impl import get_relic_name
+            res = f"🍀 运气不错！池水没有反应，你安全地摸出了一个发光的神明宝物，获得遗物【{get_relic_name(got_relic)}】！" if got_relic else "池底空无一物。"
+        else:
+            p.max_hp = max(5, p.max_hp - 5)
+            p.hp = min(p.hp, p.max_hp)
+            res = "👹 突然水流旋动！一只守护水蛇从池底窜出，咬住了你的手臂并释放毒液！你的最大生命上限减少了 5 点！"
+        engine.enter_next_stage(run)
+        engine.save_manager.save_save(run.user_id, run)
+        return res
+
+class RideCartOption(EventOption):
+    def execute(self, run, engine) -> str:
+        cfg = EVENT_CONFIG["mine_cart_crash"]
+        run.node_data["event_id"] = "mine_cart_crash"
+        run.node_data["description"] = cfg["description"]
+        run.node_data["options"] = [{"text": o["text"], "action": o["action"]} for o in cfg["options"]]
+        engine.save_manager.save_save(run.user_id, run)
+        return "你纵身跳上停在轨道上的生锈矿车，松开了手刹，矿车顺着轨道稳冲而下..."
+
+class ClimbLadderOption(EventOption):
+    def execute(self, run, engine) -> str:
+        cfg = EVENT_CONFIG["mine_ladder_body"]
+        run.node_data["event_id"] = "mine_ladder_body"
+        run.node_data["description"] = cfg["description"]
+        run.node_data["options"] = [{"text": o["text"], "action": o["action"]} for o in cfg["options"]]
+        engine.save_manager.save_save(run.user_id, run)
+        return "你顺着吱呀作响的木质旋转扶梯，一步步向矿坑深处摸去..."
+
+class JumpCartOption(EventOption):
+    def execute(self, run, engine) -> str:
+        p = run.player
+        p.hp = max(1, p.hp - 6)
+        p.gold += 40
+        engine.enter_next_stage(run)
+        engine.save_manager.save_save(run.user_id, run)
+        return "🤕 在矿车冲入深渊的前一瞬间，你狼狈地跳车。你在坚硬的矿石上重重摔伤（失去 6 生命值），但摔倒的地方恰好是一处亮晶晶的矿脉，获得了 40 金币。"
+
+class StopCartSpellOption(EventOption):
+    def execute(self, run, engine) -> str:
+        p = run.player
+        has_key_card = any(cid in p.deck for cid in ["shield_guard", "fireball", "thunderwave"])
+        if has_key_card:
+            relics_pool = ["lucky_coin", "red_bottle", "leather_armor", "whetstone", "ready_pack", "arcane_rune"]
+            available_relics = [r for r in relics_pool if r not in p.relics]
+            got_relic = ""
+            if available_relics:
+                import random
+                got_relic = random.choice(available_relics)
+                p.relics.append(got_relic)
+                if got_relic == "red_bottle":
+                    p.max_hp += 5
+                    p.hp += 5
+            from .relic_impl import get_relic_name
+            relic_msg = f"，并从脱落的铸铁轨道环上取下了一个精密的遗物【{get_relic_name(got_relic)}】" if got_relic else ""
+            res = f"🛡️ 你利用卡组中强大的法术/随从力量顶住了矿车底盘，伴随着令人牙酸的摩擦火花，矿车在悬崖前奇迹般停下。你安然无恙{relic_msg}！"
+        else:
+            p.hp = max(1, p.hp - 10)
+            p.gold += 10
+            res = "💀 你无法有效控制疯狂疾驰的矿车！矿车飞出了断裂轨道跌落崖底。伴随着金属扭曲的巨响，你受到重创（失去 10 生命值），只勉强在残骸中搜集到了 10 金币。"
+        engine.enter_next_stage(run)
+        engine.save_manager.save_save(run.user_id, run)
+        return res
+
+class LootBodyOption(EventOption):
+    def execute(self, run, engine) -> str:
+        p = run.player
+        p.gold += 25
+        p.hp = max(1, p.hp - 3)
+        engine.enter_next_stage(run)
+        engine.save_manager.save_save(run.user_id, run)
+        return "🕷️ 你撬开了干尸怀里的盒子，在里面收获了 25 金币。但当你触碰干尸时，藏在里面的剧毒尸蝇惊扰飞出，你被叮咬失去了 3 点生命值。"
+
+class DigOreOption(EventOption):
+    def execute(self, run, engine) -> str:
+        p = run.player
+        has_fire_or_thunder = any(cid in p.deck for cid in ["fireball", "thunderwave"])
+        if has_fire_or_thunder:
+            p.gold += 50
+            res = "💥 你用卡组中的强力法术【火球术】或【雷鸣波】直接轰向闪着微光的矿石层！一阵爆破声后矿墙坍塌，大片露天晶矿被炸落，你收集到了 50 金币！"
+        else:
+            p.gold += 15
+            res = "⛏️ 由于卡组里缺乏强大的重火力爆破手段，你只能用小刀和双手吃力地在矿石墙上挖掘，费了半天劲只挖出了价值 15 金币的晶石碎屑。"
+        engine.enter_next_stage(run)
+        engine.save_manager.save_save(run.user_id, run)
+        return res
 
 class LeaveEventOption(EventOption):
     def __init__(self, text: str, action: str, event_id: str = "fountain"):
@@ -93,11 +339,9 @@ class LeaveEventOption(EventOption):
         self.event_id = event_id
 
     def execute(self, run, engine) -> str:
-        cfg = EVENT_CONFIG.get(self.event_id, {}).get("options", {}).get("leave_event", {})
-        feedback = cfg.get("feedback", "你决定不节外生枝，继续赶路。已前往下一关。")
         engine.enter_next_stage(run)
         engine.save_manager.save_save(run.user_id, run)
-        return feedback
+        return "你决定不节外生枝，继续赶路。已前往下一关。"
 
 class EventTemplate:
     def __init__(self, id: str, description: str, options: List[EventOption]):
@@ -110,39 +354,80 @@ ALL_EVENTS = [
         "fountain",
         EVENT_CONFIG["fountain"]["description"],
         [
-            DrinkFountainOption(EVENT_CONFIG["fountain"]["options"]["drink_fountain"]["text"], "drink_fountain"),
-            CoinFountainOption(EVENT_CONFIG["fountain"]["options"]["coin_fountain"]["text"], "coin_fountain"),
-            LeaveEventOption(EVENT_CONFIG["fountain"]["options"]["leave_event"]["text"], "leave_event", "fountain")
+            DrinkFountainOption("饮用泉水", "drink_fountain"),
+            CoinFountainOption("投入金币", "coin_fountain"),
+            ObserveFountainOption("仔细观察泉底", "observe_fountain"),
+            LeaveEventOption("悄悄离开", "leave_event", "fountain")
         ]
     ),
     EventTemplate(
         "knight",
         EVENT_CONFIG["knight"]["description"],
         [
-            HelpKnightOption(EVENT_CONFIG["knight"]["options"]["help_knight"]["text"], "help_knight"),
-            RobKnightOption(EVENT_CONFIG["knight"]["options"]["rob_knight"]["text"], "rob_knight"),
-            LeaveEventOption(EVENT_CONFIG["knight"]["options"]["leave_event"]["text"], "leave_event", "knight")
+            HelpKnightOption("施以援手", "help_knight"),
+            RobKnightOption("趁火打劫", "rob_knight"),
+            AskKnightOption("询问他的来历", "ask_knight"),
+            LeaveEventOption("置之不理", "leave_event", "knight")
         ]
     ),
     EventTemplate(
         "altar",
         EVENT_CONFIG["altar"]["description"],
         [
-            AbsorbAltarOption(EVENT_CONFIG["altar"]["options"]["absorb_altar"]["text"], "absorb_altar"),
-            BreakAltarOption(EVENT_CONFIG["altar"]["options"]["break_altar"]["text"], "break_altar"),
-            LeaveEventOption(EVENT_CONFIG["altar"]["options"]["leave_event"]["text"], "leave_event", "altar")
+            AbsorbAltarOption("汲取奥术", "absorb_altar"),
+            BreakAltarOption("摧毁水晶", "break_altar"),
+            MeditateAltarOption("在祭坛前冥想", "meditate_altar"),
+            LeaveEventOption("绕道而行", "leave_event", "altar")
+        ]
+    ),
+    EventTemplate(
+        "lost_maze",
+        EVENT_CONFIG["lost_maze"]["description"],
+        [
+            MazeFireOption("循着远处的微弱火光走", "maze_fire"),
+            MazeWaterOption("沿着潺潺的水流声走", "maze_water"),
+            MazeMarkOption("在墙壁做标记，小心翼翼前行", "maze_mark")
+        ]
+    ),
+    EventTemplate(
+        "abandoned_mine",
+        EVENT_CONFIG["abandoned_mine"]["description"],
+        [
+            RideCartOption("坐上生锈矿车滑入矿坑", "ride_cart"),
+            ClimbLadderOption("沿着破旧梯子慢慢爬下去", "climb_ladder")
         ]
     )
 ]
 
 def get_option_by_action(action: str) -> Optional[EventOption]:
     mapping = {
-        "drink_fountain": DrinkFountainOption(EVENT_CONFIG["fountain"]["options"]["drink_fountain"]["text"], "drink_fountain"),
-        "coin_fountain": CoinFountainOption(EVENT_CONFIG["fountain"]["options"]["coin_fountain"]["text"], "coin_fountain"),
-        "help_knight": HelpKnightOption(EVENT_CONFIG["knight"]["options"]["help_knight"]["text"], "help_knight"),
-        "rob_knight": RobKnightOption(EVENT_CONFIG["knight"]["options"]["rob_knight"]["text"], "rob_knight"),
-        "absorb_altar": AbsorbAltarOption(EVENT_CONFIG["altar"]["options"]["absorb_altar"]["text"], "absorb_altar"),
-        "break_altar": BreakAltarOption(EVENT_CONFIG["altar"]["options"]["break_altar"]["text"], "break_altar"),
-        "leave_event": LeaveEventOption(EVENT_CONFIG["leave_default"]["text"], "leave_event", "leave_default")
+        "drink_fountain": DrinkFountainOption("饮用泉水", "drink_fountain"),
+        "coin_fountain": CoinFountainOption("投入金币", "coin_fountain"),
+        "observe_fountain": ObserveFountainOption("仔细观察泉底", "observe_fountain"),
+        "take_necklace": TakeNecklaceOption("冒险捞取项链", "take_necklace"),
+        "help_knight": HelpKnightOption("施以援手", "help_knight"),
+        "rob_knight": RobKnightOption("趁火打劫", "rob_knight"),
+        "ask_knight": AskKnightOption("询问他的来历", "ask_knight"),
+        "cave_quest": CaveQuestOption("帮他去洞穴取回长剑", "cave_quest"),
+        "cave_fight": CaveFightOption("进入战斗", "cave_fight"),
+        "absorb_altar": AbsorbAltarOption("汲取奥术", "absorb_altar"),
+        "break_altar": BreakAltarOption("摧毁水晶", "break_altar"),
+        "meditate_altar": MeditateAltarOption("在祭坛前冥想", "meditate_altar"),
+        "enter_portal": EnterPortalOption("跨入传送门", "enter_portal"),
+        "shatter_portal": ShatterPortalOption("摧毁传送门", "shatter_portal"),
+        "maze_fire": MazeFireOption("循着远处的微弱火光走", "maze_fire"),
+        "maze_water": MazeWaterOption("沿着潺潺的水流声走", "maze_water"),
+        "maze_mark": MazeMarkOption("在墙壁做标记，小心翼翼前行", "maze_mark"),
+        "bribe_guard": BribeGuardOption("贿赂守卫", "bribe_guard"),
+        "fight_guard": FightGuardOption("与守卫战斗", "fight_guard"),
+        "bathe_pool": BathePoolOption("在泉水中沐浴", "bathe_pool"),
+        "fish_pool": FishPoolOption("捞取水底的遗物", "fish_pool"),
+        "ride_cart": RideCartOption("坐上生锈矿车滑入矿坑", "ride_cart"),
+        "climb_ladder": ClimbLadderOption("沿着破旧梯子慢慢爬下去", "climb_ladder"),
+        "jump_cart": JumpCartOption("果断跳车", "jump_cart"),
+        "stop_cart_spell": StopCartSpellOption("使用法术或盾牌强行刹车", "stop_cart_spell"),
+        "loot_body": LootBodyOption("搜刮干尸", "loot_body"),
+        "dig_ore": DigOreOption("用重火力法术轰开矿坑底部的矿墙", "dig_ore"),
+        "leave_event": LeaveEventOption("离开事件", "leave_event")
     }
     return mapping.get(action)

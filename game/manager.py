@@ -106,7 +106,8 @@ class SaveManager:
             amulets=p_amulets,
             abilities=p_data.get("abilities", []),
             fold_guide=p_data.get("fold_guide", False),
-            buffs=p_buffs
+            buffs=p_buffs,
+            relics=p_data.get("relics", [])
         )
         
         enemies = []
@@ -150,5 +151,6 @@ class SaveManager:
             node_type=d["node_type"],
             player=player,
             enemies=enemies,
-            node_data=d.get("node_data", {})
+            node_data=d.get("node_data", {}),
+            map_data=d.get("map_data", {})
         )

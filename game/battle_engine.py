@@ -62,6 +62,8 @@ class BattleEngine:
     def _heal_target(self, run: GameRun, target: str, heal: int):
         p = run.player
         if target == "p0":
+            if "wither_seed" in p.relics:
+                return
             will_buff = next((b for b in p.buffs if b.id == "iron_will"), None)
             will_stacks = will_buff.stacks if will_buff else 0
             cur_max = p.max_hp + will_stacks * 10
@@ -87,12 +89,13 @@ class BattleEngine:
         return None
 
     def _draw_cards(self, p: PlayerState, count: int):
+        max_hand = 9 if "mask_of_void" in p.relics else 12
         for _ in range(count):
             if not p.draw_pile:
                 p.draw_pile = p.discard_pile.copy()
                 random.shuffle(p.draw_pile)
                 p.discard_pile.clear()
-            if p.draw_pile and len(p.hand) < 8:
+            if p.draw_pile and len(p.hand) < max_hand:
                 p.hand.append(p.draw_pile.pop())
 
     def _roll_enemy_intent(self, run: GameRun):
@@ -136,10 +139,15 @@ class BattleEngine:
         p.hand.clear()
         p.actions = 2
         p.bonus_actions = 1
-
-        for _ in range(5):
-            if p.draw_pile:
-                p.hand.append(p.draw_pile.pop())
+        p.shield = (8 if "heavy_armor" in p.relics else 0) + (4 if "leather_armor" in p.relics else 0)
+        if "rust_shackle" in p.relics:
+            p.hp = max(1, p.hp - 4)
+        if "greedy_contract" in p.relics:
+            p.hp = max(1, p.hp - 3)
+        if "ready_pack" in p.relics:
+            p.bonus_actions += 1
+        init_draw = 5 + (2 if "ancient_eye" in p.relics else 0) + (1 if "ready_pack" in p.relics else 0)
+        self._draw_cards(p, init_draw)
 
         run.node_data["difficulty"] = difficulty
 
@@ -312,7 +320,13 @@ class BattleEngine:
             template = ALL_AMULETS.get(av.id)
             if template and card.type == "spell":
                 template.on_spell_played(run, ak, card, self)
-
+        if card.type == "spell":
+            net_buff = next((b for b in p.buffs if b.id == "magic_network"), None)
+            if net_buff:
+                for enemy in list(run.enemies):
+                    self._damage_target(run, f"e{run.enemies.index(enemy)+1}", 3)
+                p.shield += 3
+                res += " ⚡ [魔网天成] 对所有敌人造成了 3 点伤害，获得了 3 点护盾。"
         self.save_manager.save_save(run.user_id, run)
         return res
 
@@ -376,11 +390,12 @@ class BattleEngine:
             return f"❌ 敌方格子 [{opp_grid}] 没有合法的敌人目标。"
 
         enemy = run.enemies[opp_idx]
-        if enemy.shield >= m.atk:
-            enemy.shield -= m.atk
-            dmg_msg = f"造成 {m.atk} 点护盾伤害"
+        atk = m.atk + (1 if "whetstone" in p.relics else 0)
+        if enemy.shield >= atk:
+            enemy.shield -= atk
+            dmg_msg = f"造成 {atk} 点护盾伤害"
         else:
-            take = m.atk - enemy.shield
+            take = atk - enemy.shield
             enemy.hp -= take
             enemy.shield = 0
             dmg_msg = f"造成 {take} 点生命伤害"
@@ -474,7 +489,8 @@ class BattleEngine:
             self.save_manager.delete_save(run.user_id)
             return f"{enemy_actions}\n💀 冒险结束。你被击败了！存档已被清除。"
 
-        p.actions = 2
+        p.buffs = [b for b in p.buffs if b.id != "magic_network"]
+        p.actions = 2 + (1 if "energy_core" in p.relics else 0)
         p.bonus_actions = 1
         focus_buff = next((b for b in p.buffs if b.id == "tactical_focus"), None)
         focus_stacks = focus_buff.stacks if focus_buff else 0
@@ -509,6 +525,13 @@ class BattleEngine:
         for idx, enemy in enumerate(active_enemies):
             if enemy.hp <= 0:
                 continue
+            stun_buff = next((b for b in enemy.buffs if b.id == "stun"), None)
+            if stun_buff:
+                stun_buff.stacks -= 1
+                if stun_buff.stacks <= 0:
+                    enemy.buffs.remove(stun_buff)
+                logs.append(f"【{enemy.name}】处于眩晕状态，本回合无法行动。")
+                continue
             from .enemy_impl import get_enemy_template
             template = get_enemy_template(enemy.name)
             
@@ -539,19 +562,34 @@ class BattleEngine:
         p = run.player
         p.buffs.clear()
         p.hp = min(p.max_hp, p.hp)
+        if "dragon_blood" in p.relics:
+            p.hp = min(p.max_hp, p.hp + 5)
         difficulty = run.node_data.get("difficulty", "normal")
+        quest = run.node_data.get("quest")
+        quest_bonus = ""
+        if quest == "knight_cave":
+            p.deck.append("shield_guard")
+            p.relics.append("heavy_armor")
+            quest_bonus = "\n🗡️ 任务完成！你帮奥术骑士夺回了长剑。作为谢礼，【盾卫】加入了你的卡组，你还获得了一个遗物【重装甲片】！"
+        elif quest == "maze_fight":
+            import random
+            got_relic = random.choice(["whetstone", "ready_pack", "arcane_rune"])
+            p.relics.append(got_relic)
+            from .relic_impl import get_relic_name
+            quest_bonus = f"\n🔥 任务完成！你击败了火元素守卫，在石门后获得稀有遗物【{get_relic_name(got_relic)}】！"
         if difficulty == "elite":
             reward_gold = 25 + random.randint(10, 20)
         else:
             reward_gold = 10 + random.randint(5, 15)
         p.gold += reward_gold
-        if p.stage == 10:
+        if p.stage == 20:
             run.node_type = "victory"
             self.save_manager.delete_save(run.user_id)
         else:
             run.node_type = "reward"
             from .card_impl import ALL_CARDS
             card_pool = list(ALL_CARDS.keys())
-            reward_cards = random.sample(card_pool, 3)
-            run.node_data = {"cards": reward_cards}
+            normal_cards = [cid for cid in card_pool if ALL_CARDS[cid].rarity != "legendary"]
+            reward_cards = random.sample(normal_cards, 3)
+            run.node_data = {"cards": reward_cards, "quest_bonus": quest_bonus}
             self.save_manager.save_save(run.user_id, run)

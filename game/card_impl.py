@@ -17,6 +17,10 @@ class SpellDamageCard(Card):
             has_ring = any(av.id == "ring_of_elements" for av in run.player.amulets.values())
             if has_ring:
                 dmg += 2
+        if "arcane_rune" in run.player.relics:
+            dmg += 1
+        if "mark_of_fury" in run.player.relics:
+            dmg += 2
         engine._damage_target(run, target, dmg)
         name = engine._get_target_name(run, target)
         
@@ -83,7 +87,10 @@ class SummonMinionCard(Card):
         if grid:
             from .models import MinionState
             ba = 1 if self.id == "arcane_golem" else 0
-            run.player.minions[grid] = MinionState(self.id, self.name, self.minion_hp, self.minion_hp, self.minion_atk, 1, ba)
+            hp = self.minion_hp
+            if "fool_oath" in run.player.relics:
+                hp = max(1, hp - 3)
+            run.player.minions[grid] = MinionState(self.id, self.name, hp, hp, self.minion_atk, 1, ba)
             feedback_success = cfg.get("feedback_success", "在格子 [{grid}] 召唤了【{name}】。")
             return feedback_success.format(grid=grid, name=self.name)
         return cfg.get("feedback_fail", "战场已满，召唤失败。")
@@ -148,6 +155,10 @@ class FireballCard(Card):
         has_ring = any(av.id == "ring_of_elements" for av in run.player.amulets.values())
         if has_ring:
             dmg += 2
+        if "arcane_rune" in run.player.relics:
+            dmg += 1
+        if "mark_of_fury" in run.player.relics:
+            dmg += 2
         for enemy in run.enemies:
             if enemy.shield >= dmg:
                 enemy.shield -= dmg
@@ -170,6 +181,10 @@ class ThunderwaveCard(Card):
         charge_buff = next((b for b in run.player.buffs if b.id == "arcane_charge"), None)
         charge_stacks = charge_buff.stacks if charge_buff else 0
         dmg += charge_stacks * 3
+        if "arcane_rune" in run.player.relics:
+            dmg += 1
+        if "mark_of_fury" in run.player.relics:
+            dmg += 2
         for enemy in run.enemies:
             if enemy.shield >= dmg:
                 enemy.shield -= dmg
@@ -259,6 +274,10 @@ class ArcaneSparkCard(Card):
         charge_buff = next((b for b in run.player.buffs if b.id == "arcane_charge"), None)
         charge_stacks = charge_buff.stacks if charge_buff else 0
         dmg += charge_stacks * 3
+        if "arcane_rune" in run.player.relics:
+            dmg += 1
+        if "mark_of_fury" in run.player.relics:
+            dmg += 2
         engine._damage_target(run, target, dmg)
         engine._draw_cards(run.player, 1)
         name = engine._get_target_name(run, target)
@@ -277,13 +296,65 @@ class OverchargeCard(Card):
         buff_info = BUFF_CONFIG.get("arcane_charge", {})
         buff_name = buff_info.get("name", "奥术充能")
         buff_desc = buff_info.get("desc", "法术伤害 +3")
-        engine._add_buff_to(run.player, "arcane_charge", buff_name, buff_desc)
+        engine._add_buff_to(run.player, "arcane_charge", "奥术充能", "法术伤害 +3")
         cfg = CARD_CONFIG.get(self.id, {})
         return cfg.get("feedback", "使用了【过载充能】，获得了【奥术充能】buff（法术伤害 +3，可叠加）。")
 
+class DoomsdayJudgmentCard(Card):
+    def execute(self, run, target, engine) -> str:
+        dmg = 18
+        charge_buff = next((b for b in run.player.buffs if b.id == "arcane_charge"), None)
+        charge_stacks = charge_buff.stacks if charge_buff else 0
+        dmg += charge_stacks * 3
+        if "arcane_rune" in run.player.relics:
+            dmg += 1
+        if "mark_of_fury" in run.player.relics:
+            dmg += 2
+        for enemy in list(run.enemies):
+            if enemy.shield >= dmg:
+                enemy.shield -= dmg
+            else:
+                enemy.hp -= (dmg - enemy.shield)
+                enemy.shield = 0
+            engine._add_buff_to(enemy, "stun", "眩晕", "无法行动", 1)
+        dead_enemies = [e for e in run.enemies if e.hp <= 0]
+        for de in dead_enemies:
+            run.player.graveyard.append("enemy:" + de.name)
+        run.enemies = [e for e in run.enemies if e.hp > 0]
+        cfg = CARD_CONFIG.get(self.id, {})
+        feedback_tmpl = cfg.get("feedback")
+        if feedback_tmpl:
+            return feedback_tmpl.format(dmg=dmg)
+        return f"释放末日审判！对所有敌人造成了 {dmg} 点伤害并眩晕他们一回合。"
+
+class TimeWarpCard(Card):
+    def execute(self, run, target, engine) -> str:
+        p = run.player
+        max_hand = 9 if "mask_of_void" in p.relics else 12
+        p.draw_pile.extend(p.discard_pile)
+        p.draw_pile.extend(p.hand)
+        p.discard_pile.clear()
+        p.hand.clear()
+        import random
+        random.shuffle(p.draw_pile)
+        before = len(p.hand)
+        engine._draw_cards(p, max_hand)
+        after = len(p.hand)
+        draw_count = after - before
+        cfg = CARD_CONFIG.get(self.id, {})
+        feedback_tmpl = cfg.get("feedback")
+        if feedback_tmpl:
+            return feedback_tmpl.format(draw_count=draw_count)
+        return f"时光倒流！已将所有卡牌重新洗回抽牌堆，并重新抽取了 {draw_count} 张牌。"
+
+class MagicNetworkCard(Card):
+    def execute(self, run, target, engine) -> str:
+        engine._add_buff_to(run.player, "magic_network", "魔网天成", "本回合内每使用一张法术牌，对所有敌人造成 3 点伤害，获得 3 点护盾。")
+        cfg = CARD_CONFIG.get(self.id, {})
+        return cfg.get("feedback", "使用了【魔网天成】，本回合内你的法术将与魔网产生共鸣。")
+
 ALL_CARDS = {}
 
-# 基于 CARD_CONFIG 动态装配 ALL_CARDS 的字典
 for cid, cfg in CARD_CONFIG.items():
     name = cfg["name"]
     color = cfg["color"]
@@ -336,5 +407,11 @@ for cid, cfg in CARD_CONFIG.items():
         ALL_CARDS[cid] = ArcaneSparkCard(cid, name, color, ctype, cost_a, cost_ba, desc=desc)
     elif cid == "overcharge":
         ALL_CARDS[cid] = OverchargeCard(cid, name, color, ctype, cost_a, cost_ba, exhaust=exhaust, desc=desc)
+    elif cid == "doomsday_judgment":
+        ALL_CARDS[cid] = DoomsdayJudgmentCard(cid, name, color, ctype, cost_a, cost_ba, desc=desc)
+    elif cid == "time_warp":
+        ALL_CARDS[cid] = TimeWarpCard(cid, name, color, ctype, cost_a, cost_ba, desc=desc)
+    elif cid == "magic_network":
+        ALL_CARDS[cid] = MagicNetworkCard(cid, name, color, ctype, cost_a, cost_ba, desc=desc)
 
     ALL_CARDS[cid].rarity = rarity

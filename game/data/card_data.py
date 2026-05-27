@@ -374,5 +374,36 @@ CARD_CONFIG = {
         "rarity": "rare",
         "exhaust": True,
         "feedback": "使用了【过载充能】，获得了【奥术充能】buff（法术伤害 +3，可叠加）。"
+    },
+    "doomsday_judgment": {
+        "name": "末日审判",
+        "color": "wizard",
+        "type": "spell",
+        "cost_a": 3,
+        "cost_ba": 0,
+        "desc": "对所有敌人造成 18 点伤害并眩晕他们 1 回合。消耗。",
+        "rarity": "legendary",
+        "exhaust": True,
+        "feedback": "释放末日审判！对所有敌人造成了 {dmg} 点伤害并眩晕他们一回合。"
+    },
+    "time_warp": {
+        "name": "时光倒流",
+        "color": "wizard",
+        "type": "spell",
+        "cost_a": 0,
+        "cost_ba": 0,
+        "desc": "将所有手牌与弃牌堆重新洗回抽牌堆，并重新抽牌直到抽至手牌上限。",
+        "rarity": "legendary",
+        "feedback": "时光倒流！已将所有卡牌重新洗回抽牌堆，并重新抽取了 {draw_count} 张牌。"
+    },
+    "magic_network": {
+        "name": "魔网天成",
+        "color": "wizard",
+        "type": "ability",
+        "cost_a": 2,
+        "cost_ba": 0,
+        "desc": "本回合内，你每使用一张法术牌，便对所有敌人造成 3 点伤害，获得 3 点护盾。",
+        "rarity": "legendary",
+        "feedback": "使用了【魔网天成】，本回合内你的法术将与魔网产生共鸣。"
     }
 }
