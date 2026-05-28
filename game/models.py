@@ -37,6 +37,7 @@ class Card:
     rarity: str = "common"
     fleeting: bool = False
     agile: bool = False
+    retain: bool = False
 
     def execute(self, run: 'GameRun', target: Optional[str] = None, engine = None) -> str:
         return ""

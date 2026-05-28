@@ -17,9 +17,10 @@ NEUTRAL_CARD_CONFIG = {
         "type": "spell",
         "cost_a": 0,
         "cost_ba": 1,
-        "desc": "恢复 4 点生命值。",
+        "desc": "恢复 4 点生命值。保留。",
         "rarity": "common",
         "heal_amount": 4,
+        "retain": True,
         "feedback": "为【{target}】恢复了 {heal_amount} 点生命值。"
     },
     "get_ready": {

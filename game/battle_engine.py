@@ -533,6 +533,16 @@ class BattleEngine:
             return "❌ 只有在战斗中才能结束回合。"
         p = run.player
 
+        from .card_impl import ALL_CARDS
+        retained = []
+        for cid in p.hand:
+            card = ALL_CARDS.get(cid)
+            if card and getattr(card, "retain", False):
+                retained.append(cid)
+            else:
+                p.discard_pile.append(cid)
+        p.hand = retained
+
         from .amulet_impl import ALL_AMULETS
         for ak, av in list(p.amulets.items()):
             template = ALL_AMULETS.get(av.id)
@@ -560,15 +570,6 @@ class BattleEngine:
         else:
             p.shield = 0
 
-        for enemy in run.enemies:
-            if enemy.shield > 0:
-                lost = enemy.shield - (enemy.shield // 2)
-                enemy.shield = enemy.shield // 2
-                if lost > 0:
-                    decay_msgs.append(f"【{enemy.name}】失去 {lost} 点护盾")
-            else:
-                enemy.shield = 0
-
         decay_info = ""
         if decay_msgs:
             decay_info = "🛡️ 护盾流失：" + "，".join(decay_msgs) + "\n"
@@ -588,7 +589,7 @@ class BattleEngine:
             elif mv.id == "arcane_golem":
                 mv.atk = 6
 
-        self._draw_cards(p, 3)
+        self._draw_cards(p, 6)
         self._roll_enemy_intent(run)
         run.node_data["cards_played_this_turn"] = 0
         self.save_manager.save_save(run.user_id, run)
@@ -605,6 +606,18 @@ class BattleEngine:
 
     def _enemy_turn(self, run: GameRun) -> str:
         logs = []
+        decay_enemies = []
+        for enemy in run.enemies:
+            if enemy.hp > 0 and enemy.shield > 0:
+                lost = enemy.shield - (enemy.shield // 2)
+                enemy.shield = enemy.shield // 2
+                if lost > 0:
+                    decay_enemies.append(f"【{enemy.name}】失去 {lost} 点护盾")
+            else:
+                enemy.shield = 0
+        if decay_enemies:
+            logs.append("🛡️ 护盾流失：" + "，".join(decay_enemies))
+
         active_enemies = list(run.enemies)
         for idx, enemy in enumerate(active_enemies):
             if enemy.hp <= 0:

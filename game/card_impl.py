@@ -471,6 +471,7 @@ for cid, cfg in CARD_CONFIG.items():
     exhaust = cfg.get("exhaust", False)
     fleeting = cfg.get("fleeting", False)
     agile = cfg.get("agile", False)
+    retain = cfg.get("retain", False)
 
     if cid == "dagger_throw":
         ALL_CARDS[cid] = SpellDamageCard(cid, name, color, ctype, cost_a, cost_ba, cfg["base_dmg"], is_fire=False, desc=desc)
@@ -531,3 +532,4 @@ for cid, cfg in CARD_CONFIG.items():
     ALL_CARDS[cid].exhaust = exhaust
     ALL_CARDS[cid].fleeting = fleeting
     ALL_CARDS[cid].agile = agile
+    ALL_CARDS[cid].retain = retain
