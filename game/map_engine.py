@@ -246,7 +246,7 @@ class MapEngine:
         if "gold_compass" in run.player.relics:
             discount *= 0.6
         if "greedy_contract" in run.player.relics:
-            discount *= 0.8
+            discount *= 0.6
             
         for cid in shop_cards:
             card = ALL_CARDS[cid]
@@ -493,7 +493,7 @@ class MapEngine:
         if "gold_compass" in p.relics:
             discount *= 0.6
         if "greedy_contract" in p.relics:
-            discount *= 0.8
+            discount *= 0.6
         p.gold -= int(30 * discount)
         
         items = run.node_data.get("items", [])

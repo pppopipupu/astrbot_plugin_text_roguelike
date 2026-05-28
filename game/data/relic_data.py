@@ -38,7 +38,7 @@ RELIC_CONFIG = {
     "greedy_contract": {
         "name": "贪婪契约",
         "rarity": "epic",
-        "desc": "奇妙商店中所有商品价格额外享受 8 折优惠，但每场战斗开始时扣除 3 点生命值。",
+        "desc": "奇妙商店中所有商品价格额外享受 6 折优惠，但每场战斗开始时扣除 3 点生命值。",
         "price": 100
     },
     "mask_of_void": {
