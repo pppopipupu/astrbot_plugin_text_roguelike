@@ -1,5 +1,5 @@
 from ..models import GameRun, UserStats
-from .menu import render_menu, render_card_library, render_deck, render_stats
+from .menu import render_menu, render_card_library, render_deck, render_stats, render_help
 from .battle import render_battle, render_detailed_battle
 from .map import render_map_select, render_start_ancient, render_ancient
 from .explore import render_event, render_shop, render_rest, render_reward, render_treasure
@@ -9,6 +9,10 @@ class GameRenderer:
     @staticmethod
     def render_menu() -> str:
         return render_menu()
+
+    @staticmethod
+    def render_help() -> str:
+        return render_help()
 
     @staticmethod
     def render_card_library() -> str:

@@ -266,14 +266,14 @@ class MyPlugin(Star):
             parts = ["选择"] + parts
         sub = parts[0]
         
-        if sub == "开启":
+        if sub in ("开启", "start"):
             run = self.save_manager.load_save(user_id)
             if run:
                 if len(parts) > 1 and parts[1] == "确认":
                     new_run = self.engine.start_new_game(user_id)
                     yield event.plain_result("已重新开始新的一局游戏。\n" + GameRenderer.render_game(new_run))
                 else:
-                    yield event.plain_result("⚠️ 你当前已有一局正在进行中的游戏。若要强制重新开始并覆盖存档，请输入：\n/rogue 开启 确认")
+                    yield event.plain_result("⚠️ 你当前已有一局正在进行中的游戏。若要强制重新开始并覆盖存档，请输入：\n/rogue 开启 确认（或 /rogue start 确认）")
             else:
                 new_run = self.engine.start_new_game(user_id)
                 yield event.plain_result(GameRenderer.render_game(new_run))
@@ -294,6 +294,9 @@ class MyPlugin(Star):
                 
         elif sub == "总览":
             yield event.plain_result(GameRenderer.render_card_library())
+            
+        elif sub in ("帮助", "help"):
+            yield event.plain_result(GameRenderer.render_help())
             
         elif sub in ("使用", "p"):
             run = self.save_manager.load_save(user_id)
@@ -465,4 +468,4 @@ class MyPlugin(Star):
                     yield event.plain_result(GameRenderer.render_detailed_battle(run))
                 
         else:
-            yield event.plain_result("❓ 未知子命令。输入 /rogue 获取帮助。")
+            yield event.plain_result("❓ 未知子命令。输入 /rogue 帮助 或 /rogue help 获取帮助。")
