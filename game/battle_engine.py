@@ -548,6 +548,28 @@ class BattleEngine:
             self.save_manager.delete_save(run.user_id)
             return f"{enemy_actions}\n💀 冒险结束。你被击败了！存档已被清除。"
 
+        decay_msgs = []
+        if p.shield > 0:
+            lost = p.shield - (p.shield // 2)
+            p.shield = p.shield // 2
+            if lost > 0:
+                decay_msgs.append(f"玩家失去 {lost} 点护盾")
+        else:
+            p.shield = 0
+
+        for enemy in run.enemies:
+            if enemy.shield > 0:
+                lost = enemy.shield - (enemy.shield // 2)
+                enemy.shield = enemy.shield // 2
+                if lost > 0:
+                    decay_msgs.append(f"【{enemy.name}】失去 {lost} 点护盾")
+            else:
+                enemy.shield = 0
+
+        decay_info = ""
+        if decay_msgs:
+            decay_info = "🛡️ 护盾流失：" + "，".join(decay_msgs) + "\n"
+
         p.buffs = [b for b in p.buffs if b.id != "magic_network"]
         p.actions = 2 + (1 if "energy_core" in p.relics else 0)
         p.bonus_actions = 1 + (1 if "unstable_crystal" in p.relics else 0)
@@ -567,7 +589,7 @@ class BattleEngine:
         self._roll_enemy_intent(run)
         run.node_data["cards_played_this_turn"] = 0
         self.save_manager.save_save(run.user_id, run)
-        return f"{enemy_actions}\n进入玩家回合。已重置动作并抽取手牌。"
+        return f"{enemy_actions}\n{decay_info}进入玩家回合。已重置动作并抽取手牌。"
 
     def _trigger_take_damage_amulets(self, run, source: str, amount: int, logs: List[str]):
         from .amulet_impl import ALL_AMULETS
