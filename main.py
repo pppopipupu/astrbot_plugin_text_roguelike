@@ -101,6 +101,40 @@ class MyPlugin(Star):
         if parts[0].isdigit():
             parts = ["选择"] + parts
         sub = parts[0]
+
+        if run.node_type == "battle" and run.node_data.get("pending_discard"):
+            if sub not in ("选择", "c"):
+                return "❌ 你必须先丢弃一张卡牌。请输入：选择 <手牌序号>（如：选择 1）", False
+            if len(parts) < 2:
+                return "❌ 请提供手牌序号，例如：选择 1", False
+            try:
+                idx = int(parts[1])
+            except ValueError:
+                return "❌ 序号必须是数字。", False
+            p = run.player
+            if idx < 1 or idx > len(p.hand):
+                return f"❌ 无效的手牌序号。你当前手牌有 {len(p.hand)} 张。", False
+            cid = p.hand.pop(idx - 1)
+            try:
+                from .game.card_impl import ALL_CARDS
+            except ImportError:
+                from game.card_impl import ALL_CARDS
+            card_name = ALL_CARDS[cid].name if cid in ALL_CARDS else "未知卡牌"
+            run.node_data.pop("pending_discard", None)
+            run.node_data.pop("pending_discard_source", None)
+            agile_msg = self.engine._discard_card(run, cid)
+            self.save_manager.save_save(user_id, run)
+            res = f"🧹 你丢弃了手牌中的【{card_name}】。"
+            if agile_msg:
+                res += f"\n{agile_msg}"
+            if self.engine.is_battle_won(run):
+                self.engine._handle_battle_win(run)
+                if run.node_type == "victory":
+                    return f"{res}\n🎉 恭喜你击败了远古红龙，通关成功！", True
+                else:
+                    return f"{res}\n🎉 战斗胜利！你击败了敌方所有单位。", True
+            return res, False
+
         if sub in ("使用", "p"):
             if len(parts) < 2:
                 return "❌ 请提供手牌序号，例如：使用 1", False

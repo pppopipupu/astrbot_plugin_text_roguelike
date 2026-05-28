@@ -264,7 +264,7 @@ class BattleEngine:
 
         if card.type == "spell":
             if target is None:
-                if card.id in ("dagger_throw", "fire_bolt", "fireball", "thunderwave", "magic_missile", "quick_strike", "arcane_spark"):
+                if card.id in ("dagger_throw", "fire_bolt", "fireball", "thunderwave", "magic_missile", "quick_strike", "arcane_spark", "agile_strike", "fleeting_spark"):
                     target = self._get_first_alive_enemy(run)
                 else:
                     target = "p0"
@@ -304,7 +304,10 @@ class BattleEngine:
         p.actions -= req_a
         p.bonus_actions -= req_ba
         p.hand.pop(hand_idx - 1)
-        if getattr(card, "exhaust", False):
+        if getattr(card, "fleeting", False):
+            if cid in p.deck:
+                p.deck.remove(cid)
+        elif getattr(card, "exhaust", False):
             p.exhaust_pile.append(cid)
         else:
             p.discard_pile.append(cid)
@@ -371,7 +374,7 @@ class BattleEngine:
             return f"❌ 你的动作资源不足（需要 {req_a}A {req_ba}BA，当前 {p.actions}A {p.bonus_actions}BA）。"
 
         if target is None:
-            if card.id in ("dagger_throw", "fire_bolt", "fireball", "thunderwave", "magic_missile", "quick_strike", "arcane_spark"):
+            if card.id in ("dagger_throw", "fire_bolt", "fireball", "thunderwave", "magic_missile", "quick_strike", "arcane_spark", "agile_strike", "fleeting_spark"):
                 target = self._get_first_alive_enemy(run)
             else:
                 target = "p0"
@@ -384,7 +387,11 @@ class BattleEngine:
         p.actions -= req_a
         p.bonus_actions -= req_ba
         p.hand.pop(hand_idx - 1)
-        p.discard_pile.append(cid)
+        if getattr(card, "fleeting", False):
+            if cid in p.deck:
+                p.deck.remove(cid)
+        else:
+            p.discard_pile.append(cid)
 
         res = card.special_action(run, target)
         self.save_manager.save_save(run.user_id, run)
@@ -487,6 +494,36 @@ class BattleEngine:
 
     def _execute_card_effect(self, run: GameRun, card: Card, target: Optional[str] = None) -> str:
         return card.execute(run, target, self)
+
+    def _discard_card(self, run: GameRun, cid: str) -> str:
+        p = run.player
+        from .card_impl import ALL_CARDS
+        card = ALL_CARDS.get(cid)
+        if not card:
+            p.discard_pile.append(cid)
+            return ""
+
+        if getattr(card, "agile", False):
+            target = None
+            if card.type == "spell":
+                if card.id in ("dagger_throw", "fire_bolt", "fireball", "thunderwave", "magic_missile", "quick_strike", "arcane_spark", "agile_strike", "fleeting_spark"):
+                    target = self._get_first_alive_enemy(run)
+                else:
+                    target = "p0"
+                if target == "0" or target == "e0":
+                    target = "e1"
+            res = self._execute_card_effect(run, card, target)
+            if getattr(card, "fleeting", False):
+                if cid in p.deck:
+                    p.deck.remove(cid)
+            elif getattr(card, "exhaust", False):
+                p.exhaust_pile.append(cid)
+            else:
+                p.discard_pile.append(cid)
+            return f"✨ 触发[灵巧]：丢弃【{card.name}】时自动打出！效果：{res}"
+        else:
+            p.discard_pile.append(cid)
+            return ""
 
     def end_turn(self, run: GameRun) -> str:
         if run.node_type != "battle":

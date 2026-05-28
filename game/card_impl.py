@@ -263,14 +263,19 @@ class CalculatedGambleCard(Card):
         discard_count = len(p.hand)
         cfg = CARD_CONFIG.get(self.id, {})
         if discard_count > 0:
-            for cid in p.hand:
-                p.discard_pile.append(cid)
+            agile_effects = []
+            hand_cards = list(p.hand)
             p.hand.clear()
+            for cid in hand_cards:
+                effect_msg = engine._discard_card(run, cid)
+                if effect_msg:
+                    agile_effects.append(effect_msg)
             engine._draw_cards(p, discard_count)
+            agile_str = "\n" + "\n".join(agile_effects) if agile_effects else ""
             feedback_tmpl = cfg.get("feedback")
             if feedback_tmpl:
-                return feedback_tmpl.format(discard_count=discard_count)
-            return f"丢弃了所有的手牌（共 {discard_count} 张），并重新抽取了 {discard_count} 张牌。"
+                return feedback_tmpl.format(discard_count=discard_count) + agile_str
+            return f"丢弃了所有的手牌（共 {discard_count} 张），并重新抽取了 {discard_count} 张牌。" + agile_str
         return cfg.get("feedback_empty", "手牌已空，没有丢弃任何卡牌。")
 
 class ManaPotionCard(Card):
@@ -427,6 +432,32 @@ class ArchmageWishCard(Card):
         cfg = CARD_CONFIG.get(self.id, {})
         return cfg.get("feedback", "完成了大法师的祈愿！获得了 10 点护盾，【祈愿奥术】法术伤害 +4，并抽了 2 张牌。")
 
+class FleetingSparkCard(Card):
+    def execute(self, run, target, engine) -> str:
+        dmg = 6
+        charge_buff = next((b for b in run.player.buffs if b.id == "arcane_charge"), None)
+        charge_stacks = charge_buff.stacks if charge_buff else 0
+        dmg += charge_stacks * 3
+        if "arcane_rune" in run.player.relics:
+            dmg += 1
+        if "mark_of_fury" in run.player.relics:
+            dmg += 2
+        if "unstable_crystal" in run.player.relics:
+            dmg += 1
+        wish_buff = next((b for b in run.player.buffs if b.id == "wish_power"), None)
+        wish_stacks = wish_buff.stacks if wish_buff else 0
+        dmg += wish_stacks * 4
+        engine._damage_target(run, target, dmg)
+        name = engine._get_target_name(run, target)
+        engine._draw_cards(run.player, 2)
+        p = run.player
+        if p.hand:
+            run.node_data["pending_discard"] = True
+            run.node_data["pending_discard_source"] = self.id
+            return f"使用了【{self.name}】，对【{name}】造成了 {dmg} 点伤害，并抽了 2 张牌。请选择一张手牌丢弃。输入 选择 <手牌序号> 进行丢弃。"
+        else:
+            return f"使用了【{self.name}】，对【{name}】造成了 {dmg} 点伤害，并抽了 2 张牌，但手牌已空，无需丢弃。"
+
 ALL_CARDS = {}
 
 for cid, cfg in CARD_CONFIG.items():
@@ -438,6 +469,8 @@ for cid, cfg in CARD_CONFIG.items():
     desc = cfg["desc"]
     rarity = cfg.get("rarity", "common")
     exhaust = cfg.get("exhaust", False)
+    fleeting = cfg.get("fleeting", False)
+    agile = cfg.get("agile", False)
 
     if cid == "dagger_throw":
         ALL_CARDS[cid] = SpellDamageCard(cid, name, color, ctype, cost_a, cost_ba, cfg["base_dmg"], is_fire=False, desc=desc)
@@ -473,8 +506,10 @@ for cid, cfg in CARD_CONFIG.items():
         ALL_CARDS[cid] = EchoFormCard(cid, name, color, ctype, cost_a, cost_ba, desc=desc)
     elif cid == "calculated_gamble":
         ALL_CARDS[cid] = CalculatedGambleCard(cid, name, color, ctype, cost_a, cost_ba, desc=desc)
-    elif cid == "quick_strike":
+    elif cid in ("quick_strike", "agile_strike"):
         ALL_CARDS[cid] = SpellDamageCard(cid, name, color, ctype, cost_a, cost_ba, cfg["base_dmg"], is_fire=False, desc=desc)
+    elif cid == "fleeting_spark":
+        ALL_CARDS[cid] = FleetingSparkCard(cid, name, color, ctype, cost_a, cost_ba, desc=desc)
     elif cid == "mana_potion":
         ALL_CARDS[cid] = ManaPotionCard(cid, name, color, ctype, cost_a, cost_ba, exhaust=exhaust, desc=desc)
     elif cid == "arcane_spark":
@@ -493,3 +528,6 @@ for cid, cfg in CARD_CONFIG.items():
         ALL_CARDS[cid] = ArchmageWishCard(cid, name, color, ctype, cost_a, cost_ba, desc=desc)
 
     ALL_CARDS[cid].rarity = rarity
+    ALL_CARDS[cid].exhaust = exhaust
+    ALL_CARDS[cid].fleeting = fleeting
+    ALL_CARDS[cid].agile = agile

@@ -255,8 +255,10 @@ class GhostArchmageTemplate(EnemyTemplate):
                 discarded = p.hand.pop(random.randint(0, len(p.hand) - 1))
                 from .card_impl import ALL_CARDS
                 card_name = ALL_CARDS[discarded].name if discarded in ALL_CARDS else "未知卡牌"
-                p.discard_pile.append(discarded)
+                agile_msg = engine._discard_card(run, discarded)
                 logs.append(f"【{enemy.name}】施展虹吸，迫使玩家随机丢弃了卡牌【{card_name}】。")
+                if agile_msg:
+                    logs.append(agile_msg)
 
 class ShadowFiendTemplate(EnemyTemplate):
     def roll_intent(self, run, engine, enemy) -> Tuple[str, int, str]:

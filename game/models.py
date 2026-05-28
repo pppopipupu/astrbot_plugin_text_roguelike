@@ -35,6 +35,8 @@ class Card:
     desc: str = ""
     exhaust: bool = False
     rarity: str = "common"
+    fleeting: bool = False
+    agile: bool = False
 
     def execute(self, run: 'GameRun', target: Optional[str] = None, engine = None) -> str:
         return ""

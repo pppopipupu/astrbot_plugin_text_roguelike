@@ -82,3 +82,6 @@ class GameEngine:
 
     def _handle_battle_win(self, run: GameRun):
         self.battle_engine._handle_battle_win(run)
+
+    def _discard_card(self, run: GameRun, cid: str) -> str:
+        return self.battle_engine._discard_card(run, cid)

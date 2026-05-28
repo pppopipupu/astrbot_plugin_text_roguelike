@@ -89,7 +89,11 @@ def render_battle(run: GameRun) -> str:
                 }
                 rname = rarity_map.get(getattr(card, "rarity", "common"), "普通")
                 lines.append(f" [{idx}] {color_ch} {card.name} <{rname}> (消耗: {cost_str}) - {card.desc}")
-    lines.append("━━━━━━━━━━━━━━━━━━━━")
+    if run.node_data.get("pending_discard"):
+        lines.append("⚠️ 状态：请选择一张手牌丢弃！请输入：/rogue 选择 <手牌序号>")
+        lines.append("━━━━━━━━━━━━━━━━━━━━")
+    else:
+        lines.append("━━━━━━━━━━━━━━━━━━━━")
     if p.fold_guide:
         lines.append("💬 提示：操作指南已折叠。输入 /rogue 折叠 可展开。")
     else:
