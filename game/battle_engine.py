@@ -397,7 +397,7 @@ class BattleEngine:
         self.save_manager.save_save(run.user_id, run)
         return res
 
-    def minion_attack(self, run: GameRun, my_grid: str, opp_grid: str) -> str:
+    def minion_attack(self, run: GameRun, my_grid: str, opp_grid: Optional[str] = None) -> str:
         p = run.player
         if run.node_type != "battle":
             return "❌ 只有在战斗中才能控制随从攻击。"
@@ -406,6 +406,9 @@ class BattleEngine:
         m = p.minions[my_grid]
         if m.attack_actions < 1:
             return "❌ 该随从本回合已经没有可用的攻击动作（AA）点。"
+
+        if opp_grid is None:
+            opp_grid = self._get_first_alive_enemy(run)
 
         m.attack_actions -= 1
         try:

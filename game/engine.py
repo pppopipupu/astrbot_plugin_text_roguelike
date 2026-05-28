@@ -62,7 +62,7 @@ class GameEngine:
     def play_special_action(self, run: GameRun, hand_idx: int, target: Optional[str] = None) -> str:
         return self.battle_engine.play_special_action(run, hand_idx, target)
 
-    def minion_attack(self, run: GameRun, my_grid: str, opp_grid: str) -> str:
+    def minion_attack(self, run: GameRun, my_grid: str, opp_grid: Optional[str] = None) -> str:
         return self.battle_engine.minion_attack(run, my_grid, opp_grid)
 
     def minion_skill(self, run: GameRun, my_grid: str, skill_idx: int = 1, target: Optional[str] = None) -> str:

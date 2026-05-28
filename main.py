@@ -181,9 +181,7 @@ class MyPlugin(Star):
                     return "\n".join(results) + "\n🎉 战斗胜利！", True
 
                 if action in ("攻击", "a"):
-                    if len(parts) < 4:
-                        return "❌ 请指定攻击的目标（格子编号，0表示领主）。", False
-                    opp_grid = parts[3]
+                    opp_grid = parts[3] if len(parts) > 3 else None
                     res = self.engine.minion_attack(run, g, opp_grid)
                     results.append(res)
                 elif action in ("技能", "s"):
