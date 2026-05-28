@@ -5,8 +5,8 @@
     "default": true
   },
   "shortcut_prefix": {
-    "description": "快捷触发前缀",
-    "type": "string",
-    "default": ".rogue"
+    "description": "快捷触发前缀列表",
+    "type": "list",
+    "default": [".rogue"]
   }
 }

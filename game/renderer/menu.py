@@ -139,6 +139,7 @@ def render_deck(run: GameRun) -> str:
     return "\n".join(lines)
 
 def render_stats(stats: UserStats) -> str:
+    mode_str = "开启" if getattr(stats, "rogue_mode", False) else "关闭"
     lines = [
         "━━━━━━━━━━━━━━━━━━━━",
         "📊 魔法肉鸽卡牌生涯统计",
@@ -146,6 +147,7 @@ def render_stats(stats: UserStats) -> str:
         f"💥 累计输出伤害：{stats.total_damage} 点",
         f"💀 累计击败怪物：{stats.total_kills} 只",
         f"🧗 累计游玩层数：{stats.total_stages} 层",
+        f"🎮 免前缀肉鸽模式：【{mode_str}】 (使用 /rogue mode 切换)",
         "",
         "这些数据属于你的勇士生涯，不会随着放弃游戏而消失。",
         "━━━━━━━━━━━━━━━━━━━━"
@@ -163,10 +165,11 @@ def render_help() -> str:
         "👉 开启 / start -- 开始一局新游戏（若有存档可输入 开启 确认）",
         "👉 帮助 / help -- 显示本帮助指令列表",
         "👉 状态 / s -- 查看当前的局内游戏界面与属性状态",
-        "👉 牌组 -- 查看当前拥有的全部卡组及卡牌序号",
-        "👉 总览 [卡牌/遗物] -- 查看全部卡牌或遗物总览信息（无参数默认只展示卡牌）",
+        "👉 牌组 / deck -- 查看当前拥有的全部卡组及卡牌序号",
+        "👉 总览 / overview [卡牌/遗物] -- 查看全部卡牌或遗物总览信息",
         "👉 统计 / stat / stats -- 查看勇士生涯累计统计数据",
-        "👉 放弃 -- 放弃当前战局（需输入 放弃 确认 彻底清空存档）",
+        "👉 放弃 / abandon -- 放弃当前战局（需输入 放弃 确认 彻底清空存档）",
+        "👉 模式 / mode -- 切换个人免前缀快捷指令模式",
         "",
         "【局内与战斗指令】",
         "👉 使用 / p <手牌序号> [目标] -- 使用或打出指定手牌。例如：使用 1",

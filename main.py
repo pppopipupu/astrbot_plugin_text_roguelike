@@ -77,23 +77,66 @@ class MyPlugin(Star):
         if not enable:
             return
         
-        prefix = self.config.get("shortcut_prefix", ".rogue")
-        message_str = event.message_str.strip()
-        idx = message_str.find(prefix)
-        if idx == -1:
-            return
-            
-        event.stop_event()
+        user_id = event.get_sender_id()
+        stats = self.save_manager.load_stats(user_id)
+        rogue_mode = stats.rogue_mode if stats else False
         
-        cmd_part = message_str[idx:]
-        parts = cmd_part.split()
-        if parts and parts[0].lower().startswith(prefix.lower()):
-            parts[0] = parts[0][len(prefix):]
+        prefix_config = self.config.get("shortcut_prefix", ".rogue")
+        if isinstance(prefix_config, list):
+            prefixes = prefix_config
+        elif isinstance(prefix_config, str):
+            prefixes = [prefix_config]
+        else:
+            prefixes = [".rogue"]
+            
+        message_str = event.message_str.strip()
+        sorted_prefixes = sorted([p for p in prefixes if p], key=len, reverse=True)
+        matched_prefix = None
+        matched_idx = -1
+        
+        for p in sorted_prefixes:
+            idx = message_str.find(p)
+            if idx == -1:
+                continue
+            cmd_part = message_str[idx:]
+            parts = cmd_part.split()
+            if parts and parts[0].lower().startswith(p.lower()):
+                matched_prefix = p
+                matched_idx = idx
+                break
+                
+        if matched_prefix is not None:
+            event.stop_event()
+            cmd_part = message_str[matched_idx:]
+            parts = cmd_part.split()
+            parts[0] = parts[0][len(matched_prefix):]
             if not parts[0]:
                 parts = parts[1:]
-                
-        async for res in self._handle_rogue_logic(event, parts):
-            yield res
+            async for res in self._handle_rogue_logic(event, parts):
+                yield res
+            return
+            
+        if rogue_mode:
+            parts = message_str.split()
+            if parts:
+                first_word = parts[0].lower()
+                is_game_cmd = False
+                valid_cmds = {
+                    "开启", "start", "状态", "s", "牌组", "deck", "总览", "overview", 
+                    "帮助", "help", "使用", "p", "随从", "m", "选择", "c", "特殊", "sa", 
+                    "结束", "e", "折叠", "f", "fold", "队列", "q", "queue", "统计", "stat", 
+                    "stats", "查询", "query", "info", "i", "放弃", "abandon", "mode", "模式"
+                }
+                if first_word in valid_cmds:
+                    is_game_cmd = True
+                elif first_word.isdigit():
+                    run = self.save_manager.load_save(user_id)
+                    if run is not None:
+                        is_game_cmd = True
+                if is_game_cmd:
+                    event.stop_event()
+                    async for res in self._handle_rogue_logic(event, parts):
+                        yield res
 
     def _execute_sub_action(self, user_id, run, parts: list[str]) -> tuple[str, bool]:
         set_user_id(user_id)
@@ -318,14 +361,14 @@ class MyPlugin(Star):
             else:
                 yield event.plain_result(GameRenderer.render_game(run))
                 
-        elif sub == "牌组":
+        elif sub in ("牌组", "deck"):
             run = self.save_manager.load_save(user_id)
             if not run:
                 yield event.plain_result("❌ 你当前没有正在进行的游戏。输入 /rogue 开启 开始新游戏。")
             else:
                 yield event.plain_result(GameRenderer.render_deck(run))
                 
-        elif sub == "总览":
+        elif sub in ("总览", "overview"):
             if len(parts) > 1 and parts[1] in ("遗物", "relic", "relics"):
                 yield event.plain_result(GameRenderer.render_relic_library())
             else:
@@ -333,6 +376,13 @@ class MyPlugin(Star):
             
         elif sub in ("帮助", "help"):
             yield event.plain_result(GameRenderer.render_help())
+            
+        elif sub in ("mode", "模式"):
+            stats = self.save_manager.load_stats(user_id)
+            stats.rogue_mode = not stats.rogue_mode
+            self.save_manager.save_stats(user_id, stats)
+            status_str = "开启" if stats.rogue_mode else "关闭"
+            yield event.plain_result(f"✨ 免前缀肉鸽模式已{status_str}！此设置仅对你个人生效。")
             
         elif sub in ("使用", "p"):
             run = self.save_manager.load_save(user_id)
@@ -449,16 +499,16 @@ class MyPlugin(Star):
             else:
                 yield event.plain_result(res + "\n" + GameRenderer.render_game(run))
                 
-        elif sub == "放弃":
+        elif sub in ("放弃", "abandon"):
             run = self.save_manager.load_save(user_id)
             if not run:
                 yield event.plain_result("❌ 你当前没有正在进行的游戏。")
                 return
-            if len(parts) > 1 and parts[1] == "确认":
+            if len(parts) > 1 and parts[1] in ("确认", "confirm"):
                 self.save_manager.delete_save(user_id)
                 yield event.plain_result("已放弃当前局内游戏，当前进度已清空。")
             else:
-                yield event.plain_result("⚠️ 确认放弃当前游戏？放弃后进度将无法恢复。确认请输入：\n/rogue 放弃 确认")
+                yield event.plain_result("⚠️ 确认放弃当前游戏？放弃后进度将无法恢复。确认请输入：\n/rogue 放弃 确认（或 /rogue abandon confirm）")
 
         elif sub in ("折叠", "f", "fold"):
             run = self.save_manager.load_save(user_id)

@@ -25,6 +25,7 @@ class UserStats:
     total_damage: int = 0
     total_kills: int = 0
     total_stages: int = 0
+    rogue_mode: bool = False
 
 _stat_recorder = None
 

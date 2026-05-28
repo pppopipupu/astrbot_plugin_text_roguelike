@@ -31,7 +31,8 @@ class SaveManager:
             return UserStats(
                 total_damage=d.get("total_damage", 0),
                 total_kills=d.get("total_kills", 0),
-                total_stages=d.get("total_stages", 0)
+                total_stages=d.get("total_stages", 0),
+                rogue_mode=d.get("rogue_mode", False)
             )
         except:
             return UserStats()
