@@ -1,7 +1,7 @@
 import os
 import json
 from dataclasses import asdict
-from .models import GameRun, PlayerState, EnemyState, MinionState, AmuletState, BuffState, UserStats, current_user_id, register_stat_recorder
+from .models import GameRun, PlayerState, EnemyState, MinionState, AmuletState, BuffState, UserStats, current_user_id, register_stat_recorder, get_user_id
 
 class SaveManager:
     def __init__(self, data_dir: str = None):
@@ -206,7 +206,7 @@ class SaveManager:
         )
 
 def stat_recorder_callback(enemy_name: str, amount: int, is_defeat: bool):
-    user_id = current_user_id.get()
+    user_id = get_user_id()
     if not user_id:
         return
     mgr = SaveManager()

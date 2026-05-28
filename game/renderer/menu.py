@@ -14,7 +14,7 @@ def render_menu() -> str:
         "👉 /rogue 开启  -- 开始一局新游戏",
         "",
         "【其他命令】",
-        "👉 /rogue 总览  -- 查看全部卡牌信息",
+        "👉 /rogue 总览 [卡牌/遗物] -- 查看全部卡牌或遗物总览信息",
         "👉 /rogue 状态  -- 查看当前局内状态",
         "👉 /rogue 牌组  -- 查看当前拥有的卡组",
         "👉 /rogue 统计  -- 查看你的生涯统计数据",
@@ -65,6 +65,47 @@ def render_card_library() -> str:
     lines.append("")
     lines.append("【蓝色卡牌（法师）】")
     lines.extend(blue_spells)
+    lines.append("━━━━━━━━━━━━━━━━━━━━")
+    return "\n".join(lines)
+
+def render_relic_library() -> str:
+    from ..data.relic_data import RELIC_CONFIG
+    lines = [
+        "━━━━━━━━━━━━━━━━━━━━",
+        "🎒 魔法肉鸽遗物总览",
+        ""
+    ]
+    rarity_map = {
+        "common": "普通",
+        "rare": "稀有",
+        "epic": "珍奇",
+        "legendary": "传奇",
+        "mythic": "神器"
+    }
+    commons = []
+    rares = []
+    epics = []
+    for rid, relic in RELIC_CONFIG.items():
+        r = relic.get("rarity", "common")
+        rname = rarity_map.get(r, "普通")
+        name = relic.get("name", rid)
+        desc = relic.get("desc", "")
+        price = relic.get("price", 0)
+        info = f"• {name} <{rname}> 售价: {price}金币 - {desc}"
+        if r == "common":
+            commons.append(info)
+        elif r == "rare":
+            rares.append(info)
+        else:
+            epics.append(info)
+    lines.append("【普通遗物】")
+    lines.extend(commons)
+    lines.append("")
+    lines.append("【稀有遗物】")
+    lines.extend(rares)
+    lines.append("")
+    lines.append("【珍奇遗物】")
+    lines.extend(epics)
     lines.append("━━━━━━━━━━━━━━━━━━━━")
     return "\n".join(lines)
 
@@ -123,7 +164,7 @@ def render_help() -> str:
         "👉 帮助 / help -- 显示本帮助指令列表",
         "👉 状态 / s -- 查看当前的局内游戏界面与属性状态",
         "👉 牌组 -- 查看当前拥有的全部卡组及卡牌序号",
-        "👉 总览 -- 查看卡牌数据库的全部卡牌总览信息",
+        "👉 总览 [卡牌/遗物] -- 查看全部卡牌或遗物总览信息（无参数默认只展示卡牌）",
         "👉 统计 / stat / stats -- 查看勇士生涯累计统计数据",
         "👉 放弃 -- 放弃当前战局（需输入 放弃 确认 彻底清空存档）",
         "",

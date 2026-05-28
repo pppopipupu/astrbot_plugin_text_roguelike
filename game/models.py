@@ -1,8 +1,24 @@
 from dataclasses import dataclass, field, asdict
 from typing import List, Dict, Optional
 from contextvars import ContextVar
+import sys
 
-current_user_id: ContextVar[str] = ContextVar("current_user_id", default="")
+if not hasattr(sys, "_rogue_current_user_id"):
+    sys._rogue_current_user_id = ContextVar("current_user_id", default="")
+if not hasattr(sys, "_rogue_fallback_user_id"):
+    sys._rogue_fallback_user_id = ""
+
+current_user_id = sys._rogue_current_user_id
+
+def set_user_id(user_id: str):
+    current_user_id.set(user_id)
+    sys._rogue_fallback_user_id = user_id
+
+def get_user_id() -> str:
+    val = current_user_id.get()
+    if not val:
+        return getattr(sys, "_rogue_fallback_user_id", "")
+    return val
 
 @dataclass
 class UserStats:

@@ -12,9 +12,9 @@ except ImportError:
     from game.renderer import GameRenderer
 
 try:
-    from .game.models import current_user_id
+    from .game.models import current_user_id, set_user_id
 except ImportError:
-    from game.models import current_user_id
+    from game.models import current_user_id, set_user_id
 
 def split_by_comma_with_brackets(s: str) -> list[str]:
     parts = []
@@ -96,6 +96,7 @@ class MyPlugin(Star):
             yield res
 
     def _execute_sub_action(self, user_id, run, parts: list[str]) -> tuple[str, bool]:
+        set_user_id(user_id)
         if not parts:
             return "", False
         if parts[0].isdigit():
@@ -285,7 +286,7 @@ class MyPlugin(Star):
 
     async def _handle_rogue_logic(self, event: AstrMessageEvent, parts: list[str]):
         user_id = event.get_sender_id()
-        current_user_id.set(user_id)
+        set_user_id(user_id)
         if not parts:
             run = self.save_manager.load_save(user_id)
             if run:
@@ -325,7 +326,10 @@ class MyPlugin(Star):
                 yield event.plain_result(GameRenderer.render_deck(run))
                 
         elif sub == "总览":
-            yield event.plain_result(GameRenderer.render_card_library())
+            if len(parts) > 1 and parts[1] in ("遗物", "relic", "relics"):
+                yield event.plain_result(GameRenderer.render_relic_library())
+            else:
+                yield event.plain_result(GameRenderer.render_card_library())
             
         elif sub in ("帮助", "help"):
             yield event.plain_result(GameRenderer.render_help())
