@@ -143,3 +143,36 @@ def render_treasure(run: GameRun) -> str:
         lines.append("💬 离开指令：/rogue 选择 1")
     lines.append("━━━━━━━━━━━━━━━━━━━━")
     return "\n".join(lines)
+
+def render_card_select(run: GameRun) -> str:
+    p = run.player
+    data = run.node_data
+    title = data.get("title", "选择你的卡牌奖励")
+    relics_str = ""
+    if p.relics:
+        relics_str = "\n🎒 遗物：" + " ".join([f"【{get_relic_name(r)}】" for r in p.relics])
+    lines = [
+        "━━━━━━━━━━━━━━━━━━━━",
+        f"🎁 【{title}】",
+        f"玩家：❤️ HP {p.hp}/{p.max_hp} | 🪙 金币 {p.gold}" + relics_str,
+        ""
+    ]
+    desc = data.get("desc")
+    if desc:
+        lines.append(desc)
+        lines.append("")
+    cards = data.get("cards", [])
+    for idx, cid in enumerate(cards, 1):
+        card = ALL_CARDS.get(cid)
+        if card:
+            color_ch = "🔵" if card.color == "wizard" else "⚪"
+            lines.append(f" [{idx}] {color_ch} {card.name} ({card.desc})")
+    skip_idx = len(cards) + 1
+    lines.append(f" [{skip_idx}] 🚪 跳过卡牌选择")
+    lines.append("━━━━━━━━━━━━━━━━━━━━")
+    if p.fold_guide:
+        lines.append("💬 提示：操作指南已折叠。输入 /rogue 折叠 可展开。")
+    else:
+        lines.append("💬 选择指令：/rogue 选择 <序号>")
+    lines.append("━━━━━━━━━━━━━━━━━━━━")
+    return "\n".join(lines)

@@ -347,11 +347,16 @@ class MapEngine:
 
         elif run.node_type == "treasure":
             if run.node_data.get("state") == "pending_remove":
-                if option_idx < 1 or option_idx > len(p.deck):
+                counts = {}
+                for c_id in p.deck:
+                    counts[c_id] = counts.get(c_id, 0) + 1
+                sorted_items = sorted(counts.items())
+                if option_idx < 1 or option_idx > len(sorted_items):
                     return "❌ 无效的卡牌序号。"
+                cid = sorted_items[option_idx - 1][0]
                 from .card_impl import ALL_CARDS
-                removed_name = ALL_CARDS[p.deck[option_idx - 1]].name
-                p.deck.pop(option_idx - 1)
+                removed_name = ALL_CARDS[cid].name
+                p.deck.remove(cid)
                 
                 gold_gain = random.randint(20, 40)
                 p.gold += gold_gain
@@ -367,24 +372,19 @@ class MapEngine:
                         p.hp += 5
                         
                 card_pool = [cid for cid, c in ALL_CARDS.items() if c.rarity == "epic"]
-                got_card = random.choice(card_pool) if card_pool else "fireball"
-                p.deck.append(got_card)
+                reward_cards = random.sample(card_pool, 3) if len(card_pool) >= 3 else card_pool
                 
                 from .relic_impl import get_relic_name
                 relic_msg = f"与遗物【{get_relic_name(got_relic)}】" if got_relic else ""
                 
+                run.node_type = "card_select"
                 run.node_data = {
-                    "state": "opened",
-                    "text": f"🔓 宝箱上的锁链崩解脱落！你成功献祭了【{removed_name}】。\n宝箱缓缓开启，你获得了 🪙 {gold_gain}金币、一张珍奇卡牌【{ALL_CARDS[got_card].name}】{relic_msg}！"
+                    "title": "古老宝箱：请选择你的秘宝",
+                    "desc": f"🔓 宝箱上的锁链崩解脱落！你成功献祭了【{removed_name}】。\n宝箱缓缓开启，你获得了 🪙 {gold_gain}金币{relic_msg}！同时宝箱中露出了三张珍奇卡牌：",
+                    "cards": reward_cards
                 }
                 self.save_manager.save_save(run.user_id, run)
                 return "宝箱开启成功。"
-            elif run.node_data.get("state") == "opened":
-                if option_idx == 1:
-                    self.enter_next_stage(run)
-                    self.save_manager.save_save(run.user_id, run)
-                    return "你整理了行装离开宝箱房，开启下一关。"
-                return "❌ 无效的选择序号。"
 
         elif run.node_type == "reward":
             cards = run.node_data.get("cards", [])
@@ -396,6 +396,24 @@ class MapEngine:
                 self.enter_next_stage(run)
                 self.save_manager.save_save(run.user_id, run)
                 return "获得了 15 金币，开启下一关。"
+            else:
+                cid = cards[option_idx - 1]
+                from .card_impl import ALL_CARDS
+                card = ALL_CARDS.get(cid)
+                p.deck.append(cid)
+                self.enter_next_stage(run)
+                self.save_manager.save_save(run.user_id, run)
+                return f"已将卡牌【{card.name}】加入你的卡组，开启下一关。"
+
+        elif run.node_type == "card_select":
+            cards = run.node_data.get("cards", [])
+            skip_idx = len(cards) + 1
+            if option_idx < 1 or option_idx > skip_idx:
+                return "❌ 无效的选择序号。"
+            if option_idx == skip_idx:
+                self.enter_next_stage(run)
+                self.save_manager.save_save(run.user_id, run)
+                return "已跳过卡牌选择，开启下一关。"
             else:
                 cid = cards[option_idx - 1]
                 from .card_impl import ALL_CARDS
@@ -417,11 +435,15 @@ class MapEngine:
             elif option_idx == 2:
                 from .card_impl import ALL_CARDS
                 wizards = [cid for cid, c in ALL_CARDS.items() if c.color == "wizard" and c.type == "spell" and c.rarity != "legendary"]
-                cid = random.choice(wizards)
-                p.deck.append(cid)
-                self.enter_next_stage(run)
+                reward_cards = random.sample(wizards, 3) if len(wizards) >= 3 else wizards
+                run.node_type = "card_select"
+                run.node_data = {
+                    "title": "冥想感悟：请选择你想领悟的卡牌",
+                    "desc": "你面对篝火静静冥想，脑海中浮现出了三道奥术灵光：",
+                    "cards": reward_cards
+                }
                 self.save_manager.save_save(run.user_id, run)
-                return f"你通过静坐冥想，领悟了【{ALL_CARDS[cid].name}】并加入卡组，开启下一关。"
+                return "你开始冥想，寻找领悟。"
             else:
                 self.enter_next_stage(run)
                 self.save_manager.save_save(run.user_id, run)
@@ -483,11 +505,16 @@ class MapEngine:
 
     def remove_card_from_deck(self, run: GameRun, deck_idx: int) -> str:
         p = run.player
-        if deck_idx < 1 or deck_idx > len(p.deck):
+        counts = {}
+        for c_id in p.deck:
+            counts[c_id] = counts.get(c_id, 0) + 1
+        sorted_items = sorted(counts.items())
+        if deck_idx < 1 or deck_idx > len(sorted_items):
             return "❌ 无效的卡牌序号。"
+        cid = sorted_items[deck_idx - 1][0]
         from .card_impl import ALL_CARDS
-        removed_name = ALL_CARDS[p.deck[deck_idx - 1]].name
-        p.deck.pop(deck_idx - 1)
+        removed_name = ALL_CARDS[cid].name
+        p.deck.remove(cid)
         
         discount = 1.0
         if "gold_compass" in p.relics:

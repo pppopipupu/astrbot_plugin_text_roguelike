@@ -82,7 +82,7 @@ class BattleEngine:
         entity.buffs.append(BuffState(buff_id, buff_name, count, desc))
 
     def _get_free_grid(self, p: PlayerState) -> Optional[str]:
-        for i in range(1, 6):
+        for i in range(1, 7):
             s = str(i)
             if s not in p.minions and s not in p.amulets:
                 return s

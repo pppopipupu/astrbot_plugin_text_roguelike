@@ -30,7 +30,7 @@ def render_battle(run: GameRun) -> str:
     if not p.minions and not p.amulets:
         lines.append("（空无一物）")
     else:
-        for i in range(1, 6):
+        for i in range(1, 7):
             key = str(i)
             if key in p.minions:
                 m = p.minions[key]
@@ -99,7 +99,7 @@ def render_battle(run: GameRun) -> str:
     else:
         lines.append("💬 战斗指令指南：")
         lines.append("• 使用卡牌：/rogue 使用 <手牌序号> [目标]")
-        lines.append("• 指向目标：敌方 e1-eN (对应敌方格子) | 我方 p0-p5 (p0为自己，p1-p5为随从)")
+        lines.append("• 指向目标：敌方 e1-eN (对应敌方格子) | 我方 p0-p6 (p0为自己，p1-p6为随从)")
         lines.append("• 队列打牌：/rogue 使用 [1, 2:e1, 3]")
         lines.append("• 随从指令：/rogue 随从 <我方格子> 攻击/技能 <目标格子/技能序号> [技能目标]")
         lines.append("• 结束回合：/rogue 结束")
@@ -141,7 +141,7 @@ def render_detailed_battle(run: GameRun) -> str:
     if not p.minions and not p.amulets:
         lines.append("  （空无一物）")
     else:
-        for i in range(1, 6):
+        for i in range(1, 7):
             key = str(i)
             if key in p.minions:
                 m = p.minions[key]

@@ -2,7 +2,7 @@ from ..models import GameRun, UserStats
 from .menu import render_menu, render_card_library, render_deck, render_stats, render_help
 from .battle import render_battle, render_detailed_battle
 from .map import render_map_select, render_start_ancient, render_ancient
-from .explore import render_event, render_shop, render_rest, render_reward, render_treasure
+from .explore import render_event, render_shop, render_rest, render_reward, render_treasure, render_card_select
 from .query import render_query_info
 
 class GameRenderer:
@@ -45,6 +45,8 @@ class GameRenderer:
             return render_ancient(run)
         elif nt == "treasure":
             return render_treasure(run)
+        elif nt == "card_select":
+            return render_card_select(run)
         return "未知关卡状态"
 
     @staticmethod

@@ -26,11 +26,15 @@ class CoinFountainOption(EventOption):
         import random
         from .card_impl import ALL_CARDS
         wizards = [cid for cid, c in ALL_CARDS.items() if c.color == "wizard" and c.rarity != "legendary"]
-        cid = random.choice(wizards)
-        p.deck.append(cid)
-        engine.enter_next_stage(run)
+        reward_cards = random.sample(wizards, 3) if len(wizards) >= 3 else wizards
+        run.node_type = "card_select"
+        run.node_data = {
+            "title": "许愿泉水：请选择你的回馈",
+            "desc": "你在泉水中投入了 10 金币，泉水散发出耀眼的奥术涟漪，升起三张卡牌：",
+            "cards": reward_cards
+        }
         engine.save_manager.save_save(run.user_id, run)
-        return f"你在泉水中投入了 10 金币，泉水闪烁，你获得了【{ALL_CARDS[cid].name}】。已前往下一关。"
+        return "你在泉水中投入了 10 金币，开始选择泉水的回赠。"
 
 class ObserveFountainOption(EventOption):
     def execute(self, run, engine) -> str:
