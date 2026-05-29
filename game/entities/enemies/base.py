@@ -27,6 +27,13 @@ class EnemyTemplate:
     def _perform_attack(self, run, engine, enemy, dmg: int, logs: List[str]):
         p = run.player
         import random
+        strength = 0
+        if enemy.name != "腐化之心":
+            if getattr(enemy, "buffs", None):
+                for b in enemy.buffs:
+                    if b.id == "strength":
+                        strength += b.stacks
+        final_dmg = dmg + strength
         has_thorns = False
         thorns_key = None
         for ak, av in p.amulets.items():
@@ -37,18 +44,18 @@ class EnemyTemplate:
         if p.minions and random.random() < 0.5:
             target_key = random.choice(list(p.minions.keys()))
             target = p.minions[target_key]
-            target.hp -= dmg
-            logs.append(f"敌人【{enemy.name}】攻击了我方随从【{target.name}】，造成 {dmg} 点伤害。")
+            target.hp -= final_dmg
+            logs.append(f"敌人【{enemy.name}】攻击了我方随从【{target.name}】，造成 {final_dmg} 点伤害。")
             if target.hp <= 0:
                 logs.append(f"我方随从【{target.name}】已被击败！")
                 p.graveyard.append("minion:" + target.id)
                 del p.minions[target_key]
         else:
-            if p.shield >= dmg:
-                p.shield -= dmg
-                logs.append(f"敌人【{enemy.name}】发动攻击，造成 {dmg} 点护盾伤害。")
+            if p.shield >= final_dmg:
+                p.shield -= final_dmg
+                logs.append(f"敌人【{enemy.name}】发动攻击，造成 {final_dmg} 点护盾伤害。")
             else:
-                take = dmg - p.shield
+                take = final_dmg - p.shield
                 p.hp -= take
                 p.shield = 0
                 logs.append(f"敌人【{enemy.name}】发动攻击，造成 {take} 点生命伤害。")

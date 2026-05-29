@@ -21,7 +21,12 @@ class BossRedDragonTemplate(EnemyTemplate):
                 thorns_key = ak
                 break
         if enemy.intent_type == "attack":
-            dmg = enemy.intent_val
+            strength = 0
+            if getattr(enemy, "buffs", None):
+                for b in enemy.buffs:
+                    if b.id == "strength":
+                        strength += b.stacks
+            dmg = enemy.intent_val + strength
             if p.shield >= dmg:
                 p.shield -= dmg
                 logs.append(f"敌方领主【{enemy.name}】发动攻击，造成 {dmg} 点护盾伤害。")
@@ -61,7 +66,12 @@ class BossRedDragonTemplate(EnemyTemplate):
             run.enemies.append(new_goblin)
             logs.append(f"敌方领主【{enemy.name}】召唤了一个【魔仆】。")
         elif enemy.intent_type == "attack_all":
-            dmg = enemy.intent_val
+            strength = 0
+            if getattr(enemy, "buffs", None):
+                for b in enemy.buffs:
+                    if b.id == "strength":
+                        strength += b.stacks
+            dmg = enemy.intent_val + strength
             if p.shield >= dmg:
                 p.shield -= dmg
                 logs.append(f"敌方领主【{enemy.name}】扫尾攻击，造成 {dmg} 点护盾伤害。")

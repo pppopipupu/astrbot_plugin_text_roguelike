@@ -1,8 +1,20 @@
+import re
 from ..models.state import GameRun
 from ..cards import ALL_CARDS, MINION_SKILLS
 from ..entities import get_relic_name, get_relic_desc
 from ..data.buff_data import BUFF_CONFIG
 from ..data.minion_data import MINION_CONFIG
+
+def adjust_intent_desc_with_strength(desc: str, strength: int) -> str:
+    if strength <= 0:
+        return desc
+    def repl(match):
+        prefix = match.group(1)
+        val = int(match.group(2))
+        suffix = match.group(3)
+        return f"{prefix}{val + strength}{suffix}"
+    pattern = r"(造成\s*)(\d+)(\s*(?:点)?伤害)"
+    return re.sub(pattern, repl, desc)
 
 def render_battle(run: GameRun) -> str:
     p = run.player
@@ -51,13 +63,20 @@ def render_battle(run: GameRun) -> str:
         lines.append("（空无一物）")
     else:
         for idx, enemy in enumerate(run.enemies, 1):
+            strength = 0
+            if getattr(enemy, "buffs", None):
+                for b in enemy.buffs:
+                    if b.id == "strength":
+                        strength += b.stacks
             intent_parts = []
             if enemy.intent_a_desc:
-                intent_parts.append(f"A: {enemy.intent_a_desc}")
+                a_desc = adjust_intent_desc_with_strength(enemy.intent_a_desc, strength)
+                intent_parts.append(f"A: {a_desc}")
             if enemy.intent_ba_desc:
-                ba_desc = enemy.intent_ba_desc
+                ba_desc = adjust_intent_desc_with_strength(enemy.intent_ba_desc, strength)
                 if enemy.intent_ba2_desc:
-                    ba_desc += f" + {enemy.intent_ba2_desc}"
+                    ba2_desc = adjust_intent_desc_with_strength(enemy.intent_ba2_desc, strength)
+                    ba_desc += f" + {ba2_desc}"
                 intent_parts.append(f"BA: {ba_desc}")
             intent_str = f"({', '.join(intent_parts)})" if intent_parts else "无意图"
             shield_str = f" | 🛡️ 护盾 {enemy.shield}" if enemy.shield > 0 else ""
@@ -182,13 +201,20 @@ def render_detailed_battle(run: GameRun) -> str:
         for idx, enemy in enumerate(run.enemies, 1):
             shield_str = f" | 🛡️ 护盾 {enemy.shield}" if enemy.shield > 0 else ""
             lines.append(f"  格子 [{idx}] 敌人：{enemy.name} (HP {enemy.hp}/{enemy.max_hp}{shield_str} | 动作 {enemy.actions}A {enemy.bonus_actions}BA)")
+            strength = 0
+            if getattr(enemy, "buffs", None):
+                for b in enemy.buffs:
+                    if b.id == "strength":
+                        strength += b.stacks
             intent_parts = []
             if enemy.intent_a_desc:
-                intent_parts.append(f"动作(A)：{enemy.intent_a_desc}")
+                a_desc = adjust_intent_desc_with_strength(enemy.intent_a_desc, strength)
+                intent_parts.append(f"动作(A)：{a_desc}")
             if enemy.intent_ba_desc:
-                ba_desc = enemy.intent_ba_desc
+                ba_desc = adjust_intent_desc_with_strength(enemy.intent_ba_desc, strength)
                 if enemy.intent_ba2_desc:
-                    ba_desc += f" + {enemy.intent_ba2_desc}"
+                    ba2_desc = adjust_intent_desc_with_strength(enemy.intent_ba2_desc, strength)
+                    ba_desc += f" + {ba2_desc}"
                 intent_parts.append(f"附赠动作(BA)：{ba_desc}")
             intent_str = " | ".join(intent_parts) if intent_parts else "无意图"
             lines.append(f"    行动意图：{intent_str}")

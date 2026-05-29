@@ -129,7 +129,12 @@ class ShadowFiendTemplate(EnemyTemplate):
     def execute_intent(self, run, engine, enemy, logs: List[str]):
         p = run.player
         if enemy.intent_type == "shadow_strike":
-            dmg = enemy.intent_val
+            strength = 0
+            if getattr(enemy, "buffs", None):
+                for b in enemy.buffs:
+                    if b.id == "strength":
+                        strength += b.stacks
+            dmg = enemy.intent_val + strength
             p.hp -= dmg
             logs.append(f"【{enemy.name}】施展影袭，直接对玩家造成 {dmg} 点生命伤害。")
         elif enemy.intent_type == "defend":
