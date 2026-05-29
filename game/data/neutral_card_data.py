@@ -169,7 +169,7 @@ NEUTRAL_CARD_CONFIG = {
         "cost_a": 99,
         "cost_ba": 99,
         "desc": "不能被打出。虚无。",
-        "rarity": "common",
+        "rarity": "curse",
         "unplayable": True,
         "ethereal": True
     },
@@ -180,7 +180,7 @@ NEUTRAL_CARD_CONFIG = {
         "cost_a": 99,
         "cost_ba": 99,
         "desc": "不能被打出。固有。",
-        "rarity": "common",
+        "rarity": "curse",
         "unplayable": True,
         "innate": True
     }

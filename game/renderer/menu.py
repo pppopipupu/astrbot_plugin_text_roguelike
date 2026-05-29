@@ -62,7 +62,8 @@ def render_card_library() -> str:
             "rare": "稀有",
             "epic": "珍奇",
             "legendary": "传奇",
-            "mythic": "神器"
+            "mythic": "神器",
+            "curse": "诅咒"
         }
         rname = rarity_map.get(getattr(card, "rarity", "common"), "普通")
         info = f"• {card.name} [{type_ch}] <{rname}> 消耗: {cost_str} - {card.desc}"
@@ -90,11 +91,13 @@ def render_relic_library() -> str:
         "rare": "稀有",
         "epic": "珍奇",
         "legendary": "传奇",
-        "mythic": "神器"
+        "mythic": "神器",
+        "curse": "诅咒"
     }
     commons = []
     rares = []
     epics = []
+    curses = []
     for rid, relic in RELIC_CONFIG.items():
         r = relic.get("rarity", "common")
         rname = rarity_map.get(r, "普通")
@@ -106,6 +109,8 @@ def render_relic_library() -> str:
             commons.append(info)
         elif r == "rare":
             rares.append(info)
+        elif r == "curse":
+            curses.append(info)
         else:
             epics.append(info)
     lines.append("【普通遗物】")
@@ -116,6 +121,9 @@ def render_relic_library() -> str:
     lines.append("")
     lines.append("【珍奇遗物】")
     lines.extend(epics)
+    lines.append("")
+    lines.append("【诅咒遗物】")
+    lines.extend(curses)
     lines.append("━━━━━━━━━━━━━━━━━━━━")
     return "\n".join(lines)
 
@@ -140,7 +148,8 @@ def render_deck(run: GameRun) -> str:
                 "rare": "稀有",
                 "epic": "珍奇",
                 "legendary": "传奇",
-                "mythic": "神器"
+                "mythic": "神器",
+                "curse": "诅咒"
             }
             rname = rarity_map.get(getattr(card, "rarity", "common"), "普通")
             lines.append(f"{idx}. {color_type} {card.name} <{rname}> x{count} ({card.desc})")

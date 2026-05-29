@@ -48,7 +48,7 @@ class FamiliarAssist(BaseMinionSkill):
     def execute(self, run, my_grid, target, engine) -> str:
         cfg = MINION_CONFIG["find_familiar"]["skills"][0]
         draw = cfg["draw"]
-        engine._draw_cards(run.player, draw)
+        engine._draw_cards(run.player, draw, run)
         return cfg["feedback"].format(draw=draw)
 
 class FamiliarCharge(BaseMinionSkill):

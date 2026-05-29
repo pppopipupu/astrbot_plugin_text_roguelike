@@ -13,7 +13,7 @@ class TimeWarpCard(Card):
         import random
         random.shuffle(p.draw_pile)
         before = len(p.hand)
-        engine._draw_cards(p, max_hand)
+        engine._draw_cards(p, max_hand, run)
         after = len(p.hand)
         draw_count = after - before
         cfg = CARD_CONFIG.get(self.id, {})
@@ -62,7 +62,7 @@ class ArchmageWishCard(Card):
     def execute(self, run, target, engine) -> str:
         run.player.shield += 10
         engine._add_buff_to(run.player, "wish_power", "祈愿奥术", "本场战斗法术伤害 +4")
-        engine._draw_cards(run.player, 2)
+        engine._draw_cards(run.player, 2, run)
         cfg = CARD_CONFIG.get(self.id, {})
         return cfg.get("feedback", "完成了大法师的祈愿！获得了 10 点护盾，【祈愿奥术】法术伤害 +4，并抽了 2 张牌。")
 

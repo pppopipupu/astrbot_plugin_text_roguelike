@@ -46,7 +46,7 @@ class DrawCardEffect(Effect):
         self.count = count
 
     def apply(self, run, source: str, target: str, engine) -> str:
-        engine._draw_cards(run.player, self.count)
+        engine._draw_cards(run.player, self.count, run)
         return f"抽了 {self.count} 张牌。"
 
 class ModifyActionEffect(Effect):

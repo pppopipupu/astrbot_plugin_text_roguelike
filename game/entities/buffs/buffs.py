@@ -41,7 +41,7 @@ class QuickenBuff(BuffImpl):
 class SpellSurgeBuff(BuffImpl):
     def on_card_played(self, run, card, target: str, engine) -> str:
         if card.color == "wizard":
-            engine._draw_cards(run.player, self.stacks)
+            engine._draw_cards(run.player, self.stacks, run)
         return ""
 
 

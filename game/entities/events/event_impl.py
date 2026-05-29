@@ -111,7 +111,7 @@ class CaveFightOption(EventOption):
             run.enemies[0].hp = 15
             run.enemies[0].max_hp = 15
         engine.save_manager.save_save(run.user_id, run)
-        return "你跨入洞穴，一只面目狰狞的【魔仆】冲了过来！进入战斗。"
+        return engine.battle_engine._append_logs_to_res(run, "你跨入洞穴，一只面目狰狞的【魔仆】冲了过来！进入战斗。")
 
 class AbsorbAltarOption(EventOption):
     def execute(self, run, engine) -> str:
@@ -156,7 +156,7 @@ class EnterPortalOption(EventOption):
             if run.enemies:
                 run.enemies[0].name = "传送门守卫者"
             engine.save_manager.save_save(run.user_id, run)
-            return "⚠️ 空间发生强烈扭曲！传送门能量崩溃，你被卷入一处荒野废墟，前方出现了一只凶猛的【传送门守卫者】！进入战斗。"
+            return engine.battle_engine._append_logs_to_res(run, "⚠️ 空间发生强烈扭曲！传送门能量崩溃，你被卷入一处荒野废墟，前方出现了一只凶猛的【传送门守卫者】！进入战斗。")
 
 class ShatterPortalOption(EventOption):
     def execute(self, run, engine) -> str:
@@ -225,7 +225,7 @@ class FightGuardOption(EventOption):
             run.enemies[0].hp = 30 + run.player.stage * 2
             run.enemies[0].max_hp = run.enemies[0].hp
         engine.save_manager.save_save(run.user_id, run)
-        return "🔥 谈和破裂！火元素守卫扬起法杖，滚滚热浪席卷而来！进入战斗。"
+        return engine.battle_engine._append_logs_to_res(run, "🔥 谈和破裂！火元素守卫扬起法杖，滚滚热浪席卷而来！进入战斗。")
 
 class BathePoolOption(EventOption):
     def execute(self, run, engine) -> str:

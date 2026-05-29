@@ -49,19 +49,19 @@ RELIC_CONFIG = {
     },
     "rust_shackle": {
         "name": "铁锈之锁",
-        "rarity": "epic",
+        "rarity": "curse",
         "desc": "每场战斗开始时扣除玩家 4 点生命值。",
         "price": 80
     },
     "fool_oath": {
         "name": "愚者之誓",
-        "rarity": "epic",
+        "rarity": "curse",
         "desc": "我方所有随从在入场时最大 HP 减少 3 点（最低为 1）。",
         "price": 80
     },
     "wither_seed": {
         "name": "枯萎之种",
-        "rarity": "epic",
+        "rarity": "curse",
         "desc": "在战斗中玩家无法受到任何治疗效果。",
         "price": 80
     },
@@ -121,13 +121,13 @@ RELIC_CONFIG = {
     },
     "blind_spot": {
         "name": "盲目之障",
-        "rarity": "epic",
+        "rarity": "curse",
         "desc": "每场战斗第一回合开始时，玩家少抽 2 张牌。",
         "price": 80
     },
     "tax_contract": {
         "name": "税收契约",
-        "rarity": "epic",
+        "rarity": "curse",
         "desc": "每当进入下一个关卡时，玩家失去 6 金币。",
         "price": 80
     }

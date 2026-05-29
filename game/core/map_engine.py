@@ -210,13 +210,13 @@ class MapEngine:
             name = run.enemies[0].name if run.enemies else "未知"
             num_enemies = len(run.enemies)
             self.save_manager.save_save(run.user_id, run)
-            return f"你选择前往【{chosen['desc']}】。前方出现了 {num_enemies} 个敌人，领头的是【{name}】！进入战斗。"
+            return self.battle_engine._append_logs_to_res(run, f"你选择前往【{chosen['desc']}】。前方出现了 {num_enemies} 个敌人，领头的是【{name}】！进入战斗。")
         elif node_type == "elite":
             self.battle_engine._init_battle_node(run, "elite")
             name = run.enemies[0].name if run.enemies else "未知"
             num_enemies = len(run.enemies)
             self.save_manager.save_save(run.user_id, run)
-            return f"你选择前往【{chosen['desc']}】。前方出现了 {num_enemies} 个强力精英，领头的是【{name}】！进入战斗。"
+            return self.battle_engine._append_logs_to_res(run, f"你选择前往【{chosen['desc']}】。前方出现了 {num_enemies} 个强力精英，领头的是【{name}】！进入战斗。")
         elif node_type == "event":
             self.explore_engine._init_event_node(run)
             self.save_manager.save_save(run.user_id, run)

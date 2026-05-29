@@ -105,7 +105,7 @@ class ArcaneSparkCard(Card):
         dmg = engine.get_modified_spell_damage(run, self, dmg)
         name = engine._get_target_name(run, target)
         engine._damage_target(run, target, dmg)
-        engine._draw_cards(run.player, 1)
+        engine._draw_cards(run.player, 1, run)
         cfg = CARD_CONFIG.get(self.id, {})
         feedback_tmpl = cfg.get("feedback")
         if feedback_tmpl:
@@ -179,7 +179,7 @@ class FleetingSparkCard(Card):
         dmg = engine.get_modified_spell_damage(run, self, dmg)
         name = engine._get_target_name(run, target)
         engine._damage_target(run, target, dmg)
-        engine._draw_cards(run.player, 2)
+        engine._draw_cards(run.player, 2, run)
         p = run.player
         if p.hand:
             run.node_data["pending_discard"] = True

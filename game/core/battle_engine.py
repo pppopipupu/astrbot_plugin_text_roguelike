@@ -7,6 +7,7 @@ from ..entities import (
     ALL_AMULETS,
     get_enemy_template,
     get_relic_name,
+    get_relic_impl,
     apply_modify_heal_limit,
     apply_modify_spell_cost_ba,
     apply_modify_spell_damage,
@@ -19,6 +20,20 @@ from ..entities import (
 class BattleEngine:
     def __init__(self, save_manager):
         self.save_manager = save_manager
+
+    def _log_event(self, run: Optional[GameRun], msg: str):
+        if run is None:
+            return
+        if "battle_logs" not in run.node_data:
+            run.node_data["battle_logs"] = []
+        run.node_data["battle_logs"].append(msg)
+
+    def _append_logs_to_res(self, run: GameRun, res: str) -> str:
+        if "battle_logs" in run.node_data:
+            logs = run.node_data.pop("battle_logs", [])
+            if logs:
+                res = res.rstrip() + "\n" + "\n".join(logs)
+        return res
 
     def is_battle_won(self, run: GameRun) -> bool:
         if not run.enemies:
@@ -99,15 +114,33 @@ class BattleEngine:
                 return s
         return None
 
-    def _draw_cards(self, p: PlayerState, count: int):
+    def _draw_cards(self, p: PlayerState, count: int, run: Optional[GameRun] = None):
         max_hand = 9 if "mask_of_void" in p.relics else 12
+        drawn_cards = []
+        reshuffled = False
+        hand_full_logged = False
         for _ in range(count):
             if not p.draw_pile:
-                p.draw_pile = p.discard_pile.copy()
-                random.shuffle(p.draw_pile)
-                p.discard_pile.clear()
-            if p.draw_pile and len(p.hand) < max_hand:
-                p.hand.append(p.draw_pile.pop())
+                if p.discard_pile:
+                    p.draw_pile = p.discard_pile.copy()
+                    random.shuffle(p.draw_pile)
+                    p.discard_pile.clear()
+                    reshuffled = True
+            if p.draw_pile:
+                if len(p.hand) < max_hand:
+                    cid = p.draw_pile.pop()
+                    p.hand.append(cid)
+                    drawn_cards.append(cid)
+                else:
+                    if not hand_full_logged and run is not None:
+                        self._log_event(run, "⚠️ 提示：手牌已达上限，无法抽取更多卡牌。")
+                        hand_full_logged = True
+        if run is not None:
+            if reshuffled:
+                self._log_event(run, "🔄 弃牌堆已重新洗入抽牌堆。")
+            if drawn_cards:
+                card_names = [ALL_CARDS[cid].name if cid in ALL_CARDS else cid for cid in drawn_cards]
+                self._log_event(run, f"🃏 抽取了 {len(drawn_cards)} 张卡牌：{', '.join(card_names)}")
 
     def _roll_enemy_intent(self, run: GameRun):
         for enemy in run.enemies:
@@ -158,27 +191,21 @@ class BattleEngine:
         p.hand.clear()
         p.actions = 2
         p.bonus_actions = 1
-        p.shield = (8 if "heavy_armor" in p.relics else 0) + (4 if "leather_armor" in p.relics else 0)
-        if "rust_shackle" in p.relics:
-            p.hp = max(1, p.hp - 4)
-        if "greedy_contract" in p.relics:
-            p.hp = max(1, p.hp - 3)
-        if "ancient_page" in p.relics:
-            p.hp = max(1, p.hp - 4)
-        if "ready_pack" in p.relics:
-            p.bonus_actions += 1
+        p.shield = 0
+        for r in p.relics:
+            impl = get_relic_impl(r)
+            if impl:
+                impl.on_battle_start(run, self)
         if getattr(p, "subclass", "") == "时序法师":
             if random.random() < 0.25:
                 p.bonus_actions += 1
-        init_draw = 5 + (2 if "ancient_eye" in p.relics else 0) + (1 if "ready_pack" in p.relics else 0)
-        if "blind_spot" in p.relics:
-            init_draw = max(0, init_draw - 2)
-        self._draw_cards(p, init_draw)
-        if "ancient_page" in p.relics:
-            max_hand = 9 if "mask_of_void" in p.relics else 12
-            for _ in range(2):
-                if len(p.hand) < max_hand:
-                    p.hand.append("arcane_spark")
+                self._log_event(run, "⏳ [时序被动] 触发时间跳跃，初始额外获得 1 个附赠动作（BA）！")
+        init_draw = 5
+        for r in p.relics:
+            impl = get_relic_impl(r)
+            if impl:
+                init_draw = impl.modify_initial_draw(run, init_draw, self)
+        self._draw_cards(p, init_draw, run)
 
         run.node_data["difficulty"] = difficulty
 
@@ -350,38 +377,11 @@ class BattleEngine:
                 p.deck.remove(cid)
         elif getattr(card, "exhaust", False):
             p.exhaust_pile.append(cid)
+            self._log_event(run, f"✨ [消耗] 【{card.name}】已被移入消耗堆。")
         else:
             p.discard_pile.append(cid)
 
         res = self._execute_card_effect(run, card, target)
-        if card.type == "spell":
-            if "unstable_crystal" in p.relics:
-                p.hp = max(1, p.hp - 1)
-                res += " ⚡ [不稳定水晶] 受到 1 点法术反噬伤害。"
-            if "vampiric_touch" in p.relics and card.id in (
-                "dagger_throw", "fire_bolt", "fireball", "thunderwave",
-                "magic_missile", "quick_strike", "arcane_spark", "doomsday_judgment", "meteor_swarm"
-            ):
-                old_hp = p.hp
-                self._heal_target(run, "p0", 1)
-                if p.hp > old_hp:
-                    res += " ❤️ [吸血之触] 回复了 1 点生命值。"
-
-        beat_of_death_dmg = 0
-        for enemy in run.enemies:
-            if enemy.hp > 0:
-                for b in enemy.buffs:
-                    if b.id == "beat_of_death":
-                        beat_of_death_dmg += b.stacks
-        if beat_of_death_dmg > 0:
-            if p.shield >= beat_of_death_dmg:
-                p.shield -= beat_of_death_dmg
-                res += f" 💔 [死亡律动] 玩家受到 {beat_of_death_dmg} 点伤害（由护盾吸收）。"
-            else:
-                take = beat_of_death_dmg - p.shield
-                p.hp -= take
-                p.shield = 0
-                res += f" 💔 [死亡律动] 玩家受到 {take} 点生命伤害。"
 
         played_count = run.node_data.get("cards_played_this_turn", 0)
         extra_feedback = apply_on_card_played(run, card, target, self)
@@ -404,7 +404,7 @@ class BattleEngine:
         if has_damaged and run.node_data.get("extra_turns_left", 0) > 0:
             end_turn_res = self.end_turn(run)
             res += f"\n⏳ [时间停止] 额外回合中对敌人造成了伤害，当前额外回合提前结束！\n{end_turn_res}"
-        return res
+        return self._append_logs_to_res(run, res)
 
     def play_special_action(self, run: GameRun, hand_idx: int, target: Optional[str] = None) -> str:
         initial_status = [(e.hp, e.shield) for e in run.enemies]
@@ -458,7 +458,7 @@ class BattleEngine:
         if has_damaged and run.node_data.get("extra_turns_left", 0) > 0:
             end_turn_res = self.end_turn(run)
             res += f"\n⏳ [时间停止] 额外回合中对敌人造成了伤害，当前额外回合提前结束！\n{end_turn_res}"
-        return res
+        return self._append_logs_to_res(run, res)
 
     def minion_attack(self, run: GameRun, my_grid: str, opp_grid: Optional[str] = None) -> str:
         initial_status = [(e.hp, e.shield) for e in run.enemies]
@@ -512,7 +512,7 @@ class BattleEngine:
         if has_damaged and run.node_data.get("extra_turns_left", 0) > 0:
             end_turn_res = self.end_turn(run)
             res += f"\n⏳ [时间停止] 额外回合中对敌人造成了伤害，当前额外回合提前结束！\n{end_turn_res}"
-        return res
+        return self._append_logs_to_res(run, res)
 
     def minion_skill(self, run: GameRun, my_grid: str, skill_idx: int = 1, target: Optional[str] = None) -> str:
         initial_status = [(e.hp, e.shield) for e in run.enemies]
@@ -577,10 +577,40 @@ class BattleEngine:
         if has_damaged and run.node_data.get("extra_turns_left", 0) > 0:
             end_turn_res = self.end_turn(run)
             msg += f"\n⏳ [时间停止] 额外回合中对敌人造成了伤害，当前额外回合提前结束！\n{end_turn_res}"
-        return msg
+        return self._append_logs_to_res(run, msg)
 
     def _execute_card_effect(self, run: GameRun, card: Card, target: Optional[str] = None) -> str:
-        return card.execute(run, target, self)
+        res = card.execute(run, target, self)
+        p = run.player
+        if card.type == "spell":
+            if "unstable_crystal" in p.relics:
+                p.hp = max(1, p.hp - 1)
+                res += " ⚡ [不稳定水晶] 受到 1 点法术反噬伤害。"
+            if "vampiric_touch" in p.relics and card.id in (
+                "dagger_throw", "fire_bolt", "fireball", "thunderwave",
+                "magic_missile", "quick_strike", "arcane_spark", "doomsday_judgment", "meteor_swarm"
+            ):
+                old_hp = p.hp
+                self._heal_target(run, "p0", 1)
+                if p.hp > old_hp:
+                    res += " ❤️ [吸血之触] 回复了 1 点生命值。"
+
+        beat_of_death_dmg = 0
+        for enemy in run.enemies:
+            if enemy.hp > 0:
+                for b in enemy.buffs:
+                    if b.id == "beat_of_death":
+                        beat_of_death_dmg += b.stacks
+        if beat_of_death_dmg > 0:
+            if p.shield >= beat_of_death_dmg:
+                p.shield -= beat_of_death_dmg
+                res += f" 💔 [死亡律动] 玩家受到 {beat_of_death_dmg} 点伤害（由护盾吸收）。"
+            else:
+                take = beat_of_death_dmg - p.shield
+                p.hp -= take
+                p.shield = 0
+                res += f" 💔 [死亡律动] 玩家受到 {take} 点生命伤害。"
+        return res
 
     def get_modified_spell_damage(self, run: GameRun, card: Card, damage: int) -> int:
         return apply_modify_spell_damage(run, card, damage, self)
@@ -590,7 +620,7 @@ class BattleEngine:
         card = ALL_CARDS.get(cid)
         if not card:
             p.discard_pile.append(cid)
-            return ""
+            return self._append_logs_to_res(run, "")
 
         if getattr(card, "agile", False):
             target = None
@@ -607,12 +637,13 @@ class BattleEngine:
                     p.deck.remove(cid)
             elif getattr(card, "exhaust", False):
                 p.exhaust_pile.append(cid)
+                self._log_event(run, f"✨ [消耗] 【{card.name}】已被移入消耗堆。")
             else:
                 p.discard_pile.append(cid)
-            return f"✨ 触发[灵巧]：丢弃【{card.name}】时自动打出！效果：{res}"
+            return self._append_logs_to_res(run, f"✨ 触发[灵巧]：丢弃【{card.name}】时自动打出！效果：{res}")
         else:
             p.discard_pile.append(cid)
-            return ""
+            return self._append_logs_to_res(run, "")
 
     def end_turn(self, run: GameRun) -> str:
         if run.node_type != "battle":
@@ -626,6 +657,7 @@ class BattleEngine:
                 retained.append(cid)
             elif card and getattr(card, "ethereal", False):
                 p.exhaust_pile.append(cid)
+                self._log_event(run, f"✨ [虚无] 【{card.name}】在回合结束时被消耗。")
             else:
                 p.discard_pile.append(cid)
         p.hand = retained
@@ -640,7 +672,7 @@ class BattleEngine:
 
         if self.is_battle_won(run):
             self._handle_battle_win(run)
-            return "战斗胜利！敌方单位已被全部击败。"
+            return self._append_logs_to_res(run, "战斗胜利！敌方单位已被全部击败。")
 
         extra_turns = run.node_data.get("extra_turns_left", 0)
         if extra_turns > 0:
@@ -690,11 +722,11 @@ class BattleEngine:
         if run.enemies and any(e.name == "腐化之心" for e in run.enemies):
             run.node_data["heart_turn"] = run.node_data.get("heart_turn", 1) + 1
 
-        self._draw_cards(p, 6)
+        self._draw_cards(p, 6, run)
         self._roll_enemy_intent(run)
         run.node_data["cards_played_this_turn"] = 0
         self.save_manager.save_save(run.user_id, run)
-        return f"{enemy_actions}\n{decay_info}{extra_ba_msg}进入玩家回合。已重置动作并抽取手牌。"
+        return self._append_logs_to_res(run, f"{enemy_actions}\n{decay_info}{extra_ba_msg}进入玩家回合。已重置动作并抽取手牌。")
 
     def _trigger_take_damage_amulets(self, run, source: str, amount: int, logs: List[str]):
         for ak, av in list(run.player.amulets.items()):
@@ -726,23 +758,32 @@ class BattleEngine:
                 continue
             template = get_enemy_template(enemy.name)
             
-            if enemy.hp > 0 and enemy.actions >= 1 and enemy.intent_a_type:
-                enemy.actions -= 1
-                enemy.intent_type = enemy.intent_a_type
-                enemy.intent_val = enemy.intent_a_val
-                template.execute_intent(run, self, enemy, logs)
+            if enemy.hp > 0 and enemy.intent_a_type:
+                if enemy.actions >= 1:
+                    enemy.actions -= 1
+                    enemy.intent_type = enemy.intent_a_type
+                    enemy.intent_val = enemy.intent_a_val
+                    template.execute_intent(run, self, enemy, logs)
+                else:
+                    logs.append(f"⚠️ 【{enemy.name}】因动作点（A）不足，取消了意图【{enemy.intent_a_desc}】。")
                 
-            if enemy.hp > 0 and enemy.bonus_actions >= 1 and enemy.intent_ba_type:
-                enemy.bonus_actions -= 1
-                enemy.intent_type = enemy.intent_ba_type
-                enemy.intent_val = enemy.intent_ba_val
-                template.execute_intent(run, self, enemy, logs)
+            if enemy.hp > 0 and enemy.intent_ba_type:
+                if enemy.bonus_actions >= 1:
+                    enemy.bonus_actions -= 1
+                    enemy.intent_type = enemy.intent_ba_type
+                    enemy.intent_val = enemy.intent_ba_val
+                    template.execute_intent(run, self, enemy, logs)
+                else:
+                    logs.append(f"⚠️ 【{enemy.name}】因附赠动作点（BA）不足，取消了意图【{enemy.intent_ba_desc}】。")
                 
-            if enemy.hp > 0 and enemy.bonus_actions >= 1 and enemy.intent_ba2_type:
-                enemy.bonus_actions -= 1
-                enemy.intent_type = enemy.intent_ba2_type
-                enemy.intent_val = enemy.intent_ba2_val
-                template.execute_intent(run, self, enemy, logs)
+            if enemy.hp > 0 and enemy.intent_ba2_type:
+                if enemy.bonus_actions >= 1:
+                    enemy.bonus_actions -= 1
+                    enemy.intent_type = enemy.intent_ba2_type
+                    enemy.intent_val = enemy.intent_ba2_val
+                    template.execute_intent(run, self, enemy, logs)
+                else:
+                    logs.append(f"⚠️ 【{enemy.name}】因附赠动作点（BA）不足，取消了意图【{enemy.intent_ba2_desc}】。")
 
         for enemy in run.enemies:
             enemy.actions = enemy.max_actions
@@ -753,8 +794,10 @@ class BattleEngine:
         p = run.player
         p.buffs.clear()
         p.hp = min(p.max_hp, p.hp)
-        if "dragon_blood" in p.relics:
-            p.hp = min(p.max_hp, p.hp + 5)
+        for r in p.relics:
+            impl = get_relic_impl(r)
+            if impl:
+                impl.on_battle_win(run, self)
         difficulty = run.node_data.get("difficulty", "normal")
         quest = run.node_data.get("quest")
         quest_bonus = ""

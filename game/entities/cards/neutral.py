@@ -47,7 +47,7 @@ class SpellHealCard(Card):
 class GetReadyCard(Card):
     def execute(self, run, target, engine) -> str:
         run.player.bonus_actions += 2
-        engine._draw_cards(run.player, 1)
+        engine._draw_cards(run.player, 1, run)
         cfg = CARD_CONFIG.get(self.id, {})
         return cfg.get("feedback", "获得了 2BA 并抽了 1 张牌。")
 
@@ -118,7 +118,7 @@ class IronWillCard(Card):
 
 class MistyStepCard(Card):
     def execute(self, run, target, engine) -> str:
-        engine._draw_cards(run.player, 2)
+        engine._draw_cards(run.player, 2, run)
         cfg = CARD_CONFIG.get(self.id, {})
         feedback_tmpl = cfg.get("feedback")
         if feedback_tmpl:
@@ -127,7 +127,7 @@ class MistyStepCard(Card):
 
 class ArcaneIntellectCard(Card):
     def execute(self, run, target, engine) -> str:
-        engine._draw_cards(run.player, 3)
+        engine._draw_cards(run.player, 3, run)
         cfg = CARD_CONFIG.get(self.id, {})
         feedback_tmpl = cfg.get("feedback")
         if feedback_tmpl:
@@ -147,7 +147,7 @@ class CalculatedGambleCard(Card):
                 effect_msg = engine._discard_card(run, cid)
                 if effect_msg:
                     agile_effects.append(effect_msg)
-            engine._draw_cards(p, discard_count)
+            engine._draw_cards(p, discard_count, run)
             agile_str = "\n" + "\n".join(agile_effects) if agile_effects else ""
             feedback_tmpl = cfg.get("feedback")
             if feedback_tmpl:
@@ -161,6 +161,6 @@ class ManaPotionCard(Card):
 
     def execute(self, run, target, engine) -> str:
         run.player.bonus_actions += 1
-        engine._draw_cards(run.player, 1)
+        engine._draw_cards(run.player, 1, run)
         cfg = CARD_CONFIG.get(self.id, {})
         return cfg.get("feedback", "饮用了【魔力药水】，获得了 1BA 并抽了 1 张牌。")

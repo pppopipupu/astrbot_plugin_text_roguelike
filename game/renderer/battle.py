@@ -64,7 +64,7 @@ def render_battle(run: GameRun) -> str:
             buff_desc = ""
             if getattr(enemy, "buffs", None):
                 buff_desc = " | Buff: " + " ".join([f"{b.name} x{b.stacks}" if b.stacks > 1 else b.name for b in enemy.buffs])
-            lines.append(f" 格子 [{idx}] 敌人：{enemy.name} (❤️ HP {enemy.hp}/{enemy.max_hp}{shield_str}{buff_desc} | ⚔️ 意图：{intent_str})")
+            lines.append(f" 格子 [{idx}] 敌人：{enemy.name} (❤️ HP {enemy.hp}/{enemy.max_hp}{shield_str}{buff_desc} | ⚡ 动作 {enemy.actions}A {enemy.bonus_actions}BA | ⚔️ 意图：{intent_str})")
     lines.append("")
     lines.append("【你的手牌】")
     if not p.hand:
@@ -181,7 +181,7 @@ def render_detailed_battle(run: GameRun) -> str:
     else:
         for idx, enemy in enumerate(run.enemies, 1):
             shield_str = f" | 🛡️ 护盾 {enemy.shield}" if enemy.shield > 0 else ""
-            lines.append(f"  格子 [{idx}] 敌人：{enemy.name} (HP {enemy.hp}/{enemy.max_hp}{shield_str})")
+            lines.append(f"  格子 [{idx}] 敌人：{enemy.name} (HP {enemy.hp}/{enemy.max_hp}{shield_str} | 动作 {enemy.actions}A {enemy.bonus_actions}BA)")
             intent_parts = []
             if enemy.intent_a_desc:
                 intent_parts.append(f"动作(A)：{enemy.intent_a_desc}")
