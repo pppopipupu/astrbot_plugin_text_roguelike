@@ -237,3 +237,66 @@ def render_detailed_battle(run: GameRun) -> str:
                     lines.append(f"      • 【{b.name}】(层数: {b.stacks}): {bdesc}")
     lines.append("━━━━━━━━━━━━━━━━━━━━")
     return "\n".join(lines)
+
+def render_draw_pile(run: GameRun) -> str:
+    p = run.player
+    lines = [
+        "━━━━━━━━━━━━━━━━━━━━",
+        f"🔮 【抽牌堆卡牌列表】 (共 {len(p.draw_pile)} 张)",
+        "当前抽牌堆内还包含以下卡牌（已去重并排序）：",
+        ""
+    ]
+    if not p.draw_pile:
+        lines.append("  （当前抽牌堆为空）")
+    else:
+        counts = {}
+        for cid in p.draw_pile:
+            name = ALL_CARDS[cid].name if cid in ALL_CARDS else cid
+            counts[name] = counts.get(name, 0) + 1
+        sorted_names = sorted(counts.keys())
+        for idx, name in enumerate(sorted_names, 1):
+            lines.append(f"  {idx}. 【{name}】 x{counts[name]}")
+    lines.append("━━━━━━━━━━━━━━━━━━━━")
+    return "\n".join(lines)
+
+def render_discard_pile(run: GameRun) -> str:
+    p = run.player
+    lines = [
+        "━━━━━━━━━━━━━━━━━━━━",
+        f"🗑️ 【弃牌堆卡牌列表】 (共 {len(p.discard_pile)} 张)",
+        "当前弃牌堆内包含以下卡牌（已去重并排序）：",
+        ""
+    ]
+    if not p.discard_pile:
+        lines.append("  （当前弃牌堆为空）")
+    else:
+        counts = {}
+        for cid in p.discard_pile:
+            name = ALL_CARDS[cid].name if cid in ALL_CARDS else cid
+            counts[name] = counts.get(name, 0) + 1
+        sorted_names = sorted(counts.keys())
+        for idx, name in enumerate(sorted_names, 1):
+            lines.append(f"  {idx}. 【{name}】 x{counts[name]}")
+    lines.append("━━━━━━━━━━━━━━━━━━━━")
+    return "\n".join(lines)
+
+def render_exhaust_pile(run: GameRun) -> str:
+    p = run.player
+    lines = [
+        "━━━━━━━━━━━━━━━━━━━━",
+        f"🔥 【消耗堆卡牌列表】 (共 {len(p.exhaust_pile)} 张)",
+        "当前已被消耗的卡牌（已去重并排序）：",
+        ""
+    ]
+    if not p.exhaust_pile:
+        lines.append("  （当前消耗堆为空）")
+    else:
+        counts = {}
+        for cid in p.exhaust_pile:
+            name = ALL_CARDS[cid].name if cid in ALL_CARDS else cid
+            counts[name] = counts.get(name, 0) + 1
+        sorted_names = sorted(counts.keys())
+        for idx, name in enumerate(sorted_names, 1):
+            lines.append(f"  {idx}. 【{name}】 x{counts[name]}")
+    lines.append("━━━━━━━━━━━━━━━━━━━━")
+    return "\n".join(lines)

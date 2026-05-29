@@ -525,8 +525,30 @@ class QueryCommand(CommandHandler):
     def execute(self, router, user_id: str, parts: list[str]) -> Generator[str, None, None]:
         run = router.save_manager.load_save(user_id)
         if len(parts) > 1:
-            query_str = " ".join(parts[1:]).strip()
-            yield GameRenderer.render_query_info(query_str)
+            query_str = " ".join(parts[1:]).strip().lower()
+            if query_str in ("抽牌堆", "draw", "draw_pile"):
+                if not run:
+                    yield "❌ 你当前没有正在进行的游戏。"
+                elif run.node_type != "battle":
+                    yield "❌ 只有在战斗中才能查询战斗牌堆。"
+                else:
+                    yield GameRenderer.render_draw_pile(run)
+            elif query_str in ("弃牌堆", "discard", "discard_pile"):
+                if not run:
+                    yield "❌ 你当前没有正在进行的游戏。"
+                elif run.node_type != "battle":
+                    yield "❌ 只有在战斗中才能查询战斗牌堆。"
+                else:
+                    yield GameRenderer.render_discard_pile(run)
+            elif query_str in ("消耗堆", "exhaust", "exhaust_pile"):
+                if not run:
+                    yield "❌ 你当前没有正在进行的游戏。"
+                elif run.node_type != "battle":
+                    yield "❌ 只有在战斗中才能查询战斗牌堆。"
+                else:
+                    yield GameRenderer.render_exhaust_pile(run)
+            else:
+                yield GameRenderer.render_query_info(" ".join(parts[1:]).strip())
         else:
             if not run:
                 yield "❌ 你当前没有正在进行的游戏。输入 /rogue 开启 开始新游戏。\n💡 提示：你可以通过 /rogue 查询 <名称>（如：/rogue 查询 力量）或 /rogue 查询 buff 来查看相关效果描述。"
@@ -534,6 +556,36 @@ class QueryCommand(CommandHandler):
                 yield "❌ 只有在战斗中才能查询详细战斗信息。请输入想要查询的随从、遗物、Buff名称。\n💡 提示：你可以通过 /rogue 查询 <名称>（如：/rogue 查询 力量）或 /rogue 查询 buff 来查看相关效果描述。"
             else:
                 yield GameRenderer.render_detailed_battle(run)
+
+class DrawCommand(CommandHandler):
+    def execute(self, router, user_id: str, parts: list[str]) -> Generator[str, None, None]:
+        run = router.save_manager.load_save(user_id)
+        if not run:
+            yield "❌ 你当前没有正在进行的游戏。输入 /rogue 开启 开始新游戏。"
+        elif run.node_type != "battle":
+            yield "❌ 只有在战斗中才能查询战斗牌堆。"
+        else:
+            yield GameRenderer.render_draw_pile(run)
+
+class DiscardCommand(CommandHandler):
+    def execute(self, router, user_id: str, parts: list[str]) -> Generator[str, None, None]:
+        run = router.save_manager.load_save(user_id)
+        if not run:
+            yield "❌ 你当前没有正在进行的游戏。输入 /rogue 开启 开始新游戏。"
+        elif run.node_type != "battle":
+            yield "❌ 只有在战斗中才能查询战斗牌堆。"
+        else:
+            yield GameRenderer.render_discard_pile(run)
+
+class ExhaustCommand(CommandHandler):
+    def execute(self, router, user_id: str, parts: list[str]) -> Generator[str, None, None]:
+        run = router.save_manager.load_save(user_id)
+        if not run:
+            yield "❌ 你当前没有正在进行的游戏。输入 /rogue 开启 开始新游戏。"
+        elif run.node_type != "battle":
+            yield "❌ 只有在战斗中才能查询战斗牌堆。"
+        else:
+            yield GameRenderer.render_exhaust_pile(run)
 
 class CLIRouter:
     def __init__(self, save_manager, engine):
@@ -565,7 +617,10 @@ class CLIRouter:
             "折叠": FoldCommand(), "f": FoldCommand(), "fold": FoldCommand(),
             "队列": QueueCommand(), "q": QueueCommand(), "queue": QueueCommand(),
             "统计": StatsCommand(), "stat": StatsCommand(), "stats": StatsCommand(),
-            "查询": QueryCommand(), "query": QueryCommand(), "info": QueryCommand(), "i": QueryCommand()
+            "查询": QueryCommand(), "query": QueryCommand(), "info": QueryCommand(), "i": QueryCommand(),
+            "抽牌堆": DrawCommand(), "draw": DrawCommand(), "draw_pile": DrawCommand(),
+            "弃牌堆": DiscardCommand(), "discard": DiscardCommand(), "discard_pile": DiscardCommand(),
+            "消耗堆": ExhaustCommand(), "exhaust": ExhaustCommand(), "exhaust_pile": ExhaustCommand()
         }
 
     def _execute_sub_action(self, user_id: str, run, parts: list[str]) -> Tuple[str, bool]:
