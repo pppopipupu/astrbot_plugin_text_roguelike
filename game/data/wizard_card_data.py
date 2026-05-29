@@ -190,7 +190,7 @@ WIZARD_CARD_CONFIG = {
         "name": "回响形态",
         "color": "neutral",
         "type": "ability",
-        "cost_a": 1,
+        "cost_a": 2,
         "cost_ba": 1,
         "desc": "本场战斗中，你每回合打出的卡牌额外打出，每张牌最多回响 8 次，多余层数顺延至后续卡牌。",
         "rarity": "epic",

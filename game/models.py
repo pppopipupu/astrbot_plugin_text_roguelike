@@ -55,6 +55,9 @@ class Card:
     fleeting: bool = False
     agile: bool = False
     retain: bool = False
+    innate: bool = False
+    ethereal: bool = False
+    unplayable: bool = False
 
     def execute(self, run: 'GameRun', target: Optional[str] = None, engine = None) -> str:
         return ""

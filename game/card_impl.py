@@ -23,8 +23,6 @@ class SpellDamageCard(Card):
         dmg = engine.get_modified_spell_damage(run, self, dmg)
         name = engine._get_target_name(run, target)
         engine._damage_target(run, target, dmg)
-        
-        # 从配置模块动态读取反馈模板
         cfg = CARD_CONFIG.get(self.id, {})
         feedback_tmpl = cfg.get("feedback")
         if feedback_tmpl:
@@ -423,6 +421,10 @@ class FleetingSparkCard(Card):
         else:
             return f"使用了【{self.name}】，对【{name}】造成了 {dmg} 点伤害，并抽了 2 张牌，但手牌已空，无需丢弃。"
 
+class CurseCard(Card):
+    def execute(self, run, target, engine) -> str:
+        return "该卡牌不能被打出。"
+
 ALL_CARDS = {}
 
 for cid, cfg in CARD_CONFIG.items():
@@ -492,9 +494,14 @@ for cid, cfg in CARD_CONFIG.items():
         ALL_CARDS[cid] = MeteorSwarmCard(cid, name, color, ctype, cost_a, cost_ba, cfg.get("base_dmg", 0), is_fire=True, desc=desc)
     elif cid == "archmage_wish":
         ALL_CARDS[cid] = ArchmageWishCard(cid, name, color, ctype, cost_a, cost_ba, desc=desc)
+    elif cid in ("curse_dazed", "curse_agony"):
+        ALL_CARDS[cid] = CurseCard(cid, name, color, ctype, cost_a, cost_ba, desc=desc)
 
     ALL_CARDS[cid].rarity = rarity
     ALL_CARDS[cid].exhaust = exhaust
     ALL_CARDS[cid].fleeting = fleeting
     ALL_CARDS[cid].agile = agile
     ALL_CARDS[cid].retain = retain
+    ALL_CARDS[cid].innate = cfg.get("innate", False)
+    ALL_CARDS[cid].ethereal = cfg.get("ethereal", False)
+    ALL_CARDS[cid].unplayable = cfg.get("unplayable", False)

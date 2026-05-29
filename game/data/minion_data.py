@@ -1,5 +1,3 @@
-# 随从静态配置数据
-
 MINION_CONFIG = {
     "mercenary": {
         "name": "雇佣兵",

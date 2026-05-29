@@ -1,6 +1,32 @@
-from astrbot.api.event import filter, AstrMessageEvent, MessageEventResult
-from astrbot.api.star import Context, Star, register
-from astrbot.api import logger
+try:
+    from astrbot.api.event import filter, AstrMessageEvent, MessageEventResult
+    from astrbot.api.star import Context, Star, register
+    from astrbot.api import logger
+except ImportError:
+    class Star:
+        def __init__(self, context, config=None):
+            self.context = context
+            self.config = config or {}
+    class Context:
+        pass
+    class AstrMessageEvent:
+        pass
+    class MessageEventResult:
+        pass
+    def register(*args, **kwargs):
+        return lambda cls: cls
+    class FilterDummy:
+        def command(*args, **kwargs):
+            return lambda func: func
+        def regex(*args, **kwargs):
+            return lambda func: func
+    filter = FilterDummy()
+    class DummyLogger:
+        def info(self, *args, **kwargs): pass
+        def error(self, *args, **kwargs): pass
+        def warning(self, *args, **kwargs): pass
+        def debug(self, *args, **kwargs): pass
+    logger = DummyLogger()
 
 try:
     from .game.manager import SaveManager
@@ -50,10 +76,10 @@ class MyPlugin(Star):
         self.engine = GameEngine(self.save_manager)
 
     async def initialize(self):
-        """可选择实现异步的插件初始化方法，当实例化该插件类之后会自动调用该方法。"""
+        pass
 
     async def terminate(self):
-        """可选择实现异步的插件销毁方法，当插件被卸载/停用时会调用。"""
+        pass
 
     @filter.command("rogue")
     async def rogue(self, event: AstrMessageEvent):
@@ -174,7 +200,7 @@ class MyPlugin(Star):
             if self.engine.is_battle_won(run):
                 self.engine._handle_battle_win(run)
                 if run.node_type == "victory":
-                    return f"{res}\n🎉 恭喜你击败了远古红龙，通关成功！", True
+                    return f"{res}\n🎉 恭喜你击败了腐化之心，通关成功！", True
                 else:
                     return f"{res}\n🎉 战斗胜利！你击败了敌方所有单位。", True
             return res, False
@@ -194,7 +220,7 @@ class MyPlugin(Star):
             if self.engine.is_battle_won(run):
                 self.engine._handle_battle_win(run)
                 if run.node_type == "victory":
-                    return f"{res}\n🎉 恭喜你击败了远古红龙，通关成功！", True
+                    return f"{res}\n🎉 恭喜你击败了腐化之心，通关成功！", True
                 else:
                     return f"{res}\n🎉 战斗胜利！你击败了敌方所有单位。", True
             return res, False
@@ -251,7 +277,7 @@ class MyPlugin(Star):
             if self.engine.is_battle_won(run):
                 self.engine._handle_battle_win(run)
                 if run.node_type == "victory":
-                    return f"{res_combined}\n🎉 恭喜你击败了远古红龙，通关成功！", True
+                    return f"{res_combined}\n🎉 恭喜你击败了腐化之心，通关成功！", True
                 else:
                     return f"{res_combined}\n🎉 战斗胜利！你击败了敌方所有单位。", True
             return res_combined, False

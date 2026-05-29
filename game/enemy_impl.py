@@ -278,8 +278,107 @@ class ShadowFiendTemplate(EnemyTemplate):
             enemy.shield += enemy.intent_val
             logs.append(f"【{enemy.name}】进入虚化，获得 {enemy.intent_val} 点护盾。")
 
+
+class BossCorruptedHeartTemplate(EnemyTemplate):
+    def roll_intent(self, run, engine, enemy) -> Tuple[str, int, str]:
+        turn = run.node_data.get("heart_turn", 1)
+        cycle = (turn - 1) % 4 + 1
+        if cycle == 1:
+            return "debuff", 0, "邪恶之语 (将晕眩与苦恼放入玩家牌组)"
+        elif cycle == 2:
+            return "multi_attack", 2, "血弹喷射 (造成 2 点伤害，重复 8 次)"
+        elif cycle == 3:
+            return "big_attack", 20, "毁灭之痛 (造成 20 点伤害)"
+        else:
+            return "strength_buff", 2, "充能 (获得 2 层力量，使后续伤害增加 2)"
+
+    def roll_intent_ba(self, run, engine, enemy) -> Tuple[str, int, str]:
+        turn = run.node_data.get("heart_turn", 1)
+        cycle = (turn - 1) % 4 + 1
+        if cycle == 1:
+            return "defend_large", 15, "暗影护盾 (获得 15 护盾)"
+        elif cycle == 2:
+            return "defend_normal", 10, "护盾 (获得 10 护盾)"
+        elif cycle == 3:
+            return "defend_normal", 10, "护盾 (获得 10 护盾)"
+        else:
+            return "defend_large", 20, "暗影护盾 (获得 20 护盾)"
+
+    def roll_intent_ba2(self, run, engine, enemy) -> Tuple[str, int, str]:
+        turn = run.node_data.get("heart_turn", 1)
+        cycle = (turn - 1) % 4 + 1
+        if cycle == 1:
+            return "drain_ba", 1, "虚空之歌 (使玩家下回合失去 1BA)"
+        elif cycle == 2:
+            return "heart_strike", 4, "心跳重击 (造成 4 伤害)"
+        elif cycle == 3:
+            return "gaze_discard", 1, "虚无凝视 (迫使玩家随机丢弃 1 张手牌)"
+        else:
+            return "heart_heal", 10, "回潮 (恢复 10 生命)"
+
+    def execute_intent(self, run, engine, enemy, logs: List[str]):
+        p = run.player
+        import random
+        
+        strength = 0
+        for b in enemy.buffs:
+            if b.id == "strength":
+                strength += b.stacks
+
+        if enemy.intent_type == "debuff":
+            p.draw_pile.append("curse_dazed")
+            p.draw_pile.append("curse_agony")
+            random.shuffle(p.draw_pile)
+            logs.append(f"【{enemy.name}】施放了【邪恶之语】，将【晕眩】与【苦恼】放入了玩家的抽牌堆并进行了洗牌。")
+            
+        elif enemy.intent_type == "multi_attack":
+            dmg = enemy.intent_val + strength
+            logs.append(f"【{enemy.name}】释放【血弹喷射】，发动 8 次攻击（每次 {dmg} 伤害）：")
+            for _ in range(8):
+                if enemy.hp <= 0:
+                    break
+                self._perform_attack(run, engine, enemy, dmg, logs)
+                
+        elif enemy.intent_type == "big_attack":
+            dmg = enemy.intent_val + strength
+            self._perform_attack(run, engine, enemy, dmg, logs)
+            
+        elif enemy.intent_type == "strength_buff":
+            engine._add_buff_to(enemy, "strength", "力量", f"造成的伤害增加 {enemy.intent_val} 点", enemy.intent_val)
+            logs.append(f"【{enemy.name}】进行【充能】，力量提升了 {enemy.intent_val} 点。")
+            
+        elif enemy.intent_type in ("defend_large", "defend_normal"):
+            enemy.shield += enemy.intent_val
+            logs.append(f"【{enemy.name}】获得 {enemy.intent_val} 点护盾。")
+            
+        elif enemy.intent_type == "drain_ba":
+            run.node_data["drain_ba"] = True
+            logs.append(f"【{enemy.name}】吟唱【虚空之歌】，玩家将在下一回合失去 1 个附赠动作点 (BA)。")
+            
+        elif enemy.intent_type == "heart_strike":
+            dmg = enemy.intent_val + strength
+            self._perform_attack(run, engine, enemy, dmg, logs)
+            
+        elif enemy.intent_type == "gaze_discard":
+            if p.hand:
+                discarded = p.hand.pop(random.randint(0, len(p.hand) - 1))
+                from .card_impl import ALL_CARDS
+                card_name = ALL_CARDS[discarded].name if discarded in ALL_CARDS else "未知卡牌"
+                agile_msg = engine._discard_card(run, discarded)
+                logs.append(f"【{enemy.name}】虚无凝视，迫使玩家随机丢弃了卡牌【{card_name}】。")
+                if agile_msg:
+                    logs.append(agile_msg)
+            else:
+                logs.append(f"【{enemy.name}】虚无凝视，但玩家没有手牌可以丢弃。")
+                
+        elif enemy.intent_type == "heart_heal":
+            enemy.hp = min(enemy.max_hp, enemy.hp + enemy.intent_val)
+            logs.append(f"【{enemy.name}】自我回潮，恢复了 {enemy.intent_val} 点生命值。")
+
+
 ALL_ENEMIES = {
     "远古红龙": BossRedDragonTemplate("远古红龙"),
+    "腐化之心": BossCorruptedHeartTemplate("腐化之心"),
     "地精百夫长": GoblinCenturionTemplate("地精百夫长"),
     "石像鬼祭司": GargoylePriestTemplate("石像鬼祭司"),
     "狂暴兽王": BeastMasterTemplate("狂暴兽王"),

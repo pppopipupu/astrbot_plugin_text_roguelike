@@ -161,5 +161,27 @@ NEUTRAL_CARD_CONFIG = {
         "base_dmg": 6,
         "fleeting": True,
         "feedback": "对【{target}】造成了 {dmg} 点伤害。"
+    },
+    "curse_dazed": {
+        "name": "晕眩",
+        "color": "neutral",
+        "type": "spell",
+        "cost_a": 99,
+        "cost_ba": 99,
+        "desc": "不能被打出。虚无。",
+        "rarity": "common",
+        "unplayable": True,
+        "ethereal": True
+    },
+    "curse_agony": {
+        "name": "苦恼",
+        "color": "neutral",
+        "type": "spell",
+        "cost_a": 99,
+        "cost_ba": 99,
+        "desc": "不能被打出。固有。",
+        "rarity": "common",
+        "unplayable": True,
+        "innate": True
     }
 }

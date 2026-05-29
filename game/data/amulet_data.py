@@ -1,5 +1,3 @@
-# 护符静态配置数据
-
 AMULET_CONFIG = {
     "lucky_coin": {
         "name": "幸运金币",

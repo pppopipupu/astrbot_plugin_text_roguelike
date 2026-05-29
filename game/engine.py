@@ -13,9 +13,9 @@ class GameEngine:
         self.map_engine = MapEngine(save_manager, self.battle_engine)
 
     def start_new_game(self, user_id: str) -> GameRun:
-        commons = [cid for cid, c in ALL_CARDS.items() if getattr(c, "rarity", "common") == "common"]
-        rares = [cid for cid, c in ALL_CARDS.items() if getattr(c, "rarity", "common") == "rare"]
-        epics = [cid for cid, c in ALL_CARDS.items() if getattr(c, "rarity", "common") == "epic"]
+        commons = [cid for cid, c in ALL_CARDS.items() if getattr(c, "rarity", "common") == "common" and not cid.startswith("curse_")]
+        rares = [cid for cid, c in ALL_CARDS.items() if getattr(c, "rarity", "common") == "rare" and not cid.startswith("curse_")]
+        epics = [cid for cid, c in ALL_CARDS.items() if getattr(c, "rarity", "common") == "epic" and not cid.startswith("curse_")]
         initial_deck = []
         for _ in range(5):
             initial_deck.append(random.choice(commons))

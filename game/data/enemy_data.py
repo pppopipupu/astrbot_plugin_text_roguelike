@@ -1,5 +1,3 @@
-# 敌人意图与静态配置数据
-
 ENEMY_CONFIG = {
     "远古红龙": {
         "name": "远古红龙",
@@ -16,6 +14,15 @@ ENEMY_CONFIG = {
             "intent_val": 1,
             "intent_desc": "准备攻击 (造成 1 伤害)"
         }
+    },
+    "腐化之心": {
+        "name": "腐化之心",
+        "intents": [
+            {"id": "debuff", "val": 0, "desc": "邪恶之语 (将晕眩与苦恼放入玩家牌组)"},
+            {"id": "multi_attack", "val": 2, "desc": "血弹喷射 (造成 2 点伤害，重复 8 次)"},
+            {"id": "big_attack", "val": 20, "desc": "毁灭之痛 (造成 20 点伤害)"},
+            {"id": "strength_buff", "val": 2, "desc": "充能 (获得 2 层力量，使后续伤害增加 2)"}
+        ]
     },
     "地精百夫长": {
         "name": "地精百夫长",

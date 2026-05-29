@@ -98,6 +98,14 @@ class StunBuff(BuffImpl):
         return True
 
 
+class BeatOfDeathBuff(BuffImpl):
+    pass
+
+
+class StrengthBuff(BuffImpl):
+    pass
+
+
 BUFF_MAP = {
     "tactical_focus": TacticalFocusBuff,
     "quicken": QuickenBuff,
@@ -108,6 +116,8 @@ BUFF_MAP = {
     "magic_network": MagicNetworkBuff,
     "wish_power": WishPowerBuff,
     "stun": StunBuff,
+    "beat_of_death": BeatOfDeathBuff,
+    "strength": StrengthBuff,
 }
 
 def get_buff_impl(buff_id: str, stacks: int) -> Optional[BuffImpl]:

@@ -1,5 +1,3 @@
-# Buff 静态配置数据
-
 BUFF_CONFIG = {
     "tactical_focus": {
         "name": "战术专注",
@@ -24,5 +22,13 @@ BUFF_CONFIG = {
     "iron_will": {
         "name": "钢铁意志",
         "desc": "最大生命上限增加 10 并回复 10 生命"
+    },
+    "beat_of_death": {
+        "name": "死亡律动",
+        "desc": "每当玩家打出一张牌，玩家受到 1 点伤害"
+    },
+    "strength": {
+        "name": "力量",
+        "desc": "造成的伤害增加"
     }
 }

@@ -1,6 +1,6 @@
 import random
 from typing import Optional, List, Dict
-from .models import GameRun, PlayerState, EnemyState, MinionState, AmuletState, Card
+from .models import GameRun, PlayerState, EnemyState, MinionState, AmuletState, Card, BuffState
 from .buff_impl import (
     apply_modify_heal_limit,
     apply_modify_spell_cost_ba,
@@ -141,6 +141,16 @@ class BattleEngine:
         run.node_data["cards_played_this_turn"] = 0
         p.draw_pile = p.deck.copy()
         random.shuffle(p.draw_pile)
+        innate_cards = []
+        non_innate_cards = []
+        from .card_impl import ALL_CARDS
+        for cid in p.draw_pile:
+            card = ALL_CARDS.get(cid)
+            if card and getattr(card, "innate", False):
+                innate_cards.append(cid)
+            else:
+                non_innate_cards.append(cid)
+        p.draw_pile = non_innate_cards + innate_cards
         p.discard_pile.clear()
         p.hand.clear()
         p.actions = 2
@@ -167,16 +177,35 @@ class BattleEngine:
         run.node_data["difficulty"] = difficulty
 
         if difficulty == "boss":
-            run.enemies = [EnemyState(
-                name="远古红龙",
-                hp=60,
-                max_hp=60,
-                shield=0,
-                actions=1,
-                bonus_actions=2,
-                max_actions=1,
-                max_bonus_actions=2
-            )]
+            if p.stage == 20:
+                run.enemies = [EnemyState(
+                    name="腐化之心",
+                    hp=120,
+                    max_hp=120,
+                    shield=0,
+                    actions=1,
+                    bonus_actions=2,
+                    max_actions=1,
+                    max_bonus_actions=2
+                )]
+                run.enemies[0].buffs.append(BuffState(
+                    id="beat_of_death",
+                    name="死亡律动",
+                    stacks=1,
+                    desc="每当玩家打出一张牌，玩家受到一点伤害"
+                ))
+                run.node_data["heart_turn"] = 1
+            else:
+                run.enemies = [EnemyState(
+                    name="远古红龙",
+                    hp=60,
+                    max_hp=60,
+                    shield=0,
+                    actions=1,
+                    bonus_actions=2,
+                    max_actions=1,
+                    max_bonus_actions=2
+                )]
         elif difficulty == "elite":
             elite_pool = [
                 ("地精百夫长", 30, 4),
@@ -267,6 +296,8 @@ class BattleEngine:
         card = ALL_CARDS.get(cid)
         if not card:
             return "❌ 卡牌不存在。"
+        if getattr(card, "unplayable", False):
+            return "❌ 该卡牌不能被打出。"
 
         if card.type == "spell":
             if target is None:
@@ -330,6 +361,22 @@ class BattleEngine:
                 if p.hp > old_hp:
                     res += " ❤️ [吸血之触] 回复了 1 点生命值。"
 
+        beat_of_death_dmg = 0
+        for enemy in run.enemies:
+            if enemy.hp > 0:
+                for b in enemy.buffs:
+                    if b.id == "beat_of_death":
+                        beat_of_death_dmg += b.stacks
+        if beat_of_death_dmg > 0:
+            if p.shield >= beat_of_death_dmg:
+                p.shield -= beat_of_death_dmg
+                res += f" 💔 [死亡律动] 玩家受到 {beat_of_death_dmg} 点伤害（由护盾吸收）。"
+            else:
+                take = beat_of_death_dmg - p.shield
+                p.hp -= take
+                p.shield = 0
+                res += f" 💔 [死亡律动] 玩家受到 {take} 点生命伤害。"
+
         played_count = run.node_data.get("cards_played_this_turn", 0)
         extra_feedback = apply_on_card_played(run, card, target, self)
         if extra_feedback:
@@ -356,6 +403,8 @@ class BattleEngine:
         card = ALL_CARDS.get(cid)
         if not card:
             return "❌ 卡牌不存在。"
+        if getattr(card, "unplayable", False):
+            return "❌ 该卡牌不能被打出。"
 
         req_a = card.cost_a
         req_ba = card.cost_ba
@@ -532,6 +581,8 @@ class BattleEngine:
             card = ALL_CARDS.get(cid)
             if card and getattr(card, "retain", False):
                 retained.append(cid)
+            elif card and getattr(card, "ethereal", False):
+                p.exhaust_pile.append(cid)
             else:
                 p.discard_pile.append(cid)
         p.hand = retained
@@ -570,6 +621,9 @@ class BattleEngine:
         apply_on_player_turn_end(run, self)
         p.actions = 2 + (1 if "energy_core" in p.relics else 0)
         p.bonus_actions = 1 + (1 if "unstable_crystal" in p.relics else 0)
+        if run.node_data.get("drain_ba"):
+            p.bonus_actions = max(0, p.bonus_actions - 1)
+            run.node_data.pop("drain_ba", None)
         apply_on_player_turn_start(run, self)
         for mk, mv in p.minions.items():
             mv.actions += 1
@@ -579,6 +633,9 @@ class BattleEngine:
                 mv.atk = 4
             elif mv.id == "arcane_golem":
                 mv.atk = 6
+
+        if run.enemies and any(e.name == "腐化之心" for e in run.enemies):
+            run.node_data["heart_turn"] = run.node_data.get("heart_turn", 1) + 1
 
         self._draw_cards(p, 6)
         self._roll_enemy_intent(run)
@@ -671,7 +728,7 @@ class BattleEngine:
             run.node_type = "reward"
             from .card_impl import ALL_CARDS
             card_pool = list(ALL_CARDS.keys())
-            normal_cards = [cid for cid in card_pool if ALL_CARDS[cid].rarity != "legendary"]
+            normal_cards = [cid for cid in card_pool if ALL_CARDS[cid].rarity != "legendary" and not cid.startswith("curse_")]
             reward_cards = random.sample(normal_cards, 3)
             run.node_data = {"cards": reward_cards, "quest_bonus": quest_bonus}
             self.save_manager.save_save(run.user_id, run)

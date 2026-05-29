@@ -19,7 +19,6 @@ class MapEngine:
         run.enemies.clear()
         run.node_data.clear()
 
-        # 幸运硬币被动结算
         if "lucky_coin" in p.relics:
             p.gold += 5
         if "tax_contract" in p.relics:
@@ -230,7 +229,11 @@ class MapEngine:
 
     def _init_event_node(self, run: GameRun):
         from .event_impl import ALL_EVENTS
-        event = random.choice(ALL_EVENTS)
+        stage = run.player.stage
+        valid_events = [e for e in ALL_EVENTS if getattr(e, "min_stage", 2) <= stage <= getattr(e, "max_stage", 19)]
+        if not valid_events:
+            valid_events = ALL_EVENTS
+        event = random.choice(valid_events)
         run.node_data = {
             "event_id": event.id,
             "description": event.description,
@@ -239,7 +242,7 @@ class MapEngine:
 
     def _init_shop_node(self, run: GameRun):
         from .card_impl import ALL_CARDS
-        card_pool = [cid for cid, c in ALL_CARDS.items() if c.rarity != "legendary"]
+        card_pool = [cid for cid, c in ALL_CARDS.items() if c.rarity != "legendary" and not cid.startswith("curse_")]
         shop_cards = random.sample(card_pool, 3)
         items = []
         discount = 1.0
@@ -371,7 +374,7 @@ class MapEngine:
                         p.max_hp += 5
                         p.hp += 5
                         
-                card_pool = [cid for cid, c in ALL_CARDS.items() if c.rarity == "epic"]
+                card_pool = [cid for cid, c in ALL_CARDS.items() if c.rarity == "epic" and not cid.startswith("curse_")]
                 reward_cards = random.sample(card_pool, 3) if len(card_pool) >= 3 else card_pool
                 
                 from .relic_impl import get_relic_name
@@ -434,7 +437,7 @@ class MapEngine:
                 return f"你感到精力充沛，恢复了 {heal} 点生命值，开启下一关。"
             elif option_idx == 2:
                 from .card_impl import ALL_CARDS
-                wizards = [cid for cid, c in ALL_CARDS.items() if c.color == "wizard" and c.type == "spell" and c.rarity != "legendary"]
+                wizards = [cid for cid, c in ALL_CARDS.items() if c.color == "wizard" and c.type == "spell" and c.rarity != "legendary" and not cid.startswith("curse_")]
                 reward_cards = random.sample(wizards, 3) if len(wizards) >= 3 else wizards
                 run.node_type = "card_select"
                 run.node_data = {

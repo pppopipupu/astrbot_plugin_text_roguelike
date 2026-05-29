@@ -53,8 +53,8 @@ class TakeNecklaceOption(EventOption):
             p.relics.append("arcane_rune")
             res = "🍀 运气不错！你安全地解除了符文陷阱，成功捞出了【奥术项链】，获得遗物【奥术符文】！"
         else:
-            p.hp = max(1, p.hp - 6)
-            res = "⚡ 糟糕！捞取项链时触发了爆裂电弧陷阱，你受到了 6 点雷电伤害，且项链在电弧中化为了灰烬！"
+            p.deck.append("curse_dazed")
+            res = "⚡ 糟糕！捞取项链时触发了爆裂电弧陷阱，你感到一阵晕眩（1张【晕眩】卡牌已加入卡组），且项链在电弧中化为了灰烬！"
         engine.enter_next_stage(run)
         engine.save_manager.save_save(run.user_id, run)
         return res
@@ -162,10 +162,10 @@ class ShatterPortalOption(EventOption):
     def execute(self, run, engine) -> str:
         p = run.player
         p.gold += 40
-        p.hp = max(1, p.hp - 6)
+        p.deck.append("curse_agony")
         engine.enter_next_stage(run)
         engine.save_manager.save_save(run.user_id, run)
-        return "💥 你用法术强行轰碎了虚空传送门！空间之门产生了剧烈爆炸，巨大的余波伤及了你（失去 6 生命值），但破碎的裂隙中掉落了一大袋金币（获得 40 金币）。"
+        return "💥 你用法术强行轰碎了虚空传送门！空间之门产生了剧烈爆炸，巨大的余波让你心神苦恼（1张【苦恼】卡牌已加入卡组），但破碎的裂隙中获得 40 金币。"
 
 class MazeFireOption(EventOption):
     def execute(self, run, engine) -> str:
@@ -282,11 +282,11 @@ class ClimbLadderOption(EventOption):
 class JumpCartOption(EventOption):
     def execute(self, run, engine) -> str:
         p = run.player
-        p.hp = max(1, p.hp - 6)
         p.gold += 40
+        p.deck.append("curse_dazed")
         engine.enter_next_stage(run)
         engine.save_manager.save_save(run.user_id, run)
-        return "🤕 在矿车冲入深渊的前一瞬间，你狼狈地跳车。你在坚硬的矿石上重重摔伤（失去 6 生命值），但摔倒的地方恰好是一处亮晶晶的矿脉，获得了 40 金币。"
+        return "🤕 在矿车冲入深渊的前一瞬间，你狼狈地跳车。你重重摔在坚硬的矿石上并感到一阵晕眩（1张【晕眩】卡牌已加入卡组），但在碎石堆中获得了 40 金币。"
 
 class StopCartSpellOption(EventOption):
     def execute(self, run, engine) -> str:
@@ -318,10 +318,14 @@ class LootBodyOption(EventOption):
     def execute(self, run, engine) -> str:
         p = run.player
         p.gold += 25
-        p.hp = max(1, p.hp - 3)
+        p.deck.append("curse_agony")
+        heal_msg = ""
+        if "wither_seed" not in p.relics:
+            p.hp = min(p.max_hp, p.hp + 4)
+            heal_msg = "，但你顺便饮下了干尸腰包中残留的一小瓶古代药水（生命值回复了 4 点）"
         engine.enter_next_stage(run)
         engine.save_manager.save_save(run.user_id, run)
-        return "🕷️ 你撬开了干尸怀里的盒子，在里面收获了 25 金币。但当你触碰干尸时，藏在里面的剧毒尸蝇惊扰飞出，你被叮咬失去了 3 点生命值。"
+        return f"🕷️ 你撬开了干尸怀里的盒子，在里面收获了 25 金币。虽然触碰干尸使你沾染了古老诅咒，感到心神苦恼（1张【苦恼】卡牌已加入卡组）{heal_msg}。"
 
 class DigOreOption(EventOption):
     def execute(self, run, engine) -> str:
@@ -337,6 +341,175 @@ class DigOreOption(EventOption):
         engine.save_manager.save_save(run.user_id, run)
         return res
 
+class ReadScrollOption(EventOption):
+    def execute(self, run, engine) -> str:
+        import random
+        p = run.player
+        if random.random() < 0.5:
+            p.deck.append("spell_surge")
+            res = "🍀 你成功解读了残卷！你对奥术的领悟更深了，将卡牌【奥术涌动】加入了你的卡组。"
+        else:
+            p.deck.append("curse_dazed")
+            res = "⚡ 残卷上狂暴的奥术能量瞬间反噬了你！你感到一阵【晕眩】（1张【晕眩】卡牌已加入卡组）。"
+        engine.enter_next_stage(run)
+        engine.save_manager.save_save(run.user_id, run)
+        return res
+
+class ResonateScrollOption(EventOption):
+    def execute(self, run, engine) -> str:
+        import random
+        p = run.player
+        if p.gold < 15:
+            return "❌ 你的金币不足 15 点。"
+        p.gold -= 15
+        from .card_impl import ALL_CARDS
+        spells = [cid for cid, c in ALL_CARDS.items() if c.type == "spell" and c.rarity != "legendary" and not cid.startswith("curse_")]
+        got_card = random.choice(spells) if spells else "dagger_throw"
+        p.deck.append(got_card)
+        engine.enter_next_stage(run)
+        engine.save_manager.save_save(run.user_id, run)
+        return f"🪙 你消耗了 15 金币。魔网与残卷共鸣，凭空凝聚出一张卡牌【{ALL_CARDS[got_card].name}】并加入了你的卡组。"
+
+class DispelPhantomOption(EventOption):
+    def execute(self, run, engine) -> str:
+        p = run.player
+        heal = 15
+        if "wither_seed" not in p.relics:
+            p.hp = min(p.max_hp, p.hp + heal)
+            res = "✨ 你用魔力驱散了法师的残影。残影破碎为纯净的奥术微光，治愈了你的伤势，生命值回复了 15 点。"
+        else:
+            res = "✨ 你用魔力驱散了法师的残影。残影化为奥术微光散去（因为有枯萎之种，你无法获得治疗）。"
+        engine.enter_next_stage(run)
+        engine.save_manager.save_save(run.user_id, run)
+        return res
+
+class GambleSmallOption(EventOption):
+    def execute(self, run, engine) -> str:
+        import random
+        p = run.player
+        if p.gold < 15:
+            return "❌ 你的金币不足 15 点。"
+        p.gold -= 15
+        if random.random() < 0.5:
+            p.gold += 30
+            res = "🪙 猜中了！哥布林商人一脸肉疼地付给你 30 金币。"
+        else:
+            res = "❌ 猜错了！哥布林商人得意地收走了你押下的 15 金币。"
+        engine.enter_next_stage(run)
+        engine.save_manager.save_save(run.user_id, run)
+        return res
+
+class GambleLargeOption(EventOption):
+    def execute(self, run, engine) -> str:
+        import random
+        p = run.player
+        if p.gold < 30:
+            return "❌ 你的金币不足 30 点。"
+        p.gold -= 30
+        if random.random() < 0.4:
+            p.gold += 60
+            res = "🪙 运气爆棚！你猜中了！哥布林商人惨叫着付给你 60 金币。"
+        else:
+            res = "❌ 猜错了！哥布林商人哈哈大笑，将你的 30 金币塞进了自己的口袋。"
+        engine.enter_next_stage(run)
+        engine.save_manager.save_save(run.user_id, run)
+        return res
+
+class RobGoblinOption(EventOption):
+    def execute(self, run, engine) -> str:
+        import random
+        p = run.player
+        if random.random() < 0.7:
+            p.gold += 40
+            res = "⚔️ 抢劫成功！哥布林商人被你吓破了胆，丢下 40 金币狼狈逃窜。"
+        else:
+            p.hp = max(1, p.hp - 8)
+            res = "💥 抢劫失败！哥布林商人早有防备，触发了地上的自爆机关。你被炸飞受了 8 点伤害，而哥布林已经乘机溜走。"
+        engine.enter_next_stage(run)
+        engine.save_manager.save_save(run.user_id, run)
+        return res
+
+class DrinkNectarOption(EventOption):
+    def execute(self, run, engine) -> str:
+        p = run.player
+        heal = 12
+        if "wither_seed" not in p.relics:
+            p.hp = min(p.max_hp, p.hp + heal)
+            res = "🌸 你饮下了甜美的红色花蜜茶，感到浑身暖洋洋的，生命值回复了 12 点。"
+        else:
+            res = "🌸 你饮下了甜美的红色花蜜茶，口感很好，但因为有枯萎之种，你没有获得任何治疗效果。"
+        engine.enter_next_stage(run)
+        engine.save_manager.save_save(run.user_id, run)
+        return res
+
+class EatCookieOption(EventOption):
+    def execute(self, run, engine) -> str:
+        p = run.player
+        p.max_hp += 4
+        p.hp += 4
+        engine.enter_next_stage(run)
+        engine.save_manager.save_save(run.user_id, run)
+        return "🍪 你享用了绿色坚果饼。这奇妙的茶点永久提升了你的生命力，最大生命值上限 +4 且当前生命值 +4。"
+
+class ListenMusicOption(EventOption):
+    def execute(self, run, engine) -> str:
+        import random
+        p = run.player
+        from .card_impl import ALL_CARDS
+        agile_cards = [cid for cid, c in ALL_CARDS.items() if getattr(c, "agile", False) and not cid.startswith("curse_")]
+        got_card = random.choice(agile_cards) if agile_cards else "agile_strike"
+        p.deck.append(got_card)
+        engine.enter_next_stage(run)
+        engine.save_manager.save_save(run.user_id, run)
+        return f"🎵 你闭上双眼，静静倾听妖精的八音盒。美妙的旋律启发了你的身手，你获得了灵巧卡牌【{ALL_CARDS[got_card].name}】。"
+
+class ContractRelicOption(EventOption):
+    def execute(self, run, engine) -> str:
+        import random
+        p = run.player
+        p.hp = max(1, p.hp - 10)
+        relics_pool = ["lucky_coin", "red_bottle", "leather_armor", "whetstone", "ready_pack", "arcane_rune", "ancient_eye", "gold_compass", "dragon_blood", "energy_core", "heavy_armor"]
+        available_relics = [r for r in relics_pool if r not in p.relics]
+        got_relic = ""
+        if available_relics:
+            got_relic = random.choice(available_relics)
+            p.relics.append(got_relic)
+            if got_relic == "red_bottle":
+                p.max_hp += 5
+                p.hp += 5
+        from .relic_impl import get_relic_name
+        relic_msg = f"获得了珍贵的遗物【{get_relic_name(got_relic)}】" if got_relic else "但周围已经没有可拿的遗物了"
+        engine.enter_next_stage(run)
+        engine.save_manager.save_save(run.user_id, run)
+        return f"🖤 契约达成！你感到生命被抽离（失去 10 点生命值），但虚空中降下了一道宝光，你{relic_msg}。"
+
+class ContractLegendOption(EventOption):
+    def execute(self, run, engine) -> str:
+        import random
+        p = run.player
+        p.max_hp = max(5, p.max_hp - 6)
+        p.hp = min(p.hp, p.max_hp)
+        from .card_impl import ALL_CARDS
+        legends = [cid for cid, c in ALL_CARDS.items() if c.rarity == "legendary" and not cid.startswith("curse_")]
+        got_card = random.choice(legends) if legends else "doomsday_judgment"
+        p.deck.append(got_card)
+        engine.enter_next_stage(run)
+        engine.save_manager.save_save(run.user_id, run)
+        return f"🖤 契约达成！你的灵魂本源受到了虚空的侵蚀（最大生命值上限减少 6 点），同时一张强大的传奇卡牌【{ALL_CARDS[got_card].name}】悄然融入了你的卡组。"
+
+class AbsorbVoidOption(EventOption):
+    def execute(self, run, engine) -> str:
+        p = run.player
+        p.gold += 35
+        p.deck.append("curse_agony")
+        heal_msg = ""
+        if "wither_seed" not in p.relics:
+            p.hp = min(p.max_hp, p.hp + 6)
+            heal_msg = "，但其精纯的暗影魔力却在你的血管中奔流，反而治愈了你身上的伤势（生命值回复了 6 点）"
+        engine.enter_next_stage(run)
+        engine.save_manager.save_save(run.user_id, run)
+        return f"🌌 你张开双臂疯狂吸收周围的虚空能量，虚空结晶化为了 35 金币落入你的行囊。虽然狂暴的虚空能量给你的心灵留下了难以磨灭的【苦恼】（1张【苦恼】卡牌已加入卡组）{heal_msg}。"
+
 class LeaveEventOption(EventOption):
     def __init__(self, text: str, action: str, event_id: str = "fountain"):
         super().__init__(text, action)
@@ -348,10 +521,12 @@ class LeaveEventOption(EventOption):
         return "你决定不节外生枝，继续赶路。已前往下一关。"
 
 class EventTemplate:
-    def __init__(self, id: str, description: str, options: List[EventOption]):
+    def __init__(self, id: str, description: str, options: List[EventOption], min_stage: int = 2, max_stage: int = 19):
         self.id = id
         self.description = description
         self.options = options
+        self.min_stage = min_stage
+        self.max_stage = max_stage
 
 ALL_EVENTS = [
     EventTemplate(
@@ -400,6 +575,50 @@ ALL_EVENTS = [
             RideCartOption("坐上生锈矿车滑入矿坑", "ride_cart"),
             ClimbLadderOption("沿着破旧梯子慢慢爬下去", "climb_ladder")
         ]
+    ),
+    EventTemplate(
+        "phantom_mage",
+        EVENT_CONFIG["phantom_mage"]["description"],
+        [
+            ReadScrollOption("解读残卷", "read_scroll"),
+            ResonateScrollOption("用魔网产生共鸣", "resonate_scroll"),
+            DispelPhantomOption("驱散残影", "dispel_phantom"),
+            LeaveEventOption("悄悄离开", "leave_event", "phantom_mage")
+        ]
+    ),
+    EventTemplate(
+        "goblin_gamble",
+        EVENT_CONFIG["goblin_gamble"]["description"],
+        [
+            GambleSmallOption("小赌一把", "gamble_small"),
+            GambleLargeOption("豪赌一把", "gamble_large"),
+            RobGoblinOption("强行抢劫", "rob_goblin"),
+            LeaveEventOption("拒绝并离开", "leave_event", "goblin_gamble")
+        ]
+    ),
+    EventTemplate(
+        "fairy_tea",
+        EVENT_CONFIG["fairy_tea"]["description"],
+        [
+            DrinkNectarOption("饮用红色花蜜茶", "drink_nectar"),
+            EatCookieOption("享用绿色坚果饼", "eat_cookie"),
+            ListenMusicOption("倾听妖精的八音盒", "listen_music"),
+            LeaveEventOption("婉言谢绝并离开", "leave_event", "fairy_tea")
+        ],
+        min_stage=2,
+        max_stage=9
+    ),
+    EventTemplate(
+        "void_contract",
+        EVENT_CONFIG["void_contract"]["description"],
+        [
+            ContractRelicOption("献祭生命换取遗物", "contract_relic"),
+            ContractLegendOption("以血肉之躯汲取奥法", "contract_legend"),
+            AbsorbVoidOption("将虚空吞噬", "absorb_void"),
+            LeaveEventOption("拒绝契约并离开", "leave_event", "void_contract")
+        ],
+        min_stage=12,
+        max_stage=19
     )
 ]
 
@@ -432,6 +651,18 @@ def get_option_by_action(action: str) -> Optional[EventOption]:
         "stop_cart_spell": StopCartSpellOption("使用法术或盾牌强行刹车", "stop_cart_spell"),
         "loot_body": LootBodyOption("搜刮干尸", "loot_body"),
         "dig_ore": DigOreOption("用重火力法术轰开矿坑底部的矿墙", "dig_ore"),
-        "leave_event": LeaveEventOption("离开事件", "leave_event")
+        "leave_event": LeaveEventOption("离开事件", "leave_event"),
+        "read_scroll": ReadScrollOption("解读残卷", "read_scroll"),
+        "resonate_scroll": ResonateScrollOption("用魔网产生共鸣", "resonate_scroll"),
+        "dispel_phantom": DispelPhantomOption("驱散残影", "dispel_phantom"),
+        "gamble_small": GambleSmallOption("小赌一把", "gamble_small"),
+        "gamble_large": GambleLargeOption("豪赌一把", "gamble_large"),
+        "rob_goblin": RobGoblinOption("强行抢劫", "rob_goblin"),
+        "drink_nectar": DrinkNectarOption("饮用红色花蜜茶", "drink_nectar"),
+        "eat_cookie": EatCookieOption("享用绿色坚果饼", "eat_cookie"),
+        "listen_music": ListenMusicOption("倾听妖精的八音盒", "listen_music"),
+        "contract_relic": ContractRelicOption("献祭生命换取遗物", "contract_relic"),
+        "contract_legend": ContractLegendOption("以血肉之躯汲取奥法", "contract_legend"),
+        "absorb_void": AbsorbVoidOption("将虚空吞噬", "absorb_void")
     }
     return mapping.get(action)
