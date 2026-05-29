@@ -658,6 +658,8 @@ class CLIRouter:
                         return res, False
                 else:
                     state_stack.pop()
+                    self.save_manager.save_save(user_id, run)
+                    return "❌ 取消使用操作。", False
         if parts[0].isdigit():
             parts = ["选择"] + parts
         sub = parts[0]
