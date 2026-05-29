@@ -1,5 +1,6 @@
 import random
 from typing import Optional, List, Dict
+import sys
 from ..models.state import GameRun, PlayerState, EnemyState, MinionState, AmuletState, Card, BuffState, check_and_replace_fireball
 from ..entities import (
     ALL_CARDS,
@@ -16,10 +17,198 @@ from ..entities import (
     apply_on_player_turn_end,
     apply_prevent_enemy_action,
 )
+from ..models.events import (
+    BattleStartEvent, BattleWinEvent, TurnStartEvent, TurnEndEvent,
+    CardPlayEvent, CardPlayedEvent, DamageCalculateEvent, DamageTakeEvent,
+    HealEvent, CardDiscardEvent, MinionDeathEvent, MinionSummonEvent,
+    CardExhaustEvent, ShieldGainEvent
+)
 
 class BattleEngine:
     def __init__(self, save_manager):
         self.save_manager = save_manager
+        self.event_bus = self._init_event_bus()
+        orig_dispatch = self.event_bus.dispatch
+        def decorated_dispatch(event, *args, **kwargs):
+            event.engine = self
+            return orig_dispatch(event, *args, **kwargs)
+        self.event_bus.dispatch = decorated_dispatch
+
+    def _init_event_bus(self):
+        from .event_bus import EventBus
+        bus = EventBus()
+        bus.subscribe(BattleStartEvent, self._proxy_battle_start)
+        bus.subscribe(BattleWinEvent, self._proxy_battle_win)
+        bus.subscribe(TurnStartEvent, self._proxy_turn_start)
+        bus.subscribe(TurnEndEvent, self._proxy_turn_end)
+        bus.subscribe(CardPlayEvent, self._proxy_card_play)
+        bus.subscribe(CardPlayedEvent, self._proxy_card_played)
+        bus.subscribe(DamageCalculateEvent, self._proxy_damage_calculate)
+        bus.subscribe(DamageTakeEvent, self._proxy_damage_take)
+        bus.subscribe(HealEvent, self._proxy_heal)
+        bus.subscribe(CardDiscardEvent, self._proxy_card_discard)
+        bus.subscribe(MinionDeathEvent, self._proxy_minion_death)
+        bus.subscribe(MinionSummonEvent, self._proxy_minion_summon)
+        bus.subscribe(CardExhaustEvent, self._proxy_card_exhaust)
+        bus.subscribe(ShieldGainEvent, self._proxy_shield_gain)
+        return bus
+
+    def _proxy_battle_start(self, event):
+        from ..entities.relics.relics import get_relic_impl
+        for r in list(event.run.player.relics):
+            impl = get_relic_impl(r)
+            if impl and hasattr(impl, "on_battle_start"):
+                impl.on_battle_start(event.run, self)
+
+    def _proxy_battle_win(self, event):
+        from ..entities.relics.relics import get_relic_impl
+        for r in list(event.run.player.relics):
+            impl = get_relic_impl(r)
+            if impl and hasattr(impl, "on_battle_win"):
+                impl.on_battle_win(event.run, self)
+
+    def _proxy_turn_start(self, event):
+        from ..entities.relics.relics import get_relic_impl
+        from ..entities.buffs.buffs import get_buff_impl
+        if event.is_player:
+            for r in list(event.run.player.relics):
+                impl = get_relic_impl(r)
+                if impl and hasattr(impl, "on_turn_start"):
+                    impl.on_turn_start(event, event.run, self)
+        entities_with_buffs = []
+        if event.is_player:
+            entities_with_buffs.append((event.run.player, event.run.player))
+        else:
+            for enemy in list(event.run.enemies):
+                entities_with_buffs.append((enemy, enemy))
+        for entity, original in entities_with_buffs:
+            for b in list(entity.buffs):
+                impl = get_buff_impl(b.id, b.stacks)
+                if impl and hasattr(impl, "on_turn_start"):
+                    impl.on_turn_start(event, b, entity)
+
+    def _proxy_turn_end(self, event):
+        from ..entities.buffs.buffs import get_buff_impl
+        entities_with_buffs = []
+        if event.is_player:
+            entities_with_buffs.append((event.run.player, event.run.player))
+        else:
+            for enemy in list(event.run.enemies):
+                entities_with_buffs.append((enemy, enemy))
+        for entity, original in entities_with_buffs:
+            for b in list(entity.buffs):
+                impl = get_buff_impl(b.id, b.stacks)
+                if impl and hasattr(impl, "on_turn_end"):
+                    impl.on_turn_end(event, b, entity)
+
+    def _proxy_card_play(self, event):
+        from ..entities.buffs.buffs import get_buff_impl
+        for b in list(event.run.player.buffs):
+            impl = get_buff_impl(b.id, b.stacks)
+            if impl and hasattr(impl, "on_card_play"):
+                impl.on_card_play(event, b, event.run.player)
+
+    def _proxy_card_played(self, event):
+        from ..entities.relics.relics import get_relic_impl
+        from ..entities.buffs.buffs import get_buff_impl
+        from ..entities.amulets.amulets import ALL_AMULETS
+        for r in list(event.run.player.relics):
+            impl = get_relic_impl(r)
+            if impl and hasattr(impl, "on_card_played"):
+                impl.on_card_played(event, event.run, self)
+        for b in list(event.run.player.buffs):
+            impl = get_buff_impl(b.id, b.stacks)
+            if impl and hasattr(impl, "on_card_played"):
+                impl.on_card_played(event, b, event.run.player)
+        for enemy in list(event.run.enemies):
+            for b in list(enemy.buffs):
+                impl = get_buff_impl(b.id, b.stacks)
+                if impl and hasattr(impl, "on_card_played"):
+                    impl.on_card_played(event, b, enemy)
+        for ak, av in list(event.run.player.amulets.items()):
+            template = ALL_AMULETS.get(av.id)
+            if template and hasattr(template, "on_spell_played") and event.card.type == "spell":
+                template.on_spell_played(event.run, ak, event.card, self)
+
+    def _proxy_damage_calculate(self, event):
+        from ..entities.relics.relics import get_relic_impl
+        from ..entities.buffs.buffs import get_buff_impl
+        if event.source == "p0":
+            for r in list(event.run.player.relics):
+                impl = get_relic_impl(r)
+                if impl and hasattr(impl, "on_damage_calculate"):
+                    impl.on_damage_calculate(event, event.run, self)
+        if event.source == "p0":
+            for b in list(event.run.player.buffs):
+                impl = get_buff_impl(b.id, b.stacks)
+                if impl and hasattr(impl, "on_damage_calculate"):
+                    impl.on_damage_calculate(event, b, event.run.player)
+        if event.source.startswith("e"):
+            try:
+                idx = int(event.source[1:]) - 1
+                if idx < 0: idx = 0
+            except ValueError:
+                idx = 0
+            if 0 <= idx < len(event.run.enemies):
+                enemy = event.run.enemies[idx]
+                for b in list(enemy.buffs):
+                    impl = get_buff_impl(b.id, b.stacks)
+                    if impl and hasattr(impl, "on_damage_calculate"):
+                        impl.on_damage_calculate(event, b, enemy)
+
+    def _proxy_damage_take(self, event):
+        from ..entities.amulets.amulets import ALL_AMULETS
+        if event.target == "p0" and event.amount > 0:
+            for ak, av in list(event.run.player.amulets.items()):
+                template = ALL_AMULETS.get(av.id)
+                if template and hasattr(template, "on_take_damage"):
+                    msg = template.on_take_damage(event.run, ak, event.source, event.amount, self)
+                    if msg:
+                        self._log_event(event.run, msg)
+
+    def _proxy_heal(self, event):
+        from ..entities.relics.relics import get_relic_impl
+        from ..entities.buffs.buffs import get_buff_impl
+        if event.target == "p0":
+            for r in list(event.run.player.relics):
+                impl = get_relic_impl(r)
+                if impl and hasattr(impl, "on_heal"):
+                    impl.on_heal(event, event.run, self)
+        if event.target == "p0":
+            for b in list(event.run.player.buffs):
+                impl = get_buff_impl(b.id, b.stacks)
+                if impl and hasattr(impl, "on_heal"):
+                    impl.on_heal(event, b, event.run.player)
+
+    def _proxy_card_discard(self, event):
+        pass
+
+    def _proxy_minion_death(self, event):
+        if event.is_enemy and getattr(sys, "_rogue_stat_recorder", None):
+            sys._rogue_stat_recorder(event.name, 0, True)
+
+    def _proxy_minion_summon(self, event):
+        from ..entities.relics.relics import get_relic_impl
+        for r in list(event.run.player.relics):
+            impl = get_relic_impl(r)
+            if impl and hasattr(impl, "on_minion_summon"):
+                impl.on_minion_summon(event, event.run, self)
+
+    def _proxy_card_exhaust(self, event):
+        pass
+
+    def _proxy_shield_gain(self, event):
+        from ..entities.relics.relics import get_relic_impl
+        from ..entities.buffs.buffs import get_buff_impl
+        if event.target == "p0":
+            for r in list(event.run.player.relics):
+                impl = get_relic_impl(r)
+                if impl and hasattr(impl, "on_shield_gain"):
+                    impl.on_shield_gain(event, event.run, self)
+            for b in list(event.run.player.buffs):
+                impl = get_buff_impl(b.id, b.stacks)
+                if impl and hasattr(impl, "on_shield_gain"):
+                    impl.on_shield_gain(event, b, event.run.player)
 
     def _log_event(self, run: Optional[GameRun], msg: str):
         if run is None:
@@ -51,7 +240,11 @@ class BattleEngine:
                 return f"e{idx}"
         return "e1"
 
-    def _get_target_name(self, run: GameRun, target: str) -> str:
+    def _get_target_name(self, run: GameRun, target: Optional[str]) -> str:
+        if not target:
+            return "无"
+        if target == "p0":
+            return "玩家"
         if target.startswith("e"):
             try:
                 idx = int(target[1:]) - 1
@@ -61,16 +254,21 @@ class BattleEngine:
             if 0 <= idx < len(run.enemies):
                 return run.enemies[idx].name
             return "未知敌人"
-        elif target == "p0":
-            return "玩家领主"
-        elif target.startswith("p"):
+        if target.startswith("p"):
             grid = target[1:]
             if grid in run.player.minions:
                 return run.player.minions[grid].name
-            return "我方随从"
+            return "我方随随从"
         return "未知"
 
-    def _damage_target(self, run: GameRun, target: str, dmg: int):
+    def _damage_target(self, run: GameRun, target: str, dmg: int, source: str = "effect", damage_type: str = "effect", card: Optional[Card] = None):
+        calc_evt = DamageCalculateEvent(run, card, source, target, damage_type, dmg, dmg)
+        self.event_bus.dispatch(calc_evt)
+        final_dmg = calc_evt.modified_damage
+        if final_dmg <= 0:
+            return
+        p = run.player
+        is_fatal = False
         if target.startswith("e"):
             try:
                 idx = int(target[1:]) - 1
@@ -79,26 +277,85 @@ class BattleEngine:
                 idx = 0
             if 0 <= idx < len(run.enemies):
                 e = run.enemies[idx]
-                if e.shield >= dmg:
-                    e.shield -= dmg
+                if e.shield >= final_dmg:
+                    e.shield -= final_dmg
                 else:
-                    e.hp -= (dmg - e.shield)
+                    take = final_dmg - e.shield
+                    e.hp -= take
                     e.shield = 0
                 if e.hp <= 0:
-                    run.player.graveyard.append("enemy:" + e.name)
+                    is_fatal = True
+                    p.graveyard.append("enemy:" + e.name)
                     run.enemies.pop(idx)
+                    death_evt = MinionDeathEvent(run, e.name, target, e.name, True)
+                    self.event_bus.dispatch(death_evt)
+                take_evt = DamageTakeEvent(run, source, target, final_dmg, is_fatal)
+                self.event_bus.dispatch(take_evt)
+        elif target == "p0":
+            if p.shield >= final_dmg:
+                p.shield -= final_dmg
+            else:
+                take = final_dmg - p.shield
+                p.hp -= take
+                p.shield = 0
+            if p.hp <= 0:
+                is_fatal = True
+            take_evt = DamageTakeEvent(run, source, target, final_dmg, is_fatal)
+            self.event_bus.dispatch(take_evt)
+        elif target.startswith("p"):
+            grid = target[1:]
+            if grid in p.minions:
+                m = p.minions[grid]
+                m.hp -= final_dmg
+                if m.hp <= 0:
+                    is_fatal = True
+                    p.graveyard.append("minion:" + m.id)
+                    del p.minions[grid]
+                    death_evt = MinionDeathEvent(run, m.id, target, m.name, False)
+                    self.event_bus.dispatch(death_evt)
+                take_evt = DamageTakeEvent(run, source, target, final_dmg, is_fatal)
+                self.event_bus.dispatch(take_evt)
 
     def _heal_target(self, run: GameRun, target: str, heal: int):
+        heal_evt = HealEvent(run, target, heal)
+        self.event_bus.dispatch(heal_evt)
+        if heal_evt.cancelled:
+            return
+        heal = heal_evt.amount
         p = run.player
         if target == "p0":
-            if "wither_seed" in p.relics:
-                return
-            cur_max = apply_modify_heal_limit(run, target, p.max_hp, self)
-            p.hp = min(cur_max, p.hp + heal)
+            p.hp = min(p.max_hp, p.hp + heal)
         elif target.startswith("p"):
             grid = target[1:]
             if grid in p.minions:
                 p.minions[grid].hp = min(p.minions[grid].max_hp, p.minions[grid].hp + heal)
+
+    def _summon_minion(self, run: GameRun, minion_id: str, name: str, hp: int, atk: int, ba: int) -> Optional[str]:
+        grid = self._get_free_grid(run.player)
+        if grid:
+            m = MinionState(minion_id, name, hp, hp, atk, 1, ba)
+            evt = MinionSummonEvent(run, m, grid)
+            self.event_bus.dispatch(evt)
+            run.player.minions[grid] = m
+            return grid
+        return None
+
+    def _gain_shield(self, run: GameRun, target: str, amount: int):
+        evt = ShieldGainEvent(run, target, amount, amount)
+        self.event_bus.dispatch(evt)
+        final_amount = evt.modified_amount
+        if final_amount <= 0:
+            return
+        if target == "p0":
+            run.player.shield += final_amount
+        elif target.startswith("e"):
+            try:
+                idx = int(target[1:]) - 1
+                if idx < 0: idx = 0
+            except ValueError:
+                idx = 0
+            if 0 <= idx < len(run.enemies):
+                run.enemies[idx].shield += final_amount
 
     def _add_buff_to(self, entity, buff_id: str, buff_name: str, desc: str, count: int = 1):
         for b in entity.buffs:
@@ -138,64 +395,26 @@ class BattleEngine:
         if run is not None:
             if reshuffled:
                 self._log_event(run, "🔄 弃牌堆已重新洗入抽牌堆。")
-            if drawn_cards:
-                card_names = [ALL_CARDS[cid].name if cid in ALL_CARDS else cid for cid in drawn_cards]
-                self._log_event(run, f"🃏 抽取了 {len(drawn_cards)} 张卡牌：{', '.join(card_names)}")
 
-    def _roll_enemy_intent(self, run: GameRun):
-        for enemy in run.enemies:
-            template = get_enemy_template(enemy.name)
-            itype, val, desc = template.roll_intent(run, self, enemy)
-            enemy.intent_a_type = itype
-            enemy.intent_a_val = val
-            enemy.intent_a_desc = desc
-            
-            if enemy.max_bonus_actions >= 1:
-                itype_ba, val_ba, desc_ba = template.roll_intent_ba(run, self, enemy)
-                enemy.intent_ba_type = itype_ba
-                enemy.intent_ba_val = val_ba
-                enemy.intent_ba_desc = desc_ba
-            else:
-                enemy.intent_ba_type = ""
-                enemy.intent_ba_val = 0
-                enemy.intent_ba_desc = ""
-                
-            if enemy.max_bonus_actions >= 2:
-                itype_ba2, val_ba2, desc_ba2 = template.roll_intent_ba2(run, self, enemy)
-                enemy.intent_ba2_type = itype_ba2
-                enemy.intent_ba2_val = val_ba2
-                enemy.intent_ba2_desc = desc_ba2
-            else:
-                enemy.intent_ba2_type = ""
-                enemy.intent_ba2_val = 0
-                enemy.intent_ba2_desc = ""
-
-    def _init_battle_node(self, run: GameRun, difficulty: str):
+    def _init_battle_node(self, run: GameRun, difficulty: str = "normal"):
         p = run.player
-        p.buffs.clear()
-        p.exhaust_pile.clear()
-        p.graveyard.clear()
-        run.node_data["cards_played_this_turn"] = 0
+        p.hand.clear()
         p.draw_pile = p.deck.copy()
         random.shuffle(p.draw_pile)
-        innate_cards = []
-        non_innate_cards = []
-        for cid in p.draw_pile:
-            card = ALL_CARDS.get(cid)
-            if card and getattr(card, "innate", False):
-                innate_cards.append(cid)
-            else:
-                non_innate_cards.append(cid)
-        p.draw_pile = non_innate_cards + innate_cards
         p.discard_pile.clear()
-        p.hand.clear()
+        p.exhaust_pile.clear()
+        p.graveyard.clear()
+        p.minions.clear()
+        p.amulets.clear()
+        p.buffs.clear()
         p.actions = 2
         p.bonus_actions = 1
         p.shield = 0
-        for r in p.relics:
-            impl = get_relic_impl(r)
-            if impl:
-                impl.on_battle_start(run, self)
+        run.node_data["cards_played_this_turn"] = 0
+
+        evt_start = BattleStartEvent(run)
+        self.event_bus.dispatch(evt_start)
+
         if getattr(p, "subclass", "") == "时序法师":
             if random.random() < 0.25:
                 p.bonus_actions += 1
@@ -206,7 +425,6 @@ class BattleEngine:
             if impl:
                 init_draw = impl.modify_initial_draw(run, init_draw, self)
         self._draw_cards(p, init_draw, run)
-
         run.node_data["difficulty"] = difficulty
 
         if difficulty == "boss":
@@ -221,18 +439,12 @@ class BattleEngine:
                     max_actions=1,
                     max_bonus_actions=2
                 )]
-                run.enemies[0].buffs.append(BuffState(
-                    id="beat_of_death",
-                    name="死亡律动",
-                    stacks=1,
-                    desc="每当玩家打出一张牌，玩家受到一点伤害"
-                ))
-                run.node_data["heart_turn"] = 1
+                self._add_buff_to(run.enemies[0], "beat_of_death", "死亡律动", "玩家每使用一张牌，受到 1 点真实伤害。")
             else:
                 run.enemies = [EnemyState(
                     name="远古红龙",
-                    hp=60,
-                    max_hp=60,
+                    hp=140,
+                    max_hp=140,
                     shield=0,
                     actions=1,
                     bonus_actions=2,
@@ -240,63 +452,27 @@ class BattleEngine:
                     max_bonus_actions=2
                 )]
         elif difficulty == "elite":
-            elite_pool = [
-                ("地精百夫长", 30, 4),
-                ("石像鬼祭司", 38, 3),
-                ("狂暴兽王", 32, 5),
-                ("黑曜石巨灵", 45, 5),
-                ("幽灵大魔法师", 36, 4),
-                ("暗影影魔", 34, 5)
+            run.enemies = []
+            pool = [
+                ("奥术巨魔", 45, 4),
+                ("深渊编织者", 38, 5)
             ]
-            base_name, base_hp, base_atk = random.choice(elite_pool)
-            hp_scale = base_hp + (p.stage * 3)
-            
-            run.enemies = [EnemyState(
-                name=base_name,
-                hp=hp_scale,
-                max_hp=hp_scale,
+            name, hp_scale, atk = random.choice(pool)
+            hp_final = hp_scale + p.stage * 2
+            run.enemies.append(EnemyState(
+                name=name,
+                hp=hp_final,
+                max_hp=hp_final,
                 shield=0,
                 actions=1,
                 bonus_actions=1,
                 max_actions=1,
                 max_bonus_actions=1
-            )]
-            if random.random() < 0.5:
-                enemies_pool = [
-                    ("地精突袭者", 12, 2),
-                    ("石像鬼守卫", 18, 1),
-                    ("堕落学徒", 14, 2),
-                    ("狂暴野兽", 15, 3),
-                    ("幽灵法师", 16, 2),
-                    ("冰霜史莱姆", 10, 1),
-                    ("骷髅弓箭手", 12, 2),
-                    ("剧毒蜘蛛", 10, 2),
-                    ("黑曜石巨人", 22, 3),
-                    ("暗影刺客", 14, 3)
-                ]
-                normal_name, normal_hp, normal_atk = random.choice(enemies_pool)
-                n_hp = (normal_hp + p.stage * 2) // 2
-                run.enemies.append(EnemyState(
-                    name=normal_name,
-                    hp=n_hp,
-                    max_hp=n_hp,
-                    shield=0,
-                    actions=1,
-                    bonus_actions=0,
-                    max_actions=1,
-                    max_bonus_actions=0
-                ))
+            ))
         else:
             enemies_pool = [
-                ("地精突袭者", 12, 2),
-                ("石像鬼守卫", 18, 1),
-                ("堕落学徒", 14, 2),
-                ("狂暴野兽", 15, 3),
-                ("幽灵法师", 16, 2),
-                ("冰霜史莱姆", 10, 1),
-                ("骷髅弓箭手", 12, 2),
-                ("剧毒蜘蛛", 10, 2),
-                ("黑曜石巨人", 22, 3),
+                ("哥布林掠夺者", 12, 2),
+                ("地底史莱姆", 16, 2),
                 ("暗影刺客", 14, 3)
             ]
             run.enemies = []
@@ -315,7 +491,12 @@ class BattleEngine:
                     max_actions=1,
                     max_bonus_actions=0
                 ))
+
+        evt_turn = TurnStartEvent(run, is_player=True)
+        self.event_bus.dispatch(evt_turn)
         self._roll_enemy_intent(run)
+
+    init_battle = _init_battle_node
 
     def play_card(self, run: GameRun, hand_idx: int, target: Optional[str] = None) -> str:
         initial_status = [(e.hp, e.shield) for e in run.enemies]
@@ -324,7 +505,6 @@ class BattleEngine:
             return "❌ 只有在战斗中才能使用卡牌。"
         if hand_idx < 1 or hand_idx > len(p.hand):
             return "❌ 无效的手牌序号。"
-
         cid = p.hand[hand_idx - 1]
         card = ALL_CARDS.get(cid)
         if not card:
@@ -363,8 +543,10 @@ class BattleEngine:
 
         req_a = card.cost_a
         req_ba = card.cost_ba
-        if card.type == "spell":
-            req_ba = apply_modify_spell_cost_ba(run, card, req_ba, self)
+        play_evt = CardPlayEvent(run, card, target, req_a, req_ba)
+        self.event_bus.dispatch(play_evt)
+        req_a = play_evt.cost_a
+        req_ba = play_evt.cost_ba
 
         if p.actions < req_a or p.bonus_actions < req_ba:
             return f"❌ 你的动作资源不足（需要 {req_a}A {req_ba}BA，当前 {p.actions}A {p.bonus_actions}BA）。"
@@ -378,22 +560,21 @@ class BattleEngine:
         elif getattr(card, "exhaust", False):
             p.exhaust_pile.append(cid)
             self._log_event(run, f"✨ [消耗] 【{card.name}】已被移入消耗堆。")
+            exhaust_evt = CardExhaustEvent(run, cid, "played")
+            self.event_bus.dispatch(exhaust_evt)
         else:
             p.discard_pile.append(cid)
 
         res = self._execute_card_effect(run, card, target)
-
         played_count = run.node_data.get("cards_played_this_turn", 0)
-        extra_feedback = apply_on_card_played(run, card, target, self)
-        if extra_feedback:
-            res += extra_feedback
-        run.node_data["cards_played_this_turn"] = played_count + 1
+        
+        played_evt = CardPlayedEvent(run, card, target, res)
+        self.event_bus.dispatch(played_evt)
+        res = played_evt.feedback
 
-        for ak, av in list(p.amulets.items()):
-            template = ALL_AMULETS.get(av.id)
-            if template and card.type == "spell":
-                template.on_spell_played(run, ak, card, self)
+        run.node_data["cards_played_this_turn"] = played_count + 1
         self.save_manager.save_save(run.user_id, run)
+        
         has_damaged = False
         for idx, e in enumerate(run.enemies):
             if idx < len(initial_status):
@@ -413,7 +594,6 @@ class BattleEngine:
             return "❌ 只有在战斗中才能使用卡牌的特殊行动。"
         if hand_idx < 1 or hand_idx > len(p.hand):
             return "❌ 无效的手牌序号。"
-
         cid = p.hand[hand_idx - 1]
         card = ALL_CARDS.get(cid)
         if not card:
@@ -431,7 +611,6 @@ class BattleEngine:
                 target = self._get_first_alive_enemy(run)
             else:
                 target = "p0"
-
         if target == "0" or target == "e0":
             target = "e1"
         elif target == "p":
@@ -486,7 +665,11 @@ class BattleEngine:
             return f"❌ 敌方格子 [{opp_grid}] 没有合法的敌人目标。"
 
         enemy = run.enemies[opp_idx]
-        atk = m.atk + (1 if "whetstone" in p.relics else 0)
+        
+        calc_evt = DamageCalculateEvent(run, None, f"p{my_grid}", f"e{opp_idx+1}", "attack", m.atk, m.atk)
+        self.event_bus.dispatch(calc_evt)
+        atk = calc_evt.modified_damage
+
         if enemy.shield >= atk:
             enemy.shield -= atk
             dmg_msg = f"造成 {atk} 点护盾伤害"
@@ -495,12 +678,15 @@ class BattleEngine:
             enemy.hp -= take
             enemy.shield = 0
             dmg_msg = f"造成 {take} 点生命伤害"
-            
+
         res = f"我方随从【{m.name}】攻击了敌人【{enemy.name}】，{dmg_msg}。"
         if enemy.hp <= 0:
             res += f" 敌人【{enemy.name}】已被击败！"
-            run.player.graveyard.append("enemy:" + enemy.name)
+            p.graveyard.append("enemy:" + enemy.name)
             run.enemies.pop(opp_idx)
+            death_evt = MinionDeathEvent(run, enemy.name, f"e{opp_idx+1}", enemy.name, True)
+            self.event_bus.dispatch(death_evt)
+
         self.save_manager.save_save(run.user_id, run)
         has_damaged = False
         for idx, e in enumerate(run.enemies):
@@ -581,43 +767,20 @@ class BattleEngine:
 
     def _execute_card_effect(self, run: GameRun, card: Card, target: Optional[str] = None) -> str:
         res = card.execute(run, target, self)
-        p = run.player
-        if card.type == "spell":
-            if "unstable_crystal" in p.relics:
-                p.hp = max(1, p.hp - 1)
-                res += " ⚡ [不稳定水晶] 受到 1 点法术反噬伤害。"
-            if "vampiric_touch" in p.relics and card.id in (
-                "dagger_throw", "fire_bolt", "fireball", "thunderwave",
-                "magic_missile", "quick_strike", "arcane_spark", "doomsday_judgment", "meteor_swarm"
-            ):
-                old_hp = p.hp
-                self._heal_target(run, "p0", 1)
-                if p.hp > old_hp:
-                    res += " ❤️ [吸血之触] 回复了 1 点生命值。"
-
-        beat_of_death_dmg = 0
-        for enemy in run.enemies:
-            if enemy.hp > 0:
-                for b in enemy.buffs:
-                    if b.id == "beat_of_death":
-                        beat_of_death_dmg += b.stacks
-        if beat_of_death_dmg > 0:
-            if p.shield >= beat_of_death_dmg:
-                p.shield -= beat_of_death_dmg
-                res += f" 💔 [死亡律动] 玩家受到 {beat_of_death_dmg} 点伤害（由护盾吸收）。"
-            else:
-                take = beat_of_death_dmg - p.shield
-                p.hp -= take
-                p.shield = 0
-                res += f" 💔 [死亡律动] 玩家受到 {take} 点生命伤害。"
         return res
 
     def get_modified_spell_damage(self, run: GameRun, card: Card, damage: int) -> int:
-        return apply_modify_spell_damage(run, card, damage, self)
+        calc_evt = DamageCalculateEvent(run, card, "p0", "e1", "spell", damage, damage)
+        self.event_bus.dispatch(calc_evt)
+        return calc_evt.modified_damage
 
     def _discard_card(self, run: GameRun, cid: str) -> str:
         p = run.player
         card = ALL_CARDS.get(cid)
+        
+        discard_evt = CardDiscardEvent(run, cid, "manual")
+        self.event_bus.dispatch(discard_evt)
+
         if not card:
             p.discard_pile.append(cid)
             return self._append_logs_to_res(run, "")
@@ -632,12 +795,19 @@ class BattleEngine:
                 if target == "0" or target == "e0":
                     target = "e1"
             res = self._execute_card_effect(run, card, target)
+            
+            played_evt = CardPlayedEvent(run, card, target, res)
+            self.event_bus.dispatch(played_evt)
+            res = played_evt.feedback
+
             if getattr(card, "fleeting", False):
                 if cid in p.deck:
                     p.deck.remove(cid)
             elif getattr(card, "exhaust", False):
                 p.exhaust_pile.append(cid)
                 self._log_event(run, f"✨ [消耗] 【{card.name}】已被移入消耗堆。")
+                exhaust_evt = CardExhaustEvent(run, cid, "agile")
+                self.event_bus.dispatch(exhaust_evt)
             else:
                 p.discard_pile.append(cid)
             return self._append_logs_to_res(run, f"✨ 触发[灵巧]：丢弃【{card.name}】时自动打出！效果：{res}")
@@ -650,6 +820,9 @@ class BattleEngine:
             return "❌ 只有在战斗中才能结束回合。"
         p = run.player
 
+        evt_end = TurnEndEvent(run, is_player=True)
+        self.event_bus.dispatch(evt_end)
+
         retained = []
         for cid in p.hand:
             card = ALL_CARDS.get(cid)
@@ -658,6 +831,8 @@ class BattleEngine:
             elif card and getattr(card, "ethereal", False):
                 p.exhaust_pile.append(cid)
                 self._log_event(run, f"✨ [虚无] 【{card.name}】在回合结束时被消耗。")
+                exhaust_evt = CardExhaustEvent(run, cid, "ethereal")
+                self.event_bus.dispatch(exhaust_evt)
             else:
                 p.discard_pile.append(cid)
         p.hand = retained
@@ -680,7 +855,7 @@ class BattleEngine:
             enemy_actions = f"⏳ [时间停止] 额外回合进行中（剩余 {extra_turns - 1} 个额外回合），敌人全部陷入静止。"
         else:
             enemy_actions = self._enemy_turn(run)
-            
+
         if p.hp <= 0:
             settle_msg = self.save_manager.settle_game_and_delete(run.user_id, run, is_victory=False)
             return f"{enemy_actions}\n💀 冒险结束。你被击败了！存档已被清除。\n{settle_msg}"
@@ -698,18 +873,19 @@ class BattleEngine:
         if decay_msgs:
             decay_info = "🛡️ 护盾流失：" + "，".join(decay_msgs) + "\n"
 
-        apply_on_player_turn_end(run, self)
-        p.actions = 2 + (1 if "energy_core" in p.relics else 0)
-        p.bonus_actions = 1 + (1 if "unstable_crystal" in p.relics else 0)
+        p.actions = 2
+        p.bonus_actions = 1
         if run.node_data.get("drain_ba"):
             p.bonus_actions = max(0, p.bonus_actions - 1)
             run.node_data.pop("drain_ba", None)
-        extra_ba_msg = ""
+        
+        evt_start = TurnStartEvent(run, is_player=True)
+        self.event_bus.dispatch(evt_start)
+
         if getattr(p, "subclass", "") == "时序法师":
             if random.random() < 0.25:
                 p.bonus_actions += 1
-                extra_ba_msg = "⏳ [时序被动] 触发时间跳跃，本回合额外获得 1 个附赠动作（BA）！\n"
-        apply_on_player_turn_start(run, self)
+                self._log_event(run, "⏳ [时序被动] 触发时间跳跃，本回合额外获得 1 个附赠动作（BA）！")
         for mk, mv in p.minions.items():
             mv.actions += 1
             mv.bonus_actions += 1 if mv.id == "arcane_golem" else 0
@@ -726,15 +902,7 @@ class BattleEngine:
         self._roll_enemy_intent(run)
         run.node_data["cards_played_this_turn"] = 0
         self.save_manager.save_save(run.user_id, run)
-        return self._append_logs_to_res(run, f"{enemy_actions}\n{decay_info}{extra_ba_msg}进入玩家回合。已重置动作并抽取手牌。")
-
-    def _trigger_take_damage_amulets(self, run, source: str, amount: int, logs: List[str]):
-        for ak, av in list(run.player.amulets.items()):
-            template = ALL_AMULETS.get(av.id)
-            if template:
-                msg = template.on_take_damage(run, ak, source, amount, self)
-                if msg:
-                    logs.append(msg)
+        return self._append_logs_to_res(run, f"{enemy_actions}\n{decay_info}进入玩家回合。已重置动作并抽取手牌。")
 
     def _enemy_turn(self, run: GameRun) -> str:
         logs = []
@@ -750,14 +918,16 @@ class BattleEngine:
         if decay_enemies:
             logs.append("🛡️ 护盾流失：" + "，".join(decay_enemies))
 
+        evt_turn = TurnStartEvent(run, is_player=False)
+        self.event_bus.dispatch(evt_turn)
+
         active_enemies = list(run.enemies)
         for idx, enemy in enumerate(active_enemies):
             if enemy.hp <= 0:
                 continue
-            if apply_prevent_enemy_action(run, enemy, self, logs):
+            if enemy.actions == 0 and enemy.bonus_actions == 0:
                 continue
             template = get_enemy_template(enemy.name)
-            
             if enemy.hp > 0 and enemy.intent_a_type:
                 if enemy.actions >= 1:
                     enemy.actions -= 1
@@ -766,7 +936,6 @@ class BattleEngine:
                     template.execute_intent(run, self, enemy, logs)
                 else:
                     logs.append(f"⚠️ 【{enemy.name}】因动作点（A）不足，取消了意图【{enemy.intent_a_desc}】。")
-                
             if enemy.hp > 0 and enemy.intent_ba_type:
                 if enemy.bonus_actions >= 1:
                     enemy.bonus_actions -= 1
@@ -775,7 +944,6 @@ class BattleEngine:
                     template.execute_intent(run, self, enemy, logs)
                 else:
                     logs.append(f"⚠️ 【{enemy.name}】因附赠动作点（BA）不足，取消了意图【{enemy.intent_ba_desc}】。")
-                
             if enemy.hp > 0 and enemy.intent_ba2_type:
                 if enemy.bonus_actions >= 1:
                     enemy.bonus_actions -= 1
@@ -784,6 +952,9 @@ class BattleEngine:
                     template.execute_intent(run, self, enemy, logs)
                 else:
                     logs.append(f"⚠️ 【{enemy.name}】因附赠动作点（BA）不足，取消了意图【{enemy.intent_ba2_desc}】。")
+
+        evt_turn_end = TurnEndEvent(run, is_player=False)
+        self.event_bus.dispatch(evt_turn_end)
 
         for enemy in run.enemies:
             enemy.actions = enemy.max_actions
@@ -794,10 +965,10 @@ class BattleEngine:
         p = run.player
         p.buffs.clear()
         p.hp = min(p.max_hp, p.hp)
-        for r in p.relics:
-            impl = get_relic_impl(r)
-            if impl:
-                impl.on_battle_win(run, self)
+
+        evt_win = BattleWinEvent(run)
+        self.event_bus.dispatch(evt_win)
+
         difficulty = run.node_data.get("difficulty", "normal")
         quest = run.node_data.get("quest")
         quest_bonus = ""
@@ -824,3 +995,31 @@ class BattleEngine:
             reward_cards = [check_and_replace_fireball(run, cid) for cid in reward_cards]
             run.node_data = {"cards": reward_cards, "quest_bonus": quest_bonus}
             self.save_manager.save_save(run.user_id, run)
+
+    def _roll_enemy_intent(self, run: GameRun):
+        for enemy in run.enemies:
+            if enemy.hp <= 0:
+                continue
+            template = get_enemy_template(enemy.name)
+            itype, val, desc = template.roll_intent(run, self, enemy)
+            enemy.intent_a_type = itype
+            enemy.intent_a_val = val
+            enemy.intent_a_desc = desc
+            if enemy.max_bonus_actions >= 1:
+                itype_ba, val_ba, desc_ba = template.roll_intent_ba(run, self, enemy)
+                enemy.intent_ba_type = itype_ba
+                enemy.intent_ba_val = val_ba
+                enemy.intent_ba_desc = desc_ba
+            else:
+                enemy.intent_ba_type = ""
+                enemy.intent_ba_val = 0
+                enemy.intent_ba_desc = ""
+            if enemy.max_bonus_actions >= 2:
+                itype_ba2, val_ba2, desc_ba2 = template.roll_intent_ba2(run, self, enemy)
+                enemy.intent_ba2_type = itype_ba2
+                enemy.intent_ba2_val = val_ba2
+                enemy.intent_ba2_desc = desc_ba2
+            else:
+                enemy.intent_ba2_type = ""
+                enemy.intent_ba2_val = 0
+                enemy.intent_ba2_desc = ""

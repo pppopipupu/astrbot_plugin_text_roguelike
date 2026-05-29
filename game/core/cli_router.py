@@ -32,39 +32,119 @@ class CLIRouter:
         set_user_id(user_id)
         if not parts:
             return "", False
+        
+        state_stack = run.node_data.setdefault("state_stack", [])
+        if run.node_type == "battle" and run.node_data.get("pending_discard"):
+            run.node_data.pop("pending_discard", None)
+            run.node_data.pop("pending_discard_source", None)
+            state_stack.append({"type": "force_discard", "required_count": 1})
+
+        if state_stack:
+            top_state = state_stack[-1]
+            stype = top_state.get("type")
+            if stype == "force_discard":
+                sub = parts[0]
+                if sub.isdigit():
+                    parts = ["选择"] + parts
+                    sub = "选择"
+                if sub not in ("选择", "c"):
+                    return "❌ 你必须先丢弃一张卡牌。请输入：选择 <手牌序号>（如：选择 1）", False
+                if len(parts) < 2:
+                    return "❌ 请提供手牌序号，例如：选择 1", False
+                try:
+                    idx = int(parts[1])
+                except ValueError:
+                    return "❌ 序号必须是数字。", False
+                p = run.player
+                if idx < 1 or idx > len(p.hand):
+                    return f"❌ 无效的手牌序号。你当前手牌有 {len(p.hand)} 张。", False
+                cid = p.hand.pop(idx - 1)
+                card_name = ALL_CARDS[cid].name if cid in ALL_CARDS else "未知卡牌"
+                
+                req_count = top_state.get("required_count", 1)
+                discarded = top_state.setdefault("discarded", [])
+                discarded.append(cid)
+                
+                agile_msg = self.engine._discard_card(run, cid)
+                
+                if len(discarded) >= req_count:
+                    state_stack.pop()
+                else:
+                    top_state["required_count"] = req_count - len(discarded)
+                    top_state["discarded"] = []
+                    
+                self.save_manager.save_save(user_id, run)
+                res = f"🧹 你丢弃了手牌中的【{card_name}】。"
+                if agile_msg:
+                    res += f"\n{agile_msg}"
+                if self.engine.is_battle_won(run):
+                    self.engine._handle_battle_win(run)
+                    if run.node_type == "victory":
+                        settle_msg = self.save_manager.settle_game_and_delete(user_id, run, is_victory=True)
+                        return f"{res}\n🎉 恭喜你击败了腐化之心，通关成功！\n{settle_msg}", True
+                    else:
+                        return f"{res}\n🎉 战斗胜利！你击败了敌方所有单位。", True
+                return res, False
+
+            elif stype == "awaiting_target":
+                input_str = " ".join(parts).strip()
+                if input_str in ("取消", "cancel", "abandon", "放弃", "q"):
+                    state_stack.pop()
+                    self.save_manager.save_save(user_id, run)
+                    return "❌ 取消使用操作。", False
+                
+                def is_valid_target_format(text: str) -> bool:
+                    text = text.strip().lower()
+                    if not text:
+                        return False
+                    if text.isdigit():
+                        return True
+                    if text.startswith("p") and text[1:].isdigit():
+                        return True
+                    if text.startswith("e") and text[1:].isdigit():
+                        return True
+                    return False
+
+                if is_valid_target_format(input_str):
+                    target = input_str
+                    action_info = top_state.get("action")
+                    if action_info == "play_card":
+                        hand_idx = top_state.get("hand_idx")
+                        state_stack.pop()
+                        res = self.engine.play_card(run, hand_idx, target)
+                        if run.player.hp <= 0:
+                            settle_msg = self.save_manager.settle_game_and_delete(user_id, run, is_victory=False)
+                            return f"{res}\n💀 你被击败了！当前进度已清空。\n{settle_msg}", True
+                        if self.engine.is_battle_won(run):
+                            self.engine._handle_battle_win(run)
+                            if run.node_type == "victory":
+                                settle_msg = self.save_manager.settle_game_and_delete(user_id, run, is_victory=True)
+                                return f"{res}\n🎉 恭喜你击败了腐化之心，通关成功！\n{settle_msg}", True
+                            else:
+                                return f"{res}\n🎉 战斗胜利！你击败了敌方所有单位。", True
+                        return res, False
+                    elif action_info == "minion_skill":
+                        my_grid = top_state.get("my_grid")
+                        skill_idx = top_state.get("skill_idx")
+                        state_stack.pop()
+                        res = self.engine.minion_skill(run, my_grid, skill_idx, target)
+                        if run.player.hp <= 0:
+                            settle_msg = self.save_manager.settle_game_and_delete(user_id, run, is_victory=False)
+                            return f"{res}\n💀 你被击败了！当前进度已清空。\n{settle_msg}", True
+                        if self.engine.is_battle_won(run):
+                            self.engine._handle_battle_win(run)
+                            if run.node_type == "victory":
+                                settle_msg = self.save_manager.settle_game_and_delete(user_id, run, is_victory=True)
+                                return f"{res}\n🎉 恭喜你击败了腐化之心，通关成功！\n{settle_msg}", True
+                            else:
+                                return f"{res}\n🎉 战斗胜利！你击败了敌方所有单位。", True
+                        return res, False
+                else:
+                    state_stack.pop()
+
         if parts[0].isdigit():
             parts = ["选择"] + parts
         sub = parts[0]
-
-        if run.node_type == "battle" and run.node_data.get("pending_discard"):
-            if sub not in ("选择", "c"):
-                return "❌ 你必须先丢弃一张卡牌。请输入：选择 <手牌序号>（如：选择 1）", False
-            if len(parts) < 2:
-                return "❌ 请提供手牌序号，例如：选择 1", False
-            try:
-                idx = int(parts[1])
-            except ValueError:
-                return "❌ 序号必须是数字。", False
-            p = run.player
-            if idx < 1 or idx > len(p.hand):
-                return f"❌ 无效的手牌序号。你当前手牌有 {len(p.hand)} 张。", False
-            cid = p.hand.pop(idx - 1)
-            card_name = ALL_CARDS[cid].name if cid in ALL_CARDS else "未知卡牌"
-            run.node_data.pop("pending_discard", None)
-            run.node_data.pop("pending_discard_source", None)
-            agile_msg = self.engine._discard_card(run, cid)
-            self.save_manager.save_save(user_id, run)
-            res = f"🧹 你丢弃了手牌中的【{card_name}】。"
-            if agile_msg:
-                res += f"\n{agile_msg}"
-            if self.engine.is_battle_won(run):
-                self.engine._handle_battle_win(run)
-                if run.node_type == "victory":
-                    settle_msg = self.save_manager.settle_game_and_delete(user_id, run, is_victory=True)
-                    return f"{res}\n🎉 恭喜你击败了腐化之心，通关成功！\n{settle_msg}", True
-                else:
-                    return f"{res}\n🎉 战斗胜利！你击败了敌方所有单位。", True
-            return res, False
 
         if sub in ("使用", "p"):
             if len(parts) < 2:
@@ -74,6 +154,33 @@ class CLIRouter:
             except ValueError:
                 return "❌ 序号必须是数字。", False
             target = parts[2] if len(parts) > 2 else None
+            
+            p = run.player
+            if 1 <= idx <= len(p.hand):
+                cid = p.hand[idx - 1]
+                card = ALL_CARDS.get(cid)
+                if card and card.type == "spell" and target is None:
+                    is_ambiguous = False
+                    prompt_msg = ""
+                    if card.id in ("dagger_throw", "fire_bolt", "magic_missile", "quick_strike", "arcane_spark", "agile_strike", "fleeting_spark"):
+                        if len(run.enemies) > 1:
+                            is_ambiguous = True
+                            prompt_msg = f"🎯 请选择敌方目标。当前战场有多个敌方单位，请输入敌方格子序号（如：e1, e2 或 1, 2）或输入取消："
+                    elif card.id == "first_aid":
+                        if len(p.minions) > 0:
+                            is_ambiguous = True
+                            prompt_msg = f"💚 请选择治疗目标。请输入目标格子序号（如：p0 治疗自己，p1-p6 治疗对应随从）或输入取消："
+                    
+                    if is_ambiguous:
+                        state_stack = run.node_data.setdefault("state_stack", [])
+                        state_stack.append({
+                            "type": "awaiting_target",
+                            "action": "play_card",
+                            "hand_idx": idx
+                        })
+                        self.save_manager.save_save(user_id, run)
+                        return prompt_msg, False
+
             res = self.engine.play_card(run, idx, target)
             if run.player.hp <= 0:
                 settle_msg = self.save_manager.settle_game_and_delete(user_id, run, is_victory=False)
@@ -126,6 +233,28 @@ class CLIRouter:
                                 target = parts[4]
                         except ValueError:
                             target = parts[3]
+                            
+                    p = run.player
+                    m = p.minions[g]
+                    needs_target = False
+                    if m.id == "mercenary" and skill_idx == 1:
+                        needs_target = True
+                    elif m.id == "shield_guard" and skill_idx == 2:
+                        needs_target = True
+                    elif m.id == "water_elemental" and skill_idx == 2:
+                        needs_target = True
+                        
+                    if needs_target and target is None and len(run.enemies) > 1:
+                        state_stack = run.node_data.setdefault("state_stack", [])
+                        state_stack.append({
+                            "type": "awaiting_target",
+                            "action": "minion_skill",
+                            "my_grid": g,
+                            "skill_idx": skill_idx
+                        })
+                        self.save_manager.save_save(user_id, run)
+                        return f"🎯 请选择敌方目标。当前战场有多个敌方单位，请输入敌方格子序号（如：e1, e2 或 1, 2）或输入取消：", False
+
                     res = self.engine.minion_skill(run, g, skill_idx, target)
                     results.append(res)
                 else:

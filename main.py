@@ -58,6 +58,9 @@ class MyPlugin(Star):
         self.engine = GameEngine(self.save_manager)
         self.cli_router = CLIRouter(self.save_manager, self.engine)
 
+    def _execute_sub_action(self, user_id: str, run, parts: list[str]):
+        return self.cli_router._execute_sub_action(user_id, run, parts)
+
     async def initialize(self):
         pass
 

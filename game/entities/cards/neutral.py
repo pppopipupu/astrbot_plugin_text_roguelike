@@ -79,14 +79,10 @@ class SummonMinionCard(Card):
         self.minion_atk = minion_atk
 
     def execute(self, run, target, engine) -> str:
-        grid = engine._get_free_grid(run.player)
         cfg = CARD_CONFIG.get(self.id, {})
+        ba = 1 if self.id == "arcane_golem" else 0
+        grid = engine._summon_minion(run, self.id, self.name, self.minion_hp, self.minion_atk, ba)
         if grid:
-            ba = 1 if self.id == "arcane_golem" else 0
-            hp = self.minion_hp
-            if "fool_oath" in run.player.relics:
-                hp = max(1, hp - 3)
-            run.player.minions[grid] = MinionState(self.id, self.name, hp, hp, self.minion_atk, 1, ba)
             feedback_success = cfg.get("feedback_success", "在格子 [{grid}] 召唤了【{name}】。")
             return feedback_success.format(grid=grid, name=self.name)
         return cfg.get("feedback_fail", "战场已满，召唤失败。")
