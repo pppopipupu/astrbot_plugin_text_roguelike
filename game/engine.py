@@ -24,8 +24,8 @@ class GameEngine:
         for _ in range(1):
             initial_deck.append(random.choice(epics))
         player = PlayerState(
-            hp=30,
-            max_hp=30,
+            hp=45,
+            max_hp=45,
             shield=0,
             gold=20,
             stage=0,
