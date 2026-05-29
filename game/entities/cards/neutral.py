@@ -1,7 +1,12 @@
 from typing import Optional, List
 from ...models.state import Card, AmuletState, MinionState
 from ...data.card_data import CARD_CONFIG
+from .registry import register_card
 
+@register_card("dagger_throw", is_fire=False)
+@register_card("fire_bolt", is_fire=True)
+@register_card("quick_strike", is_fire=False)
+@register_card("agile_strike", is_fire=False)
 class SpellDamageCard(Card):
     def __init__(self, id, name, color, type, cost_a, cost_ba, base_dmg, is_fire=False, desc=""):
         super().__init__(id, name, color, type, cost_a, cost_ba, desc=desc)
@@ -30,6 +35,7 @@ class SpellDamageCard(Card):
         
         return f"使用了【{self.name}】，对【{name}】造成了 {dmg} 点伤害。"
 
+@register_card("first_aid")
 class SpellHealCard(Card):
     def __init__(self, id, name, color, type, cost_a, cost_ba, heal_amount, desc=""):
         super().__init__(id, name, color, type, cost_a, cost_ba, desc=desc)
@@ -44,6 +50,7 @@ class SpellHealCard(Card):
             return feedback_tmpl.format(target=name, heal_amount=self.heal_amount)
         return f"为【{name}】恢复了 {self.heal_amount} 点生命值。"
 
+@register_card("get_ready")
 class GetReadyCard(Card):
     def execute(self, run, target, engine) -> str:
         run.player.bonus_actions += 2
@@ -51,6 +58,7 @@ class GetReadyCard(Card):
         cfg = CARD_CONFIG.get(self.id, {})
         return cfg.get("feedback", "获得了 2BA 并抽了 1 张牌。")
 
+@register_card("adrenaline")
 class AdrenalineCard(Card):
     def execute(self, run, target, engine) -> str:
         run.player.actions += 1
@@ -58,6 +66,11 @@ class AdrenalineCard(Card):
         cfg = CARD_CONFIG.get(self.id, {})
         return cfg.get("feedback", "获得了 1A，失去了 2 点生命值。")
 
+@register_card("lucky_coin")
+@register_card("thorns_necklace")
+@register_card("ring_of_elements")
+@register_card("arcane_crystal")
+@register_card("mage_ward")
 class DeployAmuletCard(Card):
     def __init__(self, id, name, color, type, cost_a, cost_ba, countdown, amulet_desc, desc=""):
         super().__init__(id, name, color, type, cost_a, cost_ba, countdown=countdown, desc=desc)
@@ -72,6 +85,11 @@ class DeployAmuletCard(Card):
             return feedback_success.format(name=self.name, grid=grid)
         return cfg.get("feedback_fail", "战场格子已满，部署失败。")
 
+@register_card("mercenary")
+@register_card("shield_guard")
+@register_card("find_familiar")
+@register_card("arcane_golem")
+@register_card("water_elemental")
 class SummonMinionCard(Card):
     def __init__(self, id, name, color, type, cost_a, cost_ba, minion_hp, minion_atk, desc=""):
         super().__init__(id, name, color, type, cost_a, cost_ba, desc=desc)
@@ -87,6 +105,10 @@ class SummonMinionCard(Card):
             return feedback_success.format(grid=grid, name=self.name)
         return cfg.get("feedback_fail", "战场已满，召唤失败。")
 
+@register_card("tactical_focus")
+@register_card("quicken")
+@register_card("spell_surge")
+@register_card("arcane_charge")
 class AbilityCard(Card):
     def execute(self, run, target, engine) -> str:
         from ...data.buff_data import BUFF_CONFIG
@@ -101,6 +123,7 @@ class AbilityCard(Card):
             return feedback_tmpl.format(name=self.name)
         return f"使用了【{self.name}】。"
 
+@register_card("iron_will")
 class IronWillCard(Card):
     def execute(self, run, target, engine) -> str:
         from ...data.buff_data import BUFF_CONFIG
@@ -112,6 +135,7 @@ class IronWillCard(Card):
         cfg = CARD_CONFIG.get(self.id, {})
         return cfg.get("feedback", "使用了【钢铁意志】，获得了【钢铁意志】buff（最大生命上限增加 10 并回复 10 生命，可叠加）。")
 
+@register_card("misty_step")
 class MistyStepCard(Card):
     def execute(self, run, target, engine) -> str:
         engine._draw_cards(run.player, 2, run)
@@ -121,6 +145,7 @@ class MistyStepCard(Card):
             return feedback_tmpl.format(draw_count=2)
         return "使用了迷踪步，抽了 2 张牌。"
 
+@register_card("arcane_intellect")
 class ArcaneIntellectCard(Card):
     def execute(self, run, target, engine) -> str:
         engine._draw_cards(run.player, 3, run)
@@ -130,6 +155,7 @@ class ArcaneIntellectCard(Card):
             return feedback_tmpl.format(draw_count=3)
         return "使用了奥术智慧，抽了 3 张牌。"
 
+@register_card("calculated_gamble")
 class CalculatedGambleCard(Card):
     def execute(self, run, target, engine) -> str:
         p = run.player
@@ -151,6 +177,7 @@ class CalculatedGambleCard(Card):
             return f"丢弃了所有的手牌（共 {discard_count} 张），并重新抽取了 {discard_count} 张牌。" + agile_str
         return cfg.get("feedback_empty", "手牌已空，没有丢弃任何卡牌。")
 
+@register_card("mana_potion")
 class ManaPotionCard(Card):
     def __init__(self, id, name, color, type, cost_a, cost_ba, exhaust=False, desc=""):
         super().__init__(id, name, color, type, cost_a, cost_ba, exhaust=exhaust, desc=desc)

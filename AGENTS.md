@@ -23,7 +23,14 @@
     - `relic_data.py`: 全体遗物的属性、稀有度、售价与效果描述配置。
   - `models.py`: 基础状态数据结构模型（使用 Python dataclasses 结构实现）。
   - `cards.py`: 静态卡牌配置数据库（兼容桥接导出 `ALL_CARDS` 与 `MINION_SKILLS` 配置）。
-  - `card_impl.py`: 基础卡牌类与各卡牌的具体数据驱动及多态子类实现，并注册 `ALL_CARDS`。
+  - `entities/`: 实体相关。
+    - `cards/`: 卡牌定义子包。
+      - `registry.py`: 提供 `@register_card` 装饰器，实现加载时自动注册卡牌类。
+      - `base.py`: 卡牌实体配置数据库基石，从 `registry` 动态拉取并实例化，彻底消除硬编码 `if-else` 分支。
+      - `neutral.py`: 中立卡牌具体实现。
+      - `wizard.py`: 法师职业卡牌具体实现。
+      - `legendary.py`: 传奇卡牌具体实现。
+      - `curse.py`: 诅咒卡牌具体实现。
   - `minion_impl.py`: 随从技能模板、各随从特有技能子类实现，并注册 `ALL_MINIONS` 与生成 `MINION_SKILLS`。
   - `amulet_impl.py`: 护符模板、各护符特有钩子回调实现，并注册 `ALL_AMULETS`。
   - `buff_impl.py`: 战斗 Buff 逻辑模板、各 Buff 特有钩子回调与多态子类实现。
@@ -115,6 +122,16 @@
 ### 2.7 数据驱动与配置分离规范
 - 静态配置数据化：所有卡牌、随从、怪物、护符、遗物、Buff、事件一律禁止硬编码，必须存放在 `game/data/` 的独立数据字典中。
 - 反馈模板化：各实现类利用 `.format()` 动态渲染 `feedback` 模板并进行回填。
+
+### 2.8 开闭原则 (OCP) 与事件驱动扩展规范
+- 严格遵循开闭原则 (Open/Closed Principle)：对扩展开放，对修改封闭。
+- 当引入新的遗物、Buff 或卡牌特性时，绝对禁止直接修改核心战斗引擎 (`battle_engine.py`) 或其它基础状态逻辑。
+- 新增逻辑必须通过实现独立的监听器，并将其绑定到全量定义的 14 个原子事件 (`BattleStartEvent`, `CardPlayedEvent` 等) 上来完成交互（事件代理机制）。
+- 确保任何特异性的判断和数值加成都内聚在具体实体类的回调中，不污染基础流转逻辑。
+
+### 2.9 卡牌与指令模式重构规范
+- 卡牌注册使用装饰器模式自动完成注册。全局统一在 `game/entities/cards/registry.py` 中导出 `@register_card(cid, **kwargs)`，在具体卡牌类声明处使用，并在 `base.py` 中通过 `inspect.signature` 获取参数自适应实例化，禁止任何硬编码的卡牌注册 `if-else` 分支。
+- 命令行路由使用命令模式（Command Pattern）。全局将具体子动作和指令分别拆分为继承自 `ActionHandler` 和 `CommandHandler` 的命令类，在 `CLIRouter` 内部由映射字典分发，解耦并消除庞大的 `if-else` 结构，从而完全符合开闭原则（OCP）。
 
 ---
 

@@ -1,7 +1,9 @@
 from typing import Optional, List
 from ...models.state import Card
 from ...data.card_data import CARD_CONFIG
+from .registry import register_card
 
+@register_card("magic_missile")
 class MagicMissileCard(Card):
     def execute(self, run, target, engine) -> str:
         dmg = 3
@@ -28,6 +30,7 @@ class MagicMissileCard(Card):
             return feedback_tmpl.format(target=name, count=3, total=total)
         return f"释放魔法飞弹，无视护盾对【{name}】造成了 3 次共 {total} 点伤害。"
 
+@register_card("fireball")
 class FireballCard(Card):
     def execute(self, run, target, engine) -> str:
         dmg = 16
@@ -57,6 +60,7 @@ class FireballCard(Card):
             return feedback_tmpl.format(dmg=dmg)
         return f"释放火球术！对所有敌人造成了 {dmg} 点火焰伤害。"
 
+@register_card("thunderwave")
 class ThunderwaveCard(Card):
     def execute(self, run, target, engine) -> str:
         dmg = 6
@@ -84,6 +88,7 @@ class ThunderwaveCard(Card):
             return feedback_tmpl.format(dmg=dmg)
         return f"释放雷鸣波，对所有敌人造成了 {dmg} 点伤害，并扣除他们各 1 个动作。"
 
+@register_card("shield")
 class ShieldSpellCard(Card):
     def execute(self, run, target, engine) -> str:
         run.player.shield += 8
@@ -93,6 +98,7 @@ class ShieldSpellCard(Card):
             return feedback_tmpl.format(shield_amount=8)
         return "获得了 8 点护盾。"
 
+@register_card("arcane_spark")
 class ArcaneSparkCard(Card):
     def execute(self, run, target, engine) -> str:
         dmg = 2
@@ -112,6 +118,7 @@ class ArcaneSparkCard(Card):
             return feedback_tmpl.format(target=name, dmg=dmg)
         return f"释放奥术星火，对【{name}】造成了 {dmg} 点伤害，并抽了 1 张牌。"
 
+@register_card("echo_form")
 class EchoFormCard(Card):
     def execute(self, run, target, engine) -> str:
         from ...data.buff_data import BUFF_CONFIG
@@ -125,6 +132,7 @@ class EchoFormCard(Card):
             return feedback_tmpl.format(name=self.name)
         return f"使用了【{self.name}】，获得了【回响形态】buff（每回合打出的卡牌额外打出，每张牌最多回响 8 次，多余层数顺延至后续卡牌，可叠加）。"
 
+@register_card("doomsday_judgment")
 class DoomsdayJudgmentCard(Card):
     def execute(self, run, target, engine) -> str:
         dmg = 18
@@ -152,6 +160,7 @@ class DoomsdayJudgmentCard(Card):
             return feedback_tmpl.format(dmg=dmg)
         return f"释放末日审判！对所有敌人造成了 {dmg} 点伤害并眩晕他们一回合。"
 
+@register_card("overcharge")
 class OverchargeCard(Card):
     def __init__(self, id, name, color, type, cost_a, cost_ba, exhaust=False, desc=""):
         super().__init__(id, name, color, type, cost_a, cost_ba, exhaust=exhaust, desc=desc)
@@ -161,12 +170,14 @@ class OverchargeCard(Card):
         cfg = CARD_CONFIG.get(self.id, {})
         return cfg.get("feedback", "使用了【过载充能】，获得了【奥术充能】buff（法术伤害 +3，可叠加）。")
 
+@register_card("magic_network")
 class MagicNetworkCard(Card):
     def execute(self, run, target, engine) -> str:
         engine._add_buff_to(run.player, "magic_network", "魔网天成", "本回合内每使用一张法术牌，对所有敌人造成 3 点伤害，获得 3 点护盾。")
         cfg = CARD_CONFIG.get(self.id, {})
         return cfg.get("feedback", "使用了【魔网天成】，本回合内你的法术将与魔网产生共鸣。")
 
+@register_card("fleeting_spark")
 class FleetingSparkCard(Card):
     def execute(self, run, target, engine) -> str:
         dmg = 6

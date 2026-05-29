@@ -1,7 +1,9 @@
 from typing import Optional, List
 from ...models.state import Card
 from ...data.card_data import CARD_CONFIG
+from .registry import register_card
 
+@register_card("time_warp")
 class TimeWarpCard(Card):
     def execute(self, run, target, engine) -> str:
         p = run.player
@@ -22,6 +24,7 @@ class TimeWarpCard(Card):
             return feedback_tmpl.format(draw_count=draw_count)
         return f"时光倒流！已将所有卡牌重新洗回抽牌堆，并重新抽取了 {draw_count} 张牌。"
 
+@register_card("meteor_swarm", is_fire=True)
 class MeteorSwarmCard(Card):
     def __init__(self, id, name, color, type, cost_a, cost_ba, base_dmg, is_fire=True, desc=""):
         super().__init__(id, name, color, type, cost_a, cost_ba, desc=desc)
@@ -58,6 +61,7 @@ class MeteorSwarmCard(Card):
             return feedback_tmpl.format(dmg=dmg)
         return f"释放流星爆！对所有敌人造成了 {dmg} 点火焰伤害。"
 
+@register_card("archmage_wish")
 class ArchmageWishCard(Card):
     def execute(self, run, target, engine) -> str:
         run.player.shield += 10
@@ -66,6 +70,7 @@ class ArchmageWishCard(Card):
         cfg = CARD_CONFIG.get(self.id, {})
         return cfg.get("feedback", "完成了大法师的祈愿！获得了 10 点护盾，【祈愿奥术】法术伤害 +4，并抽了 2 张牌。")
 
+@register_card("time_stop")
 class TimeStopCard(Card):
     def execute(self, run, target, engine) -> str:
         run.node_data["extra_turns_left"] = 3
