@@ -106,7 +106,15 @@ class SaveManager:
     def to_dict(self, run: GameRun) -> dict:
         if not run:
             return {}
-        return asdict(run)
+        logs = None
+        if run.node_data is not None:
+            logs = run.node_data.pop("battle_logs", None)
+        try:
+            res = asdict(run)
+        finally:
+            if logs is not None and run.node_data is not None:
+                run.node_data["battle_logs"] = logs
+        return res
 
     def from_dict(self, d: dict) -> GameRun:
         if not d:

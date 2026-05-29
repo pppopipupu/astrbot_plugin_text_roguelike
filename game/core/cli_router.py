@@ -606,60 +606,64 @@ class CLIRouter:
                         return f"{res}\n🎉 战斗胜利！你击败了敌方所有单位。", True
                 return res, False
             elif stype == "awaiting_target":
-                input_str = " ".join(parts).strip()
-                if input_str in ("取消", "cancel", "abandon", "放弃", "q"):
+                if parts and parts[0] in self._action_handlers:
                     state_stack.pop()
                     self.save_manager.save_save(user_id, run)
-                    return "❌ 取消使用操作。", False
-                def is_valid_target_format(text: str) -> bool:
-                    text = text.strip().lower()
-                    if not text:
-                        return False
-                    if text.isdigit():
-                        return True
-                    if text.startswith("p") and text[1:].isdigit():
-                        return True
-                    if text.startswith("e") and text[1:].isdigit():
-                        return True
-                    return False
-                if is_valid_target_format(input_str):
-                    target = input_str
-                    action_info = top_state.get("action")
-                    if action_info == "play_card":
-                        hand_idx = top_state.get("hand_idx")
-                        state_stack.pop()
-                        res = self.engine.play_card(run, hand_idx, target)
-                        if run.player.hp <= 0:
-                            settle_msg = self.save_manager.settle_game_and_delete(user_id, run, is_victory=False)
-                            return f"{res}\n💀 你被击败了！当前进度已清空。\n{settle_msg}", True
-                        if self.engine.is_battle_won(run):
-                            self.engine._handle_battle_win(run)
-                            if run.node_type == "victory":
-                                settle_msg = self.save_manager.settle_game_and_delete(user_id, run, is_victory=True)
-                                return f"{res}\n🎉 恭喜你击败了腐化之心，通关成功！\n{settle_msg}", True
-                            else:
-                                return f"{res}\n🎉 战斗胜利！你击败了敌方所有单位。", True
-                        return res, False
-                    elif action_info == "minion_skill":
-                        my_grid = top_state.get("my_grid")
-                        skill_idx = top_state.get("skill_idx")
-                        state_stack.pop()
-                        res = self.engine.minion_skill(run, my_grid, skill_idx, target)
-                        if run.player.hp <= 0:
-                            settle_msg = self.save_manager.settle_game_and_delete(user_id, run, is_victory=False)
-                            return f"{res}\n💀 你被击败了！当前进度已清空。\n{settle_msg}", True
-                        if self.engine.is_battle_won(run):
-                            self.engine._handle_battle_win(run)
-                            if run.node_type == "victory":
-                                settle_msg = self.save_manager.settle_game_and_delete(user_id, run, is_victory=True)
-                                return f"{res}\n🎉 恭喜你击败了腐化之心，通关成功！\n{settle_msg}", True
-                            else:
-                                return f"{res}\n🎉 战斗胜利！你击败了敌方所有单位。", True
-                        return res, False
                 else:
-                    state_stack.pop()
-                    self.save_manager.save_save(user_id, run)
-                    return "❌ 取消使用操作。", False
+                    input_str = " ".join(parts).strip()
+                    if input_str in ("取消", "cancel", "abandon", "放弃", "q"):
+                        state_stack.pop()
+                        self.save_manager.save_save(user_id, run)
+                        return "❌ 取消使用操作。", False
+                    def is_valid_target_format(text: str) -> bool:
+                        text = text.strip().lower()
+                        if not text:
+                            return False
+                        if text.isdigit():
+                            return True
+                        if text.startswith("p") and text[1:].isdigit():
+                            return True
+                        if text.startswith("e") and text[1:].isdigit():
+                            return True
+                        return False
+                    if is_valid_target_format(input_str):
+                        target = input_str
+                        action_info = top_state.get("action")
+                        if action_info == "play_card":
+                            hand_idx = top_state.get("hand_idx")
+                            state_stack.pop()
+                            res = self.engine.play_card(run, hand_idx, target)
+                            if run.player.hp <= 0:
+                                settle_msg = self.save_manager.settle_game_and_delete(user_id, run, is_victory=False)
+                                return f"{res}\n💀 你被击败了！当前进度已清空。\n{settle_msg}", True
+                            if self.engine.is_battle_won(run):
+                                self.engine._handle_battle_win(run)
+                                if run.node_type == "victory":
+                                    settle_msg = self.save_manager.settle_game_and_delete(user_id, run, is_victory=True)
+                                    return f"{res}\n🎉 恭喜你击败了腐化之心，通关成功！\n{settle_msg}", True
+                                else:
+                                    return f"{res}\n🎉 战斗胜利！你击败了敌方所有单位。", True
+                            return res, False
+                        elif action_info == "minion_skill":
+                            my_grid = top_state.get("my_grid")
+                            skill_idx = top_state.get("skill_idx")
+                            state_stack.pop()
+                            res = self.engine.minion_skill(run, my_grid, skill_idx, target)
+                            if run.player.hp <= 0:
+                                settle_msg = self.save_manager.settle_game_and_delete(user_id, run, is_victory=False)
+                                return f"{res}\n💀 你被击败了！当前进度已清空。\n{settle_msg}", True
+                            if self.engine.is_battle_won(run):
+                                self.engine._handle_battle_win(run)
+                                if run.node_type == "victory":
+                                    settle_msg = self.save_manager.settle_game_and_delete(user_id, run, is_victory=True)
+                                    return f"{res}\n🎉 恭喜你击败了腐化之心，通关成功！\n{settle_msg}", True
+                                else:
+                                    return f"{res}\n🎉 战斗胜利！你击败了敌方所有单位。", True
+                            return res, False
+                    else:
+                        state_stack.pop()
+                        self.save_manager.save_save(user_id, run)
+                        return "❌ 取消使用操作。", False
         if parts[0].isdigit():
             parts = ["选择"] + parts
         sub = parts[0]
