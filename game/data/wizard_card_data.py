@@ -285,5 +285,16 @@ WIZARD_CARD_CONFIG = {
         "rarity": "legendary",
         "exhaust": True,
         "feedback": "完成了大法师的祈愿！获得了 10 点护盾，【祈愿奥术】法术伤害 +4，并抽了 2 张牌。"
+    },
+    "time_stop": {
+        "name": "时间停止",
+        "color": "wizard",
+        "type": "spell",
+        "cost_a": 2,
+        "cost_ba": 1,
+        "desc": "在回合结束时，额外追加 3 个额外回合。额外回合中若造成伤害，则立即结束。消耗。",
+        "rarity": "legendary",
+        "exhaust": True,
+        "feedback": "施展了【时间停止】！你掌握了时空的掌控权，获得了 3 个额外回合。在额外回合中造成伤害将提前打破时间停止状态。"
     }
 }

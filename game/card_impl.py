@@ -421,6 +421,12 @@ class FleetingSparkCard(Card):
         else:
             return f"使用了【{self.name}】，对【{name}】造成了 {dmg} 点伤害，并抽了 2 张牌，但手牌已空，无需丢弃。"
 
+class TimeStopCard(Card):
+    def execute(self, run, target, engine) -> str:
+        run.node_data["extra_turns_left"] = 3
+        cfg = CARD_CONFIG.get(self.id, {})
+        return cfg.get("feedback", "施展了时间停止！你获得了 3 个额外回合。")
+
 class CurseCard(Card):
     def execute(self, run, target, engine) -> str:
         return "该卡牌不能被打出。"
@@ -494,6 +500,8 @@ for cid, cfg in CARD_CONFIG.items():
         ALL_CARDS[cid] = MeteorSwarmCard(cid, name, color, ctype, cost_a, cost_ba, cfg.get("base_dmg", 0), is_fire=True, desc=desc)
     elif cid == "archmage_wish":
         ALL_CARDS[cid] = ArchmageWishCard(cid, name, color, ctype, cost_a, cost_ba, desc=desc)
+    elif cid == "time_stop":
+        ALL_CARDS[cid] = TimeStopCard(cid, name, color, ctype, cost_a, cost_ba, desc=desc)
     elif cid in ("curse_dazed", "curse_agony"):
         ALL_CARDS[cid] = CurseCard(cid, name, color, ctype, cost_a, cost_ba, desc=desc)
 

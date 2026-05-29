@@ -144,6 +144,8 @@ def apply_modify_spell_cost_ba(run, card, cost_ba: int, engine) -> int:
 
 def apply_modify_spell_damage(run, card, damage: int, engine) -> int:
     dmg = damage
+    if getattr(run.player, "subclass", "") == "塑能法师" and getattr(card, "type", "") == "spell":
+        dmg = int(dmg * 1.15)
     for b in list(run.player.buffs):
         impl = get_buff_impl(b.id, b.stacks)
         if impl:

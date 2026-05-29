@@ -1,10 +1,18 @@
 from ..models import GameRun, UserStats
 from ..cards import ALL_CARDS
 
-def render_menu() -> str:
+def render_menu(stats: UserStats = None) -> str:
+    subclass_str = "无"
+    gp_val = 0
+    if stats:
+        gp_val = getattr(stats, "gp", 0)
+        subclass_str = getattr(stats, "selected_subclass", "") or "无"
     lines = [
         "━━━━━━━━━━━━━━━━━━━━",
         "🔮 魔法肉鸽卡牌游戏 (DND 5.5E 法师篇)",
+        "",
+        f"💰 我的 GP：{gp_val}",
+        f"🧙 当前职业：法师  🔮 子职业：{subclass_str}",
         "",
         "一款使用纯文字游玩的策略肉鸽卡牌游戏。",
         "每回合拥有 2 个动作 (A) 和 1 个附赠动作 (BA)。",
@@ -14,6 +22,8 @@ def render_menu() -> str:
         "👉 /rogue 开启  -- 开始一局新游戏",
         "",
         "【其他命令】",
+        "👉 /rogue 职业  -- 查看及选择子职业",
+        "👉 /rogue 商店  -- 访问局外商店，使用 GP 购买商品",
         "👉 /rogue 总览 [卡牌/遗物] -- 查看全部卡牌或遗物总览信息",
         "👉 /rogue 状态  -- 查看当前局内状态",
         "👉 /rogue 牌组  -- 查看当前拥有的卡组",
@@ -168,6 +178,8 @@ def render_help() -> str:
         "👉 牌组 / deck -- 查看当前拥有的全部卡组及卡牌序号",
         "👉 总览 / overview [卡牌/遗物] -- 查看全部卡牌或遗物总览信息",
         "👉 统计 / stat / stats -- 查看勇士生涯累计统计数据",
+        "👉 职业 / class -- 查看及选择子职业",
+        "👉 商店 / shop -- 访问局外商店，使用 GP 购买子职业或神秘物品",
         "👉 放弃 / abandon -- 放弃当前战局（需输入 放弃 确认 彻底清空存档）",
         "👉 模式 / mode -- 切换个人免前缀快捷指令模式",
         "",
@@ -184,6 +196,49 @@ def render_help() -> str:
         "👉 查询 / query / info / i [名称] -- 查询战斗快照，或模糊查询卡牌/遗物/Buff效果",
         "",
         "💡 温馨提示：若已使用 模式/mode 开启免前缀肉鸽模式，你可以直接发送不带前缀的快捷指令（如直接发“结束”、“1”、“使用 1”）。此功能仅对你个人生效，不会对其他用户产生刷屏干扰。",
+        "━━━━━━━━━━━━━━━━━━━━"
+    ]
+    return "\n".join(lines)
+
+def render_shop(stats: UserStats) -> str:
+    import random
+    gp = getattr(stats, "gp", 0)
+    unlocked = getattr(stats, "unlocked_subclasses", [])
+    status_time = "已解锁" if "时序法师" in unlocked else "未解锁"
+    status_element = "已解锁" if "塑能法师" in unlocked else "未解锁"
+    status_mystery = "已解锁" if "神秘物品" in unlocked else "未解锁"
+    
+    welcome_quotes = [
+        "“...嘘，悄悄看，我这儿可都是从无尽时空深处淘来的宝贝。”",
+        "“又是你，旅者？只要GP足够，我这里的东西随时都可以归你。”",
+        "“想要掌控时间，还是驾驭元素？或者……你对那件‘神秘物品’感兴趣？”",
+        "“奥术的轨迹是有限的，但金钱和力量的秘密是无限的。”",
+        "“有些东西并不存在于当下的时空，但在这里，一切皆有可能。”",
+        "“外面的风暴越来越近了，或许你该准备点真正强力的武器？”"
+    ]
+    welcome_quote = random.choice(welcome_quotes)
+    
+    lines = [
+        "━━━━━━━━━━━━━━━━━━━━",
+        "🏪 魔法肉鸽局外成长商店",
+        "",
+        "🔮 神秘店主说：",
+        f"  {welcome_quote}",
+        "",
+        f"💰 我的 GP：{gp}",
+        "",
+        "【货架商品】",
+        f" [1] 时序法师子职业 - 售价：2888 GP （状态：{status_time}）",
+        "     └─ 操控时间。初始牌组中加入 1 张传奇卡牌“时间停止”（追加 3 个额外回合）。",
+        f" [2] 塑能法师子职业 - 售价：2888 GP （状态：{status_element}）",
+        "     └─ 元素爆发。所有法术伤害提升 15%，且抓取火球术时 40% 几率替换为流星爆。",
+        f" [3] 神秘物品 - 售价：66666 GP （状态：{status_mystery}）",
+        "     └─ 暂无效果。一件蕴藏着奇异力量的物件，购买后会永久保存在收藏中。",
+        "",
+        "【购买指令】",
+        "👉 /rogue 商店 购买 1 或 时序法师 -- 购买时序法师",
+        "👉 /rogue 商店 购买 2 或 塑能法师 -- 购买塑能法师",
+        "👉 /rogue 商店 购买 3 或 神秘物品 -- 购买神秘物品",
         "━━━━━━━━━━━━━━━━━━━━"
     ]
     return "\n".join(lines)

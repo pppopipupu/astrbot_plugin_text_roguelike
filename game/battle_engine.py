@@ -164,6 +164,9 @@ class BattleEngine:
             p.hp = max(1, p.hp - 4)
         if "ready_pack" in p.relics:
             p.bonus_actions += 1
+        if getattr(p, "subclass", "") == "时序法师":
+            if random.random() < 0.25:
+                p.bonus_actions += 1
         init_draw = 5 + (2 if "ancient_eye" in p.relics else 0) + (1 if "ready_pack" in p.relics else 0)
         if "blind_spot" in p.relics:
             init_draw = max(0, init_draw - 2)
@@ -285,6 +288,7 @@ class BattleEngine:
         self._roll_enemy_intent(run)
 
     def play_card(self, run: GameRun, hand_idx: int, target: Optional[str] = None) -> str:
+        initial_status = [(e.hp, e.shield) for e in run.enemies]
         p = run.player
         if run.node_type != "battle":
             return "❌ 只有在战斗中才能使用卡牌。"
@@ -389,9 +393,20 @@ class BattleEngine:
             if template and card.type == "spell":
                 template.on_spell_played(run, ak, card, self)
         self.save_manager.save_save(run.user_id, run)
+        has_damaged = False
+        for idx, e in enumerate(run.enemies):
+            if idx < len(initial_status):
+                old_hp, old_shield = initial_status[idx]
+                if e.hp < old_hp or e.shield < old_shield:
+                    has_damaged = True
+                    break
+        if has_damaged and run.node_data.get("extra_turns_left", 0) > 0:
+            end_turn_res = self.end_turn(run)
+            res += f"\n⏳ [时间停止] 额外回合中对敌人造成了伤害，当前额外回合提前结束！\n{end_turn_res}"
         return res
 
     def play_special_action(self, run: GameRun, hand_idx: int, target: Optional[str] = None) -> str:
+        initial_status = [(e.hp, e.shield) for e in run.enemies]
         p = run.player
         if run.node_type != "battle":
             return "❌ 只有在战斗中才能使用卡牌的特殊行动。"
@@ -433,9 +448,20 @@ class BattleEngine:
 
         res = card.special_action(run, target)
         self.save_manager.save_save(run.user_id, run)
+        has_damaged = False
+        for idx, e in enumerate(run.enemies):
+            if idx < len(initial_status):
+                old_hp, old_shield = initial_status[idx]
+                if e.hp < old_hp or e.shield < old_shield:
+                    has_damaged = True
+                    break
+        if has_damaged and run.node_data.get("extra_turns_left", 0) > 0:
+            end_turn_res = self.end_turn(run)
+            res += f"\n⏳ [时间停止] 额外回合中对敌人造成了伤害，当前额外回合提前结束！\n{end_turn_res}"
         return res
 
     def minion_attack(self, run: GameRun, my_grid: str, opp_grid: Optional[str] = None) -> str:
+        initial_status = [(e.hp, e.shield) for e in run.enemies]
         p = run.player
         if run.node_type != "battle":
             return "❌ 只有在战斗中才能控制随从攻击。"
@@ -476,9 +502,20 @@ class BattleEngine:
             run.player.graveyard.append("enemy:" + enemy.name)
             run.enemies.pop(opp_idx)
         self.save_manager.save_save(run.user_id, run)
+        has_damaged = False
+        for idx, e in enumerate(run.enemies):
+            if idx < len(initial_status):
+                old_hp, old_shield = initial_status[idx]
+                if e.hp < old_hp or e.shield < old_shield:
+                    has_damaged = True
+                    break
+        if has_damaged and run.node_data.get("extra_turns_left", 0) > 0:
+            end_turn_res = self.end_turn(run)
+            res += f"\n⏳ [时间停止] 额外回合中对敌人造成了伤害，当前额外回合提前结束！\n{end_turn_res}"
         return res
 
     def minion_skill(self, run: GameRun, my_grid: str, skill_idx: int = 1, target: Optional[str] = None) -> str:
+        initial_status = [(e.hp, e.shield) for e in run.enemies]
         p = run.player
         if run.node_type != "battle":
             return "❌ 只有在战斗中才能发动随从技能。"
@@ -531,6 +568,16 @@ class BattleEngine:
         msg += effect_msg
 
         self.save_manager.save_save(run.user_id, run)
+        has_damaged = False
+        for idx, e in enumerate(run.enemies):
+            if idx < len(initial_status):
+                old_hp, old_shield = initial_status[idx]
+                if e.hp < old_hp or e.shield < old_shield:
+                    has_damaged = True
+                    break
+        if has_damaged and run.node_data.get("extra_turns_left", 0) > 0:
+            end_turn_res = self.end_turn(run)
+            msg += f"\n⏳ [时间停止] 额外回合中对敌人造成了伤害，当前额外回合提前结束！\n{end_turn_res}"
         return msg
 
     def _execute_card_effect(self, run: GameRun, card: Card, target: Optional[str] = None) -> str:
@@ -600,10 +647,16 @@ class BattleEngine:
             self._handle_battle_win(run)
             return "战斗胜利！敌方单位已被全部击败。"
 
-        enemy_actions = self._enemy_turn(run)
+        extra_turns = run.node_data.get("extra_turns_left", 0)
+        if extra_turns > 0:
+            run.node_data["extra_turns_left"] = extra_turns - 1
+            enemy_actions = f"⏳ [时间停止] 额外回合进行中（剩余 {extra_turns - 1} 个额外回合），敌人全部陷入静止。"
+        else:
+            enemy_actions = self._enemy_turn(run)
+            
         if p.hp <= 0:
-            self.save_manager.delete_save(run.user_id)
-            return f"{enemy_actions}\n💀 冒险结束。你被击败了！存档已被清除。"
+            settle_msg = self.save_manager.settle_game_and_delete(run.user_id, run, is_victory=False)
+            return f"{enemy_actions}\n💀 冒险结束。你被击败了！存档已被清除。\n{settle_msg}"
 
         decay_msgs = []
         if p.shield > 0:
@@ -624,6 +677,11 @@ class BattleEngine:
         if run.node_data.get("drain_ba"):
             p.bonus_actions = max(0, p.bonus_actions - 1)
             run.node_data.pop("drain_ba", None)
+        extra_ba_msg = ""
+        if getattr(p, "subclass", "") == "时序法师":
+            if random.random() < 0.25:
+                p.bonus_actions += 1
+                extra_ba_msg = "⏳ [时序被动] 触发时间跳跃，本回合额外获得 1 个附赠动作（BA）！\n"
         apply_on_player_turn_start(run, self)
         for mk, mv in p.minions.items():
             mv.actions += 1
@@ -641,7 +699,7 @@ class BattleEngine:
         self._roll_enemy_intent(run)
         run.node_data["cards_played_this_turn"] = 0
         self.save_manager.save_save(run.user_id, run)
-        return f"{enemy_actions}\n{decay_info}进入玩家回合。已重置动作并抽取手牌。"
+        return f"{enemy_actions}\n{decay_info}{extra_ba_msg}进入玩家回合。已重置动作并抽取手牌。"
 
     def _trigger_take_damage_amulets(self, run, source: str, amount: int, logs: List[str]):
         from .amulet_impl import ALL_AMULETS
@@ -723,12 +781,13 @@ class BattleEngine:
         p.gold += reward_gold
         if p.stage == 20:
             run.node_type = "victory"
-            self.save_manager.delete_save(run.user_id)
         else:
             run.node_type = "reward"
             from .card_impl import ALL_CARDS
+            from .models import check_and_replace_fireball
             card_pool = list(ALL_CARDS.keys())
             normal_cards = [cid for cid in card_pool if ALL_CARDS[cid].rarity != "legendary" and not cid.startswith("curse_")]
             reward_cards = random.sample(normal_cards, 3)
+            reward_cards = [check_and_replace_fireball(run, cid) for cid in reward_cards]
             run.node_data = {"cards": reward_cards, "quest_bonus": quest_bonus}
             self.save_manager.save_save(run.user_id, run)

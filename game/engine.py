@@ -13,9 +13,11 @@ class GameEngine:
         self.map_engine = MapEngine(save_manager, self.battle_engine)
 
     def start_new_game(self, user_id: str) -> GameRun:
-        commons = [cid for cid, c in ALL_CARDS.items() if getattr(c, "rarity", "common") == "common" and not cid.startswith("curse_")]
-        rares = [cid for cid, c in ALL_CARDS.items() if getattr(c, "rarity", "common") == "rare" and not cid.startswith("curse_")]
-        epics = [cid for cid, c in ALL_CARDS.items() if getattr(c, "rarity", "common") == "epic" and not cid.startswith("curse_")]
+        stats = self.save_manager.load_stats(user_id)
+        selected_subclass = getattr(stats, "selected_subclass", "")
+        commons = [cid for cid, c in ALL_CARDS.items() if getattr(c, "rarity", "common") == "common" and not cid.startswith("curse_") and cid != "time_stop"]
+        rares = [cid for cid, c in ALL_CARDS.items() if getattr(c, "rarity", "common") == "rare" and not cid.startswith("curse_") and cid != "time_stop"]
+        epics = [cid for cid, c in ALL_CARDS.items() if getattr(c, "rarity", "common") == "epic" and not cid.startswith("curse_") and cid != "time_stop"]
         initial_deck = []
         for _ in range(5):
             initial_deck.append(random.choice(commons))
@@ -23,6 +25,8 @@ class GameEngine:
             initial_deck.append(random.choice(rares))
         for _ in range(1):
             initial_deck.append(random.choice(epics))
+        if selected_subclass == "时序法师":
+            initial_deck.append("time_stop")
         player = PlayerState(
             hp=45,
             max_hp=45,
@@ -37,7 +41,8 @@ class GameEngine:
             bonus_actions=1,
             minions={},
             amulets={},
-            abilities=[]
+            abilities=[],
+            subclass=selected_subclass
         )
         run = GameRun(
             user_id=user_id,

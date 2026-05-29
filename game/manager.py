@@ -32,7 +32,11 @@ class SaveManager:
                 total_damage=d.get("total_damage", 0),
                 total_kills=d.get("total_kills", 0),
                 total_stages=d.get("total_stages", 0),
-                rogue_mode=d.get("rogue_mode", False)
+                rogue_mode=d.get("rogue_mode", False),
+                gp=d.get("gp", 0),
+                unlocked_subclasses=d.get("unlocked_subclasses", []),
+                selected_class=d.get("selected_class", "法师"),
+                selected_subclass=d.get("selected_subclass", "")
             )
         except:
             return UserStats()
@@ -158,7 +162,8 @@ class SaveManager:
             abilities=p_data.get("abilities", []),
             fold_guide=p_data.get("fold_guide", False),
             buffs=p_buffs,
-            relics=p_data.get("relics", [])
+            relics=p_data.get("relics", []),
+            subclass=p_data.get("subclass", "")
         )
         
         enemies = []
@@ -205,6 +210,26 @@ class SaveManager:
             node_data=d.get("node_data", {}),
             map_data=d.get("map_data", {})
         )
+
+    def settle_game_and_delete(self, user_id: str, run: GameRun, is_victory: bool = False) -> str:
+        if not run or not run.player:
+            self.delete_save(user_id)
+            return "本局结算：未找到有效的角色进度，未获得 GP。"
+        stage = run.player.stage
+        gold = run.player.gold
+        if stage < 5:
+            self.delete_save(user_id)
+            return f"本局结算：由于在第 {stage} 层结束，未获得 GP。"
+        gp_gained = gold * 10
+        victory_bonus = ""
+        if is_victory:
+            gp_gained += 1000
+            victory_bonus = "（含通关奖励 1000 GP）"
+        stats = self.load_stats(user_id)
+        stats.gp += gp_gained
+        self.save_stats(user_id, stats)
+        self.delete_save(user_id)
+        return f"本局结算：剩余金币 {gold}，折算获得 {gp_gained} GP{victory_bonus}！当前总 GP：{stats.gp}。"
 
 def stat_recorder_callback(enemy_name: str, amount: int, is_defeat: bool):
     user_id = get_user_id()

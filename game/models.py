@@ -26,6 +26,10 @@ class UserStats:
     total_kills: int = 0
     total_stages: int = 0
     rogue_mode: bool = False
+    gp: int = 0
+    unlocked_subclasses: List[str] = field(default_factory=list)
+    selected_class: str = "法师"
+    selected_subclass: str = ""
 
 if not hasattr(sys, "_rogue_stat_recorder"):
     sys._rogue_stat_recorder = None
@@ -105,6 +109,7 @@ class PlayerState:
     fold_guide: bool = False
     buffs: List[BuffState] = field(default_factory=list)
     relics: List[str] = field(default_factory=list)
+    subclass: str = ""
 
 @dataclass
 class EnemyState:
@@ -160,3 +165,11 @@ class GameRun:
     enemies: List[EnemyState] = field(default_factory=list)
     node_data: Dict = field(default_factory=dict)
     map_data: Dict = field(default_factory=dict)
+
+def check_and_replace_fireball(run: 'GameRun', card_id: str) -> str:
+    import random
+    if getattr(run.player, "subclass", "") == "塑能法师" and card_id == "fireball":
+        if random.random() < 0.40:
+            return "meteor_swarm"
+    return card_id
+

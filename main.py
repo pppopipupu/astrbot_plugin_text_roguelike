@@ -87,7 +87,8 @@ class MyPlugin(Star):
         message_str = event.message_str.strip()
         parts = message_str.split()
         if not parts:
-            yield event.plain_result(GameRenderer.render_menu())
+            stats = self.save_manager.load_stats(user_id)
+            yield event.plain_result(GameRenderer.render_menu(stats))
             return
         
         first = parts[0].lower()
@@ -151,7 +152,8 @@ class MyPlugin(Star):
                     "开启", "start", "状态", "s", "牌组", "deck", "总览", "overview", 
                     "帮助", "help", "使用", "p", "随从", "m", "选择", "c", "特殊", "sa", 
                     "结束", "e", "折叠", "f", "fold", "队列", "q", "queue", "统计", "stat", 
-                    "stats", "查询", "query", "info", "i", "放弃", "abandon", "mode", "模式"
+                    "stats", "查询", "query", "info", "i", "放弃", "abandon", "mode", "模式",
+                    "职业", "class", "商店", "shop"
                 }
                 if first_word in valid_cmds:
                     is_game_cmd = True
@@ -200,7 +202,8 @@ class MyPlugin(Star):
             if self.engine.is_battle_won(run):
                 self.engine._handle_battle_win(run)
                 if run.node_type == "victory":
-                    return f"{res}\n🎉 恭喜你击败了腐化之心，通关成功！", True
+                    settle_msg = self.save_manager.settle_game_and_delete(user_id, run, is_victory=True)
+                    return f"{res}\n🎉 恭喜你击败了腐化之心，通关成功！\n{settle_msg}", True
                 else:
                     return f"{res}\n🎉 战斗胜利！你击败了敌方所有单位。", True
             return res, False
@@ -215,12 +218,13 @@ class MyPlugin(Star):
             target = parts[2] if len(parts) > 2 else None
             res = self.engine.play_card(run, idx, target)
             if run.player.hp <= 0:
-                self.save_manager.delete_save(user_id)
-                return f"{res}\n💀 你被击败了！当前进度已清空。", True
+                settle_msg = self.save_manager.settle_game_and_delete(user_id, run, is_victory=False)
+                return f"{res}\n💀 你被击败了！当前进度已清空。\n{settle_msg}", True
             if self.engine.is_battle_won(run):
                 self.engine._handle_battle_win(run)
                 if run.node_type == "victory":
-                    return f"{res}\n🎉 恭喜你击败了腐化之心，通关成功！", True
+                    settle_msg = self.save_manager.settle_game_and_delete(user_id, run, is_victory=True)
+                    return f"{res}\n🎉 恭喜你击败了腐化之心，通关成功！\n{settle_msg}", True
                 else:
                     return f"{res}\n🎉 战斗胜利！你击败了敌方所有单位。", True
             return res, False
@@ -271,13 +275,14 @@ class MyPlugin(Star):
                     
             res_combined = "\n".join(results)
             if run.player.hp <= 0:
-                self.save_manager.delete_save(user_id)
-                return f"{res_combined}\n💀 你被击败了！当前进度已清空。", True
+                settle_msg = self.save_manager.settle_game_and_delete(user_id, run, is_victory=False)
+                return f"{res_combined}\n💀 你被击败了！当前进度已清空。\n{settle_msg}", True
                 
             if self.engine.is_battle_won(run):
                 self.engine._handle_battle_win(run)
                 if run.node_type == "victory":
-                    return f"{res_combined}\n🎉 恭喜你击败了腐化之心，通关成功！", True
+                    settle_msg = self.save_manager.settle_game_and_delete(user_id, run, is_victory=True)
+                    return f"{res_combined}\n🎉 恭喜你击败了腐化之心，通关成功！\n{settle_msg}", True
                 else:
                     return f"{res_combined}\n🎉 战斗胜利！你击败了敌方所有单位。", True
             return res_combined, False
@@ -361,7 +366,8 @@ class MyPlugin(Star):
             if run:
                 yield event.plain_result(GameRenderer.render_game(run))
             else:
-                yield event.plain_result(GameRenderer.render_menu())
+                stats = self.save_manager.load_stats(user_id)
+                yield event.plain_result(GameRenderer.render_menu(stats))
             return
             
         if parts[0].isdigit():
@@ -531,10 +537,119 @@ class MyPlugin(Star):
                 yield event.plain_result("❌ 你当前没有正在进行的游戏。")
                 return
             if len(parts) > 1 and parts[1] in ("确认", "confirm"):
-                self.save_manager.delete_save(user_id)
-                yield event.plain_result("已放弃当前局内游戏，当前进度已清空。")
+                settle_msg = self.save_manager.settle_game_and_delete(user_id, run, is_victory=False)
+                yield event.plain_result(f"已放弃当前局内游戏，当前进度已清空。\n{settle_msg}")
             else:
                 yield event.plain_result("⚠️ 确认放弃当前游戏？放弃后进度将无法恢复。确认请输入：\n/rogue 放弃 确认（或 /rogue abandon confirm）")
+
+        elif sub in ("职业", "class"):
+            stats = self.save_manager.load_stats(user_id)
+            if len(parts) == 1:
+                gp = getattr(stats, "gp", 0)
+                selected_subclass = getattr(stats, "selected_subclass", "") or "无"
+                unlocked = getattr(stats, "unlocked_subclasses", [])
+                
+                status_time = "已解锁" if "时序法师" in unlocked else "未解锁（2888 GP）"
+                status_element = "已解锁" if "塑能法师" in unlocked else "未解锁（2888 GP）"
+                
+                lines = [
+                    "━━━━━━━━━━━━━━━━━━━━",
+                    "🧙 魔法肉鸽卡牌子职业系统",
+                    "",
+                    f"💰 我的 GP：{gp}",
+                    f"🧙 当前职业：法师  🔮 子职业：{selected_subclass}",
+                    "",
+                    "【可用的子职业】",
+                    f"1. 时序法师 - 状态：[{status_time}]",
+                    "   └─ 操控时间。开局获得专属传奇卡牌“时间停止”（追加 3 个额外回合）。",
+                    f"2. 塑能法师 - 状态：[{status_element}]",
+                    "   └─ 元素爆发。所有法术伤害提升 15%，且抓取火球术时 40% 几率将火球术替换为流星爆。",
+                    "",
+                    "【职业命令】",
+                    "👉 /rogue 职业 选择 时序法师 -- 装备时序法师子职业",
+                    "👉 /rogue 职业 选择 塑能法师 -- 装备塑能法师子职业",
+                    "👉 /rogue 职业 选择 无       -- 取消装备子职业",
+                    "💡 如需购买子职业，请使用局外商店：/rogue 商店",
+                    "━━━━━━━━━━━━━━━━━━━━"
+                ]
+                yield event.plain_result("\n".join(lines))
+            elif len(parts) >= 3 and parts[1] == "购买":
+                yield event.plain_result("💡 请使用商店命令前往局外商店进行商品购买：/rogue 商店")
+            elif len(parts) >= 3 and parts[1] == "选择":
+                subclass_name = parts[2]
+                if subclass_name in ("无", "取消"):
+                    stats.selected_subclass = ""
+                    self.save_manager.save_stats(user_id, stats)
+                    yield event.plain_result("🔮 已取消子职业选择。当前以基础法师开始游戏。")
+                    return
+                if subclass_name not in ("时序法师", "塑能法师"):
+                    yield event.plain_result("❌ 无效的子职业。可选：时序法师、塑能法师、无。")
+                    return
+                unlocked = getattr(stats, "unlocked_subclasses", [])
+                if subclass_name not in unlocked:
+                    yield event.plain_result(f"❌ 你尚未解锁【{subclass_name}】。需要消耗 2888 GP 购买，请使用：/rogue 商店")
+                    return
+                stats.selected_subclass = subclass_name
+                self.save_manager.save_stats(user_id, stats)
+                yield event.plain_result(f"🔮 已选择子职业为【{subclass_name}】。将在新的一局游戏中生效！")
+            else:
+                yield event.plain_result("❌ 格式错误。请使用 /rogue 职业、/rogue 职业 选择 <子职业|无>。")
+
+        elif sub in ("商店", "shop"):
+            stats = self.save_manager.load_stats(user_id)
+            if len(parts) == 1:
+                yield event.plain_result(GameRenderer.render_shop(stats))
+            elif len(parts) >= 3 and parts[1] == "购买":
+                target = parts[2]
+                unlocked = getattr(stats, "unlocked_subclasses", [])
+                gp = getattr(stats, "gp", 0)
+                
+                if target in ("1", "时序法师"):
+                    subclass_name = "时序法师"
+                    price = 2888
+                elif target in ("2", "塑能法师"):
+                    subclass_name = "塑能法师"
+                    price = 2888
+                elif target in ("3", "神秘物品"):
+                    subclass_name = "神秘物品"
+                    price = 66666
+                else:
+                    yield event.plain_result("❌ 无效的商品。可选商品序号：1、2、3。")
+                    return
+                    
+                if subclass_name in unlocked:
+                    yield event.plain_result(f"❌ 你已经解锁了【{subclass_name}】。")
+                    return
+                if gp < price:
+                    import random
+                    fail_quotes = [
+                        "“呵呵，我的宝贝可概不赊账。多去地下城闯一闯，赚够了GP再来吧。”",
+                        "“看来你的钱包和你的雄心壮志并不相符，旅者。”",
+                        "“钱不够？那可不行。等你有了足够的GP，我随时在这儿等你。”",
+                        "“GP不够可是买不到虚空造物的，去多打败一些强大的怪兽吧。”",
+                        "“哦？想要空手套白狼？这可不是一个合格法师该有的行为。”",
+                        "“即使是至高法皇，没钱也得从我这里老老实实地退出去，懂吗？”"
+                    ]
+                    quote = random.choice(fail_quotes)
+                    yield event.plain_result(f"❌ 你的 GP 不足。购买【{subclass_name}】需要 {price} GP，你当前只有 {gp} GP。\n🔮 神秘店主说：\n  {quote}")
+                    return
+                    
+                stats.gp -= price
+                stats.unlocked_subclasses.append(subclass_name)
+                self.save_manager.save_stats(user_id, stats)
+                import random
+                success_quotes = [
+                    "“明智的选择，它现在属于你了。”",
+                    "“收您对应GP，拿好它，祝您好运，勇敢的旅者。”",
+                    "“呵呵，这股力量已经在虚空中沉睡了太久，希望你能配得上它。”",
+                    "“拿去吧，它会指引你在接下来的地下城里改写宿命。”",
+                    "“噢……它离去时，连虚空的波动都微微震颤了一下。”",
+                    "“成交。记住，有些契约一经签订，便无法回头。”"
+                ]
+                quote = random.choice(success_quotes)
+                yield event.plain_result(f"🎉 购买成功！已成功解锁【{subclass_name}】。已扣除 {price} GP。\n🔮 神秘店主说：\n  {quote}")
+            else:
+                yield event.plain_result("❌ 格式错误。请使用 /rogue 商店 或 /rogue 商店 购买 <商品序号/商品名称>。")
 
         elif sub in ("折叠", "f", "fold"):
             run = self.save_manager.load_save(user_id)

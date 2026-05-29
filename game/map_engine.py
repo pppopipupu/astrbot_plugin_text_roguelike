@@ -44,6 +44,10 @@ class MapEngine:
             num_relics = random.choice([1, 2])
             selected_relics = random.sample(relics_pool, num_relics)
             selected_cards = random.sample(cards_pool, 3 - num_relics)
+            from .models import check_and_replace_fireball
+            for item in selected_cards:
+                if "card" in item:
+                    item["card"] = check_and_replace_fireball(run, item["card"])
             options = selected_relics + selected_cards
             random.shuffle(options)
             run.node_data = {"options": options}
@@ -57,9 +61,10 @@ class MapEngine:
             random.shuffle(legends_pool)
             random.shuffle(available_relics)
             options = []
+            from .models import check_and_replace_fireball
             for i in range(3):
                 options.append({
-                    "card": legends_pool[i % len(legends_pool)],
+                    "card": check_and_replace_fireball(run, legends_pool[i % len(legends_pool)]),
                     "relic": available_relics[i % len(available_relics)]
                 })
             run.node_data = {"options": options}
@@ -244,6 +249,8 @@ class MapEngine:
         from .card_impl import ALL_CARDS
         card_pool = [cid for cid, c in ALL_CARDS.items() if c.rarity != "legendary" and not cid.startswith("curse_")]
         shop_cards = random.sample(card_pool, 3)
+        from .models import check_and_replace_fireball
+        shop_cards = [check_and_replace_fireball(run, cid) for cid in shop_cards]
         items = []
         discount = 1.0
         if "gold_compass" in run.player.relics:
@@ -376,6 +383,8 @@ class MapEngine:
                         
                 card_pool = [cid for cid, c in ALL_CARDS.items() if c.rarity == "epic" and not cid.startswith("curse_")]
                 reward_cards = random.sample(card_pool, 3) if len(card_pool) >= 3 else card_pool
+                from .models import check_and_replace_fireball
+                reward_cards = [check_and_replace_fireball(run, cid) for cid in reward_cards]
                 
                 from .relic_impl import get_relic_name
                 relic_msg = f"与遗物【{get_relic_name(got_relic)}】" if got_relic else ""
@@ -439,6 +448,8 @@ class MapEngine:
                 from .card_impl import ALL_CARDS
                 wizards = [cid for cid, c in ALL_CARDS.items() if c.color == "wizard" and c.type == "spell" and c.rarity != "legendary" and not cid.startswith("curse_")]
                 reward_cards = random.sample(wizards, 3) if len(wizards) >= 3 else wizards
+                from .models import check_and_replace_fireball
+                reward_cards = [check_and_replace_fireball(run, cid) for cid in reward_cards]
                 run.node_type = "card_select"
                 run.node_data = {
                     "title": "冥想感悟：请选择你想领悟的卡牌",
