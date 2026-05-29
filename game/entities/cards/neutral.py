@@ -3,19 +3,18 @@ from ...models.state import Card, AmuletState, MinionState
 from ...data.card_data import CARD_CONFIG
 from .registry import register_card
 
-@register_card("dagger_throw", is_fire=False)
-@register_card("fire_bolt", is_fire=True)
-@register_card("quick_strike", is_fire=False)
-@register_card("agile_strike", is_fire=False)
+@register_card("dagger_throw")
+@register_card("fire_bolt")
+@register_card("quick_strike")
+@register_card("agile_strike")
 class SpellDamageCard(Card):
-    def __init__(self, id, name, color, type, cost_a, cost_ba, base_dmg, is_fire=False, desc=""):
+    def __init__(self, id, name, color, type, cost_a, cost_ba, base_dmg, desc=""):
         super().__init__(id, name, color, type, cost_a, cost_ba, desc=desc)
         self.base_dmg = base_dmg
-        self.is_fire = is_fire
 
     def execute(self, run, target, engine) -> str:
         dmg = self.base_dmg
-        if self.is_fire:
+        if self.damage_type == "fire":
             has_ring = any(av.id == "ring_of_elements" for av in run.player.amulets.values())
             if has_ring:
                 dmg += 2
@@ -27,7 +26,7 @@ class SpellDamageCard(Card):
             dmg += 1
         dmg = engine.get_modified_spell_damage(run, self, dmg)
         name = engine._get_target_name(run, target)
-        engine._damage_target(run, target, dmg)
+        engine._damage_target(run, target, dmg, damage_type=self.damage_type, card=self)
         cfg = CARD_CONFIG.get(self.id, {})
         feedback_tmpl = cfg.get("feedback")
         if feedback_tmpl:
@@ -187,3 +186,16 @@ class ManaPotionCard(Card):
         engine._draw_cards(run.player, 1, run)
         cfg = CARD_CONFIG.get(self.id, {})
         return cfg.get("feedback", "饮用了【魔力药水】，获得了 1BA 并抽了 1 张牌。")
+
+@register_card("mass_healing_word")
+class MassHealingWordCard(Card):
+    def execute(self, run, target, engine) -> str:
+        heal_val = 8
+        engine._heal_target(run, "p0", heal_val)
+        for grid in list(run.player.minions.keys()):
+            engine._heal_target(run, f"p{grid}", heal_val)
+        cfg = CARD_CONFIG.get(self.id, {})
+        feedback_tmpl = cfg.get("feedback")
+        if feedback_tmpl:
+            return feedback_tmpl.format(heal_amount=heal_val)
+        return f"使用了【{self.name}】，为自己和所有随从恢复了 {heal_val} 点生命值。"

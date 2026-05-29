@@ -5,11 +5,11 @@ NEUTRAL_CARD_CONFIG = {
         "type": "spell",
         "cost_a": 1,
         "cost_ba": 0,
-        "desc": "造成 4 点伤害。",
+        "desc": "造成 4 点穿刺伤害。",
         "rarity": "common",
         "base_dmg": 4,
-        "is_fire": False,
-        "feedback": "对【{target}】造成了 {dmg} 点伤害。"
+        "damage_type": "piercing",
+        "feedback": "对【{target}】使用【匕首投掷】。"
     },
     "first_aid": {
         "name": "绷带包扎",
@@ -121,11 +121,11 @@ NEUTRAL_CARD_CONFIG = {
         "type": "spell",
         "cost_a": 0,
         "cost_ba": 0,
-        "desc": "造成 3 点伤害。",
+        "desc": "造成 3 点钝击伤害。",
         "rarity": "common",
         "base_dmg": 3,
-        "is_fire": False,
-        "feedback": "对【{target}】造成了 {dmg} 点伤害。"
+        "damage_type": "bludgeoning",
+        "feedback": "对【{target}】使用【迅捷打击】。"
     },
     "mana_potion": {
         "name": "魔力药水",
@@ -144,11 +144,12 @@ NEUTRAL_CARD_CONFIG = {
         "type": "spell",
         "cost_a": 1,
         "cost_ba": 0,
-        "desc": "造成 4 点伤害。灵巧。",
+        "desc": "造成 4 点挥砍伤害。灵巧。",
         "rarity": "rare",
         "base_dmg": 4,
         "agile": True,
-        "feedback": "对【{target}】造成了 {dmg} 点伤害。"
+        "damage_type": "slashing",
+        "feedback": "对【{target}】使用【灵巧打击】。"
     },
     "fleeting_spark": {
         "name": "即逝星火",
@@ -156,11 +157,12 @@ NEUTRAL_CARD_CONFIG = {
         "type": "spell",
         "cost_a": 0,
         "cost_ba": 0,
-        "desc": "造成 6 点伤害，抽 2 张牌，选择 1 张手牌丢弃。即逝。",
+        "desc": "造成 6 点力场伤害，抽 2 张牌，选择 1 张手牌丢弃。即逝。",
         "rarity": "rare",
         "base_dmg": 6,
         "fleeting": True,
-        "feedback": "对【{target}】造成了 {dmg} 点伤害。"
+        "damage_type": "force",
+        "feedback": "对【{target}】使用【即逝星火】。"
     },
     "curse_dazed": {
         "name": "晕眩",
@@ -183,5 +185,16 @@ NEUTRAL_CARD_CONFIG = {
         "rarity": "curse",
         "unplayable": True,
         "innate": True
+    },
+    "mass_healing_word": {
+        "name": "群体治愈真言",
+        "color": "neutral",
+        "type": "spell",
+        "cost_a": 0,
+        "cost_ba": 1,
+        "desc": "恢复自己和所有随从 8 点生命值。",
+        "rarity": "epic",
+        "heal_amount": 8,
+        "feedback": "念诵群体治愈真言，为自己和所有随从恢复了 {heal_amount} 点生命值。"
     }
 }

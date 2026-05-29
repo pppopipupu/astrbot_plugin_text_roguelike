@@ -24,17 +24,16 @@ class TimeWarpCard(Card):
             return feedback_tmpl.format(draw_count=draw_count)
         return f"时光倒流！已将所有卡牌重新洗回抽牌堆，并重新抽取了 {draw_count} 张牌。"
 
-@register_card("meteor_swarm", is_fire=True)
+@register_card("meteor_swarm")
 class MeteorSwarmCard(Card):
-    def __init__(self, id, name, color, type, cost_a, cost_ba, base_dmg, is_fire=True, desc=""):
+    def __init__(self, id, name, color, type, cost_a, cost_ba, base_dmg, desc=""):
         super().__init__(id, name, color, type, cost_a, cost_ba, desc=desc)
         self.base_dmg = base_dmg
-        self.is_fire = is_fire
 
     def execute(self, run, target, engine) -> str:
         import random
         dmg = sum(random.randint(1, 12) for _ in range(8))
-        if self.is_fire:
+        if self.damage_type == "fire":
             has_ring = any(av.id == "ring_of_elements" for av in run.player.amulets.values())
             if has_ring:
                 dmg += 2
@@ -45,16 +44,8 @@ class MeteorSwarmCard(Card):
         if "unstable_crystal" in run.player.relics:
             dmg += 1
         dmg = engine.get_modified_spell_damage(run, self, dmg)
-        for enemy in list(run.enemies):
-            if enemy.shield >= dmg:
-                enemy.shield -= dmg
-            else:
-                enemy.hp -= (dmg - enemy.shield)
-                enemy.shield = 0
-        dead_enemies = [e for e in run.enemies if e.hp <= 0]
-        for de in dead_enemies:
-            run.player.graveyard.append("enemy:" + de.name)
-        run.enemies = [e for e in run.enemies if e.hp > 0]
+        for idx in range(len(run.enemies) - 1, -1, -1):
+            engine._damage_target(run, f"e{idx+1}", dmg, damage_type="fire", card=self)
         cfg = CARD_CONFIG.get(self.id, {})
         feedback_tmpl = cfg.get("feedback")
         if feedback_tmpl:

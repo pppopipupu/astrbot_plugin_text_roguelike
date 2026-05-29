@@ -157,14 +157,8 @@ class BeatOfDeathBuff(BuffImpl):
         p = event.run.player
         engine = event.engine
         dmg = self.damage_value
-        if p.shield >= dmg:
-            p.shield -= dmg
-            engine._log_event(event.run, f"💔 [死亡律动] 玩家受到 {dmg} 点伤害（由护盾吸收）。")
-        else:
-            take = dmg - p.shield
-            p.hp -= take
-            p.shield = 0
-            engine._log_event(event.run, f"💔 [死亡律动] 玩家受到 {take} 点生命伤害。")
+        engine._log_event(event.run, "💔 [死亡律动]")
+        engine._damage_target(event.run, "p0", dmg, source="beat_of_death", damage_type="force")
 
 class StrengthBuff(BuffImpl):
     pass

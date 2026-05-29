@@ -8,8 +8,8 @@ WIZARD_CARD_CONFIG = {
         "desc": "造成 3 点火焰伤害。",
         "rarity": "common",
         "base_dmg": 3,
-        "is_fire": True,
-        "feedback": "释放火焰弹，对【{target}】造成了 {dmg} 点伤害。"
+        "damage_type": "fire",
+        "feedback": "对【{target}】使用【火焰弹】。"
     },
     "magic_missile": {
         "name": "魔法飞弹",
@@ -17,11 +17,12 @@ WIZARD_CARD_CONFIG = {
         "type": "spell",
         "cost_a": 1,
         "cost_ba": 0,
-        "desc": "造成 3 次 3 点伤害，无视护盾。",
+        "desc": "造成 3 次 3 点真实伤害，无视护盾。",
         "rarity": "rare",
         "base_dmg": 3,
         "count": 3,
-        "feedback": "释放魔法飞弹，无视护盾对【{target}】造成了 {count} 次共 {total} 点伤害。"
+        "damage_type": "true",
+        "feedback": "对【{target}】释放【魔法飞弹】。"
     },
     "fireball": {
         "name": "火球术",
@@ -29,10 +30,11 @@ WIZARD_CARD_CONFIG = {
         "type": "spell",
         "cost_a": 2,
         "cost_ba": 0,
-        "desc": "造成 16 点火焰伤害。",
+        "desc": "对所有敌人造成 16 点火焰伤害。",
         "rarity": "epic",
         "base_dmg": 16,
-        "feedback": "释放火球术！对所有敌人造成了 {dmg} 点火焰伤害。"
+        "damage_type": "fire",
+        "feedback": "释放【火球术】！"
     },
     "thunderwave": {
         "name": "雷鸣波",
@@ -40,10 +42,11 @@ WIZARD_CARD_CONFIG = {
         "type": "spell",
         "cost_a": 2,
         "cost_ba": 0,
-        "desc": "造成 6 点伤害，使敌人下回合减少 1A。",
+        "desc": "对所有敌人造成 6 点雷鸣伤害，使敌人下回合减少 1A。",
         "rarity": "rare",
         "base_dmg": 6,
-        "feedback": "释放雷鸣波，对所有敌人造成了 {dmg} 点伤害，并扣除他们各 1 个动作。"
+        "damage_type": "thunder",
+        "feedback": "释放【雷鸣波】！"
     },
     "shield": {
         "name": "护盾术",
@@ -213,11 +216,11 @@ WIZARD_CARD_CONFIG = {
         "type": "spell",
         "cost_a": 0,
         "cost_ba": 0,
-        "desc": "造成 2 点伤害，抽 1 张牌。",
+        "desc": "造成 2 点力场伤害，并抽 1 张牌。",
         "rarity": "common",
         "base_dmg": 2,
-        "is_fire": False,
-        "feedback": "释放奥术星火，对【{target}】造成了 {dmg} 点伤害，并抽了 1 张牌。"
+        "damage_type": "force",
+        "feedback": "对【{target}】释放【奥术星火】并抽了 1 张牌。"
     },
     "overcharge": {
         "name": "过载充能",
@@ -236,10 +239,11 @@ WIZARD_CARD_CONFIG = {
         "type": "spell",
         "cost_a": 3,
         "cost_ba": 0,
-        "desc": "对所有敌人造成 18 点伤害并眩晕他们 1 回合。消耗。",
+        "desc": "对所有敌人造成 18 点黯蚀伤害并眩晕他们 1 回合。消耗。",
         "rarity": "legendary",
         "exhaust": True,
-        "feedback": "释放末日审判！对所有敌人造成了 {dmg} 点伤害并眩晕他们一回合。"
+        "damage_type": "necrotic",
+        "feedback": "释放【末日审判】！"
     },
     "time_warp": {
         "name": "时光倒流",
@@ -272,8 +276,8 @@ WIZARD_CARD_CONFIG = {
         "rarity": "legendary",
         "exhaust": True,
         "base_dmg": 0,
-        "is_fire": True,
-        "feedback": "释放流星爆！滚烫的陨石砸落，对所有敌人造成了 {dmg} 点火焰伤害。"
+        "damage_type": "fire",
+        "feedback": "释放【流星爆】！滚烫的陨石砸落。"
     },
     "archmage_wish": {
         "name": "大法师的祈愿",
@@ -296,5 +300,17 @@ WIZARD_CARD_CONFIG = {
         "rarity": "legendary",
         "exhaust": True,
         "feedback": "施展了【时间停止】！你掌握了时空的掌控权，获得了 3 个额外回合。在额外回合中造成伤害将提前打破时间停止状态。"
+    },
+    "chain_lightning": {
+        "name": "链式闪电",
+        "color": "wizard",
+        "type": "spell",
+        "cost_a": 1,
+        "cost_ba": 0,
+        "desc": "选择一个敌人，对所有同名敌人造成 12 点闪电伤害。",
+        "rarity": "epic",
+        "base_dmg": 12,
+        "damage_type": "lightning",
+        "feedback": "释放【链式闪电】！电光在同名敌人间跳跃。"
     }
 }

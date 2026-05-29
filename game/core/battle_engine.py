@@ -24,6 +24,26 @@ from ..models.events import (
     CardExhaustEvent, ShieldGainEvent
 )
 
+DAMAGE_TYPE_NAMES = {
+    "acid": "强酸",
+    "bludgeoning": "钝击",
+    "cold": "寒冷",
+    "fire": "火焰",
+    "force": "力场",
+    "lightning": "闪电",
+    "necrotic": "黯蚀",
+    "piercing": "穿刺",
+    "poison": "毒素",
+    "psychic": "心灵",
+    "radiant": "光耀",
+    "slashing": "挥砍",
+    "thunder": "雷鸣",
+    "true": "真实",
+    "attack": "物理",
+    "effect": "效果",
+    "spell": "法术"
+}
+
 class BattleEngine:
     def __init__(self, save_manager):
         self.save_manager = save_manager
@@ -269,6 +289,13 @@ class BattleEngine:
             return
         p = run.player
         is_fatal = False
+        is_true = False
+        if damage_type == "true" or damage_type == "TRUE":
+            is_true = True
+        elif hasattr(damage_type, "value") and (damage_type.value == "true" or damage_type.value == "TRUE"):
+            is_true = True
+        shield_dmg = 0
+        hp_dmg = 0
         if target.startswith("e"):
             try:
                 idx = int(target[1:]) - 1
@@ -277,12 +304,18 @@ class BattleEngine:
                 idx = 0
             if 0 <= idx < len(run.enemies):
                 e = run.enemies[idx]
-                if e.shield >= final_dmg:
-                    e.shield -= final_dmg
+                if is_true:
+                    hp_dmg = final_dmg
+                    e.hp -= final_dmg
                 else:
-                    take = final_dmg - e.shield
-                    e.hp -= take
-                    e.shield = 0
+                    if e.shield >= final_dmg:
+                        e.shield -= final_dmg
+                        shield_dmg = final_dmg
+                    else:
+                        shield_dmg = e.shield
+                        hp_dmg = final_dmg - e.shield
+                        e.hp -= hp_dmg
+                        e.shield = 0
                 if e.hp <= 0:
                     is_fatal = True
                     p.graveyard.append("enemy:" + e.name)
@@ -292,12 +325,18 @@ class BattleEngine:
                 take_evt = DamageTakeEvent(run, source, target, final_dmg, is_fatal)
                 self.event_bus.dispatch(take_evt)
         elif target == "p0":
-            if p.shield >= final_dmg:
-                p.shield -= final_dmg
+            if is_true:
+                hp_dmg = final_dmg
+                p.hp -= final_dmg
             else:
-                take = final_dmg - p.shield
-                p.hp -= take
-                p.shield = 0
+                if p.shield >= final_dmg:
+                    p.shield -= final_dmg
+                    shield_dmg = final_dmg
+                else:
+                    shield_dmg = p.shield
+                    hp_dmg = final_dmg - p.shield
+                    p.hp -= hp_dmg
+                    p.shield = 0
             if p.hp <= 0:
                 is_fatal = True
             take_evt = DamageTakeEvent(run, source, target, final_dmg, is_fatal)
@@ -306,6 +345,7 @@ class BattleEngine:
             grid = target[1:]
             if grid in p.minions:
                 m = p.minions[grid]
+                hp_dmg = final_dmg
                 m.hp -= final_dmg
                 if m.hp <= 0:
                     is_fatal = True
@@ -315,6 +355,11 @@ class BattleEngine:
                     self.event_bus.dispatch(death_evt)
                 take_evt = DamageTakeEvent(run, source, target, final_dmg, is_fatal)
                 self.event_bus.dispatch(take_evt)
+        damage_type_str = damage_type.value if hasattr(damage_type, "value") else str(damage_type)
+        type_name = DAMAGE_TYPE_NAMES.get(damage_type_str, "物理" if damage_type_str == "attack" else "特殊")
+        target_name = self._get_target_name(run, target)
+        log_msg = f"对【{target_name}】造成 {final_dmg} 点{type_name}伤害，对护盾造成 {shield_dmg} 伤害，对生命造成 {hp_dmg} 伤害"
+        self._log_event(run, log_msg)
 
     def _heal_target(self, run: GameRun, target: str, heal: int):
         heal_evt = HealEvent(run, target, heal)
@@ -439,7 +484,7 @@ class BattleEngine:
                     max_actions=1,
                     max_bonus_actions=2
                 )]
-                self._add_buff_to(run.enemies[0], "beat_of_death", "死亡律动", "玩家每使用一张牌，受到 1 点真实伤害。")
+                self._add_buff_to(run.enemies[0], "beat_of_death", "死亡律动", "玩家每使用一张牌，受到 1 点力场伤害。")
             else:
                 run.enemies = [EnemyState(
                     name="远古红龙",
@@ -670,22 +715,8 @@ class BattleEngine:
         self.event_bus.dispatch(calc_evt)
         atk = calc_evt.modified_damage
 
-        if enemy.shield >= atk:
-            enemy.shield -= atk
-            dmg_msg = f"造成 {atk} 点护盾伤害"
-        else:
-            take = atk - enemy.shield
-            enemy.hp -= take
-            enemy.shield = 0
-            dmg_msg = f"造成 {take} 点生命伤害"
-
-        res = f"我方随从【{m.name}】攻击了敌人【{enemy.name}】，{dmg_msg}。"
-        if enemy.hp <= 0:
-            res += f" 敌人【{enemy.name}】已被击败！"
-            p.graveyard.append("enemy:" + enemy.name)
-            run.enemies.pop(opp_idx)
-            death_evt = MinionDeathEvent(run, enemy.name, f"e{opp_idx+1}", enemy.name, True)
-            self.event_bus.dispatch(death_evt)
+        self._damage_target(run, opp_grid, atk, source=f"p{my_grid}", damage_type="attack")
+        res = f"我方随从【{m.name}】攻击了敌人【{enemy.name}】。"
 
         self.save_manager.save_save(run.user_id, run)
         has_damaged = False

@@ -17,13 +17,13 @@ class MagicMissileCard(Card):
             except ValueError:
                 idx = 0
             if 0 <= idx < len(run.enemies):
-                enemy = run.enemies[idx]
+                original_enemy = run.enemies[idx]
+                dmg = engine.get_modified_spell_damage(run, self, dmg)
                 for _ in range(3):
-                    enemy.hp -= dmg
-                    total += dmg
-                if enemy.hp <= 0:
-                    run.player.graveyard.append("enemy:" + enemy.name)
-                    run.enemies.pop(idx)
+                    if original_enemy in run.enemies:
+                        curr_idx = run.enemies.index(original_enemy)
+                        engine._damage_target(run, f"e{curr_idx+1}", dmg, damage_type="true", card=self)
+                        total += dmg
         cfg = CARD_CONFIG.get(self.id, {})
         feedback_tmpl = cfg.get("feedback")
         if feedback_tmpl:
@@ -34,9 +34,10 @@ class MagicMissileCard(Card):
 class FireballCard(Card):
     def execute(self, run, target, engine) -> str:
         dmg = 16
-        has_ring = any(av.id == "ring_of_elements" for av in run.player.amulets.values())
-        if has_ring:
-            dmg += 2
+        if self.damage_type == "fire":
+            has_ring = any(av.id == "ring_of_elements" for av in run.player.amulets.values())
+            if has_ring:
+                dmg += 2
         if "arcane_rune" in run.player.relics:
             dmg += 1
         if "mark_of_fury" in run.player.relics:
@@ -44,16 +45,8 @@ class FireballCard(Card):
         if "unstable_crystal" in run.player.relics:
             dmg += 1
         dmg = engine.get_modified_spell_damage(run, self, dmg)
-        for enemy in run.enemies:
-            if enemy.shield >= dmg:
-                enemy.shield -= dmg
-            else:
-                enemy.hp -= (dmg - enemy.shield)
-                enemy.shield = 0
-        dead_enemies = [e for e in run.enemies if e.hp <= 0]
-        for de in dead_enemies:
-            run.player.graveyard.append("enemy:" + de.name)
-        run.enemies = [e for e in run.enemies if e.hp > 0]
+        for idx in range(len(run.enemies) - 1, -1, -1):
+            engine._damage_target(run, f"e{idx+1}", dmg, damage_type="fire", card=self)
         cfg = CARD_CONFIG.get(self.id, {})
         feedback_tmpl = cfg.get("feedback")
         if feedback_tmpl:
@@ -71,17 +64,9 @@ class ThunderwaveCard(Card):
         if "unstable_crystal" in run.player.relics:
             dmg += 1
         dmg = engine.get_modified_spell_damage(run, self, dmg)
-        for enemy in run.enemies:
-            if enemy.shield >= dmg:
-                enemy.shield -= dmg
-            else:
-                enemy.hp -= (dmg - enemy.shield)
-                enemy.shield = 0
-            enemy.actions = max(0, enemy.actions - 1)
-        dead_enemies = [e for e in run.enemies if e.hp <= 0]
-        for de in dead_enemies:
-            run.player.graveyard.append("enemy:" + de.name)
-        run.enemies = [e for e in run.enemies if e.hp > 0]
+        for idx in range(len(run.enemies) - 1, -1, -1):
+            run.enemies[idx].actions = max(0, run.enemies[idx].actions - 1)
+            engine._damage_target(run, f"e{idx+1}", dmg, damage_type="thunder", card=self)
         cfg = CARD_CONFIG.get(self.id, {})
         feedback_tmpl = cfg.get("feedback")
         if feedback_tmpl:
@@ -110,7 +95,7 @@ class ArcaneSparkCard(Card):
             dmg += 1
         dmg = engine.get_modified_spell_damage(run, self, dmg)
         name = engine._get_target_name(run, target)
-        engine._damage_target(run, target, dmg)
+        engine._damage_target(run, target, dmg, damage_type=self.damage_type, card=self)
         engine._draw_cards(run.player, 1, run)
         cfg = CARD_CONFIG.get(self.id, {})
         feedback_tmpl = cfg.get("feedback")
@@ -143,17 +128,9 @@ class DoomsdayJudgmentCard(Card):
         if "unstable_crystal" in run.player.relics:
             dmg += 1
         dmg = engine.get_modified_spell_damage(run, self, dmg)
-        for enemy in list(run.enemies):
-            if enemy.shield >= dmg:
-                enemy.shield -= dmg
-            else:
-                enemy.hp -= (dmg - enemy.shield)
-                enemy.shield = 0
-            engine._add_buff_to(enemy, "stun", "眩晕", "无法行动", 1)
-        dead_enemies = [e for e in run.enemies if e.hp <= 0]
-        for de in dead_enemies:
-            run.player.graveyard.append("enemy:" + de.name)
-        run.enemies = [e for e in run.enemies if e.hp > 0]
+        for idx in range(len(run.enemies) - 1, -1, -1):
+            engine._add_buff_to(run.enemies[idx], "stun", "眩晕", "无法行动", 1)
+            engine._damage_target(run, f"e{idx+1}", dmg, damage_type="necrotic", card=self)
         cfg = CARD_CONFIG.get(self.id, {})
         feedback_tmpl = cfg.get("feedback")
         if feedback_tmpl:
@@ -189,7 +166,7 @@ class FleetingSparkCard(Card):
             dmg += 1
         dmg = engine.get_modified_spell_damage(run, self, dmg)
         name = engine._get_target_name(run, target)
-        engine._damage_target(run, target, dmg)
+        engine._damage_target(run, target, dmg, damage_type=self.damage_type, card=self)
         engine._draw_cards(run.player, 2, run)
         p = run.player
         if p.hand:
@@ -198,3 +175,43 @@ class FleetingSparkCard(Card):
             return f"使用了【{self.name}】，对【{name}】造成了 {dmg} 点伤害，并抽了 2 张牌。请选择一张手牌丢弃。输入 选择 <手牌序号> 进行丢弃。"
         else:
             return f"使用了【{self.name}】，对【{name}】造成了 {dmg} 点伤害，并抽了 2 张牌，但手牌已空，无需丢弃。"
+
+@register_card("chain_lightning")
+class ChainLightningCard(Card):
+    def execute(self, run, target, engine) -> str:
+        dmg = 12
+        if "arcane_rune" in run.player.relics:
+            dmg += 1
+        if "mark_of_fury" in run.player.relics:
+            dmg += 2
+        if "unstable_crystal" in run.player.relics:
+            dmg += 1
+        dmg = engine.get_modified_spell_damage(run, self, dmg)
+        name = engine._get_target_name(run, target)
+        def get_base_name(n: str) -> str:
+            parts = n.split()
+            if len(parts) > 1 and len(parts[-1]) == 1 and parts[-1].isupper():
+                return " ".join(parts[:-1])
+            return n
+        base_target_name = ""
+        if target.startswith("e"):
+            try:
+                idx = int(target[1:]) - 1
+                if idx < 0:
+                    idx = 0
+            except ValueError:
+                idx = 0
+            if 0 <= idx < len(run.enemies):
+                base_target_name = get_base_name(run.enemies[idx].name)
+        affected_count = 0
+        if base_target_name:
+            for idx in range(len(run.enemies) - 1, -1, -1):
+                enemy = run.enemies[idx]
+                if get_base_name(enemy.name) == base_target_name:
+                    engine._damage_target(run, f"e{idx+1}", dmg, damage_type="lightning", card=self)
+                    affected_count += 1
+        cfg = CARD_CONFIG.get(self.id, {})
+        feedback_tmpl = cfg.get("feedback")
+        if feedback_tmpl:
+            return feedback_tmpl.format(dmg=dmg)
+        return f"释放链式闪电！对所有同名敌人造成了 {dmg} 点闪电伤害。"

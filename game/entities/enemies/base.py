@@ -34,38 +34,23 @@ class EnemyTemplate:
                     if b.id == "strength":
                         strength += b.stacks
         final_dmg = dmg + strength
-        has_thorns = False
-        thorns_key = None
-        for ak, av in p.amulets.items():
-            if av.id == "thorns_necklace":
-                has_thorns = True
-                thorns_key = ak
-                break
         if p.minions and random.random() < 0.5:
             target_key = random.choice(list(p.minions.keys()))
             target = p.minions[target_key]
-            target.hp -= final_dmg
-            logs.append(f"敌人【{enemy.name}】攻击了我方随从【{target.name}】，造成 {final_dmg} 点伤害。")
-            if target.hp <= 0:
-                logs.append(f"我方随从【{target.name}】已被击败！")
-                p.graveyard.append("minion:" + target.id)
-                del p.minions[target_key]
+            m_name = target.name
+            before_len = len(run.node_data.get("battle_logs", []))
+            engine._damage_target(run, f"p{target_key}", final_dmg, source=f"enemy:{enemy.name}", damage_type="bludgeoning")
+            after_logs = run.node_data.get("battle_logs", [])
+            if len(after_logs) > before_len:
+                dmg_msg = after_logs.pop()
+                logs.append(f"敌人【{enemy.name}】攻击了我方随从【{m_name}】。{dmg_msg}")
         else:
-            if p.shield >= final_dmg:
-                p.shield -= final_dmg
-                logs.append(f"敌人【{enemy.name}】发动攻击，造成 {final_dmg} 点护盾伤害。")
-            else:
-                take = final_dmg - p.shield
-                p.hp -= take
-                p.shield = 0
-                logs.append(f"敌人【{enemy.name}】发动攻击，造成 {take} 点生命伤害。")
-            if has_thorns:
-                enemy.hp -= 2
-                logs.append(f"【荆棘项链】反弹了 2 点伤害给【{enemy.name}】。")
-                p.amulets[thorns_key].countdown -= 1
-                if p.amulets[thorns_key].countdown <= 0:
-                    del p.amulets[thorns_key]
-                    logs.append("我方【荆棘项链】耐久耗尽销毁。")
+            before_len = len(run.node_data.get("battle_logs", []))
+            engine._damage_target(run, "p0", final_dmg, source=f"enemy:{enemy.name}", damage_type="bludgeoning")
+            after_logs = run.node_data.get("battle_logs", [])
+            if len(after_logs) > before_len:
+                dmg_msg = after_logs.pop()
+                logs.append(f"敌人【{enemy.name}】对玩家发动攻击。{dmg_msg}")
 
     def execute_intent(self, run, engine, enemy, logs: List[str]):
         if enemy.intent_type == "attack":

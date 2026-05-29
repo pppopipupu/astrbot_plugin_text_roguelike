@@ -135,8 +135,12 @@ class ShadowFiendTemplate(EnemyTemplate):
                     if b.id == "strength":
                         strength += b.stacks
             dmg = enemy.intent_val + strength
-            p.hp -= dmg
-            logs.append(f"【{enemy.name}】施展影袭，直接对玩家造成 {dmg} 点生命伤害。")
+            before_len = len(run.node_data.get("battle_logs", []))
+            engine._damage_target(run, "p0", dmg, source=f"enemy:{enemy.name}", damage_type="true")
+            after_logs = run.node_data.get("battle_logs", [])
+            if len(after_logs) > before_len:
+                dmg_msg = after_logs.pop()
+                logs.append(f"【{enemy.name}】施展影袭，直接对玩家造成生命伤害。{dmg_msg}")
         elif enemy.intent_type == "defend":
             enemy.shield += enemy.intent_val
             logs.append(f"【{enemy.name}】进入虚化，获得 {enemy.intent_val} 点护盾。")

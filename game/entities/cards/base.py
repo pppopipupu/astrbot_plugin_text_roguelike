@@ -33,7 +33,7 @@ for cid, cfg in CARD_CONFIG.items():
             "cost_ba": cost_ba,
             "desc": desc,
         }
-        for key in ("base_dmg", "heal_amount", "countdown", "amulet_desc", "minion_hp", "minion_atk", "exhaust"):
+        for key in ("base_dmg", "heal_amount", "countdown", "amulet_desc", "minion_hp", "minion_atk", "exhaust", "damage_type"):
             if key in cfg:
                 inst_kwargs[key] = cfg[key]
         inst_kwargs.update(decorator_kwargs)
@@ -55,3 +55,4 @@ for cid, cfg in CARD_CONFIG.items():
         ALL_CARDS[cid].innate = cfg.get("innate", False)
         ALL_CARDS[cid].ethereal = cfg.get("ethereal", False)
         ALL_CARDS[cid].unplayable = cfg.get("unplayable", False)
+        ALL_CARDS[cid].damage_type = cfg.get("damage_type", "effect")

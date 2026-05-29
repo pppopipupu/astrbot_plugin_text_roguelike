@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from typing import List, Dict, Optional
 from contextvars import ContextVar
+from enum import Enum
 import sys
 
 if not hasattr(sys, "_rogue_current_user_id"):
@@ -19,6 +20,22 @@ def get_user_id() -> str:
     if not val:
         return getattr(sys, "_rogue_fallback_user_id", "")
     return val
+
+class DamageType(Enum):
+    ACID = "acid"
+    BLUDGEONING = "bludgeoning"
+    COLD = "cold"
+    FIRE = "fire"
+    FORCE = "force"
+    LIGHTNING = "lightning"
+    NECROTIC = "necrotic"
+    PIERCING = "piercing"
+    POISON = "poison"
+    PSYCHIC = "psychic"
+    RADIANT = "radiant"
+    SLASHING = "slashing"
+    THUNDER = "thunder"
+    TRUE = "true"
 
 @dataclass
 class UserStats:
@@ -62,6 +79,7 @@ class Card:
     innate: bool = False
     ethereal: bool = False
     unplayable: bool = False
+    damage_type: str = "effect"
 
     def execute(self, run: 'GameRun', target: Optional[str] = None, engine = None) -> str:
         return ""

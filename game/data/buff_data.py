@@ -25,7 +25,7 @@ BUFF_CONFIG = {
     },
     "beat_of_death": {
         "name": "死亡律动",
-        "desc": "每当玩家打出一张牌，玩家受到 1 点伤害"
+        "desc": "每当玩家打出一张牌，玩家受到 1 点力场伤害"
     },
     "strength": {
         "name": "力量",

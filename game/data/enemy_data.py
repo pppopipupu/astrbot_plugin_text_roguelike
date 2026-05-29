@@ -23,7 +23,7 @@ ENEMY_CONFIG = {
         "type": "boss",
         "hp": "120",
         "actions": "1A 2BA",
-        "passive": "死亡律动 (每当玩家打出一张牌，玩家受到 1 点伤害)",
+        "passive": "死亡律动 (每当玩家打出一张牌，玩家受到 1 点力场伤害)",
         "intents": [
             {"id": "debuff", "val": 0, "desc": "邪恶之语 (将晕眩与苦恼放入玩家牌组)"},
             {"id": "multi_attack", "val": 2, "desc": "血弹喷射 (造成 2 点伤害，重复 8 次)"},
