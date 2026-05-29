@@ -7,8 +7,8 @@ from .query import render_query_info
 
 class GameRenderer:
     @staticmethod
-    def render_menu() -> str:
-        return render_menu()
+    def render_menu(stats: UserStats = None) -> str:
+        return render_menu(stats)
 
     @staticmethod
     def render_help() -> str:
