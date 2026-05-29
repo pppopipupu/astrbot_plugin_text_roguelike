@@ -2,6 +2,7 @@ from ..data.relic_data import RELIC_CONFIG
 from ..data.buff_data import BUFF_CONFIG
 from ..data.minion_data import MINION_CONFIG
 from ..data.card_data import CARD_CONFIG
+from ..data.enemy_data import ENEMY_CONFIG
 
 def render_query_info(query_str: str) -> str:
     q = query_str.strip().lower()
@@ -90,8 +91,52 @@ def render_query_info(query_str: str) -> str:
             lines.append(f"消耗：{cost_str}")
             lines.append(f"效果：{desc}")
             lines.append("")
+    for eid, cfg in ENEMY_CONFIG.items():
+        if q == eid.lower() or q in cfg.get("name", "").lower():
+            found = True
+            ename = cfg.get("name", eid)
+            etype = cfg.get("type", "normal")
+            type_map = {
+                "normal": "普通",
+                "elite": "精英",
+                "boss": "领主",
+                "summon": "召唤物"
+            }
+            etype_ch = type_map.get(etype, etype)
+            ehp = cfg.get("hp", "未知")
+            eact = cfg.get("actions", "1A 0BA")
+            lines.append(f"👾 怪物：{ename} ({etype_ch})")
+            lines.append(f"基础属性：生命值 {ehp} | 动作资源 {eact}")
+            passive = cfg.get("passive")
+            if passive:
+                lines.append(f"特有效果：{passive}")
+            intents = cfg.get("intents", [])
+            if intents:
+                lines.append("意图/行为列表：")
+                for s in intents:
+                    lines.append(f"  • {s.get('desc') or s.get('name') or s.get('id')}")
+            cycle_info = cfg.get("cycle_info", [])
+            if cycle_info:
+                lines.append("行动循环列表：")
+                for c in cycle_info:
+                    lines.append(f"  • {c}")
+            summon_goblin = cfg.get("summon_goblin")
+            if summon_goblin:
+                lines.append("关联召唤物：")
+                s_name = summon_goblin.get("name", "未知")
+                s_hp = summon_goblin.get("hp", 0)
+                s_desc = summon_goblin.get("intent_desc", "")
+                lines.append(f"  • {s_name} (生命值: {s_hp} | 动作资源: 1A 0BA) - {s_desc}")
+            summon_hound = cfg.get("summon_hound")
+            if summon_hound:
+                lines.append("关联召唤物：")
+                s_name = summon_hound.get("name", "未知")
+                s_hp = summon_hound.get("hp", 0)
+                s_desc = summon_hound.get("intent_desc", "")
+                lines.append(f"  • {s_name} (生命值: {s_hp} | 动作资源: 1A 0BA) - {s_desc}")
+            lines.append("")
     if not found:
-        lines.append("❌ 未找到与该名称或 ID 匹配的随从、遗物、Buff 或卡牌信息。")
+        lines.append("❌ 未找到与该名称或 ID 匹配的随从、遗物、Buff、卡牌或怪物信息。")
         lines.append("")
     lines.append("━━━━━━━━━━━━━━━━━━━━")
     return "\n".join(lines).strip()

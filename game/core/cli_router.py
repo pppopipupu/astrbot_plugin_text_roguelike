@@ -246,7 +246,8 @@ class CLIRouter:
         elif sub in ("状态", "s"):
             run = self.save_manager.load_save(user_id)
             if not run:
-                yield "❌ 你当前没有正在进行的游戏。输入 /rogue 开启 开始新游戏。"
+                stats = self.save_manager.load_stats(user_id)
+                yield GameRenderer.render_menu(stats)
             else:
                 yield GameRenderer.render_game(run)
                 

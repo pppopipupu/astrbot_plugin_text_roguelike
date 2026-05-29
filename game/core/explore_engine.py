@@ -51,7 +51,7 @@ class ExploreEngine:
         available_relics = [rid for rid in ["lucky_coin", "red_bottle", "leather_armor", "whetstone", "ready_pack", "arcane_rune"] if rid not in run.player.relics]
         if available_relics:
             rid = random.choice(available_relics)
-            from ...data.relic_data import RELIC_CONFIG
+            from ..data.relic_data import RELIC_CONFIG
             r_cfg = RELIC_CONFIG[rid]
             r_price = int(r_cfg["price"] * discount)
             items.append({

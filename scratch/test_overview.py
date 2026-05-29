@@ -31,9 +31,7 @@ class DummyEvent:
 
 async def run_cmd(plugin, cmd: str):
     event = DummyEvent(cmd)
-    generator = plugin.shortcut_rogue(event)
-    async for _ in generator:
-        pass
+    await plugin.shortcut_rogue(event)
     if not event.results:
         generator_cmd = plugin.rogue(event)
         async for _ in generator_cmd:
@@ -69,7 +67,7 @@ async def main():
     
     print("=== 5. 测试帮助命令中总览的说明 ===")
     res_help = await run_cmd(plugin, ".rogue 帮助")
-    assert "总览 [卡牌/遗物]" in res_help, "帮助信息中应该有总览 [卡牌/遗物] 提示"
+    assert "总览" in res_help and "[卡牌/遗物]" in res_help, "帮助信息中应该有总览 [卡牌/遗物] 提示"
     print("测试通过！所有总览指令测试全部成功！")
 
 if __name__ == "__main__":

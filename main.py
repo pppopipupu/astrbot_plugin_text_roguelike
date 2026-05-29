@@ -123,7 +123,7 @@ class MyPlugin(Star):
             if not parts[0]:
                 parts = parts[1:]
             for res in self.cli_router.handle_command(user_id, parts):
-                yield event.plain_result(res)
+                event.plain_result(res)
             return
             
         if rogue_mode:
@@ -147,4 +147,4 @@ class MyPlugin(Star):
                 if is_game_cmd:
                     event.stop_event()
                     for res in self.cli_router.handle_command(user_id, parts):
-                        yield event.plain_result(res)
+                        event.plain_result(res)

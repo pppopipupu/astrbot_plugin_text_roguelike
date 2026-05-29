@@ -32,9 +32,7 @@ class DummyEvent:
 
 async def run_cmd(plugin, cmd: str):
     event = DummyEvent(cmd)
-    generator = plugin.shortcut_rogue(event)
-    async for _ in generator:
-        pass
+    await plugin.shortcut_rogue(event)
     if not event.results:
         generator_cmd = plugin.rogue(event)
         async for _ in generator_cmd:

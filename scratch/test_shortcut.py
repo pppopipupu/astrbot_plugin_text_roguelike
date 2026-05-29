@@ -32,10 +32,10 @@ async def test_shortcut():
     plugin.save_manager.delete_save("test_user")
     
     event_start = DummyEvent("xr 开启")
-    async for _ in plugin.shortcut_rogue(event_start): pass
+    await plugin.shortcut_rogue(event_start)
     
     event_choose = DummyEvent(".rg 1")
-    async for _ in plugin.shortcut_rogue(event_choose): pass
+    await plugin.shortcut_rogue(event_choose)
     
     res = "\n".join(event_choose.results)
     print("OUTPUT FROM .rg 1:")
@@ -46,7 +46,7 @@ async def test_shortcut():
     plugin2.save_manager.delete_save("test_user")
     
     event_start2 = DummyEvent(".rogue 开启")
-    async for _ in plugin2.shortcut_rogue(event_start2): pass
+    await plugin2.shortcut_rogue(event_start2)
     
     res2 = "\n".join(event_start2.results)
     print("OUTPUT FROM .rogue 开启 with shorter prefix first:")
