@@ -400,7 +400,7 @@ class ClassCommand(CommandHandler):
                 "━━━━━━━━━━━━━━━━━━━━"
             ]
             yield "\n".join(lines)
-        elif len(parts) >= 3 and parts[1] == "购买":
+        elif len(parts) >= 3 and parts[1] in ("购买", "buy"):
             yield "💡 请使用商店命令前往局外商店进行商品购买：/rogue 商店"
         elif len(parts) >= 3 and parts[1] == "选择":
             subclass_name = parts[2]
@@ -427,7 +427,7 @@ class ShopCommand(CommandHandler):
         stats = router.save_manager.load_stats(user_id)
         if len(parts) == 1:
             yield GameRenderer.render_shop(stats)
-        elif len(parts) >= 3 and parts[1] == "购买":
+        elif len(parts) >= 3 and parts[1] in ("购买", "buy"):
             target = parts[2]
             unlocked = getattr(stats, "unlocked_subclasses", [])
             gp = getattr(stats, "gp", 0)
@@ -474,7 +474,7 @@ class ShopCommand(CommandHandler):
             quote = random.choice(success_quotes)
             yield f"🎉 购买成功！已成功解锁【{subclass_name}】。已扣除 {price} GP。\n🔮 神秘店主说：\n  {quote}"
         else:
-            yield "❌ 格式错误。请使用 /rogue 商店 或 /rogue 商店 购买 <商品序号/商品名称>。"
+            yield "❌ 格式错误。请使用 /rogue 商店 或 /rogue 商店 购买/buy <商品序号/商品名称>。"
 
 class FoldCommand(CommandHandler):
     def execute(self, router, user_id: str, parts: list[str]) -> Generator[str, None, None]:
