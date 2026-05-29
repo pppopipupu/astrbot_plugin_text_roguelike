@@ -122,8 +122,9 @@ class MyPlugin(Star):
             parts[0] = parts[0][len(matched_prefix):]
             if not parts[0]:
                 parts = parts[1:]
-            for res in self.cli_router.handle_command(user_id, parts):
-                event.plain_result(res)
+            res_list = list(self.cli_router.handle_command(user_id, parts))
+            if res_list:
+                return event.plain_result("\n".join(res_list))
             return
             
         if rogue_mode:
@@ -146,5 +147,6 @@ class MyPlugin(Star):
                         is_game_cmd = True
                 if is_game_cmd:
                     event.stop_event()
-                    for res in self.cli_router.handle_command(user_id, parts):
-                        event.plain_result(res)
+                    res_list = list(self.cli_router.handle_command(user_id, parts))
+                    if res_list:
+                        return event.plain_result("\n".join(res_list))
