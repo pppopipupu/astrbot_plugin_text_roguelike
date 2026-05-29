@@ -9,8 +9,8 @@ if sys.platform.startswith("win"):
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from game.models import GameRun, PlayerState, EnemyState
-from game.battle_engine import BattleEngine
+from game.models.state import GameRun, PlayerState, EnemyState
+from game.core.battle_engine import BattleEngine
 from main import MyPlugin
 
 class DummyContext:
@@ -108,7 +108,7 @@ def test_unplayable_curse():
     print("Test 3: Unplayable dazed and agony cards blocked passed!")
 
 def test_curse_events():
-    from game.event_impl import (
+    from game.entities.events import (
         TakeNecklaceOption,
         ShatterPortalOption,
         JumpCartOption,

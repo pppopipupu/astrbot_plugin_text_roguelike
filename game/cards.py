@@ -1,2 +1,2 @@
-from .card_impl import ALL_CARDS
-from .minion_impl import MINION_SKILLS
+from .entities.cards import ALL_CARDS
+from .entities.minions import MINION_SKILLS

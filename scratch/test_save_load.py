@@ -3,8 +3,8 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from game.manager import SaveManager
-from game.models import GameRun, PlayerState, EnemyState
+from game.models.manager import SaveManager
+from game.models.state import GameRun, PlayerState, EnemyState
 
 def test():
     save_manager = SaveManager()

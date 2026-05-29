@@ -1,6 +1,6 @@
-from ..models import GameRun
+from ..models.state import GameRun
 from ..cards import ALL_CARDS, MINION_SKILLS
-from ..relic_impl import get_relic_name, get_relic_desc
+from ..entities import get_relic_name, get_relic_desc
 from ..data.buff_data import BUFF_CONFIG
 from ..data.minion_data import MINION_CONFIG
 

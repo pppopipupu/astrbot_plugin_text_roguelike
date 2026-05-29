@@ -8,8 +8,8 @@ if sys.platform.startswith("win"):
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from game.models import GameRun, PlayerState, EnemyState, BuffState
-from game.battle_engine import BattleEngine
+from game.models.state import GameRun, PlayerState, EnemyState, BuffState
+from game.core.battle_engine import BattleEngine
 
 class DummySaveManager:
     def save_save(self, user_id, run):

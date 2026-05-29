@@ -1,4 +1,4 @@
-from ..models import GameRun, UserStats
+from ..models.state import GameRun, UserStats
 from .menu import render_menu, render_card_library, render_relic_library, render_deck, render_stats, render_help, render_shop as render_outside_shop
 from .battle import render_battle, render_detailed_battle
 from .map import render_map_select, render_start_ancient, render_ancient

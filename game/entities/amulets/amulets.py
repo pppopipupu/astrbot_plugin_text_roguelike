@@ -1,5 +1,5 @@
 from typing import Optional
-from .data.amulet_data import AMULET_CONFIG
+from ...data.amulet_data import AMULET_CONFIG
 
 class AmuletTemplate:
     def on_end_turn(self, run, grid: str, engine) -> str:

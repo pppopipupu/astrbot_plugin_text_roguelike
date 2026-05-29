@@ -1,13 +1,19 @@
 import random
 from typing import Optional, List, Dict
-from .models import GameRun, PlayerState, EnemyState, MinionState, AmuletState, Card, BuffState
-from .buff_impl import (
+from ..models.state import GameRun, PlayerState, EnemyState, MinionState, AmuletState, Card, BuffState, check_and_replace_fireball
+from ..entities import (
+    ALL_CARDS,
+    ALL_MINIONS,
+    ALL_AMULETS,
+    get_enemy_template,
+    get_relic_name,
     apply_modify_heal_limit,
     apply_modify_spell_cost_ba,
+    apply_modify_spell_damage,
     apply_on_card_played,
     apply_on_player_turn_start,
     apply_on_player_turn_end,
-    apply_prevent_enemy_action
+    apply_prevent_enemy_action,
 )
 
 class BattleEngine:
@@ -80,7 +86,6 @@ class BattleEngine:
                 p.minions[grid].hp = min(p.minions[grid].max_hp, p.minions[grid].hp + heal)
 
     def _add_buff_to(self, entity, buff_id: str, buff_name: str, desc: str, count: int = 1):
-        from .models import BuffState
         for b in entity.buffs:
             if b.id == buff_id:
                 b.stacks += count
@@ -105,7 +110,6 @@ class BattleEngine:
                 p.hand.append(p.draw_pile.pop())
 
     def _roll_enemy_intent(self, run: GameRun):
-        from .enemy_impl import get_enemy_template
         for enemy in run.enemies:
             template = get_enemy_template(enemy.name)
             itype, val, desc = template.roll_intent(run, self, enemy)
@@ -143,7 +147,6 @@ class BattleEngine:
         random.shuffle(p.draw_pile)
         innate_cards = []
         non_innate_cards = []
-        from .card_impl import ALL_CARDS
         for cid in p.draw_pile:
             card = ALL_CARDS.get(cid)
             if card and getattr(card, "innate", False):
@@ -296,7 +299,6 @@ class BattleEngine:
             return "❌ 无效的手牌序号。"
 
         cid = p.hand[hand_idx - 1]
-        from .card_impl import ALL_CARDS
         card = ALL_CARDS.get(cid)
         if not card:
             return "❌ 卡牌不存在。"
@@ -387,7 +389,6 @@ class BattleEngine:
             res += extra_feedback
         run.node_data["cards_played_this_turn"] = played_count + 1
 
-        from .amulet_impl import ALL_AMULETS
         for ak, av in list(p.amulets.items()):
             template = ALL_AMULETS.get(av.id)
             if template and card.type == "spell":
@@ -414,7 +415,6 @@ class BattleEngine:
             return "❌ 无效的手牌序号。"
 
         cid = p.hand[hand_idx - 1]
-        from .card_impl import ALL_CARDS
         card = ALL_CARDS.get(cid)
         if not card:
             return "❌ 卡牌不存在。"
@@ -522,7 +522,6 @@ class BattleEngine:
         if my_grid not in p.minions:
             return f"❌ 我方格子 [{my_grid}] 没有随从。"
         m = p.minions[my_grid]
-        from .minion_impl import ALL_MINIONS
         if m.id not in ALL_MINIONS:
             return f"❌ 随从【{m.name}】没有任何可用技能。"
 
@@ -584,12 +583,10 @@ class BattleEngine:
         return card.execute(run, target, self)
 
     def get_modified_spell_damage(self, run: GameRun, card: Card, damage: int) -> int:
-        from .buff_impl import apply_modify_spell_damage
         return apply_modify_spell_damage(run, card, damage, self)
 
     def _discard_card(self, run: GameRun, cid: str) -> str:
         p = run.player
-        from .card_impl import ALL_CARDS
         card = ALL_CARDS.get(cid)
         if not card:
             p.discard_pile.append(cid)
@@ -622,7 +619,6 @@ class BattleEngine:
             return "❌ 只有在战斗中才能结束回合。"
         p = run.player
 
-        from .card_impl import ALL_CARDS
         retained = []
         for cid in p.hand:
             card = ALL_CARDS.get(cid)
@@ -634,7 +630,6 @@ class BattleEngine:
                 p.discard_pile.append(cid)
         p.hand = retained
 
-        from .amulet_impl import ALL_AMULETS
         for ak, av in list(p.amulets.items()):
             template = ALL_AMULETS.get(av.id)
             if template:
@@ -702,7 +697,6 @@ class BattleEngine:
         return f"{enemy_actions}\n{decay_info}{extra_ba_msg}进入玩家回合。已重置动作并抽取手牌。"
 
     def _trigger_take_damage_amulets(self, run, source: str, amount: int, logs: List[str]):
-        from .amulet_impl import ALL_AMULETS
         for ak, av in list(run.player.amulets.items()):
             template = ALL_AMULETS.get(av.id)
             if template:
@@ -730,7 +724,6 @@ class BattleEngine:
                 continue
             if apply_prevent_enemy_action(run, enemy, self, logs):
                 continue
-            from .enemy_impl import get_enemy_template
             template = get_enemy_template(enemy.name)
             
             if enemy.hp > 0 and enemy.actions >= 1 and enemy.intent_a_type:
@@ -772,7 +765,6 @@ class BattleEngine:
         elif quest == "maze_fight":
             got_relic = random.choice(["whetstone", "ready_pack", "arcane_rune"])
             p.relics.append(got_relic)
-            from .relic_impl import get_relic_name
             quest_bonus = f"\n🔥 任务完成！你击败了火元素守卫，在石门后获得稀有遗物【{get_relic_name(got_relic)}】！"
         if difficulty == "elite":
             reward_gold = 25 + random.randint(10, 20)
@@ -783,8 +775,6 @@ class BattleEngine:
             run.node_type = "victory"
         else:
             run.node_type = "reward"
-            from .card_impl import ALL_CARDS
-            from .models import check_and_replace_fireball
             card_pool = list(ALL_CARDS.keys())
             normal_cards = [cid for cid in card_pool if ALL_CARDS[cid].rarity != "legendary" and not cid.startswith("curse_")]
             reward_cards = random.sample(normal_cards, 3)

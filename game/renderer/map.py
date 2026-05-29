@@ -1,5 +1,5 @@
-from ..models import GameRun
-from ..relic_impl import get_relic_name, get_relic_desc
+from ..models.state import GameRun
+from ..entities import get_relic_name, get_relic_desc
 from ..cards import ALL_CARDS
 
 def render_map_select(run: GameRun) -> str:

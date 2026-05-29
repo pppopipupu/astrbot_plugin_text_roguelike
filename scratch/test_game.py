@@ -11,7 +11,7 @@ if sys.platform.startswith("win"):
     except AttributeError:
         sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
         sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
-from game.manager import SaveManager
+from game.models.manager import SaveManager
 from game.engine import GameEngine
 from game.renderer import GameRenderer
 from main import MyPlugin

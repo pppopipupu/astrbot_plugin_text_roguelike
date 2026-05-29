@@ -1,5 +1,5 @@
 from typing import Dict, List
-from .data.relic_data import RELIC_CONFIG
+from ...data.relic_data import RELIC_CONFIG
 
 def get_relic_name(relic_id: str) -> str:
     return RELIC_CONFIG.get(relic_id, {}).get("name", relic_id)

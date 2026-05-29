@@ -1,5 +1,5 @@
 from typing import Optional, List
-from .data.minion_data import MINION_CONFIG
+from ...data.minion_data import MINION_CONFIG
 
 class BaseMinionSkill:
     def __init__(self, name: str, cost_a: int, cost_ba: int, desc: str):
@@ -119,7 +119,6 @@ class MinionTemplate:
         self.id = id
         self.name = name
         self.skills = skills
-
 
 ALL_MINIONS = {
     "mercenary": MinionTemplate(

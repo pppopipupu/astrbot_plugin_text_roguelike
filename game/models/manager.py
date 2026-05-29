@@ -1,13 +1,13 @@
 import os
 import json
 from dataclasses import asdict
-from .models import GameRun, PlayerState, EnemyState, MinionState, AmuletState, BuffState, UserStats, current_user_id, register_stat_recorder, get_user_id
+from .state import GameRun, PlayerState, EnemyState, MinionState, AmuletState, BuffState, UserStats, current_user_id, register_stat_recorder, get_user_id
 
 class SaveManager:
     def __init__(self, data_dir: str = None):
         if data_dir is None:
             current_dir = os.path.dirname(os.path.abspath(__file__))
-            self.data_dir = os.path.join(os.path.dirname(current_dir), "data")
+            self.data_dir = os.path.join(os.path.dirname(os.path.dirname(current_dir)), "data")
         else:
             self.data_dir = data_dir
         if not os.path.exists(self.data_dir):

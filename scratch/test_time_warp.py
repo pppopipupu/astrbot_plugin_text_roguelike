@@ -3,9 +3,9 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from game.models import GameRun, PlayerState, EnemyState
-from game.battle_engine import BattleEngine
-from game.card_impl import ALL_CARDS
+from game.models.state import GameRun, PlayerState, EnemyState
+from game.core.battle_engine import BattleEngine
+from game.entities.cards import ALL_CARDS
 
 class DummySaveManager:
     def save_save(self, user_id, run):

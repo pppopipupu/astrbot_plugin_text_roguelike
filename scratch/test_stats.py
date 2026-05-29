@@ -5,8 +5,8 @@ if sys.platform.startswith("win"):
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from game.models import EnemyState, current_user_id
-from game.manager import SaveManager
+from game.models.state import EnemyState, current_user_id
+from game.models.manager import SaveManager
 from game.engine import GameEngine
 
 def run_test():

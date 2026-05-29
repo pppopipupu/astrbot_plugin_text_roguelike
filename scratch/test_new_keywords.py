@@ -9,8 +9,8 @@ if sys.platform.startswith("win"):
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from game.models import GameRun, PlayerState, EnemyState
-from game.battle_engine import BattleEngine
+from game.models.state import GameRun, PlayerState, EnemyState
+from game.core.battle_engine import BattleEngine
 from main import MyPlugin
 
 class DummyContext:
@@ -88,7 +88,7 @@ def test_fleeting_and_agile():
     print("Test 4 (Manual Discard Agile Card & Auto-play) Passed!")
 
     player.hand = ["agile_strike"]
-    from game.enemy_impl import GhostArchmageTemplate
+    from game.entities.enemies import GhostArchmageTemplate
     template = GhostArchmageTemplate("幽灵大魔法师")
     logs = []
     enemy.intent_type = "mana_drain"

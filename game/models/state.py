@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
 from typing import List, Dict, Optional
 from contextvars import ContextVar
 import sys
@@ -172,4 +172,3 @@ def check_and_replace_fireball(run: 'GameRun', card_id: str) -> str:
         if random.random() < 0.40:
             return "meteor_swarm"
     return card_id
-

@@ -1,10 +1,10 @@
 import random
 from typing import Optional, List, Dict
-from .models import GameRun, PlayerState, EnemyState, MinionState, AmuletState, Card
-from .cards import ALL_CARDS
-from .manager import SaveManager
-from .battle_engine import BattleEngine
-from .map_engine import MapEngine
+from .models.state import GameRun, PlayerState, EnemyState, MinionState, AmuletState, Card
+from .entities import ALL_CARDS
+from .models.manager import SaveManager
+from .core.battle_engine import BattleEngine
+from .core.map_engine import MapEngine
 
 class GameEngine:
     def __init__(self, save_manager: SaveManager):

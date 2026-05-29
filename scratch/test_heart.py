@@ -8,9 +8,9 @@ if sys.platform.startswith("win"):
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
 
-from game.models import GameRun, PlayerState, EnemyState
-from game.manager import SaveManager
-from game.battle_engine import BattleEngine
+from game.models.state import GameRun, PlayerState, EnemyState
+from game.models.manager import SaveManager
+from game.core.battle_engine import BattleEngine
 
 class DummySaveManager:
     def save_save(self, user_id, run):

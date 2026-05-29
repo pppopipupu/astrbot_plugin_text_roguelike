@@ -1,239 +1,15 @@
 import random
 from typing import Optional, List, Dict
-from .models import GameRun, PlayerState, EnemyState, MinionState, AmuletState, Card
+from ..models.state import GameRun, PlayerState
+from ..entities import ALL_CARDS, get_relic_name
+from ..entities.events import ALL_EVENTS, get_option_by_action
 
-class MapEngine:
-    def __init__(self, save_manager, battle_engine):
+class ExploreEngine:
+    def __init__(self, save_manager, map_engine):
         self.save_manager = save_manager
-        self.battle_engine = battle_engine
-
-    def enter_next_stage(self, run: GameRun):
-        p = run.player
-        p.stage += 1
-        if p.stage > 1:
-            self.save_manager.record_stage_passed(run.user_id)
-        p.shield = 0
-        p.minions.clear()
-        p.amulets.clear()
-        p.abilities.clear()
-        run.enemies.clear()
-        run.node_data.clear()
-
-        if "lucky_coin" in p.relics:
-            p.gold += 5
-        if "tax_contract" in p.relics:
-            p.gold = max(0, p.gold - 6)
-
-        if p.stage == 1:
-            run.node_type = "start_ancient"
-            relics_pool = [
-                {"type": "double", "relic": "mark_of_fury"},
-                {"type": "double", "relic": "greedy_contract"},
-                {"type": "double", "relic": "mask_of_void"},
-                {"type": "double", "relic": "unstable_crystal"},
-                {"type": "double", "relic": "vampiric_touch"},
-                {"type": "double", "relic": "ancient_page"}
-            ]
-            cards_pool = [
-                {"type": "contract", "relic": "rust_shackle", "card": "doomsday_judgment"},
-                {"type": "contract", "relic": "fool_oath", "card": "time_warp"},
-                {"type": "contract", "relic": "wither_seed", "card": "magic_network"},
-                {"type": "contract", "relic": "blind_spot", "card": "meteor_swarm"},
-                {"type": "contract", "relic": "tax_contract", "card": "archmage_wish"}
-            ]
-            num_relics = random.choice([1, 2])
-            selected_relics = random.sample(relics_pool, num_relics)
-            selected_cards = random.sample(cards_pool, 3 - num_relics)
-            from .models import check_and_replace_fireball
-            for item in selected_cards:
-                if "card" in item:
-                    item["card"] = check_and_replace_fireball(run, item["card"])
-            options = selected_relics + selected_cards
-            random.shuffle(options)
-            run.node_data = {"options": options}
-        elif p.stage == 11:
-            run.node_type = "ancient"
-            legends_pool = ["doomsday_judgment", "time_warp", "magic_network", "meteor_swarm", "archmage_wish"]
-            relics_pool = ["ancient_eye", "gold_compass", "dragon_blood", "energy_core", "heavy_armor"]
-            available_relics = [r for r in relics_pool if r not in p.relics]
-            if not available_relics:
-                available_relics = relics_pool.copy()
-            random.shuffle(legends_pool)
-            random.shuffle(available_relics)
-            options = []
-            from .models import check_and_replace_fireball
-            for i in range(3):
-                options.append({
-                    "card": check_and_replace_fireball(run, legends_pool[i % len(legends_pool)]),
-                    "relic": available_relics[i % len(available_relics)]
-                })
-            run.node_data = {"options": options}
-        elif p.stage == 20:
-            run.node_type = "battle"
-            self.battle_engine._init_battle_node(run, "boss")
-        else:
-            if p.stage == 2:
-                self._generate_map_network(run, 2, 10)
-            elif p.stage == 12:
-                self._generate_map_network(run, 12, 20)
-            
-            run.node_type = "map_select"
-            nodes_layer = run.map_data.get("nodes", {}).get(str(p.stage), [])
-            curr_id = run.map_data.get("current_node_id")
-            
-            opts = []
-            if not curr_id:
-                opts = nodes_layer
-            else:
-                nodes_dict = {}
-                for layer in run.map_data.get("nodes", {}).values():
-                    for node in layer:
-                        nodes_dict[node["id"]] = node
-                curr_node = nodes_dict.get(curr_id)
-                if curr_node:
-                    next_ids = curr_node.get("next", [])
-                    opts = [nodes_dict[nid] for nid in next_ids if nid in nodes_dict]
-            
-            if not opts and nodes_layer:
-                opts = nodes_layer
-                
-            options_data = []
-            desc_map = {
-                "battle": "遭遇战 (遇到 1~3 个普通的敌人)",
-                "elite": "精英战 (遭遇强力敌人，获胜金币更多)",
-                "event": "神秘事件 (可能获得宝物或遭遇危险)",
-                "shop": "奇妙商店 (购买强力卡牌、遗物或移除卡牌)",
-                "rest": "篝火营地 (恢复生命值或冥想领悟卡牌)",
-                "treasure": "古老宝箱 (献祭卡牌以获取稀有遗物及宝藏)",
-                "boss": "首领战 (击败守关的首领)"
-            }
-            emoji_map = {
-                "battle": "遭遇战",
-                "elite": "精英战",
-                "event": "神秘事件",
-                "shop": "奇妙商店",
-                "rest": "篝火营地",
-                "treasure": "古老宝箱",
-                "boss": "首领战"
-            }
-            for o in opts:
-                options_data.append({
-                    "node_id": o["id"],
-                    "node_type": o["type"],
-                    "desc": f"{emoji_map.get(o['type'], o['type'])} ({desc_map.get(o['type'], o['type'])})"
-                })
-            run.node_data = {"options": options_data}
-
-    def _generate_map_network(self, run: GameRun, start_s: int, end_s: int):
-        nodes = {}
-        for s in range(start_s, end_s + 1):
-            nodes[str(s)] = []
-        
-        types_pool = ["battle", "event", "shop", "elite", "rest"]
-        for s in range(start_s, end_s + 1):
-            s_str = str(s)
-            if s in (5, 15):
-                nodes[s_str].append({
-                    "id": f"{s}_0",
-                    "type": "treasure",
-                    "next": []
-                })
-            elif s in (10, 20):
-                nodes[s_str].append({
-                    "id": f"{s}_0",
-                    "type": "boss",
-                    "next": []
-                })
-            else:
-                width = random.randint(2, 3)
-                for i in range(width):
-                    ntype = random.choice(types_pool)
-                    nodes[s_str].append({
-                        "id": f"{s}_{i}",
-                        "type": ntype,
-                        "next": []
-                    })
-        
-        for s in range(start_s, end_s):
-            curr_layer = nodes[str(s)]
-            next_layer = nodes[str(s+1)]
-            
-            if len(next_layer) == 1:
-                for cn in curr_layer:
-                    cn["next"] = [next_layer[0]["id"]]
-            elif len(curr_layer) == 1:
-                curr_layer[0]["next"] = [nn["id"] for nn in next_layer]
-            else:
-                for i, cn in enumerate(curr_layer):
-                    allowed = []
-                    for offset in (-1, 0, 1):
-                        idx = i + offset
-                        if 0 <= idx < len(next_layer):
-                            allowed.append(next_layer[idx]["id"])
-                    cn["next"] = random.sample(allowed, min(len(allowed), random.randint(1, 2)))
-                
-                for nn in next_layer:
-                    nn_id = nn["id"]
-                    has_pre = False
-                    for cn in curr_layer:
-                        if nn_id in cn["next"]:
-                            has_pre = True
-                            break
-                    if not has_pre:
-                        best_i = min(len(curr_layer)-1, int(nn_id.split("_")[1]))
-                        curr_layer[best_i]["next"].append(nn_id)
-                        curr_layer[best_i]["next"] = list(set(curr_layer[best_i]["next"]))
-                        
-        run.map_data["nodes"] = nodes
-        run.map_data["current_node_id"] = None
-
-    def choose_map_node(self, run: GameRun, option_idx: int) -> str:
-        options = run.node_data.get("options", [])
-        if option_idx < 1 or option_idx > len(options):
-            return "❌ 无效的分支序号。"
-        chosen = options[option_idx - 1]
-        node_type = chosen["node_type"]
-        node_id = chosen["node_id"]
-        
-        if node_type in ("battle", "elite", "boss"):
-            run.node_type = "battle"
-        else:
-            run.node_type = node_type
-        run.map_data["current_node_id"] = node_id
-        run.node_data.clear()
-        
-        if node_type == "battle" or node_type == "boss":
-            diff = "boss" if node_type == "boss" else "normal"
-            self.battle_engine._init_battle_node(run, diff)
-            name = run.enemies[0].name if run.enemies else "未知"
-            num_enemies = len(run.enemies)
-            self.save_manager.save_save(run.user_id, run)
-            return f"你选择前往【{chosen['desc']}】。前方出现了 {num_enemies} 个敌人，领头的是【{name}】！进入战斗。"
-        elif node_type == "elite":
-            self.battle_engine._init_battle_node(run, "elite")
-            name = run.enemies[0].name if run.enemies else "未知"
-            num_enemies = len(run.enemies)
-            self.save_manager.save_save(run.user_id, run)
-            return f"你选择前往【{chosen['desc']}】。前方出现了 {num_enemies} 个强力精英，领头的是【{name}】！进入战斗。"
-        elif node_type == "event":
-            self._init_event_node(run)
-            self.save_manager.save_save(run.user_id, run)
-            return f"你选择前往【{chosen['desc']}】。你遇到了一个神秘事件..."
-        elif node_type == "shop":
-            self._init_shop_node(run)
-            self.save_manager.save_save(run.user_id, run)
-            return f"你选择前往【{chosen['desc']}】。你来到了奇妙商店，店主热情地向你招手。"
-        elif node_type == "rest":
-            self.save_manager.save_save(run.user_id, run)
-            return f"你选择前往【{chosen['desc']}】。篝火在噼啪作响，你可以在此整顿休息。"
-        elif node_type == "treasure":
-            self._init_treasure_node(run)
-            self.save_manager.save_save(run.user_id, run)
-            return f"你选择前往【{chosen['desc']}】。你来到了古老宝箱前。"
-        return "❌ 未知节点类型。"
+        self.map_engine = map_engine
 
     def _init_event_node(self, run: GameRun):
-        from .event_impl import ALL_EVENTS
         stage = run.player.stage
         valid_events = [e for e in ALL_EVENTS if getattr(e, "min_stage", 2) <= stage <= getattr(e, "max_stage", 19)]
         if not valid_events:
@@ -246,10 +22,9 @@ class MapEngine:
         }
 
     def _init_shop_node(self, run: GameRun):
-        from .card_impl import ALL_CARDS
         card_pool = [cid for cid, c in ALL_CARDS.items() if c.rarity != "legendary" and not cid.startswith("curse_")]
         shop_cards = random.sample(card_pool, 3)
-        from .models import check_and_replace_fireball
+        from ..models.state import check_and_replace_fireball
         shop_cards = [check_and_replace_fireball(run, cid) for cid in shop_cards]
         items = []
         discount = 1.0
@@ -276,7 +51,7 @@ class MapEngine:
         available_relics = [rid for rid in ["lucky_coin", "red_bottle", "leather_armor", "whetstone", "ready_pack", "arcane_rune"] if rid not in run.player.relics]
         if available_relics:
             rid = random.choice(available_relics)
-            from .data.relic_data import RELIC_CONFIG
+            from ...data.relic_data import RELIC_CONFIG
             r_cfg = RELIC_CONFIG[rid]
             r_price = int(r_cfg["price"] * discount)
             items.append({
@@ -306,18 +81,11 @@ class MapEngine:
 
     def choose_option(self, run: GameRun, option_idx: int) -> str:
         p = run.player
-        if run.node_type == "battle":
-            return "❌ 战斗中无法使用选择命令。"
-        if run.node_type == "map_select":
-            return self.choose_map_node(run, option_idx)
-
         if run.node_type == "start_ancient":
             options = run.node_data.get("options", [])
             if option_idx < 1 or option_idx > len(options):
                 return "❌ 无效的选择序号。"
             chosen = options[option_idx - 1]
-            from .relic_impl import get_relic_name
-            from .card_impl import ALL_CARDS
             
             rid = chosen["relic"]
             p.relics.append(rid)
@@ -334,7 +102,7 @@ class MapEngine:
                 p.deck.append(cid)
                 bonus_str += f" ➕ 先古卡牌：【{ALL_CARDS[cid].name}】"
                 
-            self.enter_next_stage(run)
+            self.map_engine.enter_next_stage(run)
             self.save_manager.save_save(run.user_id, run)
             return f"🌌 契约达成！你{bonus_str}。冒险正式开始！"
 
@@ -343,15 +111,13 @@ class MapEngine:
             if option_idx < 1 or option_idx > len(options):
                 return "❌ 无效的选择序号。"
             chosen = options[option_idx - 1]
-            from .relic_impl import get_relic_name
-            from .card_impl import ALL_CARDS
             
             cid = chosen["card"]
             rid = chosen["relic"]
             p.deck.append(cid)
             p.relics.append(rid)
             
-            self.enter_next_stage(run)
+            self.map_engine.enter_next_stage(run)
             self.save_manager.save_save(run.user_id, run)
             return f"🌟 先古赐福！你获得了传奇卡牌【{ALL_CARDS[cid].name}】与珍奇遗物【{get_relic_name(rid)}】！"
 
@@ -364,7 +130,6 @@ class MapEngine:
                 if option_idx < 1 or option_idx > len(sorted_items):
                     return "❌ 无效的卡牌序号。"
                 cid = sorted_items[option_idx - 1][0]
-                from .card_impl import ALL_CARDS
                 removed_name = ALL_CARDS[cid].name
                 p.deck.remove(cid)
                 
@@ -383,10 +148,9 @@ class MapEngine:
                         
                 card_pool = [cid for cid, c in ALL_CARDS.items() if c.rarity == "epic" and not cid.startswith("curse_")]
                 reward_cards = random.sample(card_pool, 3) if len(card_pool) >= 3 else card_pool
-                from .models import check_and_replace_fireball
+                from ..models.state import check_and_replace_fireball
                 reward_cards = [check_and_replace_fireball(run, cid) for cid in reward_cards]
                 
-                from .relic_impl import get_relic_name
                 relic_msg = f"与遗物【{get_relic_name(got_relic)}】" if got_relic else ""
                 
                 run.node_type = "card_select"
@@ -405,15 +169,14 @@ class MapEngine:
                 return "❌ 无效的选择序号。"
             if option_idx == skip_idx:
                 p.gold += 15
-                self.enter_next_stage(run)
+                self.map_engine.enter_next_stage(run)
                 self.save_manager.save_save(run.user_id, run)
                 return "获得了 15 金币，开启下一关。"
             else:
                 cid = cards[option_idx - 1]
-                from .card_impl import ALL_CARDS
                 card = ALL_CARDS.get(cid)
                 p.deck.append(cid)
-                self.enter_next_stage(run)
+                self.map_engine.enter_next_stage(run)
                 self.save_manager.save_save(run.user_id, run)
                 return f"已将卡牌【{card.name}】加入你的卡组，开启下一关。"
 
@@ -423,15 +186,14 @@ class MapEngine:
             if option_idx < 1 or option_idx > skip_idx:
                 return "❌ 无效的选择序号。"
             if option_idx == skip_idx:
-                self.enter_next_stage(run)
+                self.map_engine.enter_next_stage(run)
                 self.save_manager.save_save(run.user_id, run)
                 return "已跳过卡牌选择，开启下一关。"
             else:
                 cid = cards[option_idx - 1]
-                from .card_impl import ALL_CARDS
                 card = ALL_CARDS.get(cid)
                 p.deck.append(cid)
-                self.enter_next_stage(run)
+                self.map_engine.enter_next_stage(run)
                 self.save_manager.save_save(run.user_id, run)
                 return f"已将卡牌【{card.name}】加入你的卡组，开启下一关。"
 
@@ -441,14 +203,13 @@ class MapEngine:
             if option_idx == 1:
                 heal = p.max_hp // 2
                 p.hp = min(p.max_hp, p.hp + heal)
-                self.enter_next_stage(run)
+                self.map_engine.enter_next_stage(run)
                 self.save_manager.save_save(run.user_id, run)
                 return f"你感到精力充沛，恢复了 {heal} 点生命值，开启下一关。"
             elif option_idx == 2:
-                from .card_impl import ALL_CARDS
                 wizards = [cid for cid, c in ALL_CARDS.items() if c.color == "wizard" and c.type == "spell" and c.rarity != "legendary" and not cid.startswith("curse_")]
                 reward_cards = random.sample(wizards, 3) if len(wizards) >= 3 else wizards
-                from .models import check_and_replace_fireball
+                from ..models.state import check_and_replace_fireball
                 reward_cards = [check_and_replace_fireball(run, cid) for cid in reward_cards]
                 run.node_type = "card_select"
                 run.node_data = {
@@ -459,7 +220,7 @@ class MapEngine:
                 self.save_manager.save_save(run.user_id, run)
                 return "你开始冥想，寻找领悟。"
             else:
-                self.enter_next_stage(run)
+                self.map_engine.enter_next_stage(run)
                 self.save_manager.save_save(run.user_id, run)
                 return "你整理了行囊直接出发，开启下一关。"
 
@@ -470,12 +231,11 @@ class MapEngine:
             opt = options[option_idx - 1]
             act = opt.get("action")
             
-            from .event_impl import get_option_by_action
             option_executor = get_option_by_action(act)
             if option_executor:
-                return option_executor.execute(run, self)
+                return option_executor.execute(run, self.map_engine)
             else:
-                self.enter_next_stage(run)
+                self.map_engine.enter_next_stage(run)
                 self.save_manager.save_save(run.user_id, run)
                 return "你决定不节外生枝，继续赶路。已前往下一关。"
 
@@ -496,7 +256,6 @@ class MapEngine:
                 p.deck.append(cid)
                 item["sold"] = True
                 self.save_manager.save_save(run.user_id, run)
-                from .card_impl import ALL_CARDS
                 return f"购买成功！已将【{ALL_CARDS[cid].name}】加入你的卡组。"
             elif itype == "relic":
                 p.gold -= price
@@ -507,12 +266,11 @@ class MapEngine:
                     p.max_hp += 5
                     p.hp += 5
                 self.save_manager.save_save(run.user_id, run)
-                from .relic_impl import get_relic_name
                 return f"购买成功！获得了遗物【{get_relic_name(rid)}】。"
             elif itype == "remove":
                 return "REMOVE_FLOW"
             elif itype == "leave":
-                self.enter_next_stage(run)
+                self.map_engine.enter_next_stage(run)
                 self.save_manager.save_save(run.user_id, run)
                 return "你离开了商店，继续冒险。已开启下一关。"
         return "未知的操作。"
@@ -526,7 +284,6 @@ class MapEngine:
         if deck_idx < 1 or deck_idx > len(sorted_items):
             return "❌ 无效的卡牌序号。"
         cid = sorted_items[deck_idx - 1][0]
-        from .card_impl import ALL_CARDS
         removed_name = ALL_CARDS[cid].name
         p.deck.remove(cid)
         

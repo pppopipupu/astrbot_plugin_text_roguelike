@@ -1,4 +1,4 @@
-from ..models import GameRun, UserStats
+from ..models.state import GameRun, UserStats
 from ..cards import ALL_CARDS
 
 def render_menu(stats: UserStats = None) -> str:

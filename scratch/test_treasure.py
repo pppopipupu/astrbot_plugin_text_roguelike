@@ -8,9 +8,9 @@ if sys.platform.startswith("win"):
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from game.models import GameRun, PlayerState, EnemyState
-from game.map_engine import MapEngine
-from game.battle_engine import BattleEngine
+from game.models.state import GameRun, PlayerState, EnemyState
+from game.core.map_engine import MapEngine
+from game.core.battle_engine import BattleEngine
 from main import MyPlugin
 
 class DummyContext:
@@ -79,7 +79,7 @@ def test_treasure_and_camp_card_select():
     player.stage = 5
     player.gold = 20
     run.node_type = "event"
-    from game.event_impl import CoinFountainOption
+    from game.entities.events import CoinFountainOption
     opt = CoinFountainOption("投入金币", "coin_fountain")
     res = opt.execute(run, map_engine)
     assert player.gold == 10
