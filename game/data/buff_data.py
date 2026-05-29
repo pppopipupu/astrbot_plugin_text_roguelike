@@ -30,5 +30,121 @@ BUFF_CONFIG = {
     "strength": {
         "name": "力量",
         "desc": "造成的伤害增加"
+    },
+    "fury": {
+        "name": "愤怒",
+        "desc": "玩家使用珍奇或传奇卡牌时，该怪物获得等同于愤怒层数的力量"
+    },
+    "minor_vulnerable_acid": {
+        "name": "轻度强酸易伤",
+        "desc": "受到的强酸伤害增加 50%"
+    },
+    "vulnerable_acid": {
+        "name": "强酸易伤",
+        "desc": "受到的强酸伤害翻倍"
+    },
+    "minor_vulnerable_bludgeoning": {
+        "name": "轻度钝击易伤",
+        "desc": "受到的钝击伤害增加 50%"
+    },
+    "vulnerable_bludgeoning": {
+        "name": "钝击易伤",
+        "desc": "受到的钝击伤害翻倍"
+    },
+    "minor_vulnerable_cold": {
+        "name": "轻度寒冷易伤",
+        "desc": "受到的寒冷伤害增加 50%"
+    },
+    "vulnerable_cold": {
+        "name": "寒冷易伤",
+        "desc": "受到的寒冷伤害翻倍"
+    },
+    "minor_vulnerable_fire": {
+        "name": "轻度火焰易伤",
+        "desc": "受到的火焰伤害增加 50%"
+    },
+    "vulnerable_fire": {
+        "name": "火焰易伤",
+        "desc": "受到的火焰伤害翻倍"
+    },
+    "minor_vulnerable_force": {
+        "name": "轻度力场易伤",
+        "desc": "受到的力场伤害增加 50%"
+    },
+    "vulnerable_force": {
+        "name": "力场易伤",
+        "desc": "受到的力场伤害翻倍"
+    },
+    "minor_vulnerable_lightning": {
+        "name": "轻度闪电易伤",
+        "desc": "受到的闪电伤害增加 50%"
+    },
+    "vulnerable_lightning": {
+        "name": "闪电易伤",
+        "desc": "受到的闪电伤害翻倍"
+    },
+    "minor_vulnerable_necrotic": {
+        "name": "轻度黯蚀易伤",
+        "desc": "受到的黯蚀伤害增加 50%"
+    },
+    "vulnerable_necrotic": {
+        "name": "黯蚀易伤",
+        "desc": "受到的黯蚀伤害翻倍"
+    },
+    "minor_vulnerable_piercing": {
+        "name": "轻度穿刺易伤",
+        "desc": "受到的穿刺伤害增加 50%"
+    },
+    "vulnerable_piercing": {
+        "name": "穿刺易伤",
+        "desc": "受到的穿刺伤害翻倍"
+    },
+    "minor_vulnerable_poison": {
+        "name": "轻度毒素易伤",
+        "desc": "受到的毒素伤害增加 50%"
+    },
+    "vulnerable_poison": {
+        "name": "毒素易伤",
+        "desc": "受到的毒素伤害翻倍"
+    },
+    "minor_vulnerable_psychic": {
+        "name": "轻度心灵易伤",
+        "desc": "受到的心灵伤害增加 50%"
+    },
+    "vulnerable_psychic": {
+        "name": "心灵易伤",
+        "desc": "受到的心灵伤害翻倍"
+    },
+    "minor_vulnerable_radiant": {
+        "name": "轻度光耀易伤",
+        "desc": "受到的光耀伤害增加 50%"
+    },
+    "vulnerable_radiant": {
+        "name": "光耀易伤",
+        "desc": "受到的光耀伤害翻倍"
+    },
+    "minor_vulnerable_slashing": {
+        "name": "轻度挥砍易伤",
+        "desc": "受到的挥砍伤害增加 50%"
+    },
+    "vulnerable_slashing": {
+        "name": "挥砍易伤",
+        "desc": "受到的挥砍伤害翻倍"
+    },
+    "minor_vulnerable_thunder": {
+        "name": "轻度雷鸣易伤",
+        "desc": "受到的雷鸣伤害增加 50%"
+    },
+    "vulnerable_thunder": {
+        "name": "雷鸣易伤",
+        "desc": "受到的雷鸣伤害翻倍"
+    },
+    "minor_vulnerable_true": {
+        "name": "轻度真实易伤",
+        "desc": "受到的真实伤害增加 50%"
+    },
+    "vulnerable_true": {
+        "name": "真实易伤",
+        "desc": "受到的真实伤害翻倍"
     }
 }

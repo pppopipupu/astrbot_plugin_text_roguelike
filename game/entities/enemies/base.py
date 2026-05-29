@@ -24,6 +24,9 @@ class EnemyTemplate:
     def roll_intent_ba2(self, run, engine, enemy) -> Tuple[str, int, str]:
         return self.roll_intent(run, engine, enemy)
 
+    def roll_intent_a2(self, run, engine, enemy) -> Tuple[str, int, str]:
+        return self.roll_intent(run, engine, enemy)
+
     def _perform_attack(self, run, engine, enemy, dmg: int, logs: List[str]):
         p = run.player
         import random
@@ -59,12 +62,13 @@ class EnemyTemplate:
             enemy.shield += enemy.intent_val
             logs.append(f"敌人【{enemy.name}】进行防守，获得 {enemy.intent_val} 点护盾。")
 
-from .boss import BossRedDragonTemplate, BossCorruptedHeartTemplate
+from .boss import BossRedDragonTemplate, BossCorruptedHeartTemplate, BossIcerainbowwTemplate
 from .minions import GoblinCenturionTemplate, GargoylePriestTemplate, BeastMasterTemplate, ObsidianDjinnTemplate, GhostArchmageTemplate, ShadowFiendTemplate
 
 ALL_ENEMIES = {
     "远古红龙": BossRedDragonTemplate("远古红龙"),
     "腐化之心": BossCorruptedHeartTemplate("腐化之心"),
+    "Icerainboww": BossIcerainbowwTemplate("Icerainboww"),
     "地精百夫长": GoblinCenturionTemplate("地精百夫长"),
     "石像鬼祭司": GargoylePriestTemplate("石像鬼祭司"),
     "狂暴兽王": BeastMasterTemplate("狂暴兽王"),

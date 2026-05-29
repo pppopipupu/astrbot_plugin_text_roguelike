@@ -161,3 +161,126 @@ class BossCorruptedHeartTemplate(EnemyTemplate):
         elif enemy.intent_type == "heart_heal":
             enemy.hp = min(enemy.max_hp, enemy.hp + enemy.intent_val)
             logs.append(f"【{enemy.name}】自我回潮，恢复了 {enemy.intent_val} 点生命值。")
+
+class BossIcerainbowwTemplate(EnemyTemplate):
+    def roll_intent(self, run, engine, enemy) -> Tuple[str, int, str]:
+        turn = run.node_data.get("icerainboww_turn", 1)
+        cycle = (turn - 1) % 4 + 1
+        if cycle == 1:
+            return "icerain_shoot", 2, "冰雨弓射击 (造成 2 寒冷伤害，使玩家下回合失去 1A)"
+        elif cycle == 2:
+            return "winter_gaze", 4, "寒冬凝视 (造成 4 心灵伤害，并使玩家受到轻度寒冷易伤)"
+        elif cycle == 3:
+            return "smash_attack", 10, "粉碎攻击 (造成 10 寒冷伤害，并使玩家受到轻度寒冷易伤)"
+        else:
+            return "frost_blast", 6, "冰霜爆震 (对玩家与所有我方随从造成 6 寒冷伤害)"
+
+    def roll_intent_a2(self, run, engine, enemy) -> Tuple[str, int, str]:
+        turn = run.node_data.get("icerainboww_turn", 1)
+        cycle = (turn - 1) % 4 + 1
+        if cycle == 1:
+            return "fury", 1, "愤怒 (获得 1 层愤怒buff，被打出珍奇或传奇卡牌激怒时自身增伤)"
+        elif cycle == 2:
+            return "aurora_shield", 12, "极光屏障 (获得 12 护盾并净化 1 负面 Buff，无负面时额外获得 4 护盾)"
+        elif cycle == 3:
+            return "icerain_shoot", 2, "冰雨弓射击 (造成 2 寒冷伤害，使玩家下回合失去 1A)"
+        else:
+            return "fury", 1, "愤怒 (获得 1 层愤怒buff，被打出珍奇或传奇卡牌激怒时自身增伤)"
+
+    def execute_intent(self, run, engine, enemy, logs: List[str]):
+        p = run.player
+        import random
+        
+        strength = 0
+        for b in enemy.buffs:
+            if b.id == "strength":
+                strength += b.stacks
+
+        val = enemy.intent_val + strength
+
+        if enemy.intent_type == "icerain_shoot":
+            if p.minions and random.random() < 0.5:
+                target_key = random.choice(list(p.minions.keys()))
+                target = p.minions[target_key]
+                m_name = target.name
+                before_len = len(run.node_data.get("battle_logs", []))
+                engine._damage_target(run, f"p{target_key}", val, source=f"enemy:{enemy.name}", damage_type="cold")
+                after_logs = run.node_data.get("battle_logs", [])
+                if len(after_logs) > before_len:
+                    dmg_msg = after_logs.pop()
+                    logs.append(f"【{enemy.name}】用冰雨弓攻击了我方随从【{m_name}】。{dmg_msg}")
+            else:
+                before_len = len(run.node_data.get("battle_logs", []))
+                engine._damage_target(run, "p0", val, source=f"enemy:{enemy.name}", damage_type="cold")
+                after_logs = run.node_data.get("battle_logs", [])
+                if len(after_logs) > before_len:
+                    dmg_msg = after_logs.pop()
+                    logs.append(f"【{enemy.name}】用冰雨弓攻击玩家。{dmg_msg}")
+            run.node_data["drain_a"] = True
+            logs.append(f"【{enemy.name}】射出冰雨弓，使玩家在下一回合失去 1 个动作点 (A)。")
+
+        elif enemy.intent_type == "fury":
+            engine._add_buff_to(enemy, "fury", "愤怒", "玩家使用珍奇或传奇卡牌时，该怪物获得等同于愤怒层数的力量", 1)
+            logs.append(f"【{enemy.name}】获得了 1 层【愤怒】Buff！")
+
+        elif enemy.intent_type == "smash_attack":
+            if p.minions and random.random() < 0.5:
+                target_key = random.choice(list(p.minions.keys()))
+                target = p.minions[target_key]
+                m_name = target.name
+                before_len = len(run.node_data.get("battle_logs", []))
+                engine._damage_target(run, f"p{target_key}", val, source=f"enemy:{enemy.name}", damage_type="cold")
+                after_logs = run.node_data.get("battle_logs", [])
+                if len(after_logs) > before_len:
+                    dmg_msg = after_logs.pop()
+                    logs.append(f"【{enemy.name}】对随从【{m_name}】施展粉碎攻击。{dmg_msg}")
+            else:
+                before_len = len(run.node_data.get("battle_logs", []))
+                engine._damage_target(run, "p0", val, source=f"enemy:{enemy.name}", damage_type="cold")
+                after_logs = run.node_data.get("battle_logs", [])
+                if len(after_logs) > before_len:
+                    dmg_msg = after_logs.pop()
+                    logs.append(f"【{enemy.name}】对玩家施展粉碎攻击。{dmg_msg}")
+            engine._add_buff_to(p, "minor_vulnerable_cold", "轻度寒冷易伤", "受到的寒冷伤害增加 50%", 2)
+            logs.append(f"【{enemy.name}】的粉碎攻击使玩家获得了 2 层【轻度寒冷易伤】状态。")
+
+        elif enemy.intent_type == "aurora_shield":
+            neg_buff = next((b for b in enemy.buffs if b.id == "stun"), None)
+            shield_gain = enemy.intent_val
+            if neg_buff:
+                neg_name = neg_buff.name
+                neg_buff.stacks -= 1
+                if neg_buff.stacks <= 0:
+                    enemy.buffs.remove(neg_buff)
+                engine._sync_enemy_intents(enemy)
+                logs.append(f"【{enemy.name}】施展【极光屏障】，获得 {shield_gain} 点护盾，并解除了自身的负面状态【{neg_name}】！")
+            else:
+                shield_gain += 4
+                logs.append(f"【{enemy.name}】施展【极光屏障】，由于没有负面状态，额外获得了 4 点护盾，总计获得 {shield_gain} 点护盾。")
+            enemy.shield += shield_gain
+
+        elif enemy.intent_type == "winter_gaze":
+            before_len = len(run.node_data.get("battle_logs", []))
+            engine._damage_target(run, "p0", val, source=f"enemy:{enemy.name}", damage_type="psychic")
+            after_logs = run.node_data.get("battle_logs", [])
+            if len(after_logs) > before_len:
+                dmg_msg = after_logs.pop()
+                logs.append(f"【{enemy.name}】投射【寒冬凝视】。{dmg_msg}")
+            engine._add_buff_to(p, "minor_vulnerable_cold", "轻度寒冷易伤", "受到的寒冷伤害增加 50%", 1)
+            logs.append(f"【{enemy.name}】的寒冬凝视使玩家获得了 1 层【轻度寒冷易伤】状态。")
+
+        elif enemy.intent_type == "frost_blast":
+            before_len = len(run.node_data.get("battle_logs", []))
+            engine._damage_target(run, "p0", val, source=f"enemy:{enemy.name}", damage_type="cold")
+            after_logs = run.node_data.get("battle_logs", [])
+            if len(after_logs) > before_len:
+                dmg_msg = after_logs.pop()
+                logs.append(f"【{enemy.name}】释放【冰霜爆震】对玩家造成伤害。{dmg_msg}")
+            for mk in list(p.minions.keys()):
+                m_name = p.minions[mk].name
+                before_len = len(run.node_data.get("battle_logs", []))
+                engine._damage_target(run, f"p{mk}", val, source=f"enemy:{enemy.name}", damage_type="cold")
+                after_logs = run.node_data.get("battle_logs", [])
+                if len(after_logs) > before_len:
+                    dmg_msg = after_logs.pop()
+                    logs.append(f"我方随从【{m_name}】受到冰霜爆震波及。{dmg_msg}")

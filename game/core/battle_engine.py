@@ -176,6 +176,24 @@ class BattleEngine:
                     if impl and hasattr(impl, "on_damage_calculate"):
                         impl.on_damage_calculate(event, b, enemy)
 
+        if event.target == "p0":
+            for b in list(event.run.player.buffs):
+                impl = get_buff_impl(b.id, b.stacks)
+                if impl and hasattr(impl, "on_damage_calculate_defend"):
+                    impl.on_damage_calculate_defend(event, b, event.run.player)
+        elif event.target.startswith("e"):
+            try:
+                idx = int(event.target[1:]) - 1
+                if idx < 0: idx = 0
+            except ValueError:
+                idx = 0
+            if 0 <= idx < len(event.run.enemies):
+                enemy = event.run.enemies[idx]
+                for b in list(enemy.buffs):
+                    impl = get_buff_impl(b.id, b.stacks)
+                    if impl and hasattr(impl, "on_damage_calculate_defend"):
+                        impl.on_damage_calculate_defend(event, b, enemy)
+
     def _proxy_damage_take(self, event):
         from ..entities.amulets.amulets import ALL_AMULETS
         if event.target == "p0" and event.amount > 0:
@@ -407,12 +425,60 @@ class BattleEngine:
             if 0 <= idx < len(run.enemies):
                 run.enemies[idx].shield += final_amount
 
+    def _sync_enemy_intents(self, enemy: EnemyState):
+        has_stun = False
+        if getattr(enemy, "buffs", None):
+            for b in enemy.buffs:
+                if b.id == "stun" and b.stacks > 0:
+                    has_stun = True
+                    break
+        slots = []
+        for attr in dir(enemy):
+            if attr.startswith("intent_") and attr.endswith("_type") and attr != "intent_type":
+                slots.append(attr[len("intent_"):-len("_type")])
+        def slot_sort_key(s):
+            return ("ba" in s, s)
+        slots.sort(key=slot_sort_key)
+        if has_stun:
+            enemy.actions = 0
+            enemy.bonus_actions = 0
+            for slot in slots:
+                setattr(enemy, f"intent_{slot}_type", "")
+                if slot == "a":
+                    setattr(enemy, f"intent_{slot}_desc", "眩晕 (本回合无法行动)")
+                else:
+                    setattr(enemy, f"intent_{slot}_desc", "")
+        else:
+            temp_a = enemy.actions
+            temp_ba = enemy.bonus_actions
+            for slot in slots:
+                itype = getattr(enemy, f"intent_{slot}_type", "")
+                if not itype and "已取消" not in getattr(enemy, f"intent_{slot}_desc", ""):
+                    continue
+                is_ba = "ba" in slot
+                if is_ba:
+                    if temp_ba >= 1:
+                        temp_ba -= 1
+                    else:
+                        setattr(enemy, f"intent_{slot}_type", "")
+                        setattr(enemy, f"intent_{slot}_desc", "已取消 (动作点不足)")
+                else:
+                    if temp_a >= 1:
+                        temp_a -= 1
+                    else:
+                        setattr(enemy, f"intent_{slot}_type", "")
+                        setattr(enemy, f"intent_{slot}_desc", "已取消 (动作点不足)")
+
     def _add_buff_to(self, entity, buff_id: str, buff_name: str, desc: str, count: int = 1):
         for b in entity.buffs:
             if b.id == buff_id:
                 b.stacks += count
+                if buff_id == "stun" and isinstance(entity, EnemyState):
+                    self._sync_enemy_intents(entity)
                 return
         entity.buffs.append(BuffState(buff_id, buff_name, count, desc))
+        if buff_id == "stun" and isinstance(entity, EnemyState):
+            self._sync_enemy_intents(entity)
 
     def _get_free_grid(self, p: PlayerState) -> Optional[str]:
         for i in range(1, 7):
@@ -479,17 +545,38 @@ class BattleEngine:
 
         if difficulty == "boss":
             if p.stage == 20:
-                run.enemies = [EnemyState(
-                    name="腐化之心",
-                    hp=120,
-                    max_hp=120,
-                    shield=0,
-                    actions=1,
-                    bonus_actions=2,
-                    max_actions=1,
-                    max_bonus_actions=2
-                )]
-                self._add_buff_to(run.enemies[0], "beat_of_death", "死亡律动", "玩家每使用一张牌，受到 1 点力场伤害。")
+                admin_cfg = self.save_manager.load_admin_config()
+                fixed_boss = admin_cfg.get("fixed_boss", "random")
+                if fixed_boss in ("腐化之心", "Icerainboww"):
+                    boss_name = fixed_boss
+                else:
+                    boss_name = random.choice(["腐化之心", "Icerainboww"])
+                if boss_name == "腐化之心":
+                    run.enemies = [EnemyState(
+                        name="腐化之心",
+                        hp=120,
+                        max_hp=120,
+                        shield=0,
+                        actions=1,
+                        bonus_actions=2,
+                        max_actions=1,
+                        max_bonus_actions=2
+                    )]
+                    self._add_buff_to(run.enemies[0], "beat_of_death", "死亡律动", "玩家每使用一张牌，受到 1 点力场伤害。")
+                    run.node_data["boss_name"] = "腐化之心"
+                else:
+                    run.enemies = [EnemyState(
+                        name="Icerainboww",
+                        hp=160,
+                        max_hp=160,
+                        shield=0,
+                        actions=2,
+                        bonus_actions=0,
+                        max_actions=2,
+                        max_bonus_actions=0
+                    )]
+                    run.node_data["boss_name"] = "Icerainboww"
+                    run.node_data["icerainboww_turn"] = 1
             else:
                 run.enemies = [EnemyState(
                     name="远古红龙",
@@ -635,6 +722,8 @@ class BattleEngine:
         if has_damaged and run.node_data.get("extra_turns_left", 0) > 0:
             end_turn_res = self.end_turn(run)
             res += f"\n⏳ [时间停止] 额外回合中对敌人造成了伤害，当前额外回合提前结束！\n{end_turn_res}"
+        for enemy in run.enemies:
+            self._sync_enemy_intents(enemy)
         return self._append_logs_to_res(run, res)
 
     def play_special_action(self, run: GameRun, hand_idx: int, target: Optional[str] = None) -> str:
@@ -687,6 +776,8 @@ class BattleEngine:
         if has_damaged and run.node_data.get("extra_turns_left", 0) > 0:
             end_turn_res = self.end_turn(run)
             res += f"\n⏳ [时间停止] 额外回合中对敌人造成了伤害，当前额外回合提前结束！\n{end_turn_res}"
+        for enemy in run.enemies:
+            self._sync_enemy_intents(enemy)
         return self._append_logs_to_res(run, res)
 
     def minion_attack(self, run: GameRun, my_grid: str, opp_grid: Optional[str] = None) -> str:
@@ -734,6 +825,8 @@ class BattleEngine:
         if has_damaged and run.node_data.get("extra_turns_left", 0) > 0:
             end_turn_res = self.end_turn(run)
             res += f"\n⏳ [时间停止] 额外回合中对敌人造成了伤害，当前额外回合提前结束！\n{end_turn_res}"
+        for enemy in run.enemies:
+            self._sync_enemy_intents(enemy)
         return self._append_logs_to_res(run, res)
 
     def minion_skill(self, run: GameRun, my_grid: str, skill_idx: int = 1, target: Optional[str] = None) -> str:
@@ -799,6 +892,8 @@ class BattleEngine:
         if has_damaged and run.node_data.get("extra_turns_left", 0) > 0:
             end_turn_res = self.end_turn(run)
             msg += f"\n⏳ [时间停止] 额外回合中对敌人造成了伤害，当前额外回合提前结束！\n{end_turn_res}"
+        for enemy in run.enemies:
+            self._sync_enemy_intents(enemy)
         return self._append_logs_to_res(run, msg)
 
     def _execute_card_effect(self, run: GameRun, card: Card, target: Optional[str] = None) -> str:
@@ -914,6 +1009,9 @@ class BattleEngine:
         if run.node_data.get("drain_ba"):
             p.bonus_actions = max(0, p.bonus_actions - 1)
             run.node_data.pop("drain_ba", None)
+        if run.node_data.get("drain_a"):
+            p.actions = max(0, p.actions - 1)
+            run.node_data.pop("drain_a", None)
         
         evt_start = TurnStartEvent(run, is_player=True)
         self.event_bus.dispatch(evt_start)
@@ -933,6 +1031,8 @@ class BattleEngine:
 
         if run.enemies and any(e.name == "腐化之心" for e in run.enemies):
             run.node_data["heart_turn"] = run.node_data.get("heart_turn", 1) + 1
+        if run.enemies and any(e.name == "Icerainboww" for e in run.enemies):
+            run.node_data["icerainboww_turn"] = run.node_data.get("icerainboww_turn", 1) + 1
 
         self._draw_cards(p, 6, run)
         self._roll_enemy_intent(run)
@@ -964,30 +1064,50 @@ class BattleEngine:
             if enemy.actions == 0 and enemy.bonus_actions == 0:
                 continue
             template = get_enemy_template(enemy.name)
-            if enemy.hp > 0 and enemy.intent_a_type:
-                if enemy.actions >= 1:
-                    enemy.actions -= 1
-                    enemy.intent_type = enemy.intent_a_type
-                    enemy.intent_val = enemy.intent_a_val
-                    template.execute_intent(run, self, enemy, logs)
+            slots = []
+            for attr in dir(enemy):
+                if attr.startswith("intent_") and attr.endswith("_type") and attr != "intent_type":
+                    slots.append(attr[len("intent_"):-len("_type")])
+            def slot_sort_key(s):
+                return ("ba" in s, s)
+            slots.sort(key=slot_sort_key)
+            for slot in slots:
+                if enemy.hp <= 0:
+                    break
+                itype = getattr(enemy, f"intent_{slot}_type", "")
+                if not itype:
+                    continue
+                val = getattr(enemy, f"intent_{slot}_val", 0)
+                desc = getattr(enemy, f"intent_{slot}_desc", "")
+                is_ba = "ba" in slot
+                if is_ba:
+                    if enemy.bonus_actions >= 1:
+                        enemy.bonus_actions -= 1
+                        orig_type = getattr(enemy, "intent_type", "")
+                        orig_val = getattr(enemy, "intent_val", 0)
+                        try:
+                            enemy.intent_type = itype
+                            enemy.intent_val = val
+                            template.execute_intent(run, self, enemy, logs)
+                        finally:
+                            enemy.intent_type = orig_type
+                            enemy.intent_val = orig_val
+                    else:
+                        logs.append(f"⚠️ 【{enemy.name}】因附赠动作点（BA）不足，取消了意图【{desc}】。")
                 else:
-                    logs.append(f"⚠️ 【{enemy.name}】因动作点（A）不足，取消了意图【{enemy.intent_a_desc}】。")
-            if enemy.hp > 0 and enemy.intent_ba_type:
-                if enemy.bonus_actions >= 1:
-                    enemy.bonus_actions -= 1
-                    enemy.intent_type = enemy.intent_ba_type
-                    enemy.intent_val = enemy.intent_ba_val
-                    template.execute_intent(run, self, enemy, logs)
-                else:
-                    logs.append(f"⚠️ 【{enemy.name}】因附赠动作点（BA）不足，取消了意图【{enemy.intent_ba_desc}】。")
-            if enemy.hp > 0 and enemy.intent_ba2_type:
-                if enemy.bonus_actions >= 1:
-                    enemy.bonus_actions -= 1
-                    enemy.intent_type = enemy.intent_ba2_type
-                    enemy.intent_val = enemy.intent_ba2_val
-                    template.execute_intent(run, self, enemy, logs)
-                else:
-                    logs.append(f"⚠️ 【{enemy.name}】因附赠动作点（BA）不足，取消了意图【{enemy.intent_ba2_desc}】。")
+                    if enemy.actions >= 1:
+                        enemy.actions -= 1
+                        orig_type = getattr(enemy, "intent_type", "")
+                        orig_val = getattr(enemy, "intent_val", 0)
+                        try:
+                            enemy.intent_type = itype
+                            enemy.intent_val = val
+                            template.execute_intent(run, self, enemy, logs)
+                        finally:
+                            enemy.intent_type = orig_type
+                            enemy.intent_val = orig_val
+                    else:
+                        logs.append(f"⚠️ 【{enemy.name}】因动作点（A）不足，取消了意图【{desc}】。")
 
         evt_turn_end = TurnEndEvent(run, is_player=False)
         self.event_bus.dispatch(evt_turn_end)
@@ -1023,6 +1143,10 @@ class BattleEngine:
         p.gold += reward_gold
         if p.stage == 20:
             run.node_type = "victory"
+            if run.node_data.get("boss_name") == "Icerainboww":
+                stats = self.save_manager.load_stats(run.user_id)
+                stats.killed_icerainboww = True
+                self.save_manager.save_stats(run.user_id, stats)
         else:
             run.node_type = "reward"
             card_pool = list(ALL_CARDS.keys())
@@ -1041,6 +1165,15 @@ class BattleEngine:
             enemy.intent_a_type = itype
             enemy.intent_a_val = val
             enemy.intent_a_desc = desc
+            if enemy.max_actions >= 2:
+                itype_a2, val_a2, desc_a2 = template.roll_intent_a2(run, self, enemy)
+                enemy.intent_a2_type = itype_a2
+                enemy.intent_a2_val = val_a2
+                enemy.intent_a2_desc = desc_a2
+            else:
+                enemy.intent_a2_type = ""
+                enemy.intent_a2_val = 0
+                enemy.intent_a2_desc = ""
             if enemy.max_bonus_actions >= 1:
                 itype_ba, val_ba, desc_ba = template.roll_intent_ba(run, self, enemy)
                 enemy.intent_ba_type = itype_ba
@@ -1059,3 +1192,4 @@ class BattleEngine:
                 enemy.intent_ba2_type = ""
                 enemy.intent_ba2_val = 0
                 enemy.intent_ba2_desc = ""
+            self._sync_enemy_intents(enemy)

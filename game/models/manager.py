@@ -36,7 +36,8 @@ class SaveManager:
                 gp=d.get("gp", 0),
                 unlocked_subclasses=d.get("unlocked_subclasses", []),
                 selected_class=d.get("selected_class", "法师"),
-                selected_subclass=d.get("selected_subclass", "")
+                selected_subclass=d.get("selected_subclass", ""),
+                killed_icerainboww=d.get("killed_icerainboww", False)
             )
         except:
             return UserStats()
@@ -202,6 +203,9 @@ class SaveManager:
                     intent_a_type=ed.get("intent_a_type", ""),
                     intent_a_val=ed.get("intent_a_val", 0),
                     intent_a_desc=ed.get("intent_a_desc", ""),
+                    intent_a2_type=ed.get("intent_a2_type", ""),
+                    intent_a2_val=ed.get("intent_a2_val", 0),
+                    intent_a2_desc=ed.get("intent_a2_desc", ""),
                     intent_ba_type=ed.get("intent_ba_type", ""),
                     intent_ba_val=ed.get("intent_ba_val", 0),
                     intent_ba_desc=ed.get("intent_ba_desc", ""),
@@ -238,6 +242,25 @@ class SaveManager:
         self.save_stats(user_id, stats)
         self.delete_save(user_id)
         return f"本局结算：剩余金币 {gold}，折算获得 {gp_gained} GP{victory_bonus}！当前总 GP：{stats.gp}。"
+
+    def load_admin_config(self) -> dict:
+        path = os.path.join(self.data_dir, "admin_config.json")
+        if not os.path.exists(path):
+            return {"fixed_boss": "random"}
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except:
+            return {"fixed_boss": "random"}
+
+    def save_admin_config(self, config: dict) -> bool:
+        path = os.path.join(self.data_dir, "admin_config.json")
+        try:
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(config, f, ensure_ascii=False, indent=2)
+            return True
+        except:
+            return False
 
 def stat_recorder_callback(enemy_name: str, amount: int, is_defeat: bool):
     user_id = get_user_id()

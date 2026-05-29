@@ -163,6 +163,44 @@ class BeatOfDeathBuff(BuffImpl):
 class StrengthBuff(BuffImpl):
     pass
 
+class FuryBuff(BuffImpl):
+    def on_card_played(self, event, buff_state, entity):
+        if event.card.rarity in ("rare", "legendary"):
+            event.engine._add_buff_to(entity, "strength", "力量", "造成的伤害增加", buff_state.stacks)
+            event.engine._log_event(event.run, f"🔥 【{entity.name}】的【愤怒】被玩家的【{event.card.name}】激怒，力量增加了 {buff_state.stacks} 点！")
+
+class MinorVulnerableBuff(BuffImpl):
+    def __init__(self, stacks: int, damage_type: str):
+        super().__init__(stacks)
+        self.damage_type = damage_type
+
+    def on_damage_calculate_defend(self, event, buff_state, entity):
+        dtype_str = event.damage_type.value if hasattr(event.damage_type, "value") else str(event.damage_type)
+        if dtype_str == self.damage_type:
+            event.modified_damage = int(event.modified_damage * 1.5)
+
+    def on_turn_end(self, event, buff_state, entity):
+        if event.is_player == (entity == event.run.player):
+            buff_state.stacks -= 1
+            if buff_state.stacks <= 0:
+                entity.buffs.remove(buff_state)
+
+class VulnerableBuff(BuffImpl):
+    def __init__(self, stacks: int, damage_type: str):
+        super().__init__(stacks)
+        self.damage_type = damage_type
+
+    def on_damage_calculate_defend(self, event, buff_state, entity):
+        dtype_str = event.damage_type.value if hasattr(event.damage_type, "value") else str(event.damage_type)
+        if dtype_str == self.damage_type:
+            event.modified_damage = int(event.modified_damage * 2)
+
+    def on_turn_end(self, event, buff_state, entity):
+        if event.is_player == (entity == event.run.player):
+            buff_state.stacks -= 1
+            if buff_state.stacks <= 0:
+                entity.buffs.remove(buff_state)
+
 BUFF_MAP = {
     "tactical_focus": TacticalFocusBuff,
     "quicken": QuickenBuff,
@@ -175,9 +213,16 @@ BUFF_MAP = {
     "stun": StunBuff,
     "beat_of_death": BeatOfDeathBuff,
     "strength": StrengthBuff,
+    "fury": FuryBuff,
 }
 
 def get_buff_impl(buff_id: str, stacks: int) -> Optional[BuffImpl]:
+    if buff_id.startswith("minor_vulnerable_"):
+        dtype = buff_id[len("minor_vulnerable_"):]
+        return MinorVulnerableBuff(stacks, dtype)
+    elif buff_id.startswith("vulnerable_"):
+        dtype = buff_id[len("vulnerable_"):]
+        return VulnerableBuff(stacks, dtype)
     cls = BUFF_MAP.get(buff_id)
     if cls:
         return cls(stacks)

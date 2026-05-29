@@ -393,34 +393,48 @@ class ClassCommand(CommandHandler):
                 "   └─ 元素爆发。所有法术伤害提升 15%，且抓取火球术时 40% 几率将火球术替换为流星爆。",
                 "",
                 "【职业命令】",
-                "👉 /rogue 职业 选择 时序法师 -- 装备时序法师子职业",
-                "👉 /rogue 职业 选择 塑能法师 -- 装备塑能法师子职业",
-                "👉 /rogue 职业 选择 无       -- 取消装备子职业",
+                "👉 /rogue 职业 1 或 选择 1 -- 装备时序法师子职业",
+                "👉 /rogue 职业 2 或 选择 2 -- 装备塑能法师子职业",
+                "👉 /rogue 职业 0 或 选择 0 -- 取消装备子职业",
                 "💡 如需购买子职业，请使用局外商店：/rogue 商店",
                 "━━━━━━━━━━━━━━━━━━━━"
             ]
             yield "\n".join(lines)
-        elif len(parts) >= 3 and parts[1] in ("购买", "buy"):
-            yield "💡 请使用商店命令前往局外商店进行商品购买：/rogue 商店"
-        elif len(parts) >= 3 and parts[1] == "选择":
-            subclass_name = parts[2]
-            if subclass_name in ("无", "取消"):
-                stats.selected_subclass = ""
-                router.save_manager.save_stats(user_id, stats)
-                yield "🔮 已取消子职业选择。当前以基础法师开始游戏。"
-                return
-            if subclass_name not in ("时序法师", "塑能法师"):
-                yield "❌ 无效的子职业。可选：时序法师、塑能法师、无。"
-                return
-            unlocked = getattr(stats, "unlocked_subclasses", [])
-            if subclass_name not in unlocked:
-                yield f"❌ 你尚未解锁【{subclass_name}】。需要消耗 2888 GP 购买，请使用：/rogue 商店"
-                return
-            stats.selected_subclass = subclass_name
-            router.save_manager.save_stats(user_id, stats)
-            yield f"🔮 已选择子职业为【{subclass_name}】。将在新的一局游戏中生效！"
         else:
-            yield "❌ 格式错误。请使用 /rogue 职业、/rogue 职业 选择 <子职业|无>。"
+            action = None
+            subclass_arg = None
+            if len(parts) == 2:
+                action = "选择"
+                subclass_arg = parts[1]
+            elif len(parts) >= 3:
+                action = parts[1]
+                subclass_arg = parts[2]
+            if action in ("购买", "buy"):
+                yield "💡 请使用商店命令前往局外商店进行商品购买：/rogue 商店"
+            elif action in ("选择", "c"):
+                if subclass_arg in ("1", "时序法师"):
+                    subclass_name = "时序法师"
+                elif subclass_arg in ("2", "塑能法师"):
+                    subclass_name = "塑能法师"
+                elif subclass_arg in ("0", "无", "取消", "none"):
+                    subclass_name = ""
+                else:
+                    yield "❌ 无效的子职业。可选：1 (时序法师)、2 (塑能法师)、0 (无)。"
+                    return
+                if subclass_name == "":
+                    stats.selected_subclass = ""
+                    router.save_manager.save_stats(user_id, stats)
+                    yield "🔮 已取消子职业选择。当前以基础法师开始游戏。"
+                    return
+                unlocked = getattr(stats, "unlocked_subclasses", [])
+                if subclass_name not in unlocked:
+                    yield f"❌ 你尚未解锁【{subclass_name}】。需要消耗 2888 GP 购买，请使用：/rogue 商店"
+                    return
+                stats.selected_subclass = subclass_name
+                router.save_manager.save_stats(user_id, stats)
+                yield f"🔮 已选择子职业为【{subclass_name}】。将在新的一局游戏中生效！"
+            else:
+                yield "❌ 格式错误。请使用 /rogue 职业 或 /rogue 职业 选择/c <子职业序号|无>。"
 
 class ShopCommand(CommandHandler):
     def execute(self, router, user_id: str, parts: list[str]) -> Generator[str, None, None]:

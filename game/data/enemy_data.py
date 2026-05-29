@@ -1,4 +1,18 @@
 ENEMY_CONFIG = {
+    "Icerainboww": {
+        "name": "Icerainboww",
+        "type": "boss",
+        "hp": "160",
+        "actions": "2A 0BA",
+        "intents": [
+            {"id": "icerain_shoot", "val": 2, "desc": "冰雨弓射击 (造成 2 寒冷伤害，使玩家下回合失去 1A)"},
+            {"id": "fury", "val": 1, "desc": "愤怒 (获得 1 层愤怒buff，被打出珍奇或传奇卡牌激怒时自身增伤)"},
+            {"id": "smash_attack", "val": 10, "desc": "粉碎攻击 (造成 10 寒冷伤害，并使玩家受到轻度寒冷易伤)"},
+            {"id": "aurora_shield", "val": 12, "desc": "极光屏障 (获得 12 护盾并净化 1 负面 Buff，无负面时额外获得 4 护盾)"},
+            {"id": "winter_gaze", "val": 4, "desc": "寒冬凝视 (造成 4 心灵伤害，并使玩家受到轻度寒冷易伤)"},
+            {"id": "frost_blast", "val": 6, "desc": "冰霜爆震 (对玩家与所有我方随从造成 6 寒冷伤害)"}
+        ]
+    },
     "远古红龙": {
         "name": "远古红龙",
         "type": "boss",

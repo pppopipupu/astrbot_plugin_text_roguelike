@@ -47,6 +47,7 @@ class UserStats:
     unlocked_subclasses: List[str] = field(default_factory=list)
     selected_class: str = "法师"
     selected_subclass: str = ""
+    killed_icerainboww: bool = False
 
 if not hasattr(sys, "_rogue_stat_recorder"):
     sys._rogue_stat_recorder = None
@@ -147,6 +148,9 @@ class EnemyState:
     intent_a_type: str = ""
     intent_a_val: int = 0
     intent_a_desc: str = ""
+    intent_a2_type: str = ""
+    intent_a2_val: int = 0
+    intent_a2_desc: str = ""
     intent_ba_type: str = ""
     intent_ba_val: int = 0
     intent_ba_desc: str = ""

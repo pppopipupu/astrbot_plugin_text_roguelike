@@ -1,6 +1,6 @@
 try:
     from astrbot.api.event import filter, AstrMessageEvent, MessageEventResult
-    from astrbot.api.star import Context, Star, register
+    from astrbot.api.star import Context, Star, register, CommandPermission
     from astrbot.api import logger
 except ImportError:
     class Star:
@@ -27,6 +27,8 @@ except ImportError:
         def warning(self, *args, **kwargs): pass
         def debug(self, *args, **kwargs): pass
     logger = DummyLogger()
+    class CommandPermission:
+        ADMIN = "admin"
 
 try:
     from .game.models.manager import SaveManager
@@ -83,6 +85,45 @@ class MyPlugin(Star):
             
         for res in self.cli_router.handle_command(user_id, parts):
             yield event.plain_result(res)
+
+    @filter.command("rogueadmin", permission=CommandPermission.ADMIN)
+    async def rogueadmin(self, event: AstrMessageEvent):
+        message_str = event.message_str.strip()
+        parts = message_str.split()
+        if parts and parts[0].lower() in ("rogueadmin", "/rogueadmin"):
+            parts = parts[1:]
+        if not parts or parts[0].lower() in ("show", "查看", "status"):
+            cfg = self.save_manager.load_admin_config()
+            boss = cfg.get("fixed_boss", "random")
+            if boss == "random":
+                yield event.plain_result("ℹ️ 当前最终首领设置：随机轮换 (腐化之心 / Icerainboww)")
+            else:
+                yield event.plain_result(f"ℹ️ 当前最终首领设置：已固定为【{boss}】")
+            return
+        
+        sub = parts[0].lower()
+        if sub in ("set", "设置"):
+            if len(parts) < 2:
+                yield event.plain_result("❌ 请指定要设置的值：random, 腐化之心, Icerainboww")
+                return
+            target = parts[1]
+            if target.lower() == "random":
+                target_val = "random"
+            elif target in ("腐化之心", "Icerainboww"):
+                target_val = target
+            else:
+                yield event.plain_result("❌ 参数无效。可选值：random, 腐化之心, Icerainboww")
+                return
+            
+            cfg = self.save_manager.load_admin_config()
+            cfg["fixed_boss"] = target_val
+            self.save_manager.save_admin_config(cfg)
+            if target_val == "random":
+                yield event.plain_result("✅ 最终首领设置成功：随机轮换 (腐化之心 / Icerainboww)")
+            else:
+                yield event.plain_result(f"✅ 最终首领设置成功：已固定为【{target_val}】")
+        else:
+            yield event.plain_result("❌ 未知管理员指令。可选：/rogueadmin set <random/腐化之心/Icerainboww> 或 /rogueadmin show")
 
     @filter.regex(r".*")
     async def shortcut_rogue(self, event: AstrMessageEvent):
