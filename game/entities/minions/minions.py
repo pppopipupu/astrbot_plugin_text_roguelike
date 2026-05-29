@@ -114,6 +114,23 @@ class GolemRepair(BaseMinionSkill):
         m.hp = min(m.max_hp, m.hp + heal)
         return cfg["feedback"].format(heal=heal, hp=m.hp, max_hp=m.max_hp)
 
+class IcerainbowwSpray(BaseMinionSkill):
+    def execute(self, run, my_grid, target, engine) -> str:
+        cfg = MINION_CONFIG["minion_icerainboww"]["skills"][0]
+        damage = cfg["damage"]
+        for idx, enemy in enumerate(list(run.enemies)):
+            engine._damage_target(run, f"e{idx+1}", damage, source="minion:Icerainboww", damage_type="cold")
+            engine._add_buff_to(enemy, "minor_vulnerable_cold", "轻度寒冷易伤", "受到的寒冷伤害增加 50%", 1)
+        return cfg["feedback"] + "（对所有敌人造成 4 点寒冷伤害并附加 1 层轻度寒冷易伤）"
+
+class IcerainbowwShield(BaseMinionSkill):
+    def execute(self, run, my_grid, target, engine) -> str:
+        cfg = MINION_CONFIG["minion_icerainboww"]["skills"][1]
+        run.player.shield += 12
+        for mk, mv in list(run.player.minions.items()):
+            mv.hp = min(mv.max_hp, mv.hp + 4)
+        return cfg["feedback"] + "（为玩家提供 12 点护盾，并为我方所有随从恢复 4 点生命）"
+
 class MinionTemplate:
     def __init__(self, id: str, name: str, skills: List[BaseMinionSkill]):
         self.id = id
@@ -208,6 +225,24 @@ ALL_MINIONS = {
                 MINION_CONFIG["arcane_golem"]["skills"][1]["cost_a"],
                 MINION_CONFIG["arcane_golem"]["skills"][1]["cost_ba"],
                 MINION_CONFIG["arcane_golem"]["skills"][1]["desc"]
+            )
+        ]
+    ),
+    "minion_icerainboww": MinionTemplate(
+        "minion_icerainboww",
+        MINION_CONFIG["minion_icerainboww"]["name"],
+        [
+            IcerainbowwSpray(
+                MINION_CONFIG["minion_icerainboww"]["skills"][0]["name"],
+                MINION_CONFIG["minion_icerainboww"]["skills"][0]["cost_a"],
+                MINION_CONFIG["minion_icerainboww"]["skills"][0]["cost_ba"],
+                MINION_CONFIG["minion_icerainboww"]["skills"][0]["desc"]
+            ),
+            IcerainbowwShield(
+                MINION_CONFIG["minion_icerainboww"]["skills"][1]["name"],
+                MINION_CONFIG["minion_icerainboww"]["skills"][1]["cost_a"],
+                MINION_CONFIG["minion_icerainboww"]["skills"][1]["cost_ba"],
+                MINION_CONFIG["minion_icerainboww"]["skills"][1]["desc"]
             )
         ]
     )

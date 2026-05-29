@@ -10,6 +10,14 @@ def render_query_info(query_str: str) -> str:
         return "❌ 请输入具体的查询内容。"
     lines = ["━━━━━━━━━━━━━━━━━━━━", f"🔍 查询结果：{query_str}", ""]
     found = False
+    if q in ("buff", "buffs", "状态", "战斗效果", "效果"):
+        found = True
+        lines.append("✨ 【全体战斗效果 (Buff) 一览】")
+        for bid, cfg in BUFF_CONFIG.items():
+            bname = cfg.get("name", bid)
+            desc = cfg.get("desc", "")
+            lines.append(f"  • 【{bname}】: {desc}")
+        lines.append("")
     for rid, cfg in RELIC_CONFIG.items():
         if q == rid.lower() or q in cfg.get("name", "").lower():
             found = True

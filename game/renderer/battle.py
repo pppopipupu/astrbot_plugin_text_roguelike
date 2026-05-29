@@ -69,15 +69,21 @@ def render_battle(run: GameRun) -> str:
                     if b.id == "strength":
                         strength += b.stacks
             intent_parts = []
+            a_parts = []
             if enemy.intent_a_desc:
-                a_desc = adjust_intent_desc_with_strength(enemy.intent_a_desc, strength)
-                intent_parts.append(f"A: {a_desc}")
+                a_parts.append(adjust_intent_desc_with_strength(enemy.intent_a_desc, strength))
+            if getattr(enemy, "intent_a2_desc", None):
+                a_parts.append(adjust_intent_desc_with_strength(enemy.intent_a2_desc, strength))
+            if a_parts:
+                intent_parts.append(f"A: {' + '.join(a_parts)}")
+
+            ba_parts = []
             if enemy.intent_ba_desc:
-                ba_desc = adjust_intent_desc_with_strength(enemy.intent_ba_desc, strength)
-                if enemy.intent_ba2_desc:
-                    ba2_desc = adjust_intent_desc_with_strength(enemy.intent_ba2_desc, strength)
-                    ba_desc += f" + {ba2_desc}"
-                intent_parts.append(f"BA: {ba_desc}")
+                ba_parts.append(adjust_intent_desc_with_strength(enemy.intent_ba_desc, strength))
+            if enemy.intent_ba2_desc:
+                ba_parts.append(adjust_intent_desc_with_strength(enemy.intent_ba2_desc, strength))
+            if ba_parts:
+                intent_parts.append(f"BA: {' + '.join(ba_parts)}")
             intent_str = f"({', '.join(intent_parts)})" if intent_parts else "无意图"
             shield_str = f" | 🛡️ 护盾 {enemy.shield}" if enemy.shield > 0 else ""
             buff_desc = ""
@@ -207,15 +213,21 @@ def render_detailed_battle(run: GameRun) -> str:
                     if b.id == "strength":
                         strength += b.stacks
             intent_parts = []
+            a_parts = []
             if enemy.intent_a_desc:
-                a_desc = adjust_intent_desc_with_strength(enemy.intent_a_desc, strength)
-                intent_parts.append(f"动作(A)：{a_desc}")
+                a_parts.append(adjust_intent_desc_with_strength(enemy.intent_a_desc, strength))
+            if getattr(enemy, "intent_a2_desc", None):
+                a_parts.append(adjust_intent_desc_with_strength(enemy.intent_a2_desc, strength))
+            if a_parts:
+                intent_parts.append(f"动作(A)：{' + '.join(a_parts)}")
+
+            ba_parts = []
             if enemy.intent_ba_desc:
-                ba_desc = adjust_intent_desc_with_strength(enemy.intent_ba_desc, strength)
-                if enemy.intent_ba2_desc:
-                    ba2_desc = adjust_intent_desc_with_strength(enemy.intent_ba2_desc, strength)
-                    ba_desc += f" + {ba2_desc}"
-                intent_parts.append(f"附赠动作(BA)：{ba_desc}")
+                ba_parts.append(adjust_intent_desc_with_strength(enemy.intent_ba_desc, strength))
+            if enemy.intent_ba2_desc:
+                ba_parts.append(adjust_intent_desc_with_strength(enemy.intent_ba2_desc, strength))
+            if ba_parts:
+                intent_parts.append(f"附赠动作(BA)：{' + '.join(ba_parts)}")
             intent_str = " | ".join(intent_parts) if intent_parts else "无意图"
             lines.append(f"    行动意图：{intent_str}")
             if getattr(enemy, "buffs", None):

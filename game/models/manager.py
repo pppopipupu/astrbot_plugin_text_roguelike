@@ -234,14 +234,17 @@ class SaveManager:
             return f"本局结算：由于在第 {stage} 层结束，未获得 GP。"
         gp_gained = gold * 10
         victory_bonus = ""
+        unlock_msg = ""
         if is_victory:
             gp_gained += 1000
             victory_bonus = "（含通关奖励 1000 GP）"
+            if run.node_data.get("boss_name") == "Icerainboww":
+                unlock_msg = "\n\n🎉 特别提示：你成功击败了最终BOSS【Icerainboww】！在先古祭坛和先古赐福石碑中已永久解锁传奇随从卡【Icerainboww】！"
         stats = self.load_stats(user_id)
         stats.gp += gp_gained
         self.save_stats(user_id, stats)
         self.delete_save(user_id)
-        return f"本局结算：剩余金币 {gold}，折算获得 {gp_gained} GP{victory_bonus}！当前总 GP：{stats.gp}。"
+        return f"本局结算：剩余金币 {gold}，折算获得 {gp_gained} GP{victory_bonus}！当前总 GP：{stats.gp}。{unlock_msg}"
 
     def get_admin_config_path(self) -> str:
         return os.path.join(self.data_dir, "admin_config.json")

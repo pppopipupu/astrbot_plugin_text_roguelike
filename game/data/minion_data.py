@@ -116,5 +116,28 @@ MINION_CONFIG = {
                 "feedback": "恢复了自身 {heal} 点生命值，当前生命 {hp}/{max_hp}。"
             }
         ]
+    },
+    "minion_icerainboww": {
+        "name": "Icerainboww",
+        "skills": [
+            {
+                "id": "icerain_spray",
+                "name": "冰雨散射",
+                "cost_a": 1,
+                "cost_ba": 1,
+                "desc": "消耗 1A 1BA，对所有敌人造成 4 点寒冷伤害，并使所有敌人受到 1 层轻度寒冷易伤。",
+                "damage": 4,
+                "feedback": "降下漫天冰雨散射攻击敌人。"
+            },
+            {
+                "id": "aurora_shield",
+                "name": "极光屏障",
+                "cost_a": 0,
+                "cost_ba": 1,
+                "desc": "消耗 1BA，为玩家提供 8 点护盾，且我方所有随从和玩家均获得 4 点护盾（随从获得 4 点生命恢复，玩家共获得 12 点护盾）。",
+                "shield": 8,
+                "feedback": "凝聚极光屏障，为所有人附加防护效果。"
+            }
+        ]
     }
 }

@@ -84,6 +84,7 @@ class DeployAmuletCard(Card):
             return feedback_success.format(name=self.name, grid=grid)
         return cfg.get("feedback_fail", "战场格子已满，部署失败。")
 
+@register_card("minion_icerainboww")
 @register_card("mercenary")
 @register_card("shield_guard")
 @register_card("find_familiar")

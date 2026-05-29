@@ -43,6 +43,10 @@ class MapEngine:
                 {"type": "contract", "relic": "blind_spot", "card": "meteor_swarm"},
                 {"type": "contract", "relic": "tax_contract", "card": "archmage_wish"}
             ]
+            stats = self.save_manager.load_stats(run.user_id)
+            if getattr(stats, "killed_icerainboww", False):
+                cards_pool.append({"type": "contract", "relic": "wither_seed", "card": "minion_icerainboww"})
+            
             num_relics = random.choice([1, 2])
             selected_relics = random.sample(relics_pool, num_relics)
             selected_cards = random.sample(cards_pool, 3 - num_relics)
@@ -56,6 +60,10 @@ class MapEngine:
         elif p.stage == 11:
             run.node_type = "ancient"
             legends_pool = ["doomsday_judgment", "time_warp", "magic_network", "meteor_swarm", "archmage_wish"]
+            stats = self.save_manager.load_stats(run.user_id)
+            if getattr(stats, "killed_icerainboww", False):
+                legends_pool.append("minion_icerainboww")
+                
             relics_pool = ["ancient_eye", "gold_compass", "dragon_blood", "energy_core", "heavy_armor"]
             available_relics = [r for r in relics_pool if r not in p.relics]
             if not available_relics:

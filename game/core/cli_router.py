@@ -529,9 +529,9 @@ class QueryCommand(CommandHandler):
             yield GameRenderer.render_query_info(query_str)
         else:
             if not run:
-                yield "❌ 你当前没有正在进行的游戏。输入 /rogue 开启 开始新游戏。"
+                yield "❌ 你当前没有正在进行的游戏。输入 /rogue 开启 开始新游戏。\n💡 提示：你可以通过 /rogue 查询 <名称>（如：/rogue 查询 力量）或 /rogue 查询 buff 来查看相关效果描述。"
             elif run.node_type != "battle":
-                yield "❌ 只有在战斗中才能查询详细战斗信息。请输入想要查询的随从、遗物、Buff名称。"
+                yield "❌ 只有在战斗中才能查询详细战斗信息。请输入想要查询的随从、遗物、Buff名称。\n💡 提示：你可以通过 /rogue 查询 <名称>（如：/rogue 查询 力量）或 /rogue 查询 buff 来查看相关效果描述。"
             else:
                 yield GameRenderer.render_detailed_battle(run)
 

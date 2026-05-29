@@ -146,5 +146,17 @@ BUFF_CONFIG = {
     "vulnerable_true": {
         "name": "真实易伤",
         "desc": "受到的真实伤害翻倍"
+    },
+    "magic_network": {
+        "name": "魔网天成",
+        "desc": "本回合内每使用一张法术牌，对所有敌人造成 3 点伤害，获得 3 点护盾"
+    },
+    "wish_power": {
+        "name": "祈愿奥术",
+        "desc": "本场战斗法术伤害 +4"
+    },
+    "stun": {
+        "name": "眩晕",
+        "desc": "无法行动，回合开始时扣除一层恢复"
     }
 }

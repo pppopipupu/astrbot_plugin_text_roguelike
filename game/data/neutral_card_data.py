@@ -196,5 +196,18 @@ NEUTRAL_CARD_CONFIG = {
         "rarity": "epic",
         "heal_amount": 8,
         "feedback": "念诵群体治愈真言，为自己和所有随从恢复了 {heal_amount} 点生命值。"
+    },
+    "minion_icerainboww": {
+        "name": "Icerainboww",
+        "color": "neutral",
+        "type": "minion",
+        "cost_a": 1,
+        "cost_ba": 1,
+        "desc": "生命 24，攻击 6。拥有技能：冰雨散射与极光屏障。",
+        "rarity": "legendary",
+        "minion_hp": 24,
+        "minion_atk": 6,
+        "feedback_success": "在格子 [{grid}] 召唤了【{name}】。",
+        "feedback_fail": "战场已满，召唤失败。"
     }
 }
