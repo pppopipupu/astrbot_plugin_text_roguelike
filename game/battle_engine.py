@@ -1,6 +1,14 @@
 import random
 from typing import Optional, List, Dict
 from .models import GameRun, PlayerState, EnemyState, MinionState, AmuletState, Card
+from .buff_impl import (
+    apply_modify_heal_limit,
+    apply_modify_spell_cost_ba,
+    apply_on_card_played,
+    apply_on_player_turn_start,
+    apply_on_player_turn_end,
+    apply_prevent_enemy_action
+)
 
 class BattleEngine:
     def __init__(self, save_manager):
@@ -64,9 +72,7 @@ class BattleEngine:
         if target == "p0":
             if "wither_seed" in p.relics:
                 return
-            will_buff = next((b for b in p.buffs if b.id == "iron_will"), None)
-            will_stacks = will_buff.stacks if will_buff else 0
-            cur_max = p.max_hp + will_stacks * 10
+            cur_max = apply_modify_heal_limit(run, target, p.max_hp, self)
             p.hp = min(cur_max, p.hp + heal)
         elif target.startswith("p"):
             grid = target[1:]
@@ -294,9 +300,7 @@ class BattleEngine:
         req_a = card.cost_a
         req_ba = card.cost_ba
         if card.type == "spell":
-            quicken_buff = next((b for b in p.buffs if b.id == "quicken"), None)
-            quicken_stacks = quicken_buff.stacks if quicken_buff else 0
-            req_ba = max(0, req_ba - quicken_stacks)
+            req_ba = apply_modify_spell_cost_ba(run, card, req_ba, self)
 
         if p.actions < req_a or p.bonus_actions < req_ba:
             return f"❌ 你的动作资源不足（需要 {req_a}A {req_ba}BA，当前 {p.actions}A {p.bonus_actions}BA）。"
@@ -326,32 +330,17 @@ class BattleEngine:
                 if p.hp > old_hp:
                     res += " ❤️ [吸血之触] 回复了 1 点生命值。"
 
-        echo_buff = next((b for b in p.buffs if b.id == "echo_form"), None)
-        echo_stacks = echo_buff.stacks if echo_buff else 0
         played_count = run.node_data.get("cards_played_this_turn", 0)
-        if played_count == 0 and echo_stacks > 0:
-            for _ in range(echo_stacks):
-                extra_res = self._execute_card_effect(run, card, target)
-                res += f" 🔁 [回响触发] {extra_res}"
+        extra_feedback = apply_on_card_played(run, card, target, self)
+        if extra_feedback:
+            res += extra_feedback
         run.node_data["cards_played_this_turn"] = played_count + 1
-
-        surge_buff = next((b for b in p.buffs if b.id == "spell_surge"), None)
-        surge_stacks = surge_buff.stacks if surge_buff else 0
-        if surge_stacks > 0 and card.color == "wizard":
-            self._draw_cards(p, surge_stacks)
 
         from .amulet_impl import ALL_AMULETS
         for ak, av in list(p.amulets.items()):
             template = ALL_AMULETS.get(av.id)
             if template and card.type == "spell":
                 template.on_spell_played(run, ak, card, self)
-        if card.type == "spell":
-            net_buff = next((b for b in p.buffs if b.id == "magic_network"), None)
-            if net_buff:
-                for enemy in list(run.enemies):
-                    self._damage_target(run, f"e{run.enemies.index(enemy)+1}", 3)
-                p.shield += 3
-                res += " ⚡ [魔网天成] 对所有敌人造成了 3 点伤害，获得了 3 点护盾。"
         self.save_manager.save_save(run.user_id, run)
         return res
 
@@ -498,6 +487,10 @@ class BattleEngine:
     def _execute_card_effect(self, run: GameRun, card: Card, target: Optional[str] = None) -> str:
         return card.execute(run, target, self)
 
+    def get_modified_spell_damage(self, run: GameRun, card: Card, damage: int) -> int:
+        from .buff_impl import apply_modify_spell_damage
+        return apply_modify_spell_damage(run, card, damage, self)
+
     def _discard_card(self, run: GameRun, cid: str) -> str:
         p = run.player
         from .card_impl import ALL_CARDS
@@ -574,12 +567,10 @@ class BattleEngine:
         if decay_msgs:
             decay_info = "🛡️ 护盾流失：" + "，".join(decay_msgs) + "\n"
 
-        p.buffs = [b for b in p.buffs if b.id != "magic_network"]
+        apply_on_player_turn_end(run, self)
         p.actions = 2 + (1 if "energy_core" in p.relics else 0)
         p.bonus_actions = 1 + (1 if "unstable_crystal" in p.relics else 0)
-        focus_buff = next((b for b in p.buffs if b.id == "tactical_focus"), None)
-        focus_stacks = focus_buff.stacks if focus_buff else 0
-        p.bonus_actions += focus_stacks
+        apply_on_player_turn_start(run, self)
         for mk, mv in p.minions.items():
             mv.actions += 1
             mv.bonus_actions += 1 if mv.id == "arcane_golem" else 0
@@ -622,12 +613,7 @@ class BattleEngine:
         for idx, enemy in enumerate(active_enemies):
             if enemy.hp <= 0:
                 continue
-            stun_buff = next((b for b in enemy.buffs if b.id == "stun"), None)
-            if stun_buff:
-                stun_buff.stacks -= 1
-                if stun_buff.stacks <= 0:
-                    enemy.buffs.remove(stun_buff)
-                logs.append(f"【{enemy.name}】处于眩晕状态，本回合无法行动。")
+            if apply_prevent_enemy_action(run, enemy, self, logs):
                 continue
             from .enemy_impl import get_enemy_template
             template = get_enemy_template(enemy.name)

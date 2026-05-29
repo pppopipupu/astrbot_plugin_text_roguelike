@@ -15,8 +15,8 @@ class MercenaryHeavyStrike(BaseMinionSkill):
     def execute(self, run, my_grid, target, engine) -> str:
         cfg = MINION_CONFIG["mercenary"]["skills"][0]
         damage = cfg["damage"]
-        engine._damage_target(run, target, damage)
         tname = engine._get_target_name(run, target)
+        engine._damage_target(run, target, damage)
         return cfg["feedback"].format(target=tname, damage=damage)
 
 class MercenaryBattlecry(BaseMinionSkill):
@@ -39,9 +39,9 @@ class ShieldGuardBash(BaseMinionSkill):
         cfg = MINION_CONFIG["shield_guard"]["skills"][1]
         damage = cfg["damage"]
         shield = cfg["shield"]
+        tname = engine._get_target_name(run, target)
         engine._damage_target(run, target, damage)
         run.player.shield += shield
-        tname = engine._get_target_name(run, target)
         return cfg["feedback"].format(target=tname, damage=damage, shield=shield)
 
 class FamiliarAssist(BaseMinionSkill):
@@ -78,8 +78,8 @@ class WaterLance(BaseMinionSkill):
         cfg = MINION_CONFIG["water_elemental"]["skills"][1]
         damage = cfg["damage"]
         t = target or "e1"
-        engine._damage_target(run, t, damage)
         tname = engine._get_target_name(run, t)
+        engine._damage_target(run, t, damage)
         if t.startswith("e"):
             try:
                 grid_idx = int(t[1:]) - 1

@@ -10,9 +10,6 @@ class SpellDamageCard(Card):
 
     def execute(self, run, target, engine) -> str:
         dmg = self.base_dmg
-        charge_buff = next((b for b in run.player.buffs if b.id == "arcane_charge"), None)
-        charge_stacks = charge_buff.stacks if charge_buff else 0
-        dmg += charge_stacks * 3
         if self.is_fire:
             has_ring = any(av.id == "ring_of_elements" for av in run.player.amulets.values())
             if has_ring:
@@ -23,11 +20,9 @@ class SpellDamageCard(Card):
             dmg += 2
         if "unstable_crystal" in run.player.relics:
             dmg += 1
-        wish_buff = next((b for b in run.player.buffs if b.id == "wish_power"), None)
-        wish_stacks = wish_buff.stacks if wish_buff else 0
-        dmg += wish_stacks * 4
-        engine._damage_target(run, target, dmg)
+        dmg = engine.get_modified_spell_damage(run, self, dmg)
         name = engine._get_target_name(run, target)
+        engine._damage_target(run, target, dmg)
         
         # 从配置模块动态读取反馈模板
         cfg = CARD_CONFIG.get(self.id, {})
@@ -43,8 +38,8 @@ class SpellHealCard(Card):
         self.heal_amount = heal_amount
 
     def execute(self, run, target, engine) -> str:
-        engine._heal_target(run, target, self.heal_amount)
         name = engine._get_target_name(run, target)
+        engine._heal_target(run, target, self.heal_amount)
         cfg = CARD_CONFIG.get(self.id, {})
         feedback_tmpl = cfg.get("feedback")
         if feedback_tmpl:
@@ -153,10 +148,7 @@ class MagicMissileCard(Card):
 
 class FireballCard(Card):
     def execute(self, run, target, engine) -> str:
-        dmg = 12
-        charge_buff = next((b for b in run.player.buffs if b.id == "arcane_charge"), None)
-        charge_stacks = charge_buff.stacks if charge_buff else 0
-        dmg += charge_stacks * 3
+        dmg = 16
         has_ring = any(av.id == "ring_of_elements" for av in run.player.amulets.values())
         if has_ring:
             dmg += 2
@@ -166,9 +158,7 @@ class FireballCard(Card):
             dmg += 2
         if "unstable_crystal" in run.player.relics:
             dmg += 1
-        wish_buff = next((b for b in run.player.buffs if b.id == "wish_power"), None)
-        wish_stacks = wish_buff.stacks if wish_buff else 0
-        dmg += wish_stacks * 4
+        dmg = engine.get_modified_spell_damage(run, self, dmg)
         for enemy in run.enemies:
             if enemy.shield >= dmg:
                 enemy.shield -= dmg
@@ -188,18 +178,13 @@ class FireballCard(Card):
 class ThunderwaveCard(Card):
     def execute(self, run, target, engine) -> str:
         dmg = 6
-        charge_buff = next((b for b in run.player.buffs if b.id == "arcane_charge"), None)
-        charge_stacks = charge_buff.stacks if charge_buff else 0
-        dmg += charge_stacks * 3
         if "arcane_rune" in run.player.relics:
             dmg += 1
         if "mark_of_fury" in run.player.relics:
             dmg += 2
         if "unstable_crystal" in run.player.relics:
             dmg += 1
-        wish_buff = next((b for b in run.player.buffs if b.id == "wish_power"), None)
-        wish_stacks = wish_buff.stacks if wish_buff else 0
-        dmg += wish_stacks * 4
+        dmg = engine.get_modified_spell_damage(run, self, dmg)
         for enemy in run.enemies:
             if enemy.shield >= dmg:
                 enemy.shield -= dmg
@@ -255,7 +240,7 @@ class EchoFormCard(Card):
         feedback_tmpl = cfg.get("feedback")
         if feedback_tmpl:
             return feedback_tmpl.format(name=self.name)
-        return f"使用了【{self.name}】，获得了【回响形态】buff（每回合打出的第一张牌额外打出一次，可叠加）。"
+        return f"使用了【{self.name}】，获得了【回响形态】buff（每回合打出的卡牌额外打出，每张牌最多回响 8 次，多余层数顺延至后续卡牌，可叠加）。"
 
 class CalculatedGambleCard(Card):
     def execute(self, run, target, engine) -> str:
@@ -291,21 +276,16 @@ class ManaPotionCard(Card):
 class ArcaneSparkCard(Card):
     def execute(self, run, target, engine) -> str:
         dmg = 2
-        charge_buff = next((b for b in run.player.buffs if b.id == "arcane_charge"), None)
-        charge_stacks = charge_buff.stacks if charge_buff else 0
-        dmg += charge_stacks * 3
         if "arcane_rune" in run.player.relics:
             dmg += 1
         if "mark_of_fury" in run.player.relics:
             dmg += 2
         if "unstable_crystal" in run.player.relics:
             dmg += 1
-        wish_buff = next((b for b in run.player.buffs if b.id == "wish_power"), None)
-        wish_stacks = wish_buff.stacks if wish_buff else 0
-        dmg += wish_stacks * 4
+        dmg = engine.get_modified_spell_damage(run, self, dmg)
+        name = engine._get_target_name(run, target)
         engine._damage_target(run, target, dmg)
         engine._draw_cards(run.player, 1)
-        name = engine._get_target_name(run, target)
         cfg = CARD_CONFIG.get(self.id, {})
         feedback_tmpl = cfg.get("feedback")
         if feedback_tmpl:
@@ -328,18 +308,13 @@ class OverchargeCard(Card):
 class DoomsdayJudgmentCard(Card):
     def execute(self, run, target, engine) -> str:
         dmg = 18
-        charge_buff = next((b for b in run.player.buffs if b.id == "arcane_charge"), None)
-        charge_stacks = charge_buff.stacks if charge_buff else 0
-        dmg += charge_stacks * 3
         if "arcane_rune" in run.player.relics:
             dmg += 1
         if "mark_of_fury" in run.player.relics:
             dmg += 2
         if "unstable_crystal" in run.player.relics:
             dmg += 1
-        wish_buff = next((b for b in run.player.buffs if b.id == "wish_power"), None)
-        wish_stacks = wish_buff.stacks if wish_buff else 0
-        dmg += wish_stacks * 4
+        dmg = engine.get_modified_spell_damage(run, self, dmg)
         for enemy in list(run.enemies):
             if enemy.shield >= dmg:
                 enemy.shield -= dmg
@@ -392,9 +367,6 @@ class MeteorSwarmCard(Card):
     def execute(self, run, target, engine) -> str:
         import random
         dmg = sum(random.randint(1, 12) for _ in range(8))
-        charge_buff = next((b for b in run.player.buffs if b.id == "arcane_charge"), None)
-        charge_stacks = charge_buff.stacks if charge_buff else 0
-        dmg += charge_stacks * 3
         if self.is_fire:
             has_ring = any(av.id == "ring_of_elements" for av in run.player.amulets.values())
             if has_ring:
@@ -405,9 +377,7 @@ class MeteorSwarmCard(Card):
             dmg += 2
         if "unstable_crystal" in run.player.relics:
             dmg += 1
-        wish_buff = next((b for b in run.player.buffs if b.id == "wish_power"), None)
-        wish_stacks = wish_buff.stacks if wish_buff else 0
-        dmg += wish_stacks * 4
+        dmg = engine.get_modified_spell_damage(run, self, dmg)
         for enemy in list(run.enemies):
             if enemy.shield >= dmg:
                 enemy.shield -= dmg
@@ -435,20 +405,15 @@ class ArchmageWishCard(Card):
 class FleetingSparkCard(Card):
     def execute(self, run, target, engine) -> str:
         dmg = 6
-        charge_buff = next((b for b in run.player.buffs if b.id == "arcane_charge"), None)
-        charge_stacks = charge_buff.stacks if charge_buff else 0
-        dmg += charge_stacks * 3
         if "arcane_rune" in run.player.relics:
             dmg += 1
         if "mark_of_fury" in run.player.relics:
             dmg += 2
         if "unstable_crystal" in run.player.relics:
             dmg += 1
-        wish_buff = next((b for b in run.player.buffs if b.id == "wish_power"), None)
-        wish_stacks = wish_buff.stacks if wish_buff else 0
-        dmg += wish_stacks * 4
-        engine._damage_target(run, target, dmg)
+        dmg = engine.get_modified_spell_damage(run, self, dmg)
         name = engine._get_target_name(run, target)
+        engine._damage_target(run, target, dmg)
         engine._draw_cards(run.player, 2)
         p = run.player
         if p.hand:

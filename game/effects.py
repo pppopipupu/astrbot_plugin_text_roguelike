@@ -9,8 +9,8 @@ class DamageEffect(Effect):
         self.amount = amount
 
     def apply(self, run, source: str, target: str, engine) -> str:
-        engine._damage_target(run, target, self.amount)
         name = engine._get_target_name(run, target)
+        engine._damage_target(run, target, self.amount)
         return f"对【{name}】造成了 {self.amount} 点伤害。"
 
 class HealEffect(Effect):
@@ -18,8 +18,8 @@ class HealEffect(Effect):
         self.amount = amount
 
     def apply(self, run, source: str, target: str, engine) -> str:
-        engine._heal_target(run, target, self.amount)
         name = engine._get_target_name(run, target)
+        engine._heal_target(run, target, self.amount)
         return f"为【{name}】恢复了 {self.amount} 点生命值。"
 
 class ShieldEffect(Effect):
@@ -27,6 +27,7 @@ class ShieldEffect(Effect):
         self.amount = amount
 
     def apply(self, run, source: str, target: str, engine) -> str:
+        name = engine._get_target_name(run, target)
         if target == "p0":
             run.player.shield += self.amount
         elif target.startswith("e"):
@@ -38,7 +39,6 @@ class ShieldEffect(Effect):
                 idx = 0
             if 0 <= idx < len(run.enemies):
                 run.enemies[idx].shield += self.amount
-        name = engine._get_target_name(run, target)
         return f"使【{name}】获得了 {self.amount} 点护盾。"
 
 class DrawCardEffect(Effect):

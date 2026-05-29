@@ -125,7 +125,7 @@ def render_ancient(run: GameRun) -> str:
         f"🌟 【第 {p.stage} 关：先古赐福】",
         f"玩家：❤️ HP {p.hp}/{p.max_hp} | 🪙 金币 {p.gold}",
         "",
-        "空气中浮现出纯净 of 奥术光辉。先古的意志再次眷顾了你，向你降下丰厚的赐福礼包：",
+        "空气中浮现出纯净的奥术光辉。先古的意志再次眷顾了你，向你降下丰厚的赐福礼包：",
         ""
     ]
     for idx, opt in enumerate(options, 1):

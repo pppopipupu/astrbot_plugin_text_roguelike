@@ -27,11 +27,11 @@ class UserStats:
     total_stages: int = 0
     rogue_mode: bool = False
 
-_stat_recorder = None
+if not hasattr(sys, "_rogue_stat_recorder"):
+    sys._rogue_stat_recorder = None
 
 def register_stat_recorder(recorder):
-    global _stat_recorder
-    _stat_recorder = recorder
+    sys._rogue_stat_recorder = recorder
 
 @dataclass
 class BuffState:
@@ -136,8 +136,8 @@ class EnemyState:
                 old_hp = None
             if old_hp is not None and value < old_hp:
                 dmg = old_hp - value
-                if _stat_recorder:
-                    _stat_recorder(self.name, dmg, (value <= 0 and old_hp > 0))
+                if getattr(sys, "_rogue_stat_recorder", None):
+                    sys._rogue_stat_recorder(self.name, dmg, (value <= 0 and old_hp > 0))
         elif key == "shield":
             try:
                 old_shield = self.__dict__.get("shield")
@@ -145,8 +145,8 @@ class EnemyState:
                 old_shield = None
             if old_shield is not None and value < old_shield:
                 dmg = old_shield - value
-                if _stat_recorder:
-                    _stat_recorder(self.name, dmg, False)
+                if getattr(sys, "_rogue_stat_recorder", None):
+                    sys._rogue_stat_recorder(self.name, dmg, False)
         super().__setattr__(key, value)
 
 @dataclass

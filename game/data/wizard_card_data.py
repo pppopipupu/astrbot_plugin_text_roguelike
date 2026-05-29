@@ -29,9 +29,9 @@ WIZARD_CARD_CONFIG = {
         "type": "spell",
         "cost_a": 2,
         "cost_ba": 0,
-        "desc": "造成 20 点火焰伤害。",
+        "desc": "造成 16 点火焰伤害。",
         "rarity": "epic",
-        "base_dmg": 12,
+        "base_dmg": 16,
         "feedback": "释放火球术！对所有敌人造成了 {dmg} 点火焰伤害。"
     },
     "thunderwave": {
@@ -192,9 +192,9 @@ WIZARD_CARD_CONFIG = {
         "type": "ability",
         "cost_a": 1,
         "cost_ba": 1,
-        "desc": "本场战斗中，你每回合打出的第一张牌将会额外打出一次。",
+        "desc": "本场战斗中，你每回合打出的卡牌额外打出，每张牌最多回响 8 次，多余层数顺延至后续卡牌。",
         "rarity": "epic",
-        "feedback": "使用了【{name}】，获得了【回响形态】buff（每回合打出的第一张牌额外打出一次，可叠加）。"
+        "feedback": "使用了【{name}】，获得了【回响形态】buff（每回合打出的卡牌额外打出，每张牌最多回响 8 次，多余层数顺延至后续卡牌，可叠加）。"
     },
     "calculated_gamble": {
         "name": "计算下注",

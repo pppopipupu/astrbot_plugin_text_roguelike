@@ -91,7 +91,7 @@ def render_query_info(query_str: str) -> str:
             lines.append(f"效果：{desc}")
             lines.append("")
     if not found:
-        lines.append("❌ 未找到与该名称 or ID 匹配的随从、遗物、Buff 或卡牌信息。")
+        lines.append("❌ 未找到与该名称或 ID 匹配的随从、遗物、Buff 或卡牌信息。")
         lines.append("")
     lines.append("━━━━━━━━━━━━━━━━━━━━")
     return "\n".join(lines).strip()
