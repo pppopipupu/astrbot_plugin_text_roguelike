@@ -284,9 +284,7 @@ class BattleEngine:
     def _damage_target(self, run: GameRun, target: str, dmg: int, source: str = "effect", damage_type: str = "effect", card: Optional[Card] = None):
         calc_evt = DamageCalculateEvent(run, card, source, target, damage_type, dmg, dmg)
         self.event_bus.dispatch(calc_evt)
-        final_dmg = calc_evt.modified_damage
-        if final_dmg <= 0:
-            return
+        final_dmg = max(0, calc_evt.modified_damage)
         p = run.player
         is_fatal = False
         is_true = False
@@ -358,7 +356,14 @@ class BattleEngine:
         damage_type_str = damage_type.value if hasattr(damage_type, "value") else str(damage_type)
         type_name = DAMAGE_TYPE_NAMES.get(damage_type_str, "物理" if damage_type_str == "attack" else "特殊")
         target_name = self._get_target_name(run, target)
-        log_msg = f"对【{target_name}】造成 {final_dmg} 点{type_name}伤害，对护盾造成 {shield_dmg} 伤害，对生命造成 {hp_dmg} 伤害"
+        log_msg = f"对【{target_name}】造成 {final_dmg} 点{type_name}伤害"
+        if shield_dmg == 0 and hp_dmg == 0:
+            log_msg += f"（但{target_name}免疫了这次攻击！）"
+        else:
+            if shield_dmg > 0:
+                log_msg += f"，对护盾造成 {shield_dmg} 伤害"
+            if hp_dmg > 0:
+                log_msg += f"，对生命造成 {hp_dmg} 伤害"
         self._log_event(run, log_msg)
 
     def _heal_target(self, run: GameRun, target: str, heal: int):
