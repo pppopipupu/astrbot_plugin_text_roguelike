@@ -545,12 +545,13 @@ class BattleEngine:
 
         if difficulty == "boss":
             if p.stage == 20:
-                admin_cfg = self.save_manager.load_admin_config()
-                fixed_boss = admin_cfg.get("fixed_boss", "random")
-                if fixed_boss in ("腐化之心", "Icerainboww"):
-                    boss_name = fixed_boss
-                else:
+                boss_cfg = self.save_manager.load_admin_config()
+                boss_setting = boss_cfg.get("final_boss", "random")
+                if boss_setting == "random":
                     boss_name = random.choice(["腐化之心", "Icerainboww"])
+                else:
+                    boss_name = boss_setting
+
                 if boss_name == "腐化之心":
                     run.enemies = [EnemyState(
                         name="腐化之心",

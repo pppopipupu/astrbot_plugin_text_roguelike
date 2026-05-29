@@ -243,21 +243,24 @@ class SaveManager:
         self.delete_save(user_id)
         return f"本局结算：剩余金币 {gold}，折算获得 {gp_gained} GP{victory_bonus}！当前总 GP：{stats.gp}。"
 
+    def get_admin_config_path(self) -> str:
+        return os.path.join(self.data_dir, "admin_config.json")
+
     def load_admin_config(self) -> dict:
-        path = os.path.join(self.data_dir, "admin_config.json")
+        path = self.get_admin_config_path()
         if not os.path.exists(path):
-            return {"fixed_boss": "random"}
+            return {"final_boss": "random"}
         try:
             with open(path, "r", encoding="utf-8") as f:
                 return json.load(f)
         except:
-            return {"fixed_boss": "random"}
+            return {"final_boss": "random"}
 
-    def save_admin_config(self, config: dict) -> bool:
-        path = os.path.join(self.data_dir, "admin_config.json")
+    def save_admin_config(self, cfg: dict) -> bool:
+        path = self.get_admin_config_path()
         try:
             with open(path, "w", encoding="utf-8") as f:
-                json.dump(config, f, ensure_ascii=False, indent=2)
+                json.dump(cfg, f, ensure_ascii=False, indent=2)
             return True
         except:
             return False
