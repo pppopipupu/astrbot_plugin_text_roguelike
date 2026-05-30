@@ -244,5 +244,90 @@ ENEMY_CONFIG = {
         "intents": [
             {"id": "attack", "desc": "扑咬 (造成 2 伤害)"}
         ]
+    },
+    "雷霆领主": {
+        "name": "雷霆领主",
+        "type": "boss",
+        "hp": "130",
+        "actions": "1A 2BA",
+        "intents": [
+            {"id": "thunder_strike", "val": 8, "desc": "雷鸣重击 (造成 8 雷鸣伤害，并对玩家施加 2 层电击)"},
+            {"id": "lightning_shield", "val": 12, "desc": "闪电护壳 (获得 12 护盾并获得闪电护体)"},
+            {"id": "storm_summon", "val": 0, "desc": "呼唤雷云 (召唤一只雷影魔仆)"},
+            {"id": "electric_overload", "val": 6, "desc": "电能超载 (获得 2 层力量，造成 6 闪电伤害，下回合失去 1A)"}
+        ]
+    },
+    "雷影魔仆": {
+        "name": "雷影魔仆",
+        "type": "summon",
+        "hp": "12",
+        "actions": "1A 0BA",
+        "intents": [
+            {"id": "lightning_strike", "val": 4, "desc": "闪电击 (造成 4 闪电伤害，并施加 1 层电击)"},
+            {"id": "charge", "val": 1, "desc": "蓄能 (获得 1 层力量)"}
+        ]
+    },
+    "末日守卫": {
+        "name": "末日守卫",
+        "type": "elite",
+        "hp": "40 (+ 3 * 关卡数)",
+        "actions": "1A 1BA",
+        "intents": [
+            {"id": "doom_strike", "val": 7, "desc": "毁灭打击 (造成 7 穿刺伤害，并施加 1 层轻度挥砍易伤)"},
+            {"id": "hellfire", "val": 5, "desc": "地狱火 (造成 5 火焰伤害，并施加 1 层轻度火焰易伤)"},
+            {"id": "sacrifice", "val": 15, "desc": "牺牲防御 (获得 15 护盾，但扣除自身 2 HP)"}
+        ]
+    },
+    "亡灵巫师": {
+        "name": "亡灵巫师",
+        "type": "elite",
+        "hp": "35 (+ 3 * 关卡数)",
+        "actions": "1A 1BA",
+        "intents": [
+            {"id": "shadow_bolt", "val": 6, "desc": "暗影箭 (造成 6 黯蚀伤害，并对玩家施加 1 层轻度黯蚀易伤)"},
+            {"id": "raise_dead", "val": 0, "desc": "死者苏生 (召唤一只骷髅兵)"},
+            {"id": "soul_drain", "val": 4, "desc": "灵魂吸取 (造成 4 黯蚀伤害，回复自身 4 生命)"}
+        ]
+    },
+    "传送门守卫者": {
+        "name": "传送门守卫者",
+        "type": "elite",
+        "hp": "45 (+ 3 * 关卡数)",
+        "actions": "1A 1BA",
+        "intents": [
+            {"id": "dimensional_tear", "val": 6, "desc": "空间撕裂 (造成 6 真实伤害)"},
+            {"id": "void_shield", "val": 10, "desc": "虚空屏障 (获得 10 护盾并净化 1 负面 Buff)"},
+            {"id": "portal_instability", "val": 8, "desc": "传送门不稳定 (造成 8 心灵伤害，并丢弃玩家 1 张手牌)"}
+        ]
+    },
+    "火元素守卫": {
+        "name": "火元素守卫",
+        "type": "elite",
+        "hp": "30 (+ 2 * 关卡数)",
+        "actions": "1A 1BA",
+        "intents": [
+            {"id": "fire_blast", "val": 8, "desc": "烈焰爆轰 (造成 8 火焰伤害，并施加 1 层轻度火焰易伤)"},
+            {"id": "fire_armor", "val": 8, "desc": "火焰护甲 (获得 8 护盾，且使玩家受到 2 点火焰伤害)"},
+            {"id": "heat_grow", "val": 1, "desc": "热力凝聚 (获得 1 层力量)"}
+        ]
+    },
+    "狂暴魔仆": {
+        "name": "狂暴魔仆",
+        "type": "normal",
+        "hp": "15",
+        "actions": "1A 0BA",
+        "intents": [
+            {"id": "rage_bite", "val": 4, "desc": "狂暴撕咬 (造成 4 物理伤害，半血以下时伤害翻倍)"},
+            {"id": "evil_gaze", "val": 5, "desc": "邪恶凝视 (获得 5 护盾)"}
+        ]
+    },
+    "骷髅兵": {
+        "name": "骷髅兵",
+        "type": "summon",
+        "hp": "6",
+        "actions": "1A 0BA",
+        "intents": [
+            {"id": "attack", "desc": "攻击 (造成 2 物理伤害)"}
+        ]
     }
 }

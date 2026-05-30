@@ -158,5 +158,117 @@ BUFF_CONFIG = {
     "stun": {
         "name": "眩晕",
         "desc": "无法行动，回合开始时扣除一层恢复"
+    },
+    "shock": {
+        "name": "电击",
+        "desc": "受到的闪电和雷鸣伤害每层增加 3 点"
+    },
+    "lightning_shield": {
+        "name": "闪电护体",
+        "desc": "受到伤害时反弹 2 点闪电伤害并施加 1 层电击"
+    },
+    "resist_acid": {
+        "name": "强酸抗性",
+        "desc": "受到的强酸伤害减少 50%"
+    },
+    "immune_acid": {
+        "name": "强酸免疫",
+        "desc": "受到的强酸伤害减少 100%"
+    },
+    "resist_bludgeoning": {
+        "name": "钝击抗性",
+        "desc": "受到的钝击伤害减少 50%"
+    },
+    "immune_bludgeoning": {
+        "name": "钝击免疫",
+        "desc": "受到的钝击伤害减少 100%"
+    },
+    "resist_cold": {
+        "name": "寒冷抗性",
+        "desc": "受到的寒冷伤害减少 50%"
+    },
+    "immune_cold": {
+        "name": "寒冷免疫",
+        "desc": "受到的寒冷伤害减少 100%"
+    },
+    "resist_fire": {
+        "name": "火焰抗性",
+        "desc": "受到的火焰伤害减少 50%"
+    },
+    "immune_fire": {
+        "name": "火焰免疫",
+        "desc": "受到的火焰伤害减少 100%"
+    },
+    "resist_force": {
+        "name": "力场抗性",
+        "desc": "受到的力场伤害减少 50%"
+    },
+    "immune_force": {
+        "name": "力场免疫",
+        "desc": "受到的力场伤害减少 100%"
+    },
+    "resist_lightning": {
+        "name": "闪电抗性",
+        "desc": "受到的闪电伤害减少 50%"
+    },
+    "immune_lightning": {
+        "name": "闪电免疫",
+        "desc": "受到的闪电伤害减少 100%"
+    },
+    "resist_necrotic": {
+        "name": "黯蚀抗性",
+        "desc": "受到的黯蚀伤害减少 50%"
+    },
+    "immune_necrotic": {
+        "name": "黯蚀免疫",
+        "desc": "受到的黯蚀伤害减少 100%"
+    },
+    "resist_piercing": {
+        "name": "穿刺抗性",
+        "desc": "受到的穿刺伤害减少 50%"
+    },
+    "immune_piercing": {
+        "name": "穿刺免疫",
+        "desc": "受到的穿刺伤害减少 100%"
+    },
+    "resist_poison": {
+        "name": "毒素抗性",
+        "desc": "受到的毒素伤害减少 50%"
+    },
+    "immune_poison": {
+        "name": "毒素免疫",
+        "desc": "受到的毒素伤害减少 100%"
+    },
+    "resist_psychic": {
+        "name": "心灵抗性",
+        "desc": "受到的心灵伤害减少 50%"
+    },
+    "immune_psychic": {
+        "name": "心灵免疫",
+        "desc": "受到的心灵伤害减少 100%"
+    },
+    "resist_radiant": {
+        "name": "光耀抗性",
+        "desc": "受到的光耀伤害减少 50%"
+    },
+    "immune_radiant": {
+        "name": "光耀免疫",
+        "desc": "受到的光耀伤害减少 100%"
+    },
+    "resist_slashing": {
+        "name": "挥砍抗性",
+        "desc": "受到的挥砍伤害减少 50%"
+    },
+    "immune_slashing": {
+        "name": "挥砍免疫",
+        "desc": "受到的挥砍伤害减少 100%"
+    },
+    "resist_thunder": {
+        "name": "雷鸣抗性",
+        "desc": "受到的雷鸣伤害减少 50%"
+    },
+    "immune_thunder": {
+        "name": "雷鸣免疫",
+        "desc": "受到的雷鸣伤害减少 100%"
     }
 }

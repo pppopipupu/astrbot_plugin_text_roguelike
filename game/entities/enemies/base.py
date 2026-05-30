@@ -86,8 +86,13 @@ class EnemyTemplate:
             enemy.shield += intent.val
             logs.append(f"敌人【{enemy.name}】进行防守，获得 {intent.val} 点护盾。")
 
-from .boss import BossRedDragonTemplate, BossCorruptedHeartTemplate, BossIcerainbowwTemplate
-from .minions import GoblinCenturionTemplate, GargoylePriestTemplate, BeastMasterTemplate, ObsidianDjinnTemplate, GhostArchmageTemplate, ShadowFiendTemplate
+from .boss import BossRedDragonTemplate, BossCorruptedHeartTemplate, BossIcerainbowwTemplate, BossThunderLordTemplate
+from .minions import (
+    GoblinCenturionTemplate, GargoylePriestTemplate, BeastMasterTemplate,
+    ObsidianDjinnTemplate, GhostArchmageTemplate, ShadowFiendTemplate,
+    DoomguardTemplate, NecromancerTemplate, PortalGuardianTemplate,
+    FireGuardTemplate, DemonServantTemplate, LightningOrbTemplate
+)
 
 ALL_ENEMIES = {
     "远古红龙": BossRedDragonTemplate("远古红龙"),
@@ -99,6 +104,13 @@ ALL_ENEMIES = {
     "黑曜石巨灵": ObsidianDjinnTemplate("黑曜石巨灵"),
     "幽灵大魔法师": GhostArchmageTemplate("幽灵大魔法师"),
     "暗影影魔": ShadowFiendTemplate("暗影影魔"),
+    "雷霆领主": BossThunderLordTemplate("雷霆领主"),
+    "末日守卫": DoomguardTemplate("末日守卫"),
+    "亡灵巫师": NecromancerTemplate("亡灵巫师"),
+    "传送门守卫者": PortalGuardianTemplate("传送门守卫者"),
+    "火元素守卫": FireGuardTemplate("火元素守卫"),
+    "狂暴魔仆": DemonServantTemplate("狂暴魔仆"),
+    "雷影魔仆": LightningOrbTemplate("雷影魔仆"),
 }
 
 def get_enemy_template(name: str) -> EnemyTemplate:

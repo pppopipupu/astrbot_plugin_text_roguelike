@@ -107,11 +107,16 @@ class CaveFightOption(EventOption):
         engine.battle_engine._init_battle_node(run, "normal")
         run.node_type = "battle"
         if run.enemies:
-            run.enemies[0].name = "魔仆"
+            run.enemies[0].name = "狂暴魔仆"
             run.enemies[0].hp = 15
             run.enemies[0].max_hp = 15
+            run.enemies[0].shield = 0
+            run.enemies[0].actions = 1
+            run.enemies[0].bonus_actions = 0
+            run.enemies[0].max_actions = 1
+            run.enemies[0].max_bonus_actions = 0
         engine.save_manager.save_save(run.user_id, run)
-        return "你跨入洞穴，一只面目狰狞的【魔仆】冲了过来！进入战斗。"
+        return "你跨入洞穴，一只面目狰狞的【狂暴魔仆】冲了过来！进入战斗。"
 
 class AbsorbAltarOption(EventOption):
     def execute(self, run, engine) -> str:
@@ -154,7 +159,23 @@ class EnterPortalOption(EventOption):
             run.node_type = "battle"
             engine.battle_engine._init_battle_node(run, "elite")
             if run.enemies:
+                from .data.enemy_data import ENEMY_CONFIG
+                cfg = ENEMY_CONFIG.get("传送门守卫者", {})
+                import re
+                hp_str = cfg.get("hp", "45")
+                base_hp = 45
+                match = re.match(r"^(\d+)", hp_str)
+                if match:
+                    base_hp = int(match.group(1))
+                hp_final = base_hp + run.player.stage * 3
                 run.enemies[0].name = "传送门守卫者"
+                run.enemies[0].hp = hp_final
+                run.enemies[0].max_hp = hp_final
+                run.enemies[0].shield = 0
+                run.enemies[0].actions = 1
+                run.enemies[0].bonus_actions = 1
+                run.enemies[0].max_actions = 1
+                run.enemies[0].max_bonus_actions = 1
             engine.save_manager.save_save(run.user_id, run)
             return "⚠️ 空间发生强烈扭曲！传送门能量崩溃，你被卷入一处荒野废墟，前方出现了一只凶猛的【传送门守卫者】！进入战斗。"
 
@@ -224,6 +245,11 @@ class FightGuardOption(EventOption):
             run.enemies[0].name = "火元素守卫"
             run.enemies[0].hp = 30 + run.player.stage * 2
             run.enemies[0].max_hp = run.enemies[0].hp
+            run.enemies[0].shield = 0
+            run.enemies[0].actions = 1
+            run.enemies[0].bonus_actions = 1
+            run.enemies[0].max_actions = 1
+            run.enemies[0].max_bonus_actions = 1
         engine.save_manager.save_save(run.user_id, run)
         return "🔥 谈和破裂！火元素守卫扬起法杖，滚滚热浪席卷而来！进入战斗。"
 

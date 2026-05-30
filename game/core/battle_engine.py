@@ -631,55 +631,100 @@ class BattleEngine:
                     run.node_data["boss_name"] = "Icerainboww"
                     run.node_data["icerainboww_turn"] = 1
             else:
-                run.enemies = [EnemyState(
-                    name="远古红龙",
-                    hp=140,
-                    max_hp=140,
-                    shield=0,
-                    actions=1,
-                    bonus_actions=2,
-                    max_actions=1,
-                    max_bonus_actions=2
-                )]
+                boss_name = random.choice(["远古红龙", "雷霆领主"])
+                if boss_name == "远古红龙":
+                    run.enemies = [EnemyState(
+                        name="远古红龙",
+                        hp=140,
+                        max_hp=140,
+                        shield=0,
+                        actions=1,
+                        bonus_actions=2,
+                        max_actions=1,
+                        max_bonus_actions=2
+                    )]
+                else:
+                    run.enemies = [EnemyState(
+                        name="雷霆领主",
+                        hp=130,
+                        max_hp=130,
+                        shield=0,
+                        actions=1,
+                        bonus_actions=2,
+                        max_actions=1,
+                        max_bonus_actions=2
+                    )]
+                    run.node_data["thunder_lord_turn"] = 1
         elif difficulty == "elite":
-            run.enemies = []
-            pool = [
-                ("奥术巨魔", 45, 4),
-                ("深渊编织者", 38, 5)
+            from ..data.enemy_data import ENEMY_CONFIG
+            elite_pool = [
+                "地精百夫长", "石像鬼祭司", "狂暴兽王",
+                "黑曜石巨灵", "幽灵大魔法师", "暗影影魔",
+                "末日守卫", "亡灵巫师"
             ]
-            name, hp_scale, atk = random.choice(pool)
-            hp_final = hp_scale + p.stage * 2
+            run.enemies = []
+            base_name = random.choice(elite_pool)
+            cfg = ENEMY_CONFIG.get(base_name, {})
+            import re
+            hp_str = cfg.get("hp", "30")
+            base_hp = 30
+            match = re.match(r"^(\d+)", hp_str)
+            if match:
+                base_hp = int(match.group(1))
+            hp_final = base_hp + p.stage * 3
+
+            actions_str = cfg.get("actions", "1A 1BA")
+            act_match = re.search(r"(\d+)A", actions_str)
+            ba_match = re.search(r"(\d+)BA", actions_str)
+            actions = int(act_match.group(1)) if act_match else 1
+            bonus_actions = int(ba_match.group(1)) if ba_match else 1
+
             run.enemies.append(EnemyState(
-                name=name,
+                name=base_name,
                 hp=hp_final,
                 max_hp=hp_final,
                 shield=0,
-                actions=1,
-                bonus_actions=1,
-                max_actions=1,
-                max_bonus_actions=1
+                actions=actions,
+                bonus_actions=bonus_actions,
+                max_actions=actions,
+                max_bonus_actions=bonus_actions
             ))
         else:
-            enemies_pool = [
-                ("哥布林掠夺者", 12, 2),
-                ("地底史莱姆", 16, 2),
-                ("暗影刺客", 14, 3)
+            from ..data.enemy_data import ENEMY_CONFIG
+            normal_pool = [
+                "地精突袭者", "石像鬼守卫", "堕落学徒", "狂暴野兽",
+                "幽灵法师", "冰霜史莱姆", "骷髅弓箭手", "剧毒蜘蛛",
+                "黑曜石巨人", "暗影刺客"
             ]
             run.enemies = []
             num_enemies = random.randint(1, 3)
-            for i in range(num_enemies):
-                base_name, base_hp, base_atk = random.choice(enemies_pool)
-                hp_scale = base_hp + (p.stage * 2)
+            selected_names = [random.choice(normal_pool) for _ in range(num_enemies)]
+            for i, base_name in enumerate(selected_names):
+                cfg = ENEMY_CONFIG.get(base_name, {})
+                import re
+                hp_str = cfg.get("hp", "12")
+                base_hp = 12
+                match = re.match(r"^(\d+)", hp_str)
+                if match:
+                    base_hp = int(match.group(1))
+                hp_final = base_hp + p.stage * 2
+
+                actions_str = cfg.get("actions", "1A 0BA")
+                act_match = re.search(r"(\d+)A", actions_str)
+                ba_match = re.search(r"(\d+)BA", actions_str)
+                actions = int(act_match.group(1)) if act_match else 1
+                bonus_actions = int(ba_match.group(1)) if ba_match else 0
+
                 name = f"{base_name} {chr(65 + i)}" if num_enemies > 1 else base_name
                 run.enemies.append(EnemyState(
                     name=name,
-                    hp=hp_scale,
-                    max_hp=hp_scale,
+                    hp=hp_final,
+                    max_hp=hp_final,
                     shield=0,
-                    actions=1,
-                    bonus_actions=0,
-                    max_actions=1,
-                    max_bonus_actions=0
+                    actions=actions,
+                    bonus_actions=bonus_actions,
+                    max_actions=actions,
+                    max_bonus_actions=bonus_actions
                 ))
 
         evt_turn = TurnStartEvent(run, is_player=True)
@@ -1092,6 +1137,8 @@ class BattleEngine:
             run.node_data["heart_turn"] = run.node_data.get("heart_turn", 1) + 1
         if run.enemies and any(e.name == "Icerainboww" for e in run.enemies):
             run.node_data["icerainboww_turn"] = run.node_data.get("icerainboww_turn", 1) + 1
+        if run.enemies and any(e.name == "雷霆领主" for e in run.enemies):
+            run.node_data["thunder_lord_turn"] = run.node_data.get("thunder_lord_turn", 1) + 1
 
         self._draw_cards(p, 6, run)
         self._roll_enemy_intent(run)

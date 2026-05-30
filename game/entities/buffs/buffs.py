@@ -247,6 +247,66 @@ class TimeWarpSpellBoostBuff(BuffImpl):
             if buff_state in event.run.player.buffs:
                 event.run.player.buffs.remove(buff_state)
 
+class ShockBuff(BuffImpl):
+    def on_damage_calculate_defend(self, event, buff_state, entity):
+        dtype_str = event.damage_type.value if hasattr(event.damage_type, "value") else str(event.damage_type)
+        if dtype_str in ("lightning", "thunder"):
+            event.modified_damage += buff_state.stacks * 3
+
+    def on_turn_end(self, event, buff_state, entity):
+        if event.is_player == (entity == event.run.player):
+            buff_state.stacks -= 1
+            if buff_state.stacks <= 0:
+                if buff_state in entity.buffs:
+                    entity.buffs.remove(buff_state)
+
+class LightningShieldBuff(BuffImpl):
+    def on_damage_calculate_defend(self, event, buff_state, entity):
+        if event.source == "p0" and event.modified_damage > 0:
+            run = event.run
+            engine = event.engine
+            engine._damage_target(run, "p0", 2 * buff_state.stacks, source=f"buff:{entity.name}", damage_type="lightning")
+            engine._add_buff_to(run.player, "shock", "电击", "受到的闪电和雷鸣伤害每层增加 3 点", 1)
+
+    def on_turn_start(self, event, buff_state, entity):
+        if not event.is_player and entity in event.run.enemies:
+            if buff_state in entity.buffs:
+                entity.buffs.remove(buff_state)
+
+class ResistBuff(BuffImpl):
+    def __init__(self, stacks: int, damage_type: str):
+        super().__init__(stacks)
+        self.damage_type = damage_type
+
+    def on_damage_calculate_defend(self, event, buff_state, entity):
+        dtype_str = event.damage_type.value if hasattr(event.damage_type, "value") else str(event.damage_type)
+        if dtype_str == self.damage_type and dtype_str != "true":
+            event.modified_damage = int(event.modified_damage * 0.5)
+
+    def on_turn_end(self, event, buff_state, entity):
+        if event.is_player == (entity == event.run.player):
+            buff_state.stacks -= 1
+            if buff_state.stacks <= 0:
+                if buff_state in entity.buffs:
+                    entity.buffs.remove(buff_state)
+
+class ImmuneBuff(BuffImpl):
+    def __init__(self, stacks: int, damage_type: str):
+        super().__init__(stacks)
+        self.damage_type = damage_type
+
+    def on_damage_calculate_defend(self, event, buff_state, entity):
+        dtype_str = event.damage_type.value if hasattr(event.damage_type, "value") else str(event.damage_type)
+        if dtype_str == self.damage_type and dtype_str != "true":
+            event.modified_damage = 0
+
+    def on_turn_end(self, event, buff_state, entity):
+        if event.is_player == (entity == event.run.player):
+            buff_state.stacks -= 1
+            if buff_state.stacks <= 0:
+                if buff_state in entity.buffs:
+                    entity.buffs.remove(buff_state)
+
 BUFF_MAP = {
     "tactical_focus": TacticalFocusBuff,
     "quicken": QuickenBuff,
@@ -263,6 +323,8 @@ BUFF_MAP = {
     "fire_grow": FireGrowBuff,
     "forge_backfire": ForgeBackfireBuff,
     "time_warp_spell_boost": TimeWarpSpellBoostBuff,
+    "shock": ShockBuff,
+    "lightning_shield": LightningShieldBuff,
 }
 
 def get_buff_impl(buff_id: str, stacks: int) -> Optional[BuffImpl]:
@@ -278,6 +340,16 @@ def get_buff_impl(buff_id: str, stacks: int) -> Optional[BuffImpl]:
     elif buff_id.startswith("vulnerable_"):
         dtype = buff_id[len("vulnerable_"):]
         inst = VulnerableBuff(stacks, dtype)
+        inst.upgraded = upgraded
+        return inst
+    elif buff_id.startswith("resist_"):
+        dtype = buff_id[len("resist_"):]
+        inst = ResistBuff(stacks, dtype)
+        inst.upgraded = upgraded
+        return inst
+    elif buff_id.startswith("immune_"):
+        dtype = buff_id[len("immune_"):]
+        inst = ImmuneBuff(stacks, dtype)
         inst.upgraded = upgraded
         return inst
     cls = BUFF_MAP.get(buff_id)

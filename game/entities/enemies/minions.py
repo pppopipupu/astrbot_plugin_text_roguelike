@@ -214,3 +214,240 @@ class ShadowFiendTemplate(EnemyTemplate):
         elif intent.type == "defend":
             enemy.shield += intent.val
             logs.append(f"【{enemy.name}】进入虚化，获得 {intent.val} 点护盾。")
+
+class DoomguardTemplate(EnemyTemplate):
+    def roll_intents(self, run, engine, enemy) -> List['EnemyIntentState']:
+        from ...models.state import EnemyIntentState
+        import random
+        cfg = ENEMY_CONFIG.get("末日守卫", {})
+        intents = cfg.get("intents", [])
+        chosen = random.choice(intents)
+        return [EnemyIntentState(type=chosen["id"], val=chosen["val"], desc=chosen["desc"], cost_a=1, cost_ba=0)]
+
+    def execute_intent(self, run, engine, enemy, intent, logs: List[str] = None):
+        if logs is None:
+            logs = []
+        strength = 0
+        for b in enemy.buffs:
+            if b.id == "strength":
+                strength += b.stacks
+        val = intent.val + strength
+
+        if intent.type == "doom_strike":
+            before_len = len(run.node_data.get("battle_logs", []))
+            engine._damage_target(run, "p0", val, source=f"enemy:{enemy.name}", damage_type="piercing")
+            after_logs = run.node_data.get("battle_logs", [])
+            dmg_msg = after_logs.pop() if len(after_logs) > before_len else ""
+            engine._add_buff_to(run.player, "minor_vulnerable_slashing", "轻度挥砍易伤", "受到的挥砍伤害增加 50%", 1)
+            logs.append(f"【{enemy.name}】施展毁灭打击。{dmg_msg}")
+        elif intent.type == "hellfire":
+            before_len = len(run.node_data.get("battle_logs", []))
+            engine._damage_target(run, "p0", val, source=f"enemy:{enemy.name}", damage_type="fire")
+            after_logs = run.node_data.get("battle_logs", [])
+            dmg_msg = after_logs.pop() if len(after_logs) > before_len else ""
+            engine._add_buff_to(run.player, "minor_vulnerable_fire", "轻度火焰易伤", "受到的火焰伤害增加 50%", 1)
+            logs.append(f"【{enemy.name}】施展地狱火。{dmg_msg}")
+        elif intent.type == "sacrifice":
+            enemy.shield += intent.val
+            engine._damage_target(run, f"e{run.enemies.index(enemy)+1}", 2, source=f"enemy:{enemy.name}", damage_type="true")
+            logs.append(f"【{enemy.name}】使用牺牲防御，获得 {intent.val} 点护盾，但自身受到 2 点真实伤害反噬。")
+
+class NecromancerTemplate(EnemyTemplate):
+    def roll_intents(self, run, engine, enemy) -> List['EnemyIntentState']:
+        from ...models.state import EnemyIntentState
+        import random
+        cfg = ENEMY_CONFIG.get("亡灵巫师", {})
+        intents = cfg.get("intents", [])
+        chosen = random.choice(intents)
+        return [EnemyIntentState(type=chosen["id"], val=chosen["val"], desc=chosen["desc"], cost_a=1, cost_ba=0)]
+
+    def execute_intent(self, run, engine, enemy, intent, logs: List[str] = None):
+        if logs is None:
+            logs = []
+        strength = 0
+        for b in enemy.buffs:
+            if b.id == "strength":
+                strength += b.stacks
+        val = intent.val + strength
+
+        if intent.type == "shadow_bolt":
+            before_len = len(run.node_data.get("battle_logs", []))
+            engine._damage_target(run, "p0", val, source=f"enemy:{enemy.name}", damage_type="necrotic")
+            after_logs = run.node_data.get("battle_logs", [])
+            dmg_msg = after_logs.pop() if len(after_logs) > before_len else ""
+            engine._add_buff_to(run.player, "minor_vulnerable_necrotic", "轻度黯蚀易伤", "受到的黯蚀伤害增加 50%", 1)
+            logs.append(f"【{enemy.name}】射出暗影箭。{dmg_msg}")
+        elif intent.type == "raise_dead":
+            from ...models.state import EnemyState, EnemyIntentState
+            new_skeleton = EnemyState(
+                name="骷髅兵",
+                hp=6,
+                max_hp=6,
+                shield=0,
+                actions=1,
+                bonus_actions=0,
+                is_summon=True,
+                max_actions=1,
+                max_bonus_actions=0,
+                intents=[EnemyIntentState(
+                    type="attack",
+                    val=2,
+                    desc="攻击 (造成 2 物理伤害)",
+                    cost_a=1,
+                    cost_ba=0
+                )]
+            )
+            run.enemies.append(new_skeleton)
+            logs.append(f"【{enemy.name}】施展死者苏生，召唤了一只【骷髅兵】！")
+        elif intent.type == "soul_drain":
+            before_len = len(run.node_data.get("battle_logs", []))
+            engine._damage_target(run, "p0", val, source=f"enemy:{enemy.name}", damage_type="necrotic")
+            after_logs = run.node_data.get("battle_logs", [])
+            dmg_msg = after_logs.pop() if len(after_logs) > before_len else ""
+            enemy.hp = min(enemy.max_hp, enemy.hp + 4)
+            logs.append(f"【{enemy.name}】施展灵魂吸取，吸取了玩家生命值并为自身恢复了 4 点生命。{dmg_msg}")
+
+class PortalGuardianTemplate(EnemyTemplate):
+    def roll_intents(self, run, engine, enemy) -> List['EnemyIntentState']:
+        from ...models.state import EnemyIntentState
+        import random
+        cfg = ENEMY_CONFIG.get("传送门守卫者", {})
+        intents = cfg.get("intents", [])
+        chosen = random.choice(intents)
+        return [EnemyIntentState(type=chosen["id"], val=chosen["val"], desc=chosen["desc"], cost_a=1, cost_ba=0)]
+
+    def execute_intent(self, run, engine, enemy, intent, logs: List[str] = None):
+        if logs is None:
+            logs = []
+        strength = 0
+        for b in enemy.buffs:
+            if b.id == "strength":
+                strength += b.stacks
+        val = intent.val + strength
+
+        if intent.type == "dimensional_tear":
+            before_len = len(run.node_data.get("battle_logs", []))
+            engine._damage_target(run, "p0", val, source=f"enemy:{enemy.name}", damage_type="true")
+            after_logs = run.node_data.get("battle_logs", [])
+            dmg_msg = after_logs.pop() if len(after_logs) > before_len else ""
+            logs.append(f"【{enemy.name}】施展空间撕裂。{dmg_msg}")
+        elif intent.type == "void_shield":
+            enemy.shield += intent.val
+            neg_buff = next((b for b in enemy.buffs if b.id == "stun"), None)
+            if neg_buff:
+                neg_buff.stacks -= 1
+                if neg_buff.stacks <= 0:
+                    enemy.buffs.remove(neg_buff)
+                engine._sync_enemy_intents(enemy)
+                logs.append(f"【{enemy.name}】施展虚空屏障，获得 {intent.val} 护盾并解除了 1 层眩晕！")
+            else:
+                logs.append(f"【{enemy.name}】施展虚空屏障，获得 {intent.val} 护盾。")
+        elif intent.type == "portal_instability":
+            before_len = len(run.node_data.get("battle_logs", []))
+            engine._damage_target(run, "p0", val, source=f"enemy:{enemy.name}", damage_type="psychic")
+            after_logs = run.node_data.get("battle_logs", [])
+            dmg_msg = after_logs.pop() if len(after_logs) > before_len else ""
+            p = run.player
+            import random
+            discard_msg = ""
+            if p.hand:
+                discarded = p.hand.pop(random.randint(0, len(p.hand) - 1))
+                from ..cards import ALL_CARDS
+                card_name = ALL_CARDS[discarded].name if discarded in ALL_CARDS else "未知"
+                agile_msg = engine._discard_card(run, discarded)
+                discard_msg = f"玩家被迫随机丢弃了卡牌【{card_name}】。"
+                if agile_msg:
+                    discard_msg += f" {agile_msg}"
+            logs.append(f"【{enemy.name}】引发传送门不稳定！{discard_msg}{dmg_msg}")
+
+class FireGuardTemplate(EnemyTemplate):
+    def roll_intents(self, run, engine, enemy) -> List['EnemyIntentState']:
+        from ...models.state import EnemyIntentState
+        import random
+        cfg = ENEMY_CONFIG.get("火元素守卫", {})
+        intents = cfg.get("intents", [])
+        chosen = random.choice(intents)
+        return [EnemyIntentState(type=chosen["id"], val=chosen["val"], desc=chosen["desc"], cost_a=1, cost_ba=0)]
+
+    def execute_intent(self, run, engine, enemy, intent, logs: List[str] = None):
+        if logs is None:
+            logs = []
+        strength = 0
+        for b in enemy.buffs:
+            if b.id == "strength":
+                strength += b.stacks
+        val = intent.val + strength
+
+        if intent.type == "fire_blast":
+            before_len = len(run.node_data.get("battle_logs", []))
+            engine._damage_target(run, "p0", val, source=f"enemy:{enemy.name}", damage_type="fire")
+            after_logs = run.node_data.get("battle_logs", [])
+            dmg_msg = after_logs.pop() if len(after_logs) > before_len else ""
+            engine._add_buff_to(run.player, "minor_vulnerable_fire", "轻度火焰易伤", "受到的火焰伤害增加 50%", 1)
+            logs.append(f"【{enemy.name}】释放烈焰爆轰。{dmg_msg}")
+        elif intent.type == "fire_armor":
+            enemy.shield += intent.val
+            engine._damage_target(run, "p0", 2, source=f"enemy:{enemy.name}", damage_type="fire")
+            logs.append(f"【{enemy.name}】凝聚火焰护甲，获得 {intent.val} 护盾，且火焰溅射对玩家造成 2 点火焰伤害。")
+        elif intent.type == "heat_grow":
+            engine._add_buff_to(enemy, "strength", "力量", "造成的伤害增加", 1)
+            logs.append(f"【{enemy.name}】进行热力凝聚，力量提升了 1 点。")
+
+class DemonServantTemplate(EnemyTemplate):
+    def roll_intents(self, run, engine, enemy) -> List['EnemyIntentState']:
+        from ...models.state import EnemyIntentState
+        import random
+        cfg = ENEMY_CONFIG.get("狂暴魔仆", {})
+        intents = cfg.get("intents", [])
+        chosen = random.choice(intents)
+        return [EnemyIntentState(type=chosen["id"], val=chosen["val"], desc=chosen["desc"], cost_a=1, cost_ba=0)]
+
+    def execute_intent(self, run, engine, enemy, intent, logs: List[str] = None):
+        if logs is None:
+            logs = []
+        strength = 0
+        for b in enemy.buffs:
+            if b.id == "strength":
+                strength += b.stacks
+        val = intent.val + strength
+
+        if intent.type == "rage_bite":
+            if enemy.hp <= enemy.max_hp // 2:
+                val *= 2
+            before_len = len(run.node_data.get("battle_logs", []))
+            engine._damage_target(run, "p0", val, source=f"enemy:{enemy.name}", damage_type="slashing")
+            after_logs = run.node_data.get("battle_logs", [])
+            dmg_msg = after_logs.pop() if len(after_logs) > before_len else ""
+            logs.append(f"【{enemy.name}】发出狂暴撕咬。{dmg_msg}")
+        elif intent.type == "evil_gaze":
+            enemy.shield += intent.val
+            logs.append(f"【{enemy.name}】投射邪恶凝视，获得 {intent.val} 护盾。")
+
+class LightningOrbTemplate(EnemyTemplate):
+    def roll_intents(self, run, engine, enemy) -> List['EnemyIntentState']:
+        from ...models.state import EnemyIntentState
+        import random
+        cfg = ENEMY_CONFIG.get("雷影魔仆", {})
+        intents = cfg.get("intents", [])
+        chosen = random.choice(intents)
+        return [EnemyIntentState(type=chosen["id"], val=chosen["val"], desc=chosen["desc"], cost_a=1, cost_ba=0)]
+
+    def execute_intent(self, run, engine, enemy, intent, logs: List[str] = None):
+        if logs is None:
+            logs = []
+        strength = 0
+        for b in enemy.buffs:
+            if b.id == "strength":
+                strength += b.stacks
+        val = intent.val + strength
+
+        if intent.type == "lightning_strike":
+            before_len = len(run.node_data.get("battle_logs", []))
+            engine._damage_target(run, "p0", val, source=f"enemy:{enemy.name}", damage_type="lightning")
+            after_logs = run.node_data.get("battle_logs", [])
+            dmg_msg = after_logs.pop() if len(after_logs) > before_len else ""
+            engine._add_buff_to(run.player, "shock", "电击", "受到的闪电和雷鸣伤害每层增加 3 点", 1)
+            logs.append(f"【{enemy.name}】释放闪电击。{dmg_msg}")
+        elif intent.type == "charge":
+            engine._add_buff_to(enemy, "strength", "力量", "造成的伤害增加", 1)
+            logs.append(f"【{enemy.name}】进行蓄能，力量提升了 1 点。")

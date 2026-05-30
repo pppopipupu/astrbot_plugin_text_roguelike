@@ -343,3 +343,97 @@ class BossIcerainbowwTemplate(EnemyTemplate):
                 if len(after_logs) > before_len:
                     dmg_msg = after_logs.pop()
                     logs.append(f"我方随从【{m_name}】受到冰霜爆震波及。{dmg_msg}")
+
+class BossThunderLordTemplate(EnemyTemplate):
+    def roll_intents(self, run, engine, enemy) -> List['EnemyIntentState']:
+        from ...models.state import EnemyIntentState
+        if run.node_data.get("thunder_lord_overloaded"):
+            enemy.actions = max(0, enemy.actions - 1)
+            run.node_data["thunder_lord_overloaded"] = False
+        turn = run.node_data.get("thunder_lord_turn", 1)
+        cycle = (turn - 1) % 4 + 1
+        intents_list = []
+        if cycle == 1:
+            itype, val, desc = "thunder_strike", 8, "雷鸣重击 (造成 8 雷鸣伤害，并对玩家施加 2 层电击)"
+        elif cycle == 2:
+            itype, val, desc = "lightning_shield", 12, "闪电护壳 (获得 12 护盾并获得闪电护体)"
+        elif cycle == 3:
+            itype, val, desc = "storm_summon", 0, "呼唤雷云 (召唤一只雷影魔仆)"
+        else:
+            itype, val, desc = "electric_overload", 6, "电能超载 (获得 2 层力量，造成 6 闪电伤害，下回合失去 1A)"
+        intents_list.append(EnemyIntentState(type=itype, val=val, desc=desc, cost_a=1, cost_ba=0))
+
+        if cycle == 1:
+            itype, val, desc = "lightning_shield", 10, "闪电护壳 (获得 10 护盾并获得闪电护体)"
+        elif cycle == 2:
+            itype, val, desc = "thunder_strike", 6, "雷鸣重击 (造成 6 雷鸣伤害，并对玩家施加 2 层电击)"
+        elif cycle == 3:
+            itype, val, desc = "defend", 8, "聚能防护 (获得 8 护盾)"
+        else:
+            itype, val, desc = "thunder_strike", 8, "雷鸣重击 (造成 8 雷鸣伤害，并对玩家施加 2 层电击)"
+        intents_list.append(EnemyIntentState(type=itype, val=val, desc=desc, cost_a=0, cost_ba=1))
+
+        if cycle == 1:
+            itype, val, desc = "defend", 6, "聚能防护 (获得 6 护盾)"
+        elif cycle == 2:
+            itype, val, desc = "defend", 6, "聚能防护 (获得 6 护盾)"
+        elif cycle == 3:
+            itype, val, desc = "thunder_strike", 6, "雷鸣重击 (造成 6 雷鸣伤害，并对玩家施加 2 层电击)"
+        else:
+            itype, val, desc = "defend", 10, "聚能防护 (获得 10 护盾)"
+        intents_list.append(EnemyIntentState(type=itype, val=val, desc=desc, cost_a=0, cost_ba=1))
+        return intents_list
+
+    def execute_intent(self, run, engine, enemy, intent, logs: List[str] = None):
+        if logs is None:
+            logs = []
+        strength = 0
+        for b in enemy.buffs:
+            if b.id == "strength":
+                strength += b.stacks
+        val = intent.val + strength
+
+        if intent.type == "thunder_strike":
+            before_len = len(run.node_data.get("battle_logs", []))
+            engine._damage_target(run, "p0", val, source=f"enemy:{enemy.name}", damage_type="thunder")
+            after_logs = run.node_data.get("battle_logs", [])
+            dmg_msg = after_logs.pop() if len(after_logs) > before_len else ""
+            engine._add_buff_to(run.player, "shock", "电击", "受到的闪电和雷鸣伤害每层增加 3 点", 2)
+            logs.append(f"【{enemy.name}】施展雷鸣重击。{dmg_msg}")
+        elif intent.type == "lightning_shield":
+            enemy.shield += intent.val
+            engine._add_buff_to(enemy, "lightning_shield", "闪电护体", "受到伤害时反弹 2 点闪电伤害并施加 1 层电击", 1)
+            logs.append(f"【{enemy.name}】施展闪电护壳，获得 {intent.val} 点护盾并获得闪电护体。")
+        elif intent.type == "storm_summon":
+            from ...models.state import EnemyState, EnemyIntentState
+            new_minion = EnemyState(
+                name="雷影魔仆",
+                hp=12,
+                max_hp=12,
+                shield=0,
+                actions=1,
+                bonus_actions=0,
+                is_summon=True,
+                max_actions=1,
+                max_bonus_actions=0,
+                intents=[EnemyIntentState(
+                    type="lightning_strike",
+                    val=4,
+                    desc="闪电击 (造成 4 闪电伤害，并施加 1 层电击)",
+                    cost_a=1,
+                    cost_ba=0
+                )]
+            )
+            run.enemies.append(new_minion)
+            logs.append(f"【{enemy.name}】呼唤雷云，召唤了一只【雷影魔仆】加入战场。")
+        elif intent.type == "electric_overload":
+            engine._add_buff_to(enemy, "strength", "力量", "造成的伤害增加", 2)
+            before_len = len(run.node_data.get("battle_logs", []))
+            engine._damage_target(run, "p0", val, source=f"enemy:{enemy.name}", damage_type="lightning")
+            after_logs = run.node_data.get("battle_logs", [])
+            dmg_msg = after_logs.pop() if len(after_logs) > before_len else ""
+            run.node_data["thunder_lord_overloaded"] = True
+            logs.append(f"【{enemy.name}】释放电能超载。{dmg_msg}")
+        elif intent.type == "defend":
+            enemy.shield += intent.val
+            logs.append(f"【{enemy.name}】凝聚雷电防护，获得 {intent.val} 点护盾。")
