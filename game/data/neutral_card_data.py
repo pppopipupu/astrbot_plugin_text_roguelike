@@ -70,7 +70,7 @@ NEUTRAL_CARD_CONFIG = {
         "feedback_fail": "战场格子已满，部署失败。"
     },
     "tactical_focus": {
-        "name": "战术专注",
+        "name": "战斗专注",
         "color": "neutral",
         "type": "ability",
         "cost_a": 0,
