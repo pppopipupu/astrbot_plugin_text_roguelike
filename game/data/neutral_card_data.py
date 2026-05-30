@@ -73,11 +73,11 @@ NEUTRAL_CARD_CONFIG = {
         "name": "战术专注",
         "color": "neutral",
         "type": "ability",
-        "cost_a": 1,
+        "cost_a": 0,
         "cost_ba": 0,
-        "desc": "本场战斗中，玩家每回合开始时额外获得 1BA。",
+        "desc": "免费抽 3 张牌，但本回合无法再抽牌。",
         "rarity": "epic",
-        "feedback": "使用了【{name}】，获得了【战术专注】buff（每回合开始额外获得 1BA，可叠加）。"
+        "feedback": "使用了【{name}】，免费抽了 {draw_count} 张牌，但本回合无法再抽牌。"
     },
     "iron_will": {
         "name": "钢铁意志",

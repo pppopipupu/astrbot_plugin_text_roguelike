@@ -539,6 +539,10 @@ class BattleEngine:
         return None
 
     def _draw_cards(self, p: PlayerState, count: int, run: Optional[GameRun] = None):
+        if any(b.id == "tactical_focus" for b in p.buffs):
+            if run is not None:
+                self._log_event(run, "⚠️ [战术专注] 本回合无法再抽牌。")
+            return
         max_hand = 9 if "mask_of_void" in p.relics else 12
         drawn_cards = []
         reshuffled = False

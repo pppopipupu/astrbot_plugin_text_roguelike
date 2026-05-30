@@ -1,7 +1,7 @@
 BUFF_CONFIG = {
     "tactical_focus": {
-        "name": "战术专注",
-        "desc": "每回合开始额外获得 1BA"
+        "name": "无法抽牌",
+        "desc": "本回合无法再抽牌"
     },
     "quicken": {
         "name": "超魔-瞬发",

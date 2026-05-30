@@ -176,7 +176,6 @@ class SummonMinionCard(Card):
             return feedback_success.format(grid=grid, name=self.name) + battlecry_msg
         return cfg.get("feedback_fail", "战场已满，召唤失败。")
 
-@register_card("tactical_focus")
 @register_card("quicken")
 @register_card("spell_surge")
 @register_card("arcane_charge")
@@ -193,6 +192,20 @@ class AbilityCard(Card):
         if feedback_tmpl:
             return feedback_tmpl.format(name=self.name)
         return f"使用了【{self.name}】。"
+
+@register_card("tactical_focus")
+class TacticalFocusCard(Card):
+    def execute(self, run, target, engine) -> str:
+        draw_count = 5 if self.upgraded else 3
+        engine._draw_cards(run.player, draw_count, run)
+        from ...data.buff_data import BUFF_CONFIG
+        buff_info = BUFF_CONFIG.get("tactical_focus", {})
+        buff_name = buff_info.get("name", "无法抽牌")
+        buff_desc = buff_info.get("desc", "本回合无法再抽牌")
+        engine._add_buff_to(run.player, "tactical_focus", buff_name, buff_desc)
+        cfg = CARD_CONFIG.get("tactical_focus", {})
+        feedback_tmpl = cfg.get("feedback", "使用了【{name}】，免费抽了 {draw_count} 张牌，但本回合无法再抽牌。")
+        return feedback_tmpl.format(name=self.name, draw_count=draw_count)
 
 @register_card("iron_will")
 class IronWillCard(Card):

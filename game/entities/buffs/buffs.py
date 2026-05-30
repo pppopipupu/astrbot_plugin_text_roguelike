@@ -27,12 +27,18 @@ class BuffImpl:
         return False
 
 class TacticalFocusBuff(BuffImpl):
-    def on_turn_start(self, event, buff_state, entity):
-        if event.is_player and entity == event.run.player:
-            event.run.player.bonus_actions += buff_state.stacks
+    def on_player_turn_end(self, run, buff_state, engine):
+        buff_state.stacks -= 1
+        if buff_state.stacks <= 0:
+            if buff_state in run.player.buffs:
+                run.player.buffs.remove(buff_state)
 
-    def on_player_turn_start(self, run, engine):
-        run.player.bonus_actions += self.stacks
+    def on_turn_end(self, event, buff_state, entity):
+        if entity == event.run.player and event.is_player:
+            buff_state.stacks -= 1
+            if buff_state.stacks <= 0:
+                if buff_state in event.run.player.buffs:
+                    event.run.player.buffs.remove(buff_state)
 
 class QuickenBuff(BuffImpl):
     def on_card_play(self, event, buff_state, entity):

@@ -29,8 +29,8 @@ CARD_UPGRADE_CONFIG = {
     },
     "tactical_focus": {
         "cost_a": 0,
-        "cost_ba": 1,
-        "desc": "本场战斗中，玩家每回合开始时额外获得 1BA。立即抽 1 张牌并获得 1BA。"
+        "cost_ba": 0,
+        "desc": "免费抽 5 张牌，但本回合无法再抽牌。"
     },
     "iron_will": {
         "desc": "最大生命上限增加 15 并回复 15 生命，且立即获得 8 护盾，下 2 回合获得治疗翻倍。"
