@@ -112,11 +112,12 @@ class MinionAction(ActionHandler):
                 p = run.player
                 m = p.minions[g]
                 needs_target = False
-                if m.id == "mercenary" and skill_idx == 1:
+                base_id = m.id.rstrip("+")
+                if base_id == "mercenary" and skill_idx == 1:
                     needs_target = True
-                elif m.id == "shield_guard" and skill_idx == 2:
+                elif base_id == "shield_guard" and skill_idx == 2:
                     needs_target = True
-                elif m.id == "water_elemental" and skill_idx == 2:
+                elif base_id == "water_elemental" and skill_idx == 2:
                     needs_target = True
                 if needs_target and target is None and len(run.enemies) > 1:
                     state_stack = run.node_data.setdefault("state_stack", [])

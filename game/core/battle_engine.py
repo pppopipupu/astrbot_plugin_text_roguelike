@@ -792,6 +792,10 @@ class BattleEngine:
         if getattr(card, "fleeting", False):
             if cid in p.deck:
                 p.deck.remove(cid)
+        elif card.type == "minion":
+            self._log_event(run, f"✨ [消耗] 【{card.name}】进入战场（特殊消耗状态）。")
+            exhaust_evt = CardExhaustEvent(run, cid, "played")
+            self.event_bus.dispatch(exhaust_evt)
         elif getattr(card, "exhaust", False):
             p.exhaust_pile.append(cid)
             self._log_event(run, f"✨ [消耗] 【{card.name}】已被移入消耗堆。")
@@ -951,11 +955,12 @@ class BattleEngine:
             return f"❌ 随从资源不足（需要 {cost_a}A {cost_ba}BA，当前 {m.actions}A {m.bonus_actions}BA）。"
 
         needs_target = False
-        if m.id == "mercenary" and skill_idx == 1:
+        base_id = m.id.rstrip("+")
+        if base_id == "mercenary" and skill_idx == 1:
             needs_target = True
-        elif m.id == "shield_guard" and skill_idx == 2:
+        elif base_id == "shield_guard" and skill_idx == 2:
             needs_target = True
-        elif m.id == "water_elemental" and skill_idx == 2:
+        elif base_id == "water_elemental" and skill_idx == 2:
             needs_target = True
 
         if needs_target:
@@ -1079,6 +1084,15 @@ class BattleEngine:
             av.countdown -= 1
             if av.countdown <= 0:
                 del p.amulets[ak]
+                p.discard_pile.append(av.id)
+                lw_msg = ""
+                if template:
+                    is_upgraded = av.id.endswith("+")
+                    lw_msg = template.on_death(run, ak, is_upgraded, self)
+                if lw_msg:
+                    self._log_event(run, f"🔔 [谢幕曲] 我方【{av.name}】吟唱结束进入墓地：{lw_msg}")
+                else:
+                    self._log_event(run, f"🔔 我方【{av.name}】吟唱结束进入墓地。")
 
         if self.is_battle_won(run):
             self._handle_battle_win(run)
@@ -1126,12 +1140,16 @@ class BattleEngine:
                 self._log_event(run, "⏳ [时序被动] 触发时间跳跃，本回合额外获得 1 个附赠动作（BA）！")
         for mk, mv in p.minions.items():
             mv.actions += 1
-            mv.bonus_actions += 1 if mv.id == "arcane_golem" else 0
+            mv.bonus_actions += 1 if mv.id.startswith("arcane_golem") else 0
             mv.attack_actions = 1
             if mv.id == "mercenary":
                 mv.atk = 4
+            elif mv.id == "mercenary+":
+                mv.atk = 5
             elif mv.id == "arcane_golem":
                 mv.atk = 6
+            elif mv.id == "arcane_golem+":
+                mv.atk = 8
 
         if run.enemies and any(e.name == "腐化之心" for e in run.enemies):
             run.node_data["heart_turn"] = run.node_data.get("heart_turn", 1) + 1

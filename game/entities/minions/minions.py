@@ -13,7 +13,8 @@ class BaseMinionSkill:
 
 class MercenaryHeavyStrike(BaseMinionSkill):
     def execute(self, run, my_grid, target, engine) -> str:
-        cfg = MINION_CONFIG["mercenary"]["skills"][0]
+        m = run.player.minions[my_grid]
+        cfg = MINION_CONFIG[m.id]["skills"][0]
         damage = cfg["damage"]
         tname = engine._get_target_name(run, target)
         engine._damage_target(run, target, damage)
@@ -21,22 +22,24 @@ class MercenaryHeavyStrike(BaseMinionSkill):
 
 class MercenaryBattlecry(BaseMinionSkill):
     def execute(self, run, my_grid, target, engine) -> str:
-        cfg = MINION_CONFIG["mercenary"]["skills"][1]
-        atk_buff = cfg["atk_buff"]
         m = run.player.minions[my_grid]
+        cfg = MINION_CONFIG[m.id]["skills"][1]
+        atk_buff = cfg["atk_buff"]
         m.atk += atk_buff
         return cfg["feedback"].format(atk_buff=atk_buff)
 
 class ShieldGuardDefend(BaseMinionSkill):
     def execute(self, run, my_grid, target, engine) -> str:
-        cfg = MINION_CONFIG["shield_guard"]["skills"][0]
+        m = run.player.minions[my_grid]
+        cfg = MINION_CONFIG[m.id]["skills"][0]
         shield = cfg["shield"]
         run.player.shield += shield
         return cfg["feedback"].format(shield=shield)
 
 class ShieldGuardBash(BaseMinionSkill):
     def execute(self, run, my_grid, target, engine) -> str:
-        cfg = MINION_CONFIG["shield_guard"]["skills"][1]
+        m = run.player.minions[my_grid]
+        cfg = MINION_CONFIG[m.id]["skills"][1]
         damage = cfg["damage"]
         shield = cfg["shield"]
         tname = engine._get_target_name(run, target)
@@ -46,21 +49,24 @@ class ShieldGuardBash(BaseMinionSkill):
 
 class FamiliarAssist(BaseMinionSkill):
     def execute(self, run, my_grid, target, engine) -> str:
-        cfg = MINION_CONFIG["find_familiar"]["skills"][0]
+        m = run.player.minions[my_grid]
+        cfg = MINION_CONFIG[m.id]["skills"][0]
         draw = cfg["draw"]
         engine._draw_cards(run.player, draw, run)
         return cfg["feedback"].format(draw=draw)
 
 class FamiliarCharge(BaseMinionSkill):
     def execute(self, run, my_grid, target, engine) -> str:
-        cfg = MINION_CONFIG["find_familiar"]["skills"][1]
+        m = run.player.minions[my_grid]
+        cfg = MINION_CONFIG[m.id]["skills"][1]
         ba_gain = cfg["ba_gain"]
         run.player.bonus_actions += ba_gain
         return cfg["feedback"].format(ba_gain=ba_gain)
 
 class WaterTouch(BaseMinionSkill):
     def execute(self, run, my_grid, target, engine) -> str:
-        cfg = MINION_CONFIG["water_elemental"]["skills"][0]
+        m = run.player.minions[my_grid]
+        cfg = MINION_CONFIG[m.id]["skills"][0]
         t = target or "e1"
         if t.startswith("e"):
             try:
@@ -75,7 +81,8 @@ class WaterTouch(BaseMinionSkill):
 
 class WaterLance(BaseMinionSkill):
     def execute(self, run, my_grid, target, engine) -> str:
-        cfg = MINION_CONFIG["water_elemental"]["skills"][1]
+        m = run.player.minions[my_grid]
+        cfg = MINION_CONFIG[m.id]["skills"][1]
         damage = cfg["damage"]
         t = target or "e1"
         tname = engine._get_target_name(run, t)
@@ -88,6 +95,8 @@ class WaterLance(BaseMinionSkill):
             if 0 <= grid_idx < len(run.enemies):
                 enemy = run.enemies[grid_idx]
                 enemy.actions = max(0, enemy.actions - 1)
+                if cfg.get("stun"):
+                    engine._add_buff_to(enemy, "stun", "眩晕", "下一回合无法行动", cfg["stun"])
                 feedback_boss = cfg.get("feedback_boss")
                 if feedback_boss:
                     return feedback_boss.format(target=tname, damage=damage)
@@ -95,10 +104,10 @@ class WaterLance(BaseMinionSkill):
 
 class GolemOverload(BaseMinionSkill):
     def execute(self, run, my_grid, target, engine) -> str:
-        cfg = MINION_CONFIG["arcane_golem"]["skills"][0]
+        m = run.player.minions[my_grid]
+        cfg = MINION_CONFIG[m.id]["skills"][0]
         self_damage = cfg["self_damage"]
         atk_buff = cfg["atk_buff"]
-        m = run.player.minions[my_grid]
         m.hp -= self_damage
         m.atk += atk_buff
         if m.hp <= 0:
@@ -108,28 +117,33 @@ class GolemOverload(BaseMinionSkill):
 
 class GolemRepair(BaseMinionSkill):
     def execute(self, run, my_grid, target, engine) -> str:
-        cfg = MINION_CONFIG["arcane_golem"]["skills"][1]
-        heal = cfg["heal"]
         m = run.player.minions[my_grid]
+        cfg = MINION_CONFIG[m.id]["skills"][1]
+        heal = cfg["heal"]
         m.hp = min(m.max_hp, m.hp + heal)
         return cfg["feedback"].format(heal=heal, hp=m.hp, max_hp=m.max_hp)
 
 class IcerainbowwSpray(BaseMinionSkill):
     def execute(self, run, my_grid, target, engine) -> str:
-        cfg = MINION_CONFIG["minion_icerainboww"]["skills"][0]
+        m = run.player.minions[my_grid]
+        cfg = MINION_CONFIG[m.id]["skills"][0]
         damage = cfg["damage"]
+        layers = cfg.get("vulnerable_layers", 1)
         for idx, enemy in enumerate(list(run.enemies)):
-            engine._damage_target(run, f"e{idx+1}", damage, source="minion:Icerainboww", damage_type="cold")
-            engine._add_buff_to(enemy, "minor_vulnerable_cold", "轻度寒冷易伤", "受到的寒冷伤害增加 50%", 1)
-        return cfg["feedback"] + "（对所有敌人造成 4 点寒冷伤害并附加 1 层轻度寒冷易伤）"
+            engine._damage_target(run, f"e{idx+1}", damage, source=f"minion:{m.name}", damage_type="cold")
+            engine._add_buff_to(enemy, "minor_vulnerable_cold", "轻度寒冷易伤", "受到的寒冷伤害增加 50%", layers)
+        return cfg["feedback"] + f"（对所有敌人造成 {damage} 点寒冷伤害并附加 {layers} 层轻度寒冷易伤）"
 
 class IcerainbowwShield(BaseMinionSkill):
     def execute(self, run, my_grid, target, engine) -> str:
-        cfg = MINION_CONFIG["minion_icerainboww"]["skills"][1]
-        run.player.shield += 12
+        m = run.player.minions[my_grid]
+        cfg = MINION_CONFIG[m.id]["skills"][1]
+        p_shield = cfg.get("player_shield", 12)
+        m_heal = cfg.get("minion_heal", 4)
+        run.player.shield += p_shield
         for mk, mv in list(run.player.minions.items()):
-            mv.hp = min(mv.max_hp, mv.hp + 4)
-        return cfg["feedback"] + "（为玩家提供 12 点护盾，并为我方所有随从恢复 4 点生命）"
+            mv.hp = min(mv.max_hp, mv.hp + m_heal)
+        return cfg["feedback"] + f"（为玩家提供 {p_shield} 点护盾，并为我方所有随从恢复 {m_heal} 点生命）"
 
 class MinionTemplate:
     def __init__(self, id: str, name: str, skills: List[BaseMinionSkill]):
@@ -247,6 +261,28 @@ ALL_MINIONS = {
         ]
     )
 }
+
+upgraded_minions = {}
+for mid, temp in ALL_MINIONS.items():
+    upgraded_id = f"{mid}+"
+    if upgraded_id in MINION_CONFIG:
+        upgraded_skills = []
+        for idx, orig_skill in enumerate(temp.skills):
+            SkillClass = orig_skill.__class__
+            skill_cfg = MINION_CONFIG[upgraded_id]["skills"][idx]
+            upgraded_skill = SkillClass(
+                skill_cfg["name"],
+                skill_cfg["cost_a"],
+                skill_cfg["cost_ba"],
+                skill_cfg["desc"]
+            )
+            upgraded_skills.append(upgraded_skill)
+        upgraded_minions[upgraded_id] = MinionTemplate(
+            upgraded_id,
+            MINION_CONFIG[upgraded_id]["name"],
+            upgraded_skills
+        )
+ALL_MINIONS.update(upgraded_minions)
 
 MINION_SKILLS = {}
 for mid, temp in ALL_MINIONS.items():

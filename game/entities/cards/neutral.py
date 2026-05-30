@@ -162,15 +162,15 @@ class SummonMinionCard(Card):
                 if first_enemy:
                     engine._damage_target(run, first_enemy, self.minion_atk, source=f"p{grid}", damage_type="attack")
                     tname = engine._get_target_name(run, first_enemy)
-                    battlecry_msg = f"\n⚔️ [战吼] 【雇佣兵+】立即攻击了【{tname}】，造成了 {self.minion_atk} 点伤害！"
+                    battlecry_msg = f"\n⚔️ [入场曲] 【雇佣兵+】立即攻击了【{tname}】，造成了 {self.minion_atk} 点伤害！"
             elif self.id == "shield_guard+":
                 engine._gain_shield(run, "p0", 6)
-                battlecry_msg = f"\n🛡️ [战吼] 获得了 6 点战吼护盾！"
+                battlecry_msg = f"\n🛡️ [入场曲] 获得了 6 点入场曲护盾！"
             elif self.id == "minion_icerainboww+":
                 engine._gain_shield(run, "p0", 8)
                 for enemy in list(run.enemies):
                     engine._add_buff_to(enemy, "minor_vulnerable_cold", "轻度寒冷易伤", "受到的寒冷伤害增加 50%", 1)
-                battlecry_msg = f"\n❄️ [战吼] 获得了 8 点护盾，并使所有敌人受到 1 层轻度寒冷易伤！"
+                battlecry_msg = f"\n❄️ [入场曲] 获得了 8 点护盾，并使所有敌人受到 1 层轻度寒冷易伤！"
                 
             feedback_success = cfg.get("feedback_success", "在格子 [{grid}] 召唤了【{name}】。")
             return feedback_success.format(grid=grid, name=self.name) + battlecry_msg
