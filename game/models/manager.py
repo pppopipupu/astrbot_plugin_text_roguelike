@@ -136,6 +136,7 @@ class SaveManager:
                     id=b["id"],
                     name=b["name"],
                     stacks=b.get("stacks", 1),
+                    stacks2=b.get("stacks2", None),
                     desc=b.get("desc", "")
                 ))
             p_minions[k] = MinionState(
@@ -156,6 +157,7 @@ class SaveManager:
                 id=b["id"],
                 name=b["name"],
                 stacks=b.get("stacks", 1),
+                stacks2=b.get("stacks2", None),
                 desc=b.get("desc", "")
             ))
         minion_gy = list(p_data.get("minion_graveyard", []))
@@ -203,6 +205,7 @@ class SaveManager:
                         id=b["id"],
                         name=b["name"],
                         stacks=b.get("stacks", 1),
+                        stacks2=b.get("stacks2", None),
                         desc=b.get("desc", "")
                     ))
                 intent_list = []

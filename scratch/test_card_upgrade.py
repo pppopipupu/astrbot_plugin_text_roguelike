@@ -50,15 +50,15 @@ async def test_all():
     assert fb is not None
     assert fb_plus is not None
     assert fb_plus.upgraded is True
-    assert fb_plus.base_dmg == 22
+    assert fb_plus.base_dmg == 24
 
     q_res_normal = render_query_info("fireball")
     assert "升级变体" in q_res_normal
-    assert "22" in q_res_normal
+    assert "24" in q_res_normal
 
     q_res_plus = render_query_info("fireball+")
     assert "升级变体" in q_res_plus
-    assert "22" in q_res_plus
+    assert "24" in q_res_plus
 
     plugin = MyPlugin(DummyContext())
     save_manager = SaveManager()

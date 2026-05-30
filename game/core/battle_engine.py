@@ -104,7 +104,7 @@ class BattleEngine:
                 entities_with_buffs.append((enemy, enemy))
         for entity, original in entities_with_buffs:
             for b in list(entity.buffs):
-                impl = get_buff_impl(b.id, b.stacks)
+                impl = get_buff_impl(b.id, b.stacks, getattr(b, "stacks2", None))
                 if impl and hasattr(impl, "on_turn_start"):
                     impl.on_turn_start(event, b, entity)
 
@@ -118,14 +118,14 @@ class BattleEngine:
                 entities_with_buffs.append((enemy, enemy))
         for entity, original in entities_with_buffs:
             for b in list(entity.buffs):
-                impl = get_buff_impl(b.id, b.stacks)
+                impl = get_buff_impl(b.id, b.stacks, getattr(b, "stacks2", None))
                 if impl and hasattr(impl, "on_turn_end"):
                     impl.on_turn_end(event, b, entity)
 
     def _proxy_card_play(self, event):
         from ..entities.buffs.buffs import get_buff_impl
         for b in list(event.run.player.buffs):
-            impl = get_buff_impl(b.id, b.stacks)
+            impl = get_buff_impl(b.id, b.stacks, getattr(b, "stacks2", None))
             if impl and hasattr(impl, "on_card_play"):
                 impl.on_card_play(event, b, event.run.player)
 
@@ -138,12 +138,12 @@ class BattleEngine:
             if impl and hasattr(impl, "on_card_played"):
                 impl.on_card_played(event, event.run, self)
         for b in list(event.run.player.buffs):
-            impl = get_buff_impl(b.id, b.stacks)
+            impl = get_buff_impl(b.id, b.stacks, getattr(b, "stacks2", None))
             if impl and hasattr(impl, "on_card_played"):
                 impl.on_card_played(event, b, event.run.player)
         for enemy in list(event.run.enemies):
             for b in list(enemy.buffs):
-                impl = get_buff_impl(b.id, b.stacks)
+                impl = get_buff_impl(b.id, b.stacks, getattr(b, "stacks2", None))
                 if impl and hasattr(impl, "on_card_played"):
                     impl.on_card_played(event, b, enemy)
         for ak, av in list(event.run.player.amulets.items()):
@@ -162,7 +162,7 @@ class BattleEngine:
                     impl.on_damage_calculate(event, event.run, self)
         if event.source == "p0":
             for b in list(event.run.player.buffs):
-                impl = get_buff_impl(b.id, b.stacks)
+                impl = get_buff_impl(b.id, b.stacks, getattr(b, "stacks2", None))
                 if impl and hasattr(impl, "on_damage_calculate"):
                     impl.on_damage_calculate(event, b, event.run.player)
         if event.source.startswith("e"):
@@ -174,13 +174,13 @@ class BattleEngine:
             if 0 <= idx < len(event.run.enemies):
                 enemy = event.run.enemies[idx]
                 for b in list(enemy.buffs):
-                    impl = get_buff_impl(b.id, b.stacks)
+                    impl = get_buff_impl(b.id, b.stacks, getattr(b, "stacks2", None))
                     if impl and hasattr(impl, "on_damage_calculate"):
                         impl.on_damage_calculate(event, b, enemy)
 
         if event.target == "p0":
             for b in list(event.run.player.buffs):
-                impl = get_buff_impl(b.id, b.stacks)
+                impl = get_buff_impl(b.id, b.stacks, getattr(b, "stacks2", None))
                 if impl and hasattr(impl, "on_damage_calculate_defend"):
                     impl.on_damage_calculate_defend(event, b, event.run.player)
         elif event.target.startswith("e"):
@@ -192,7 +192,7 @@ class BattleEngine:
             if 0 <= idx < len(event.run.enemies):
                 enemy = event.run.enemies[idx]
                 for b in list(enemy.buffs):
-                    impl = get_buff_impl(b.id, b.stacks)
+                    impl = get_buff_impl(b.id, b.stacks, getattr(b, "stacks2", None))
                     if impl and hasattr(impl, "on_damage_calculate_defend"):
                         impl.on_damage_calculate_defend(event, b, enemy)
 
@@ -217,7 +217,7 @@ class BattleEngine:
                     impl.on_heal(event, event.run, self)
         if event.target == "p0":
             for b in list(event.run.player.buffs):
-                impl = get_buff_impl(b.id, b.stacks)
+                impl = get_buff_impl(b.id, b.stacks, getattr(b, "stacks2", None))
                 if impl and hasattr(impl, "on_heal"):
                     impl.on_heal(event, b, event.run.player)
 
@@ -246,7 +246,7 @@ class BattleEngine:
                 if impl and hasattr(impl, "on_shield_gain"):
                     impl.on_shield_gain(event, event.run, self)
             for b in list(event.run.player.buffs):
-                impl = get_buff_impl(b.id, b.stacks)
+                impl = get_buff_impl(b.id, b.stacks, getattr(b, "stacks2", None))
                 if impl and hasattr(impl, "on_shield_gain"):
                     impl.on_shield_gain(event, b, event.run.player)
 
@@ -520,14 +520,18 @@ class BattleEngine:
         if len(ba_slots) >= 2:
             enemy.intent_ba2_type, enemy.intent_ba2_val, enemy.intent_ba2_desc = ba_slots[1]
 
-    def _add_buff_to(self, entity, buff_id: str, buff_name: str, desc: str, count: int = 1):
+    def _add_buff_to(self, entity, buff_id: str, buff_name: str, desc: str, count: int = 1, count2: Optional[int] = None):
         for b in entity.buffs:
             if b.id == buff_id:
                 b.stacks += count
+                if count2 is not None:
+                    if b.stacks2 is None:
+                        b.stacks2 = 0
+                    b.stacks2 += count2
                 if buff_id == "stun" and isinstance(entity, EnemyState):
                     self._sync_enemy_intents(entity)
                 return
-        entity.buffs.append(BuffState(buff_id, buff_name, count, desc))
+        entity.buffs.append(BuffState(buff_id, buff_name, count, count2, desc))
         if buff_id == "stun" and isinstance(entity, EnemyState):
             self._sync_enemy_intents(entity)
 

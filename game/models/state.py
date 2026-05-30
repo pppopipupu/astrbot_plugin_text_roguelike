@@ -60,6 +60,7 @@ class BuffState:
     id: str
     name: str
     stacks: int = 1
+    stacks2: Optional[int] = None
     desc: str = ""
 
 @dataclass

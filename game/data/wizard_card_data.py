@@ -30,9 +30,9 @@ WIZARD_CARD_CONFIG = {
         "type": "spell",
         "cost_a": 2,
         "cost_ba": 0,
-        "desc": "对所有敌人造成 16 点火焰伤害。",
+        "desc": "对所有敌人造成 18 点火焰伤害，并给予所有敌人 2 回合的 6 点伤害燃烧效果。",
         "rarity": "epic",
-        "base_dmg": 16,
+        "base_dmg": 18,
         "damage_type": "fire",
         "feedback": "释放【火球术】！"
     },

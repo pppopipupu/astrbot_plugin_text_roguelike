@@ -34,7 +34,7 @@ class MagicMissileCard(Card):
 @register_card("fireball")
 class FireballCard(Card):
     def execute(self, run, target, engine) -> str:
-        dmg = getattr(self, "base_dmg", 22 if self.upgraded else 16)
+        dmg = getattr(self, "base_dmg", 24 if self.upgraded else 18)
         if self.damage_type == "fire":
             has_ring = any(av.id.startswith("ring_of_elements") for av in run.player.amulets.values())
             if has_ring:
@@ -53,6 +53,11 @@ class FireballCard(Card):
         for idx in range(len(run.enemies) - 1, -1, -1):
             engine._damage_target(run, f"e{idx+1}", dmg, damage_type="fire", card=self)
             
+        burn_dmg = 8 if self.upgraded else 6
+        burn_turns = 3 if self.upgraded else 2
+        for enemy in list(run.enemies):
+            engine._add_buff_to(enemy, "burning", "燃烧", "每回合开始时受到火焰伤害", burn_dmg, burn_turns)
+
         bonus_msg = ""
         if self.id == "fireball+":
             engine._add_buff_to(run.player, "fire_grow", "烈焰成长", "造成的火焰伤害增加", 1)

@@ -313,6 +313,27 @@ class ImmuneBuff(BuffImpl):
                 if buff_state in entity.buffs:
                     entity.buffs.remove(buff_state)
 
+class BurningBuff(BuffImpl):
+    def on_turn_start(self, event, buff_state, entity):
+        run = event.run
+        engine = event.engine
+        if entity == run.player:
+            target = "p0"
+        else:
+            try:
+                idx = run.enemies.index(entity)
+                target = f"e{idx+1}"
+            except ValueError:
+                return
+        damage = buff_state.stacks
+        engine._log_event(run, f"🔥 【{entity.name}】受到燃烧造成的 {damage} 点火焰伤害！")
+        engine._damage_target(run, target, damage, source="burning", damage_type="fire")
+        if buff_state.stacks2 is not None:
+            buff_state.stacks2 -= 1
+            if buff_state.stacks2 <= 0:
+                if buff_state in entity.buffs:
+                    entity.buffs.remove(buff_state)
+
 BUFF_MAP = {
     "tactical_focus": TacticalFocusBuff,
     "quicken": QuickenBuff,
@@ -331,9 +352,10 @@ BUFF_MAP = {
     "time_warp_spell_boost": TimeWarpSpellBoostBuff,
     "shock": ShockBuff,
     "lightning_shield": LightningShieldBuff,
+    "burning": BurningBuff,
 }
 
-def get_buff_impl(buff_id: str, stacks: int) -> Optional[BuffImpl]:
+def get_buff_impl(buff_id: str, stacks: int, stacks2: Optional[int] = None) -> Optional[BuffImpl]:
     upgraded = False
     if isinstance(buff_id, str) and buff_id.endswith("+"):
         upgraded = True
@@ -341,26 +363,31 @@ def get_buff_impl(buff_id: str, stacks: int) -> Optional[BuffImpl]:
     if buff_id.startswith("minor_vulnerable_"):
         dtype = buff_id[len("minor_vulnerable_"):]
         inst = MinorVulnerableBuff(stacks, dtype)
+        inst.stacks2 = stacks2
         inst.upgraded = upgraded
         return inst
     elif buff_id.startswith("vulnerable_"):
         dtype = buff_id[len("vulnerable_"):]
         inst = VulnerableBuff(stacks, dtype)
+        inst.stacks2 = stacks2
         inst.upgraded = upgraded
         return inst
     elif buff_id.startswith("resist_"):
         dtype = buff_id[len("resist_"):]
         inst = ResistBuff(stacks, dtype)
+        inst.stacks2 = stacks2
         inst.upgraded = upgraded
         return inst
     elif buff_id.startswith("immune_"):
         dtype = buff_id[len("immune_"):]
         inst = ImmuneBuff(stacks, dtype)
+        inst.stacks2 = stacks2
         inst.upgraded = upgraded
         return inst
     cls = BUFF_MAP.get(buff_id)
     if cls:
         inst = cls(stacks)
+        inst.stacks2 = stacks2
         inst.upgraded = upgraded
         return inst
     return None
@@ -368,7 +395,7 @@ def get_buff_impl(buff_id: str, stacks: int) -> Optional[BuffImpl]:
 def apply_modify_heal_limit(run, target: str, current_max: int, engine) -> int:
     limit = current_max
     for b in list(run.player.buffs):
-        impl = get_buff_impl(b.id, b.stacks)
+        impl = get_buff_impl(b.id, b.stacks, getattr(b, "stacks2", None))
         if impl:
             limit = impl.modify_heal_limit(run, target, limit, engine)
     return limit
@@ -376,7 +403,7 @@ def apply_modify_heal_limit(run, target: str, current_max: int, engine) -> int:
 def apply_modify_spell_cost_ba(run, card, cost_ba: int, engine) -> int:
     cost = cost_ba
     for b in list(run.player.buffs):
-        impl = get_buff_impl(b.id, b.stacks)
+        impl = get_buff_impl(b.id, b.stacks, getattr(b, "stacks2", None))
         if impl:
             cost = impl.modify_spell_cost_ba(run, card, cost, engine)
     return cost
@@ -386,7 +413,7 @@ def apply_modify_spell_damage(run, card, damage: int, engine) -> int:
     if getattr(run.player, "subclass", "") == "塑能法师" and getattr(card, "type", "") == "spell":
         dmg = int(dmg * 1.15)
     for b in list(run.player.buffs):
-        impl = get_buff_impl(b.id, b.stacks)
+        impl = get_buff_impl(b.id, b.stacks, getattr(b, "stacks2", None))
         if impl:
             dmg = impl.modify_spell_damage(run, card, dmg, engine)
     return dmg
@@ -394,7 +421,7 @@ def apply_modify_spell_damage(run, card, damage: int, engine) -> int:
 def apply_on_card_played(run, card, target: str, engine) -> str:
     res = ""
     for b in list(run.player.buffs):
-        impl = get_buff_impl(b.id, b.stacks)
+        impl = get_buff_impl(b.id, b.stacks, getattr(b, "stacks2", None))
         if impl:
             extra = impl.on_card_played(run, card, target, engine)
             if extra:
@@ -403,20 +430,20 @@ def apply_on_card_played(run, card, target: str, engine) -> str:
 
 def apply_on_player_turn_start(run, engine):
     for b in list(run.player.buffs):
-        impl = get_buff_impl(b.id, b.stacks)
+        impl = get_buff_impl(b.id, b.stacks, getattr(b, "stacks2", None))
         if impl:
             impl.on_player_turn_start(run, engine)
 
 def apply_on_player_turn_end(run, engine):
     for b in list(run.player.buffs):
-        impl = get_buff_impl(b.id, b.stacks)
+        impl = get_buff_impl(b.id, b.stacks, getattr(b, "stacks2", None))
         if impl:
             impl.on_player_turn_end(run, b, engine)
 
 def apply_prevent_enemy_action(run, enemy, engine, logs: list) -> bool:
     prevented = False
     for b in list(enemy.buffs):
-        impl = get_buff_impl(b.id, b.stacks)
+        impl = get_buff_impl(b.id, b.stacks, getattr(b, "stacks2", None))
         if impl:
             if impl.prevent_enemy_action(run, enemy, b, engine, logs):
                 prevented = True

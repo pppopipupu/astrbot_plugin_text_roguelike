@@ -32,7 +32,9 @@ def render_battle(run: GameRun) -> str:
     if p.buffs:
         buff_strs = []
         for b in p.buffs:
-            if b.stacks > 1:
+            if getattr(b, "stacks2", None) is not None and b.stacks2 > 0:
+                buff_strs.append(f"{b.name}({b.stacks},{b.stacks2})")
+            elif b.stacks > 1:
                 buff_strs.append(f"{b.name} x{b.stacks}")
             else:
                 buff_strs.append(f"{b.name}")
@@ -51,7 +53,15 @@ def render_battle(run: GameRun) -> str:
                     skills_desc = " | 技能: " + " ".join([f"({idx}){s['name']}" for idx, s in enumerate(MINION_SKILLS[m.id], 1)])
                 buff_desc = ""
                 if getattr(m, "buffs", None):
-                    buff_desc = " | Buff: " + " ".join([f"{b.name} x{b.stacks}" if b.stacks > 1 else b.name for b in m.buffs])
+                    minion_buff_strs = []
+                    for b in m.buffs:
+                        if getattr(b, "stacks2", None) is not None and b.stacks2 > 0:
+                            minion_buff_strs.append(f"{b.name}({b.stacks},{b.stacks2})")
+                        elif b.stacks > 1:
+                            minion_buff_strs.append(f"{b.name} x{b.stacks}")
+                        else:
+                            minion_buff_strs.append(f"{b.name}")
+                    buff_desc = " | Buff: " + " ".join(minion_buff_strs)
                 atk_val = m.atk + (1 if "whetstone" in p.relics else 0)
                 lines.append(f" 格子 [{i}] 随从：{m.name} (❤️ HP {m.hp}/{m.max_hp} | ⚔️ 攻击 {atk_val} | ⚡ 动作 {m.actions}A {m.bonus_actions}BA {m.attack_actions}AA{skills_desc}{buff_desc})")
             elif key in p.amulets:
@@ -88,7 +98,15 @@ def render_battle(run: GameRun) -> str:
             shield_str = f" | 🛡️ 护盾 {enemy.shield}" if enemy.shield > 0 else ""
             buff_desc = ""
             if getattr(enemy, "buffs", None):
-                buff_desc = " | Buff: " + " ".join([f"{b.name} x{b.stacks}" if b.stacks > 1 else b.name for b in enemy.buffs])
+                enemy_buff_strs = []
+                for b in enemy.buffs:
+                    if getattr(b, "stacks2", None) is not None and b.stacks2 > 0:
+                        enemy_buff_strs.append(f"{b.name}({b.stacks},{b.stacks2})")
+                    elif b.stacks > 1:
+                        enemy_buff_strs.append(f"{b.name} x{b.stacks}")
+                    else:
+                        enemy_buff_strs.append(f"{b.name}")
+                buff_desc = " | Buff: " + " ".join(enemy_buff_strs)
             lines.append(f" 格子 [{idx}] 敌人：{enemy.name} (❤️ HP {enemy.hp}/{enemy.max_hp}{shield_str}{buff_desc} | ⚡ 动作 {enemy.actions}A {enemy.bonus_actions}BA | ⚔️ 意图：{intent_str})")
     lines.append("")
     lines.append("【你的手牌】")
@@ -162,7 +180,10 @@ def render_detailed_battle(run: GameRun) -> str:
         lines.append("  当前Buff状态：")
         for b in p.buffs:
             bdesc = b.desc or BUFF_CONFIG.get(b.id, {}).get("desc", "无具体描述")
-            lines.append(f"    • 【{b.name}】(层数: {b.stacks}): {bdesc}")
+            if getattr(b, "stacks2", None) is not None and b.stacks2 > 0:
+                lines.append(f"    • 【{b.name}】(层数: {b.stacks}, 持续: {b.stacks2}): {bdesc}")
+            else:
+                lines.append(f"    • 【{b.name}】(层数: {b.stacks}): {bdesc}")
     else:
         lines.append("  当前Buff状态：无")
     lines.append("")
@@ -197,7 +218,10 @@ def render_detailed_battle(run: GameRun) -> str:
                     lines.append("    随从Buff：")
                     for b in m.buffs:
                         bdesc = b.desc or BUFF_CONFIG.get(b.id, {}).get("desc", "无具体描述")
-                        lines.append(f"      • 【{b.name}】(层数: {b.stacks}): {bdesc}")
+                        if getattr(b, "stacks2", None) is not None and b.stacks2 > 0:
+                            lines.append(f"      • 【{b.name}】(层数: {b.stacks}, 持续: {b.stacks2}): {bdesc}")
+                        else:
+                            lines.append(f"      • 【{b.name}】(层数: {b.stacks}): {bdesc}")
             elif key in p.amulets:
                 a = p.amulets[key]
                 lines.append(f"  格子 [{i}] 护符：{a.name}")
@@ -238,7 +262,10 @@ def render_detailed_battle(run: GameRun) -> str:
                 lines.append("    敌人Buff：")
                 for b in enemy.buffs:
                     bdesc = b.desc or BUFF_CONFIG.get(b.id, {}).get("desc", "无具体描述")
-                    lines.append(f"      • 【{b.name}】(层数: {b.stacks}): {bdesc}")
+                    if getattr(b, "stacks2", None) is not None and b.stacks2 > 0:
+                        lines.append(f"      • 【{b.name}】(层数: {b.stacks}, 持续: {b.stacks2}): {bdesc}")
+                    else:
+                        lines.append(f"      • 【{b.name}】(层数: {b.stacks}): {bdesc}")
     lines.append("━━━━━━━━━━━━━━━━━━━━")
     return "\n".join(lines)
 

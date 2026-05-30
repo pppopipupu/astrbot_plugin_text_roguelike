@@ -270,5 +270,9 @@ BUFF_CONFIG = {
     "immune_thunder": {
         "name": "雷鸣免疫",
         "desc": "受到的雷鸣伤害减少 100%"
+    },
+    "burning": {
+        "name": "燃烧",
+        "desc": "每回合开始时受到火焰伤害"
     }
 }
