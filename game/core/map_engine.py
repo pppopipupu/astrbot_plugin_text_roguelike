@@ -260,3 +260,6 @@ class MapEngine:
 
     def remove_card_from_deck(self, run: GameRun, deck_idx: int) -> str:
         return self.explore_engine.remove_card_from_deck(run, deck_idx)
+
+    def upgrade_card_in_deck(self, run: GameRun, deck_idx: int) -> str:
+        return self.explore_engine.upgrade_card_in_deck(run, deck_idx)

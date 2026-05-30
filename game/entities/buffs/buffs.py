@@ -3,6 +3,7 @@ from typing import List, Optional
 class BuffImpl:
     def __init__(self, stacks: int):
         self.stacks = stacks
+        self.upgraded = False
 
     def modify_heal_limit(self, run, target: str, current_max: int, engine) -> int:
         return current_max
@@ -70,6 +71,8 @@ class EchoFormBuff(BuffImpl):
         if num_echoes > 0:
             res = ""
             for _ in range(num_echoes):
+                if event.engine.is_battle_won(event.run):
+                    break
                 extra_res = event.engine._execute_card_effect(event.run, event.card, event.target)
                 res += f" 🔁 [回响触发] {extra_res}"
             event.feedback += res
@@ -80,6 +83,8 @@ class EchoFormBuff(BuffImpl):
         res = ""
         if num_echoes > 0:
             for _ in range(num_echoes):
+                if engine.is_battle_won(run):
+                    break
                 extra_res = engine._execute_card_effect(run, card, target)
                 res += f" 🔁 [回响触发] {extra_res}"
         return res
@@ -126,10 +131,12 @@ class MagicNetworkBuff(BuffImpl):
 class WishPowerBuff(BuffImpl):
     def on_damage_calculate(self, event, buff_state, entity):
         if entity == event.run.player and event.damage_type == "spell" and event.source == "p0":
-            event.modified_damage += buff_state.stacks * 4
+            val = 6 if self.upgraded else 4
+            event.modified_damage += buff_state.stacks * val
 
     def modify_spell_damage(self, run, card, damage: int, engine) -> int:
-        return damage + self.stacks * 4
+        val = 6 if self.upgraded else 4
+        return damage + self.stacks * val
 
 class StunBuff(BuffImpl):
     def on_turn_start(self, event, buff_state, entity):
@@ -154,6 +161,8 @@ class BeatOfDeathBuff(BuffImpl):
         self.damage_value = stacks
 
     def on_card_played(self, event, buff_state, entity):
+        if event.run.node_data.get("extra_turns_left", 0) > 0 and event.run.node_data.get("time_stop_upgraded"):
+            return
         p = event.run.player
         engine = event.engine
         dmg = self.damage_value
@@ -201,6 +210,43 @@ class VulnerableBuff(BuffImpl):
             if buff_state.stacks <= 0:
                 entity.buffs.remove(buff_state)
 
+class FireGrowBuff(BuffImpl):
+    def on_damage_calculate(self, event, buff_state, entity):
+        if entity == event.run.player and event.damage_type == "fire" and event.source == "p0":
+            event.modified_damage += buff_state.stacks
+
+    def modify_spell_damage(self, run, card, damage: int, engine) -> int:
+        if getattr(card, "damage_type", "") == "fire":
+            return damage + self.stacks
+        return damage
+
+class ForgeBackfireBuff(BuffImpl):
+    def on_damage_calculate(self, event, buff_state, entity):
+        if entity == event.run.player and event.damage_type == "spell" and event.source == "p0":
+            event.modified_damage = max(0, event.modified_damage - buff_state.stacks)
+
+    def modify_spell_damage(self, run, card, damage: int, engine) -> int:
+        return max(0, damage - self.stacks)
+
+    def on_turn_end(self, event, buff_state, entity):
+        if entity == event.run.player:
+            buff_state.stacks -= 1
+            if buff_state.stacks <= 0:
+                event.run.player.buffs.remove(buff_state)
+
+class TimeWarpSpellBoostBuff(BuffImpl):
+    def on_damage_calculate(self, event, buff_state, entity):
+        if entity == event.run.player and event.damage_type == "spell" and event.source == "p0":
+            event.modified_damage += buff_state.stacks * 2
+
+    def modify_spell_damage(self, run, card, damage: int, engine) -> int:
+        return damage + self.stacks * 2
+
+    def on_turn_end(self, event, buff_state, entity):
+        if entity == event.run.player:
+            if buff_state in event.run.player.buffs:
+                event.run.player.buffs.remove(buff_state)
+
 BUFF_MAP = {
     "tactical_focus": TacticalFocusBuff,
     "quicken": QuickenBuff,
@@ -214,18 +260,31 @@ BUFF_MAP = {
     "beat_of_death": BeatOfDeathBuff,
     "strength": StrengthBuff,
     "fury": FuryBuff,
+    "fire_grow": FireGrowBuff,
+    "forge_backfire": ForgeBackfireBuff,
+    "time_warp_spell_boost": TimeWarpSpellBoostBuff,
 }
 
 def get_buff_impl(buff_id: str, stacks: int) -> Optional[BuffImpl]:
+    upgraded = False
+    if isinstance(buff_id, str) and buff_id.endswith("+"):
+        upgraded = True
+        buff_id = buff_id[:-1]
     if buff_id.startswith("minor_vulnerable_"):
         dtype = buff_id[len("minor_vulnerable_"):]
-        return MinorVulnerableBuff(stacks, dtype)
+        inst = MinorVulnerableBuff(stacks, dtype)
+        inst.upgraded = upgraded
+        return inst
     elif buff_id.startswith("vulnerable_"):
         dtype = buff_id[len("vulnerable_"):]
-        return VulnerableBuff(stacks, dtype)
+        inst = VulnerableBuff(stacks, dtype)
+        inst.upgraded = upgraded
+        return inst
     cls = BUFF_MAP.get(buff_id)
     if cls:
-        return cls(stacks)
+        inst = cls(stacks)
+        inst.upgraded = upgraded
+        return inst
     return None
 
 def apply_modify_heal_limit(run, target: str, current_max: int, engine) -> int:

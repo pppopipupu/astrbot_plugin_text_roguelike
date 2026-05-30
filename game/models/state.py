@@ -81,6 +81,7 @@ class Card:
     ethereal: bool = False
     unplayable: bool = False
     damage_type: str = "effect"
+    upgraded: bool = False
 
     def execute(self, run: 'GameRun', target: Optional[str] = None, engine = None) -> str:
         return ""
@@ -119,6 +120,8 @@ class PlayerState:
     discard_pile: List[str] = field(default_factory=list)
     exhaust_pile: List[str] = field(default_factory=list)
     graveyard: List[str] = field(default_factory=list)
+    minion_graveyard: List[str] = field(default_factory=list)
+    enemy_graveyard: List[str] = field(default_factory=list)
     hand: List[str] = field(default_factory=list)
     actions: int = 1
     bonus_actions: int = 1
@@ -131,20 +134,31 @@ class PlayerState:
     subclass: str = ""
 
 @dataclass
+class EnemyIntentState:
+    type: str = ""
+    val: int = 0
+    desc: str = ""
+    cost_a: int = 1
+    cost_ba: int = 0
+    cancelled: bool = False
+    cancelled_desc: str = ""
+
+@dataclass
 class EnemyState:
     name: str
     hp: int
     max_hp: int
     shield: int
-    intent_type: str = ""
-    intent_val: int = 0
-    intent_desc: str = ""
     actions: int = 1
     bonus_actions: int = 1
     buffs: List[BuffState] = field(default_factory=list)
     is_summon: bool = False
     max_actions: int = 1
     max_bonus_actions: int = 0
+    intents: List[EnemyIntentState] = field(default_factory=list)
+    intent_type: str = ""
+    intent_val: int = 0
+    intent_desc: str = ""
     intent_a_type: str = ""
     intent_a_val: int = 0
     intent_a_desc: str = ""
@@ -157,6 +171,50 @@ class EnemyState:
     intent_ba2_type: str = ""
     intent_ba2_val: int = 0
     intent_ba2_desc: str = ""
+
+    def __post_init__(self):
+        if not self.intents:
+            if self.intent_type or self.intent_desc:
+                self.intents.append(EnemyIntentState(
+                    type=self.intent_type,
+                    val=self.intent_val,
+                    desc=self.intent_desc,
+                    cost_a=1,
+                    cost_ba=0
+                ))
+            else:
+                if self.intent_a_desc:
+                    self.intents.append(EnemyIntentState(
+                        type=self.intent_a_type,
+                        val=self.intent_a_val,
+                        desc=self.intent_a_desc,
+                        cost_a=1,
+                        cost_ba=0
+                    ))
+                if self.intent_a2_desc:
+                    self.intents.append(EnemyIntentState(
+                        type=self.intent_a2_type,
+                        val=self.intent_a2_val,
+                        desc=self.intent_a2_desc,
+                        cost_a=1,
+                        cost_ba=0
+                    ))
+                if self.intent_ba_desc:
+                    self.intents.append(EnemyIntentState(
+                        type=self.intent_ba_type,
+                        val=self.intent_ba_val,
+                        desc=self.intent_ba_desc,
+                        cost_a=0,
+                        cost_ba=1
+                    ))
+                if self.intent_ba2_desc:
+                    self.intents.append(EnemyIntentState(
+                        type=self.intent_ba2_type,
+                        val=self.intent_ba2_val,
+                        desc=self.intent_ba2_desc,
+                        cost_a=0,
+                        cost_ba=1
+                    ))
 
     def __setattr__(self, key, value):
         if key == "hp":

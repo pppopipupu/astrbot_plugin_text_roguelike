@@ -91,6 +91,7 @@ class BattleEngine:
         from ..entities.relics.relics import get_relic_impl
         from ..entities.buffs.buffs import get_buff_impl
         if event.is_player:
+            event.run.node_data["player_damaged_this_turn"] = False
             for r in list(event.run.player.relics):
                 impl = get_relic_impl(r)
                 if impl and hasattr(impl, "on_turn_start"):
@@ -146,7 +147,8 @@ class BattleEngine:
                 if impl and hasattr(impl, "on_card_played"):
                     impl.on_card_played(event, b, enemy)
         for ak, av in list(event.run.player.amulets.items()):
-            template = ALL_AMULETS.get(av.id)
+            base_id = av.id[:-1] if av.id.endswith("+") else av.id
+            template = ALL_AMULETS.get(base_id)
             if template and hasattr(template, "on_spell_played") and event.card.type == "spell":
                 template.on_spell_played(event.run, ak, event.card, self)
 
@@ -198,7 +200,8 @@ class BattleEngine:
         from ..entities.amulets.amulets import ALL_AMULETS
         if event.target == "p0" and event.amount > 0:
             for ak, av in list(event.run.player.amulets.items()):
-                template = ALL_AMULETS.get(av.id)
+                base_id = av.id[:-1] if av.id.endswith("+") else av.id
+                template = ALL_AMULETS.get(base_id)
                 if template and hasattr(template, "on_take_damage"):
                     msg = template.on_take_damage(event.run, ak, event.source, event.amount, self)
                     if msg:
@@ -222,8 +225,7 @@ class BattleEngine:
         pass
 
     def _proxy_minion_death(self, event):
-        if event.is_enemy and getattr(sys, "_rogue_stat_recorder", None):
-            sys._rogue_stat_recorder(event.name, 0, True)
+        pass
 
     def _proxy_minion_summon(self, event):
         from ..entities.relics.relics import get_relic_impl
@@ -300,6 +302,7 @@ class BattleEngine:
         return "未知"
 
     def _damage_target(self, run: GameRun, target: str, dmg: int, source: str = "effect", damage_type: str = "effect", card: Optional[Card] = None):
+        target_name = self._get_target_name(run, target)
         calc_evt = DamageCalculateEvent(run, card, source, target, damage_type, dmg, dmg)
         self.event_bus.dispatch(calc_evt)
         final_dmg = max(0, calc_evt.modified_damage)
@@ -334,13 +337,15 @@ class BattleEngine:
                         e.shield = 0
                 if e.hp <= 0:
                     is_fatal = True
-                    p.graveyard.append("enemy:" + e.name)
+                    p.enemy_graveyard.append(e.name)
                     run.enemies.pop(idx)
                     death_evt = MinionDeathEvent(run, e.name, target, e.name, True)
                     self.event_bus.dispatch(death_evt)
                 take_evt = DamageTakeEvent(run, source, target, final_dmg, is_fatal)
                 self.event_bus.dispatch(take_evt)
         elif target == "p0":
+            if final_dmg > 0:
+                run.node_data["player_damaged_this_turn"] = True
             if is_true:
                 hp_dmg = final_dmg
                 p.hp -= final_dmg
@@ -365,7 +370,7 @@ class BattleEngine:
                 m.hp -= final_dmg
                 if m.hp <= 0:
                     is_fatal = True
-                    p.graveyard.append("minion:" + m.id)
+                    p.minion_graveyard.append(m.id)
                     del p.minions[grid]
                     death_evt = MinionDeathEvent(run, m.id, target, m.name, False)
                     self.event_bus.dispatch(death_evt)
@@ -373,7 +378,6 @@ class BattleEngine:
                 self.event_bus.dispatch(take_evt)
         damage_type_str = damage_type.value if hasattr(damage_type, "value") else str(damage_type)
         type_name = DAMAGE_TYPE_NAMES.get(damage_type_str, "物理" if damage_type_str == "attack" else "特殊")
-        target_name = self._get_target_name(run, target)
         log_msg = f"对【{target_name}】造成 {final_dmg} 点{type_name}伤害"
         if shield_dmg == 0 and hp_dmg == 0:
             log_msg += f"（但{target_name}免疫了这次攻击！）"
@@ -426,48 +430,95 @@ class BattleEngine:
                 run.enemies[idx].shield += final_amount
 
     def _sync_enemy_intents(self, enemy: EnemyState):
+        from ..models.state import EnemyIntentState
+        has_old_active = False
+        old_intents = []
+        if enemy.intent_a_desc and "已取消" not in enemy.intent_a_desc and "眩晕" not in enemy.intent_a_desc:
+            old_intents.append(EnemyIntentState(type=enemy.intent_a_type, val=enemy.intent_a_val, desc=enemy.intent_a_desc, cost_a=1, cost_ba=0))
+            has_old_active = True
+        if getattr(enemy, "intent_a2_desc", None) and "已取消" not in enemy.intent_a2_desc:
+            old_intents.append(EnemyIntentState(type=enemy.intent_a2_type, val=enemy.intent_a2_val, desc=enemy.intent_a2_desc, cost_a=1, cost_ba=0))
+            has_old_active = True
+        if enemy.intent_ba_desc and "已取消" not in enemy.intent_ba_desc:
+            old_intents.append(EnemyIntentState(type=enemy.intent_ba_type, val=enemy.intent_ba_val, desc=enemy.intent_ba_desc, cost_a=0, cost_ba=1))
+            has_old_active = True
+        if getattr(enemy, "intent_ba2_desc", None) and "已取消" not in enemy.intent_ba2_desc:
+            old_intents.append(EnemyIntentState(type=enemy.intent_ba2_type, val=enemy.intent_ba2_val, desc=enemy.intent_ba2_desc, cost_a=0, cost_ba=1))
+            has_old_active = True
+
+        if has_old_active:
+            if not enemy.intents or len(enemy.intents) != len(old_intents) or any(
+                enemy.intents[i].type != old_intents[i].type or enemy.intents[i].desc != old_intents[i].desc
+                for i in range(min(len(enemy.intents), len(old_intents)))
+            ):
+                enemy.intents = old_intents
+
         has_stun = False
         if getattr(enemy, "buffs", None):
             for b in enemy.buffs:
                 if b.id == "stun" and b.stacks > 0:
                     has_stun = True
                     break
-        slots = []
-        for attr in dir(enemy):
-            if attr.startswith("intent_") and attr.endswith("_type") and attr != "intent_type":
-                slots.append(attr[len("intent_"):-len("_type")])
-        def slot_sort_key(s):
-            return ("ba" in s, s)
-        slots.sort(key=slot_sort_key)
         if has_stun:
             enemy.actions = 0
             enemy.bonus_actions = 0
-            for slot in slots:
-                setattr(enemy, f"intent_{slot}_type", "")
-                if slot == "a":
-                    setattr(enemy, f"intent_{slot}_desc", "眩晕 (本回合无法行动)")
-                else:
-                    setattr(enemy, f"intent_{slot}_desc", "")
+            enemy.intents = [
+                EnemyIntentState(
+                    type="stun",
+                    val=0,
+                    desc="眩晕 (本回合无法行动)",
+                    cost_a=0,
+                    cost_ba=0
+                )
+            ]
         else:
             temp_a = enemy.actions
             temp_ba = enemy.bonus_actions
-            for slot in slots:
-                itype = getattr(enemy, f"intent_{slot}_type", "")
-                if not itype and "已取消" not in getattr(enemy, f"intent_{slot}_desc", ""):
-                    continue
-                is_ba = "ba" in slot
-                if is_ba:
-                    if temp_ba >= 1:
-                        temp_ba -= 1
+            for it in enemy.intents:
+                it.cancelled = False
+                it.cancelled_desc = ""
+                if it.cost_a > 0:
+                    if temp_a >= it.cost_a:
+                        temp_a -= it.cost_a
                     else:
-                        setattr(enemy, f"intent_{slot}_type", "")
-                        setattr(enemy, f"intent_{slot}_desc", "已取消 (动作点不足)")
-                else:
-                    if temp_a >= 1:
-                        temp_a -= 1
+                        it.cancelled = True
+                        it.cancelled_desc = "已取消 (动作点不足)"
+                if it.cost_ba > 0:
+                    if temp_ba >= it.cost_ba:
+                        temp_ba -= it.cost_ba
                     else:
-                        setattr(enemy, f"intent_{slot}_type", "")
-                        setattr(enemy, f"intent_{slot}_desc", "已取消 (动作点不足)")
+                        it.cancelled = True
+                        it.cancelled_desc = "已取消 (动作点不足)"
+        enemy.intent_a_type = ""
+        enemy.intent_a_val = 0
+        enemy.intent_a_desc = ""
+        enemy.intent_a2_type = ""
+        enemy.intent_a2_val = 0
+        enemy.intent_a2_desc = ""
+        enemy.intent_ba_type = ""
+        enemy.intent_ba_val = 0
+        enemy.intent_ba_desc = ""
+        enemy.intent_ba2_type = ""
+        enemy.intent_ba2_val = 0
+        enemy.intent_ba2_desc = ""
+        a_slots = []
+        ba_slots = []
+        for it in enemy.intents:
+            desc = it.cancelled_desc if it.cancelled else it.desc
+            itype = "" if (it.cancelled or it.type == "stun") else it.type
+            val = 0 if it.cancelled else it.val
+            if it.cost_ba > 0:
+                ba_slots.append((itype, val, desc))
+            else:
+                a_slots.append((itype, val, desc))
+        if len(a_slots) >= 1:
+            enemy.intent_a_type, enemy.intent_a_val, enemy.intent_a_desc = a_slots[0]
+        if len(a_slots) >= 2:
+            enemy.intent_a2_type, enemy.intent_a2_val, enemy.intent_a2_desc = a_slots[1]
+        if len(ba_slots) >= 1:
+            enemy.intent_ba_type, enemy.intent_ba_val, enemy.intent_ba_desc = ba_slots[0]
+        if len(ba_slots) >= 2:
+            enemy.intent_ba2_type, enemy.intent_ba2_val, enemy.intent_ba2_desc = ba_slots[1]
 
     def _add_buff_to(self, entity, buff_id: str, buff_name: str, desc: str, count: int = 1):
         for b in entity.buffs:
@@ -519,7 +570,8 @@ class BattleEngine:
         random.shuffle(p.draw_pile)
         p.discard_pile.clear()
         p.exhaust_pile.clear()
-        p.graveyard.clear()
+        p.minion_graveyard.clear()
+        p.enemy_graveyard.clear()
         p.minions.clear()
         p.amulets.clear()
         p.buffs.clear()
@@ -956,10 +1008,14 @@ class BattleEngine:
         self.event_bus.dispatch(evt_end)
 
         retained = []
+        temp_retains = list(run.node_data.get("temp_retain_cards", []))
         for cid in p.hand:
             card = ALL_CARDS.get(cid)
             if card and getattr(card, "retain", False):
                 retained.append(cid)
+            elif cid in temp_retains:
+                retained.append(cid)
+                temp_retains.remove(cid)
             elif card and getattr(card, "ethereal", False):
                 p.exhaust_pile.append(cid)
                 self._log_event(run, f"✨ [虚无] 【{card.name}】在回合结束时被消耗。")
@@ -968,9 +1024,11 @@ class BattleEngine:
             else:
                 p.discard_pile.append(cid)
         p.hand = retained
+        run.node_data["temp_retain_cards"] = []
 
         for ak, av in list(p.amulets.items()):
-            template = ALL_AMULETS.get(av.id)
+            base_id = av.id[:-1] if av.id.endswith("+") else av.id
+            template = ALL_AMULETS.get(base_id)
             if template:
                 template.on_end_turn(run, ak, self)
             av.countdown -= 1
@@ -1065,50 +1123,32 @@ class BattleEngine:
             if enemy.actions == 0 and enemy.bonus_actions == 0:
                 continue
             template = get_enemy_template(enemy.name)
-            slots = []
-            for attr in dir(enemy):
-                if attr.startswith("intent_") and attr.endswith("_type") and attr != "intent_type":
-                    slots.append(attr[len("intent_"):-len("_type")])
-            def slot_sort_key(s):
-                return ("ba" in s, s)
-            slots.sort(key=slot_sort_key)
-            for slot in slots:
+            for it in list(enemy.intents):
                 if enemy.hp <= 0:
                     break
-                itype = getattr(enemy, f"intent_{slot}_type", "")
-                if not itype:
+                if it.cancelled:
                     continue
-                val = getattr(enemy, f"intent_{slot}_val", 0)
-                desc = getattr(enemy, f"intent_{slot}_desc", "")
-                is_ba = "ba" in slot
-                if is_ba:
-                    if enemy.bonus_actions >= 1:
-                        enemy.bonus_actions -= 1
-                        orig_type = getattr(enemy, "intent_type", "")
-                        orig_val = getattr(enemy, "intent_val", 0)
-                        try:
-                            enemy.intent_type = itype
-                            enemy.intent_val = val
-                            template.execute_intent(run, self, enemy, logs)
-                        finally:
-                            enemy.intent_type = orig_type
-                            enemy.intent_val = orig_val
-                    else:
-                        logs.append(f"⚠️ 【{enemy.name}】因附赠动作点（BA）不足，取消了意图【{desc}】。")
-                else:
-                    if enemy.actions >= 1:
-                        enemy.actions -= 1
-                        orig_type = getattr(enemy, "intent_type", "")
-                        orig_val = getattr(enemy, "intent_val", 0)
-                        try:
-                            enemy.intent_type = itype
-                            enemy.intent_val = val
-                            template.execute_intent(run, self, enemy, logs)
-                        finally:
-                            enemy.intent_type = orig_type
-                            enemy.intent_val = orig_val
-                    else:
-                        logs.append(f"⚠️ 【{enemy.name}】因动作点（A）不足，取消了意图【{desc}】。")
+                if it.cost_a > 0 and enemy.actions < it.cost_a:
+                    logs.append(f"⚠️ 【{enemy.name}】因动作点（A）不足，取消了意图【{it.desc}】。")
+                    it.cancelled = True
+                    it.cancelled_desc = "已取消 (动作点不足)"
+                    continue
+                if it.cost_ba > 0 and enemy.bonus_actions < it.cost_ba:
+                    logs.append(f"⚠️ 【{enemy.name}】因附赠动作点（BA）不足，取消了意图【{it.desc}】。")
+                    it.cancelled = True
+                    it.cancelled_desc = "已取消 (动作点不足)"
+                    continue
+                enemy.actions = max(0, enemy.actions - it.cost_a)
+                enemy.bonus_actions = max(0, enemy.bonus_actions - it.cost_ba)
+                template.execute_intent(run, self, enemy, it, logs)
+
+        evt_turn_end = TurnEndEvent(run, is_player=False)
+        self.event_bus.dispatch(evt_turn_end)
+
+        for enemy in run.enemies:
+            enemy.actions = enemy.max_actions
+            enemy.bonus_actions = enemy.max_bonus_actions
+        return "\n".join(logs)
 
         evt_turn_end = TurnEndEvent(run, is_player=False)
         self.event_bus.dispatch(evt_turn_end)
@@ -1162,35 +1202,5 @@ class BattleEngine:
             if enemy.hp <= 0:
                 continue
             template = get_enemy_template(enemy.name)
-            itype, val, desc = template.roll_intent(run, self, enemy)
-            enemy.intent_a_type = itype
-            enemy.intent_a_val = val
-            enemy.intent_a_desc = desc
-            if enemy.max_actions >= 2:
-                itype_a2, val_a2, desc_a2 = template.roll_intent_a2(run, self, enemy)
-                enemy.intent_a2_type = itype_a2
-                enemy.intent_a2_val = val_a2
-                enemy.intent_a2_desc = desc_a2
-            else:
-                enemy.intent_a2_type = ""
-                enemy.intent_a2_val = 0
-                enemy.intent_a2_desc = ""
-            if enemy.max_bonus_actions >= 1:
-                itype_ba, val_ba, desc_ba = template.roll_intent_ba(run, self, enemy)
-                enemy.intent_ba_type = itype_ba
-                enemy.intent_ba_val = val_ba
-                enemy.intent_ba_desc = desc_ba
-            else:
-                enemy.intent_ba_type = ""
-                enemy.intent_ba_val = 0
-                enemy.intent_ba_desc = ""
-            if enemy.max_bonus_actions >= 2:
-                itype_ba2, val_ba2, desc_ba2 = template.roll_intent_ba2(run, self, enemy)
-                enemy.intent_ba2_type = itype_ba2
-                enemy.intent_ba2_val = val_ba2
-                enemy.intent_ba2_desc = desc_ba2
-            else:
-                enemy.intent_ba2_type = ""
-                enemy.intent_ba2_val = 0
-                enemy.intent_ba2_desc = ""
+            enemy.intents = template.roll_intents(run, self, enemy)
             self._sync_enemy_intents(enemy)

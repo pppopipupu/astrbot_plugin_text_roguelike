@@ -69,7 +69,8 @@ def render_query_info(query_str: str) -> str:
                 lines.append("技能列表：仅有普通攻击 (消耗 1A)。")
             lines.append("")
     for cid, cfg in CARD_CONFIG.items():
-        if q == cid.lower() or q in cfg.get("name", "").lower():
+        q_clean = q[:-1] if q.endswith("+") else q
+        if q_clean and (q_clean == cid.lower() or q_clean == cfg.get("name", "").lower() or q_clean in cid.lower() or q_clean in cfg.get("name", "").lower()):
             found = True
             cname = cfg.get("name", cid)
             ctype = cfg.get("type", "")
@@ -101,6 +102,22 @@ def render_query_info(query_str: str) -> str:
             lines.append(f"消耗：{cost_str}")
             lines.append(f"效果：{desc}")
             lines.append("")
+            
+            from ..cards import ALL_CARDS
+            from ..data.card_upgrade_data import CARD_UPGRADE_CONFIG
+            if cid in CARD_UPGRADE_CONFIG:
+                up_card = ALL_CARDS.get(cid + "+")
+                if up_card:
+                    up_cost_str = ""
+                    if up_card.cost_a > 0:
+                        up_cost_str += f"{up_card.cost_a}A "
+                    if up_card.cost_ba > 0:
+                        up_cost_str += f"{up_card.cost_ba}BA "
+                    up_cost_str = up_cost_str.strip() or "免费"
+                    lines.append(f"🔨 升级变体：{up_card.name} ({ctype_ch} | {rname_rarity})")
+                    lines.append(f"升级消耗：{up_cost_str}")
+                    lines.append(f"升级效果：{up_card.desc}")
+                    lines.append("")
     for eid, cfg in ENEMY_CONFIG.items():
         if q == eid.lower() or q in cfg.get("name", "").lower():
             found = True

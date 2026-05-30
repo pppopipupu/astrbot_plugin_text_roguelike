@@ -1,6 +1,6 @@
 from ..models.state import GameRun, UserStats
 from .menu import render_menu, render_card_library, render_relic_library, render_deck, render_stats, render_help, render_shop as render_outside_shop
-from .battle import render_battle, render_detailed_battle, render_draw_pile, render_discard_pile, render_exhaust_pile
+from .battle import render_battle, render_detailed_battle, render_draw_pile, render_discard_pile, render_exhaust_pile, render_minion_graveyard, render_enemy_graveyard
 from .map import render_map_select, render_start_ancient, render_ancient
 from .explore import render_event, render_shop, render_rest, render_reward, render_treasure, render_card_select
 from .query import render_query_info
@@ -80,3 +80,11 @@ class GameRenderer:
     @staticmethod
     def render_exhaust_pile(run: GameRun) -> str:
         return render_exhaust_pile(run)
+
+    @staticmethod
+    def render_minion_graveyard(run: GameRun) -> str:
+        return render_minion_graveyard(run)
+
+    @staticmethod
+    def render_enemy_graveyard(run: GameRun) -> str:
+        return render_enemy_graveyard(run)

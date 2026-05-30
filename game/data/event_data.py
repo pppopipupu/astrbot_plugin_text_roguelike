@@ -280,6 +280,31 @@ EVENT_CONFIG = {
             }
         ]
     },
+    "forge_furnace": {
+        "description": "你在废墟的中心发现了一座依然在熊熊燃烧的【奥术符文熔炉】。熔炉内部的魔法符文正处于不稳定状态，散发着诱人但危险的热量。",
+        "options": [
+            {
+                "text": "使用常规重铸 (使卡组中的一张卡牌升级)",
+                "action": "forge_fire"
+            },
+            {
+                "text": "过载重铸 (80%几率使卡组中两张随机卡牌升级，20%几率遭到能量反噬扣除 8 生命值且获得 1张【苦恼】)",
+                "action": "overload_forge"
+            },
+            {
+                "text": "汲取熔炉余温 (生命上限增加 5，恢复 10 生命值，但法术伤害受余温干扰降低：获得 2层【炉温反噬】buff)",
+                "action": "forge_backfire"
+            },
+            {
+                "text": "强行破坏熔炉 (获得 50 金币和 1个随机遗物，但炉体爆炸造成 6 点伤害且获得 1张【晕眩】)",
+                "action": "shatter_forge"
+            },
+            {
+                "text": "安全离开 (离开事件)",
+                "action": "leave_event"
+            }
+        ]
+    },
     "leave_default": {
         "text": "离开事件",
         "action": "leave_event"

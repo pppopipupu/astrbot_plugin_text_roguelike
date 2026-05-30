@@ -90,3 +90,6 @@ class GameEngine:
 
     def _discard_card(self, run: GameRun, cid: str) -> str:
         return self.battle_engine._discard_card(run, cid)
+
+    def upgrade_card_in_deck(self, run: GameRun, deck_idx: int) -> str:
+        return self.map_engine.upgrade_card_in_deck(run, deck_idx)

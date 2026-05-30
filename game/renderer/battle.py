@@ -70,18 +70,18 @@ def render_battle(run: GameRun) -> str:
                         strength += b.stacks
             intent_parts = []
             a_parts = []
-            if enemy.intent_a_desc:
-                a_parts.append(adjust_intent_desc_with_strength(enemy.intent_a_desc, strength))
-            if getattr(enemy, "intent_a2_desc", None):
-                a_parts.append(adjust_intent_desc_with_strength(enemy.intent_a2_desc, strength))
+            ba_parts = []
+            for it in getattr(enemy, "intents", []):
+                desc = it.cancelled_desc if it.cancelled else it.desc
+                if not desc:
+                    continue
+                desc = adjust_intent_desc_with_strength(desc, strength)
+                if it.cost_ba > 0:
+                    ba_parts.append(desc)
+                else:
+                    a_parts.append(desc)
             if a_parts:
                 intent_parts.append(f"A: {' + '.join(a_parts)}")
-
-            ba_parts = []
-            if enemy.intent_ba_desc:
-                ba_parts.append(adjust_intent_desc_with_strength(enemy.intent_ba_desc, strength))
-            if enemy.intent_ba2_desc:
-                ba_parts.append(adjust_intent_desc_with_strength(enemy.intent_ba2_desc, strength))
             if ba_parts:
                 intent_parts.append(f"BA: {' + '.join(ba_parts)}")
             intent_str = f"({', '.join(intent_parts)})" if intent_parts else "无意图"
@@ -110,10 +110,14 @@ def render_battle(run: GameRun) -> str:
                     "rare": "稀有",
                     "epic": "珍奇",
                     "legendary": "传奇",
-                    "mythic": "神器"
+                    "mythic": "神器",
+                    "curse": "诅咒"
                 }
                 rname = rarity_map.get(getattr(card, "rarity", "common"), "普通")
-                lines.append(f" [{idx}] {color_ch} {card.name} <{rname}> (消耗: {cost_str}) - {card.desc}")
+                if getattr(card, "unplayable", False):
+                    lines.append(f" [{idx}] {color_ch} {card.name} <{rname}> - {card.desc}")
+                else:
+                    lines.append(f" [{idx}] {color_ch} {card.name} <{rname}> (消耗: {cost_str}) - {card.desc}")
     if run.node_data.get("pending_discard"):
         lines.append("⚠️ 状态：请选择一张手牌丢弃！请输入：/rogue 选择 <手牌序号>")
         lines.append("━━━━━━━━━━━━━━━━━━━━")
@@ -144,7 +148,7 @@ def render_detailed_battle(run: GameRun) -> str:
         f"  生命值：HP {p.hp}/{cur_max}",
         f"  护盾值：{p.shield}",
         f"  动作资源：{p.actions}A {p.bonus_actions}BA",
-        f"  牌堆状态：手牌 {len(p.hand)}张 | 抽牌堆 {len(p.draw_pile)}张 | 弃牌堆 {len(p.discard_pile)}张 | 消耗堆 {len(p.exhaust_pile)}张",
+        f"  牌堆状态：手牌 {len(p.hand)}张 | 抽牌堆 {len(p.draw_pile)}张 | 弃牌堆 {len(p.discard_pile)}张 | 消耗堆 {len(p.exhaust_pile)}张 | 随从墓地 {len(p.minion_graveyard)}个 | 敌人墓地 {len(p.enemy_graveyard)}个",
     ]
     if p.relics:
         lines.append("  拥有遗物：")
@@ -214,18 +218,18 @@ def render_detailed_battle(run: GameRun) -> str:
                         strength += b.stacks
             intent_parts = []
             a_parts = []
-            if enemy.intent_a_desc:
-                a_parts.append(adjust_intent_desc_with_strength(enemy.intent_a_desc, strength))
-            if getattr(enemy, "intent_a2_desc", None):
-                a_parts.append(adjust_intent_desc_with_strength(enemy.intent_a2_desc, strength))
+            ba_parts = []
+            for it in getattr(enemy, "intents", []):
+                desc = it.cancelled_desc if it.cancelled else it.desc
+                if not desc:
+                    continue
+                desc = adjust_intent_desc_with_strength(desc, strength)
+                if it.cost_ba > 0:
+                    ba_parts.append(desc)
+                else:
+                    a_parts.append(desc)
             if a_parts:
                 intent_parts.append(f"动作(A)：{' + '.join(a_parts)}")
-
-            ba_parts = []
-            if enemy.intent_ba_desc:
-                ba_parts.append(adjust_intent_desc_with_strength(enemy.intent_ba_desc, strength))
-            if enemy.intent_ba2_desc:
-                ba_parts.append(adjust_intent_desc_with_strength(enemy.intent_ba2_desc, strength))
             if ba_parts:
                 intent_parts.append(f"附赠动作(BA)：{' + '.join(ba_parts)}")
             intent_str = " | ".join(intent_parts) if intent_parts else "无意图"
@@ -295,6 +299,47 @@ def render_exhaust_pile(run: GameRun) -> str:
         for cid in p.exhaust_pile:
             name = ALL_CARDS[cid].name if cid in ALL_CARDS else cid
             counts[name] = counts.get(name, 0) + 1
+        sorted_names = sorted(counts.keys())
+        for idx, name in enumerate(sorted_names, 1):
+            lines.append(f"  {idx}. 【{name}】 x{counts[name]}")
+    lines.append("━━━━━━━━━━━━━━━━━━━━")
+    return "\n".join(lines)
+
+def render_minion_graveyard(run: GameRun) -> str:
+    p = run.player
+    lines = [
+        "━━━━━━━━━━━━━━━━━━━━",
+        f"🦁 【我方随从墓地】 (共 {len(p.minion_graveyard)} 个已阵亡随从)",
+        "我方本场战斗中已阵亡的随从（已去重并排序）：",
+        ""
+    ]
+    if not p.minion_graveyard:
+        lines.append("  （我方当前暂无阵亡随从）")
+    else:
+        counts = {}
+        for mid in p.minion_graveyard:
+            name = MINION_CONFIG.get(mid, {}).get("name", mid)
+            counts[name] = counts.get(name, 0) + 1
+        sorted_names = sorted(counts.keys())
+        for idx, name in enumerate(sorted_names, 1):
+            lines.append(f"  {idx}. 【{name}】 x{counts[name]}")
+    lines.append("━━━━━━━━━━━━━━━━━━━━")
+    return "\n".join(lines)
+
+def render_enemy_graveyard(run: GameRun) -> str:
+    p = run.player
+    lines = [
+        "━━━━━━━━━━━━━━━━━━━━",
+        f"💀 【敌方亡灵墓地】 (共 {len(p.enemy_graveyard)} 个已消灭敌人)",
+        "敌方本场战斗中已被消灭的单位（已去重并排序）：",
+        ""
+    ]
+    if not p.enemy_graveyard:
+        lines.append("  （敌方当前暂无消灭单位）")
+    else:
+        counts = {}
+        for ename in p.enemy_graveyard:
+            counts[ename] = counts.get(ename, 0) + 1
         sorted_names = sorted(counts.keys())
         for idx, name in enumerate(sorted_names, 1):
             lines.append(f"  {idx}. 【{name}】 x{counts[name]}")

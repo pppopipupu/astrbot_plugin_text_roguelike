@@ -60,6 +60,8 @@ def render_shop(run: GameRun) -> str:
             lines.append(f" [{idx}] 🎒 {get_relic_name(rid)} (遗物) - 🪙 {price}金币 | {get_relic_desc(rid)}")
         elif itype == "remove":
             lines.append(f" [{idx}] 🧹 净化服务 (移除卡组中任意一张牌) - 🪙 {price}金币")
+        elif itype == "upgrade":
+            lines.append(f" [{idx}] 🔨 强化服务 (将卡组中任意一张牌永久升级为带【+】的强力变体) - 🪙 {price}金币")
         elif itype == "leave":
             lines.append(f" [{idx}] 🚪 离开商店，继续冒险")
     lines.append("━━━━━━━━━━━━━━━━━━━━")
@@ -84,6 +86,7 @@ def render_rest(run: GameRun) -> str:
         " [1] 🍖 休息：恢复 50% 最大生命值",
         " [2] 🔮 冥想：获得一张随机蓝色法术牌并加入卡组",
         " [3] 🚪 离开：不做整顿直接出发",
+        " [4] 🔨 强化：选择你卡组里的一张卡牌进行升级",
         "━━━━━━━━━━━━━━━━━━━━"
     ]
     if p.fold_guide:

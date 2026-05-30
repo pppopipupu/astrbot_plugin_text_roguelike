@@ -4,12 +4,18 @@ from dataclasses import asdict
 from .state import GameRun, PlayerState, EnemyState, MinionState, AmuletState, BuffState, UserStats, current_user_id, register_stat_recorder, get_user_id
 
 class SaveManager:
+    _default_data_dir = None
+
     def __init__(self, data_dir: str = None):
-        if data_dir is None:
-            current_dir = os.path.dirname(os.path.abspath(__file__))
-            self.data_dir = os.path.join(os.path.dirname(os.path.dirname(current_dir)), "data")
-        else:
+        if data_dir is not None:
+            SaveManager._default_data_dir = data_dir
             self.data_dir = data_dir
+        else:
+            if SaveManager._default_data_dir is not None:
+                self.data_dir = SaveManager._default_data_dir
+            else:
+                current_dir = os.path.dirname(os.path.abspath(__file__))
+                self.data_dir = os.path.join(os.path.dirname(os.path.dirname(current_dir)), "data")
         if not os.path.exists(self.data_dir):
             os.makedirs(self.data_dir)
 
@@ -152,6 +158,16 @@ class SaveManager:
                 stacks=b.get("stacks", 1),
                 desc=b.get("desc", "")
             ))
+        minion_gy = list(p_data.get("minion_graveyard", []))
+        enemy_gy = list(p_data.get("enemy_graveyard", []))
+        if not minion_gy and not enemy_gy and "graveyard" in p_data:
+            for item in p_data["graveyard"]:
+                if item.startswith("minion:"):
+                    minion_gy.append(item[len("minion:"):])
+                elif item.startswith("enemy:"):
+                    enemy_gy.append(item[len("enemy:"):])
+                else:
+                    enemy_gy.append(item)
         player = PlayerState(
             hp=p_data["hp"],
             max_hp=p_data["max_hp"],
@@ -163,6 +179,8 @@ class SaveManager:
             discard_pile=p_data.get("discard_pile", []),
             exhaust_pile=p_data.get("exhaust_pile", []),
             graveyard=p_data.get("graveyard", []),
+            minion_graveyard=minion_gy,
+            enemy_graveyard=enemy_gy,
             hand=p_data.get("hand", []),
             actions=p_data.get("actions", 1),
             bonus_actions=p_data.get("bonus_actions", 1),
@@ -177,6 +195,7 @@ class SaveManager:
         
         enemies = []
         if "enemies" in d:
+            from .state import EnemyIntentState
             for ed in d["enemies"]:
                 e_buffs = []
                 for b in ed.get("buffs", []):
@@ -186,20 +205,33 @@ class SaveManager:
                         stacks=b.get("stacks", 1),
                         desc=b.get("desc", "")
                     ))
+                intent_list = []
+                if "intents" in ed:
+                    for it in ed["intents"]:
+                        intent_list.append(EnemyIntentState(
+                            type=it.get("type", ""),
+                            val=it.get("val", 0),
+                            desc=it.get("desc", ""),
+                            cost_a=it.get("cost_a", 1),
+                            cost_ba=it.get("cost_ba", 0),
+                            cancelled=it.get("cancelled", False),
+                            cancelled_desc=it.get("cancelled_desc", "")
+                        ))
                 enemies.append(EnemyState(
                     name=ed["name"],
                     hp=ed["hp"],
                     max_hp=ed["max_hp"],
                     shield=ed["shield"],
-                    intent_type=ed.get("intent_type", ""),
-                    intent_val=ed.get("intent_val", 0),
-                    intent_desc=ed.get("intent_desc", ""),
                     actions=ed.get("actions", 1),
                     bonus_actions=ed.get("bonus_actions", 1),
                     buffs=e_buffs,
                     is_summon=ed.get("is_summon", False),
                     max_actions=ed.get("max_actions", 1),
                     max_bonus_actions=ed.get("max_bonus_actions", 0),
+                    intents=intent_list,
+                    intent_type=ed.get("intent_type", ""),
+                    intent_val=ed.get("intent_val", 0),
+                    intent_desc=ed.get("intent_desc", ""),
                     intent_a_type=ed.get("intent_a_type", ""),
                     intent_a_val=ed.get("intent_a_val", 0),
                     intent_a_desc=ed.get("intent_a_desc", ""),

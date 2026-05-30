@@ -67,6 +67,11 @@ class ExploreEngine:
             "sold": False
         })
         items.append({
+            "type": "upgrade",
+            "price": int(30 * discount),
+            "sold": False
+        })
+        items.append({
             "type": "leave",
             "price": 0,
             "sold": False
@@ -198,7 +203,7 @@ class ExploreEngine:
                 return f"已将卡牌【{card.name}】加入你的卡组，开启下一关。"
 
         elif run.node_type == "rest":
-            if option_idx not in (1, 2, 3):
+            if option_idx not in (1, 2, 3, 4):
                 return "❌ 无效的选择序号。"
             if option_idx == 1:
                 heal = p.max_hp // 2
@@ -219,6 +224,9 @@ class ExploreEngine:
                 }
                 self.save_manager.save_save(run.user_id, run)
                 return "你开始冥想，寻找领悟。"
+            elif option_idx == 4:
+                run.node_data["upgrade_source"] = "rest"
+                return "UPGRADE_FLOW"
             else:
                 self.map_engine.enter_next_stage(run)
                 self.save_manager.save_save(run.user_id, run)
@@ -269,6 +277,10 @@ class ExploreEngine:
                 return f"购买成功！获得了遗物【{get_relic_name(rid)}】。"
             elif itype == "remove":
                 return "REMOVE_FLOW"
+            elif itype == "upgrade":
+                run.node_data["upgrade_price"] = price
+                run.node_data["upgrade_source"] = "shop"
+                return "UPGRADE_FLOW"
             elif itype == "leave":
                 self.map_engine.enter_next_stage(run)
                 self.save_manager.save_save(run.user_id, run)
@@ -300,3 +312,42 @@ class ExploreEngine:
                 item["sold"] = True
         self.save_manager.save_save(run.user_id, run)
         return f"已成功从你的卡组中移除了【{removed_name}】。"
+
+    def upgrade_card_in_deck(self, run: GameRun, deck_idx: int) -> str:
+        p = run.player
+        counts = {}
+        for c_id in p.deck:
+            counts[c_id] = counts.get(c_id, 0) + 1
+        sorted_items = sorted(counts.items())
+        
+        if deck_idx < 1 or deck_idx > len(sorted_items):
+            return "❌ 无效的卡牌序号。"
+        
+        cid = sorted_items[deck_idx - 1][0]
+        if cid.endswith("+"):
+            return "❌ 该卡牌已经升级过了，无法重复升级。"
+            
+        from ..data.card_upgrade_data import CARD_UPGRADE_CONFIG
+        if cid not in CARD_UPGRADE_CONFIG:
+            return "❌ 该卡牌无法被升级。"
+            
+        up_cid = cid + "+"
+        p.deck.remove(cid)
+        p.deck.append(up_cid)
+        
+        source = run.node_data.get("upgrade_source", "rest")
+        run.node_data["pending_upgrade"] = False
+        
+        if source in ("rest", "event"):
+            self.map_engine.enter_next_stage(run)
+            self.save_manager.save_save(run.user_id, run)
+            return f"🔨 升级成功！你的【{ALL_CARDS[cid].name}】已成功升级为强力变体【{ALL_CARDS[up_cid].name}】。你离开此地继续赶路，开启下一关。"
+        else:
+            items = run.node_data.get("items", [])
+            for item in items:
+                if item.get("type") == "upgrade":
+                    item["sold"] = True
+            price = run.node_data.get("upgrade_price", 30)
+            p.gold -= price
+            self.save_manager.save_save(run.user_id, run)
+            return f"🔨 升级成功！已将【{ALL_CARDS[cid].name}】永久升级为强力变体【{ALL_CARDS[up_cid].name}】。"

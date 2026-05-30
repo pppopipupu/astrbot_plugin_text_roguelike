@@ -312,5 +312,17 @@ WIZARD_CARD_CONFIG = {
         "base_dmg": 12,
         "damage_type": "lightning",
         "feedback": "释放【链式闪电】！电光在同名敌人间跳跃。"
+    },
+    "sunburst": {
+        "name": "阳炎爆",
+        "color": "wizard",
+        "type": "spell",
+        "cost_a": 1,
+        "cost_ba": 0,
+        "desc": "对战场上除了玩家以外的所有生物造成16点光耀伤害。",
+        "rarity": "rare",
+        "base_dmg": 16,
+        "damage_type": "radiant",
+        "feedback": "释放【阳炎爆】！烈阳般的光芒净化战场上的所有生物（除了你自身）。"
     }
 }

@@ -168,8 +168,8 @@ NEUTRAL_CARD_CONFIG = {
         "name": "晕眩",
         "color": "neutral",
         "type": "spell",
-        "cost_a": 99,
-        "cost_ba": 99,
+        "cost_a": 0,
+        "cost_ba": 0,
         "desc": "不能被打出。虚无。",
         "rarity": "curse",
         "unplayable": True,
@@ -179,8 +179,8 @@ NEUTRAL_CARD_CONFIG = {
         "name": "苦恼",
         "color": "neutral",
         "type": "spell",
-        "cost_a": 99,
-        "cost_ba": 99,
+        "cost_a": 0,
+        "cost_ba": 0,
         "desc": "不能被打出。固有。",
         "rarity": "curse",
         "unplayable": True,
@@ -209,5 +209,15 @@ NEUTRAL_CARD_CONFIG = {
         "minion_atk": 6,
         "feedback_success": "在格子 [{grid}] 召唤了【{name}】。",
         "feedback_fail": "战场已满，召唤失败。"
+    },
+    "refresh_spirit": {
+        "name": "重振精神",
+        "color": "neutral",
+        "type": "spell",
+        "cost_a": 0,
+        "cost_ba": 1,
+        "desc": "消耗所有手牌中的非随从牌，每消耗一个获得6点护盾。",
+        "rarity": "rare",
+        "feedback": "使用了【重振精神】，消耗了 {exhaust_count} 张非随从牌，获得了 {shield_amount} 点护盾。"
     }
 }

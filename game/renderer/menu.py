@@ -67,6 +67,17 @@ def render_card_library() -> str:
         }
         rname = rarity_map.get(getattr(card, "rarity", "common"), "普通")
         info = f"• {card.name} [{type_ch}] <{rname}> 消耗: {cost_str} - {card.desc}"
+        
+        up_card = ALL_CARDS.get(cid + "+")
+        if up_card:
+            up_cost_str = ""
+            if up_card.cost_a > 0:
+                up_cost_str += f"{up_card.cost_a}A "
+            if up_card.cost_ba > 0:
+                up_cost_str += f"{up_card.cost_ba}BA "
+            up_cost_str = up_cost_str.strip() or "免费"
+            info += f"\n  └─ 🔨 升级版：{up_card.name} | 消耗: {up_cost_str} | {up_card.desc}"
+            
         if card.color == "neutral":
             neutrals.append(info)
         else:
@@ -221,12 +232,20 @@ def render_shop(stats: UserStats) -> str:
         "“...嘘，悄悄看，我这儿可都是从无尽时空深处淘来的宝贝。”",
         "“又是你，旅者？只要GP足够，我这里的东西随时都可以归你。”",
         "“想要掌控时间，还是驾驭元素？或者……你对那件‘神秘物品’感兴趣？”",
-        "“奥术的轨迹是有限的，但金钱和力量的秘密是无限的。”",
+        "“奥术的轨迹是有限的，但金钱 and 力量的秘密是无限的。”",
         "“有些东西并不存在于当下的时空，但在这里，一切皆有可能。”",
         "“外面的风暴越来越近了，或许你该准备点真正强力的武器？”"
     ]
     welcome_quote = random.choice(welcome_quotes)
     
+    killed_icerainboww = getattr(stats, "killed_icerainboww", False)
+    if killed_icerainboww:
+        item4_title = " [4] Icerainboww - 状态：已解锁"
+        item4_desc = "     └─ 击败最终BOSS Icerainboww解锁。"
+    else:
+        item4_title = " [4] ？？？ - 状态：未解锁"
+        item4_desc = "     └─ 击败未知的最终BOSS解锁。"
+
     lines = [
         "━━━━━━━━━━━━━━━━━━━━",
         "🏪 魔法肉鸽局外成长商店",
@@ -243,6 +262,8 @@ def render_shop(stats: UserStats) -> str:
         "     └─ 元素爆发。所有法术伤害提升 15%，且抓取火球术时 40% 几率替换为流星爆。",
         f" [3] 神秘物品 - 售价：66666 GP （状态：{status_mystery}）",
         "     └─ 一件蕴藏着奇异力量的物件，购买后会永久保存在收藏中。",
+        item4_title,
+        item4_desc,
         "",
         "【购买指令】",
         "👉 /rogue 商店 购买 1 或 时序法师 -- 购买时序法师",

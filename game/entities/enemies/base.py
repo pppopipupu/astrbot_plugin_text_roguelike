@@ -4,9 +4,32 @@ class EnemyTemplate:
     def __init__(self, name: str):
         self.name = name
 
-    def roll_intent(self, run, engine, enemy) -> Tuple[str, int, str]:
-        import random
+    def roll_intents(self, run, engine, enemy) -> List['EnemyIntentState']:
+        from ...models.state import EnemyIntentState
         stage = run.player.stage
+        intents_list = []
+        for _ in range(enemy.max_actions):
+            itype, val, desc = self._roll_single_intent(run, enemy, stage)
+            intents_list.append(EnemyIntentState(
+                type=itype,
+                val=val,
+                desc=desc,
+                cost_a=1,
+                cost_ba=0
+            ))
+        for _ in range(enemy.max_bonus_actions):
+            itype, val, desc = self._roll_single_intent(run, enemy, stage)
+            intents_list.append(EnemyIntentState(
+                type=itype,
+                val=val,
+                desc=desc,
+                cost_a=0,
+                cost_ba=1
+            ))
+        return intents_list
+
+    def _roll_single_intent(self, run, enemy, stage) -> Tuple[str, int, str]:
+        import random
         intents = [
             ("attack", 3 + (stage // 2) + random.randint(0, 2)),
             ("defend", 3 + stage + random.randint(0, 2))
@@ -17,15 +40,6 @@ class EnemyTemplate:
         else:
             desc = f"防御 (获得 {val} 护盾)"
         return itype, val, desc
-
-    def roll_intent_ba(self, run, engine, enemy) -> Tuple[str, int, str]:
-        return self.roll_intent(run, engine, enemy)
-
-    def roll_intent_ba2(self, run, engine, enemy) -> Tuple[str, int, str]:
-        return self.roll_intent(run, engine, enemy)
-
-    def roll_intent_a2(self, run, engine, enemy) -> Tuple[str, int, str]:
-        return self.roll_intent(run, engine, enemy)
 
     def _perform_attack(self, run, engine, enemy, dmg: int, logs: List[str]):
         p = run.player
@@ -55,12 +69,22 @@ class EnemyTemplate:
                 dmg_msg = after_logs.pop()
                 logs.append(f"敌人【{enemy.name}】对玩家发动攻击。{dmg_msg}")
 
-    def execute_intent(self, run, engine, enemy, logs: List[str]):
-        if enemy.intent_type == "attack":
-            self._perform_attack(run, engine, enemy, enemy.intent_val, logs)
-        elif enemy.intent_type == "defend":
-            enemy.shield += enemy.intent_val
-            logs.append(f"敌人【{enemy.name}】进行防守，获得 {enemy.intent_val} 点护盾。")
+    def execute_intent(self, run, engine, enemy, intent, logs: List[str] = None):
+        if logs is None:
+            logs = intent
+            from ...models.state import EnemyIntentState
+            intent = EnemyIntentState(
+                type=getattr(enemy, "intent_type", ""),
+                val=getattr(enemy, "intent_val", 0),
+                desc=getattr(enemy, "intent_desc", ""),
+                cost_a=1,
+                cost_ba=0
+            )
+        if intent.type == "attack":
+            self._perform_attack(run, engine, enemy, intent.val, logs)
+        elif intent.type == "defend":
+            enemy.shield += intent.val
+            logs.append(f"敌人【{enemy.name}】进行防守，获得 {intent.val} 点护盾。")
 
 from .boss import BossRedDragonTemplate, BossCorruptedHeartTemplate, BossIcerainbowwTemplate
 from .minions import GoblinCenturionTemplate, GargoylePriestTemplate, BeastMasterTemplate, ObsidianDjinnTemplate, GhostArchmageTemplate, ShadowFiendTemplate

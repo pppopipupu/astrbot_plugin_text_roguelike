@@ -15,9 +15,13 @@ class SpellDamageCard(Card):
     def execute(self, run, target, engine) -> str:
         dmg = self.base_dmg
         if self.damage_type == "fire":
-            has_ring = any(av.id == "ring_of_elements" for av in run.player.amulets.values())
+            has_ring = any(av.id.startswith("ring_of_elements") for av in run.player.amulets.values())
             if has_ring:
-                dmg += 2
+                ring_val = 0
+                for av in run.player.amulets.values():
+                    if av.id.startswith("ring_of_elements"):
+                        ring_val = max(ring_val, 3 if av.id.endswith("+") else 2)
+                dmg += ring_val
         if "arcane_rune" in run.player.relics:
             dmg += 1
         if "mark_of_fury" in run.player.relics:
@@ -26,13 +30,43 @@ class SpellDamageCard(Card):
             dmg += 1
         dmg = engine.get_modified_spell_damage(run, self, dmg)
         name = engine._get_target_name(run, target)
-        engine._damage_target(run, target, dmg, damage_type=self.damage_type, card=self)
-        cfg = CARD_CONFIG.get(self.id, {})
+        
+        is_agile = run.node_data.get("agile_triggering", False)
+        dtype = "true" if (self.id == "agile_strike+" and is_agile) else self.damage_type
+        
+        target_enemy = None
+        if target.startswith("e"):
+            try:
+                idx = int(target[1:]) - 1
+                if 0 <= idx < len(run.enemies):
+                    target_enemy = run.enemies[idx]
+            except ValueError:
+                pass
+                
+        engine._damage_target(run, target, dmg, damage_type=dtype, card=self)
+        
+        is_kill = False
+        if target_enemy and (target_enemy not in run.enemies or target_enemy.hp <= 0):
+            is_kill = True
+            
+        bonus_msg = ""
+        if self.id == "dagger_throw+" and is_kill:
+            run.player.actions += 1
+            bonus_msg = " ✨ [击杀奖励] 获得了 1A 动作点！"
+        elif self.id == "quick_strike+":
+            for m in run.player.minions.values():
+                m.atk += 1
+            bonus_msg = " 🛡️ [迅捷打击+] 场上所有我方随从本回合攻击力 +1！"
+        elif self.id == "agile_strike+" and is_agile:
+            engine._draw_cards(run.player, 1, run)
+            bonus_msg = " ⚡ [灵巧打击+] 抽了 1 张牌！"
+            
+        cfg = CARD_CONFIG.get(self.id.replace("+", ""), {})
         feedback_tmpl = cfg.get("feedback")
         if feedback_tmpl:
-            return feedback_tmpl.format(target=name, dmg=dmg)
+            return feedback_tmpl.format(target=name, dmg=dmg) + bonus_msg
         
-        return f"使用了【{self.name}】，对【{name}】造成了 {dmg} 点伤害。"
+        return f"使用了【{self.name}】，对【{name}】造成了 {dmg} 点伤害。" + bonus_msg
 
 @register_card("first_aid")
 class SpellHealCard(Card):
@@ -43,8 +77,16 @@ class SpellHealCard(Card):
     def execute(self, run, target, engine) -> str:
         name = engine._get_target_name(run, target)
         engine._heal_target(run, target, self.heal_amount)
-        cfg = CARD_CONFIG.get(self.id, {})
+        
+        shield_msg = ""
+        if self.id == "first_aid+":
+            run.player.shield += 2
+            shield_msg = "，并获得了 2 点护盾"
+            
+        cfg = CARD_CONFIG.get(self.id.replace("+", ""), {})
         feedback_tmpl = cfg.get("feedback")
+        if self.id == "first_aid+":
+            return f"为【{name}】恢复了 {self.heal_amount} 点生命值{shield_msg}。"
         if feedback_tmpl:
             return feedback_tmpl.format(target=name, heal_amount=self.heal_amount)
         return f"为【{name}】恢复了 {self.heal_amount} 点生命值。"
@@ -52,18 +94,31 @@ class SpellHealCard(Card):
 @register_card("get_ready")
 class GetReadyCard(Card):
     def execute(self, run, target, engine) -> str:
-        run.player.bonus_actions += 2
-        engine._draw_cards(run.player, 1, run)
-        cfg = CARD_CONFIG.get(self.id, {})
-        return cfg.get("feedback", "获得了 2BA 并抽了 1 张牌。")
+        if self.upgraded:
+            run.player.actions += 1
+            run.player.bonus_actions += 1
+            engine._draw_cards(run.player, 2, run)
+            return "获得了 1A 1BA 并抽了 2 张牌。"
+        else:
+            run.player.bonus_actions += 2
+            engine._draw_cards(run.player, 1, run)
+            cfg = CARD_CONFIG.get(self.id.replace("+", ""), {})
+            return cfg.get("feedback", "获得了 2BA 并抽了 1 张牌。")
 
 @register_card("adrenaline")
 class AdrenalineCard(Card):
     def execute(self, run, target, engine) -> str:
-        run.player.actions += 1
-        run.player.hp -= 2
-        cfg = CARD_CONFIG.get(self.id, {})
-        return cfg.get("feedback", "获得了 1A，失去了 2 点生命值。")
+        if self.upgraded:
+            run.player.actions += 1
+            run.player.bonus_actions += 1
+            engine._draw_cards(run.player, 1, run)
+            run.player.hp -= 3
+            return "获得了 1A 1BA 并抽了 1 张牌，失去了 3 点生命值。"
+        else:
+            run.player.actions += 1
+            run.player.hp -= 2
+            cfg = CARD_CONFIG.get(self.id.replace("+", ""), {})
+            return cfg.get("feedback", "获得了 1A，失去了 2 点生命值。")
 
 @register_card("lucky_coin")
 @register_card("thorns_necklace")
@@ -77,7 +132,7 @@ class DeployAmuletCard(Card):
 
     def execute(self, run, target, engine) -> str:
         grid = engine._get_free_grid(run.player)
-        cfg = CARD_CONFIG.get(self.id, {})
+        cfg = CARD_CONFIG.get(self.id.replace("+", ""), {})
         if grid:
             run.player.amulets[grid] = AmuletState(self.id, self.name, self.countdown, self.amulet_desc)
             feedback_success = cfg.get("feedback_success", "将【{name}】部署到了格子 [{grid}]。")
@@ -97,12 +152,28 @@ class SummonMinionCard(Card):
         self.minion_atk = minion_atk
 
     def execute(self, run, target, engine) -> str:
-        cfg = CARD_CONFIG.get(self.id, {})
-        ba = 1 if self.id == "arcane_golem" else 0
+        cfg = CARD_CONFIG.get(self.id.replace("+", ""), {})
+        ba = 1 if self.id.startswith("arcane_golem") else 0
         grid = engine._summon_minion(run, self.id, self.name, self.minion_hp, self.minion_atk, ba)
         if grid:
+            battlecry_msg = ""
+            if self.id == "mercenary+":
+                first_enemy = engine._get_first_alive_enemy(run)
+                if first_enemy:
+                    engine._damage_target(run, first_enemy, self.minion_atk, source=f"p{grid}", damage_type="attack")
+                    tname = engine._get_target_name(run, first_enemy)
+                    battlecry_msg = f"\n⚔️ [战吼] 【雇佣兵+】立即攻击了【{tname}】，造成了 {self.minion_atk} 点伤害！"
+            elif self.id == "shield_guard+":
+                engine._gain_shield(run, "p0", 6)
+                battlecry_msg = f"\n🛡️ [战吼] 获得了 6 点战吼护盾！"
+            elif self.id == "minion_icerainboww+":
+                engine._gain_shield(run, "p0", 8)
+                for enemy in list(run.enemies):
+                    engine._add_buff_to(enemy, "minor_vulnerable_cold", "轻度寒冷易伤", "受到的寒冷伤害增加 50%", 1)
+                battlecry_msg = f"\n❄️ [战吼] 获得了 8 点护盾，并使所有敌人受到 1 层轻度寒冷易伤！"
+                
             feedback_success = cfg.get("feedback_success", "在格子 [{grid}] 召唤了【{name}】。")
-            return feedback_success.format(grid=grid, name=self.name)
+            return feedback_success.format(grid=grid, name=self.name) + battlecry_msg
         return cfg.get("feedback_fail", "战场已满，召唤失败。")
 
 @register_card("tactical_focus")
@@ -183,20 +254,64 @@ class ManaPotionCard(Card):
         super().__init__(id, name, color, type, cost_a, cost_ba, exhaust=exhaust, desc=desc)
 
     def execute(self, run, target, engine) -> str:
-        run.player.bonus_actions += 1
-        engine._draw_cards(run.player, 1, run)
-        cfg = CARD_CONFIG.get(self.id, {})
-        return cfg.get("feedback", "饮用了【魔力药水】，获得了 1BA 并抽了 1 张牌。")
+        if self.upgraded:
+            run.player.actions += 1
+            engine._draw_cards(run.player, 2, run)
+            return "饮用了【魔力药水+】，获得了 1A 并抽了 2 张牌。"
+        else:
+            run.player.bonus_actions += 1
+            engine._draw_cards(run.player, 1, run)
+            cfg = CARD_CONFIG.get(self.id.replace("+", ""), {})
+            return cfg.get("feedback", "饮用了【魔力药水】，获得了 1BA 并抽了 1 张牌。")
 
 @register_card("mass_healing_word")
 class MassHealingWordCard(Card):
     def execute(self, run, target, engine) -> str:
-        heal_val = 8
+        heal_val = getattr(self, "heal_amount", 8)
         engine._heal_target(run, "p0", heal_val)
         for grid in list(run.player.minions.keys()):
             engine._heal_target(run, f"p{grid}", heal_val)
-        cfg = CARD_CONFIG.get(self.id, {})
+        cfg = CARD_CONFIG.get(self.id.replace("+", ""), {})
         feedback_tmpl = cfg.get("feedback")
         if feedback_tmpl:
             return feedback_tmpl.format(heal_amount=heal_val)
         return f"使用了【{self.name}】，为自己和所有随从恢复了 {heal_val} 点生命值。"
+
+@register_card("refresh_spirit")
+class RefreshSpiritCard(Card):
+    def execute(self, run, target, engine) -> str:
+        p = run.player
+        exhausted_count = 0
+        remaining_hand = []
+        from ...models.events import CardExhaustEvent
+        from .base import ALL_CARDS
+        for cid in p.hand:
+            card_obj = ALL_CARDS.get(cid)
+            if card_obj and card_obj.type != "minion":
+                p.exhaust_pile.append(cid)
+                engine._log_event(run, f"✨ [消耗] 【{card_obj.name}】已被移入消耗堆。")
+                exhaust_evt = CardExhaustEvent(run, cid, "effect")
+                engine.event_bus.dispatch(exhaust_evt)
+                exhausted_count += 1
+            else:
+                remaining_hand.append(cid)
+        p.hand = remaining_hand
+        
+        shield_mult = 8 if self.upgraded else 6
+        shield_to_gain = exhausted_count * shield_mult
+        if shield_to_gain > 0:
+            engine._gain_shield(run, "p0", shield_to_gain)
+            
+        bonus_msg = ""
+        if self.upgraded and exhausted_count >= 3:
+            run.player.actions += 1
+            bonus_msg = " ⚡ [重振精神+] 获得了 1A 动作点！"
+            
+        cfg = CARD_CONFIG.get(self.id.replace("+", ""), {})
+        feedback_tmpl = cfg.get("feedback")
+        if self.upgraded:
+            return f"使用了【{self.name}】，消耗了 {exhausted_count} 张非随从牌，获得了 {shield_to_gain} 点护盾。{bonus_msg}"
+        if feedback_tmpl:
+            return feedback_tmpl.format(exhaust_count=exhausted_count, shield_amount=shield_to_gain)
+        return f"使用了【{self.name}】，消耗了 {exhausted_count} 张非随从牌，获得了 {shield_to_gain} 点护盾。"
+

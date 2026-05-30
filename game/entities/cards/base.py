@@ -7,7 +7,53 @@ from . import wizard
 from . import legendary
 from . import curse
 
-ALL_CARDS = {}
+import copy
+
+class CardRegistryDict(dict):
+    def __getitem__(self, key):
+        if isinstance(key, str) and key.endswith("+"):
+            base_key = key[:-1]
+            if base_key not in self:
+                raise KeyError(key)
+            base_card = super().__getitem__(base_key)
+            upgraded_card = copy.copy(base_card)
+            upgraded_card.id = key
+            if not upgraded_card.name.endswith("+"):
+                upgraded_card.name += "+"
+            upgraded_card.upgraded = True
+            
+            from ...data.card_upgrade_data import CARD_UPGRADE_CONFIG
+            up_cfg = CARD_UPGRADE_CONFIG.get(base_key, {})
+            
+            if "cost_a" in up_cfg:
+                upgraded_card.cost_a = up_cfg["cost_a"]
+            if "cost_ba" in up_cfg:
+                upgraded_card.cost_ba = up_cfg["cost_ba"]
+            if "desc" in up_cfg:
+                upgraded_card.desc = up_cfg["desc"]
+            if "innate" in up_cfg:
+                upgraded_card.innate = up_cfg["innate"]
+            if "exhaust" in up_cfg:
+                upgraded_card.exhaust = up_cfg["exhaust"]
+                
+            for prop in ("base_dmg", "heal_amount", "shield_amount", "minion_hp", "minion_atk", "countdown", "amulet_desc"):
+                if prop in up_cfg:
+                    setattr(upgraded_card, prop, up_cfg[prop])
+            return upgraded_card
+        return super().__getitem__(key)
+
+    def get(self, key, default=None):
+        try:
+            return self[key]
+        except KeyError:
+            return default
+
+    def __contains__(self, key):
+        if isinstance(key, str) and key.endswith("+"):
+            return super().__contains__(key[:-1])
+        return super().__contains__(key)
+
+ALL_CARDS = CardRegistryDict()
 
 for cid, cfg in CARD_CONFIG.items():
     name = cfg["name"]

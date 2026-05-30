@@ -153,15 +153,28 @@ class ChooseAction(ActionHandler):
             idx = int(parts[1])
         except ValueError:
             return "❌ 序号必须是数字。", False
-        if run.node_type == "shop" and run.node_data.get("pending_remove"):
+        if run.node_data.get("pending_upgrade"):
+            res = router.engine.upgrade_card_in_deck(run, idx)
+            if run.player.hp <= 0:
+                settle_msg = router.save_manager.settle_game_and_delete(user_id, run, is_victory=False)
+                return f"{res}\n💀 你在荒野的意外中丧生了！当前进度已清空。\n{settle_msg}", True
+            return res, False
+        elif run.node_type == "shop" and run.node_data.get("pending_remove"):
             res = router.engine.remove_card_from_deck(run, idx)
             return res, False
         else:
             res = router.engine.choose_option(run, idx)
+            if run.player.hp <= 0:
+                settle_msg = router.save_manager.settle_game_and_delete(user_id, run, is_victory=False)
+                return f"{res}\n💀 你在荒野的意外中丧生了！当前进度已清空。\n{settle_msg}", True
             if res == "REMOVE_FLOW":
                 run.node_data["pending_remove"] = True
                 router.save_manager.save_save(user_id, run)
                 return "🧹 净化服务已启动。请查看你的卡组，并再次输入 选择 <卡牌序号> 来从卡组中移除该牌。可以通过 /rogue 牌组 查看卡牌序号。", False
+            elif res == "UPGRADE_FLOW":
+                run.node_data["pending_upgrade"] = True
+                router.save_manager.save_save(user_id, run)
+                return "🔨 卡牌升级强化已启动。请查看你的卡组，并输入 选择 <卡牌序号> 来使你的卡牌永久升级为带【+】的强力变体。可以通过 /rogue 牌组 查看卡牌序号。", False
             else:
                 return res, False
 
@@ -445,6 +458,7 @@ class ShopCommand(CommandHandler):
             target = parts[2]
             unlocked = getattr(stats, "unlocked_subclasses", [])
             gp = getattr(stats, "gp", 0)
+            killed_icerainboww = getattr(stats, "killed_icerainboww", False)
             if target in ("1", "时序法师"):
                 subclass_name = "时序法师"
                 price = 2888
@@ -454,8 +468,17 @@ class ShopCommand(CommandHandler):
             elif target in ("3", "神秘物品"):
                 subclass_name = "神秘物品"
                 price = 66666
+            elif target in ("4", "Icerainboww"):
+                if killed_icerainboww:
+                    yield "❌ 该商品已自动解锁，无需购买。"
+                else:
+                    yield "❌ 无法购买未知的隐藏商品。"
+                return
             else:
-                yield "❌ 无效的商品。可选商品序号：1、2、3。"
+                if killed_icerainboww:
+                    yield "❌ 无效的商品。可选商品序号：1、2、3、4。"
+                else:
+                    yield "❌ 无效的商品。可选商品序号：1、2、3。"
                 return
             if subclass_name in unlocked:
                 yield f"❌ 你已经解锁了【{subclass_name}】。"
@@ -547,6 +570,20 @@ class QueryCommand(CommandHandler):
                     yield "❌ 只有在战斗中才能查询战斗牌堆。"
                 else:
                     yield GameRenderer.render_exhaust_pile(run)
+            elif query_str in ("随从墓地", "mg", "minion_graveyard", "minion_grave"):
+                if not run:
+                    yield "❌ 你当前没有正在进行的游戏。"
+                elif run.node_type != "battle":
+                    yield "❌ 只有在战斗中才能查询战斗墓地。"
+                else:
+                    yield GameRenderer.render_minion_graveyard(run)
+            elif query_str in ("敌人墓地", "eg", "enemy_graveyard", "enemy_grave"):
+                if not run:
+                    yield "❌ 你当前没有正在进行的游戏。"
+                elif run.node_type != "battle":
+                    yield "❌ 只有在战斗中才能查询战斗墓地。"
+                else:
+                    yield GameRenderer.render_enemy_graveyard(run)
             else:
                 yield GameRenderer.render_query_info(" ".join(parts[1:]).strip())
         else:
@@ -587,6 +624,26 @@ class ExhaustCommand(CommandHandler):
         else:
             yield GameRenderer.render_exhaust_pile(run)
 
+class MinionGraveyardCommand(CommandHandler):
+    def execute(self, router, user_id: str, parts: list[str]) -> Generator[str, None, None]:
+        run = router.save_manager.load_save(user_id)
+        if not run:
+            yield "❌ 你当前没有正在进行的游戏。输入 /rogue 开启 开始新游戏。"
+        elif run.node_type != "battle":
+            yield "❌ 只有在战斗中才能查询战斗墓地。"
+        else:
+            yield GameRenderer.render_minion_graveyard(run)
+
+class EnemyGraveyardCommand(CommandHandler):
+    def execute(self, router, user_id: str, parts: list[str]) -> Generator[str, None, None]:
+        run = router.save_manager.load_save(user_id)
+        if not run:
+            yield "❌ 你当前没有正在进行的游戏。输入 /rogue 开启 开始新游戏。"
+        elif run.node_type != "battle":
+            yield "❌ 只有在战斗中才能查询战斗墓地。"
+        else:
+            yield GameRenderer.render_enemy_graveyard(run)
+
 class CLIRouter:
     def __init__(self, save_manager, engine):
         self.save_manager = save_manager
@@ -620,7 +677,9 @@ class CLIRouter:
             "查询": QueryCommand(), "query": QueryCommand(), "info": QueryCommand(), "i": QueryCommand(),
             "抽牌堆": DrawCommand(), "draw": DrawCommand(), "draw_pile": DrawCommand(),
             "弃牌堆": DiscardCommand(), "discard": DiscardCommand(), "discard_pile": DiscardCommand(),
-            "消耗堆": ExhaustCommand(), "exhaust": ExhaustCommand(), "exhaust_pile": ExhaustCommand()
+            "消耗堆": ExhaustCommand(), "exhaust": ExhaustCommand(), "exhaust_pile": ExhaustCommand(),
+            "随从墓地": MinionGraveyardCommand(), "minion_graveyard": MinionGraveyardCommand(), "mg": MinionGraveyardCommand(),
+            "敌人墓地": EnemyGraveyardCommand(), "enemy_graveyard": EnemyGraveyardCommand(), "eg": EnemyGraveyardCommand()
         }
 
     def _execute_sub_action(self, user_id: str, run, parts: list[str]) -> Tuple[str, bool]:

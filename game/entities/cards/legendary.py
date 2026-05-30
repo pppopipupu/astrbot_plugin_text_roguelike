@@ -18,6 +18,11 @@ class TimeWarpCard(Card):
         engine._draw_cards(p, max_hand, run)
         after = len(p.hand)
         draw_count = after - before
+        if self.upgraded:
+            p.actions += 1
+            p.bonus_actions += 1
+            engine._add_buff_to(p, "time_warp_spell_boost", "时空强化", "本回合所有法术伤害 +2", 1)
+            return f"时光倒流！已将所有卡牌重新洗回抽牌堆，重新抽取了 {draw_count} 张牌。玩家额外获得 1A 1BA，且本回合所有法术伤害 +2。"
         cfg = CARD_CONFIG.get(self.id, {})
         feedback_tmpl = cfg.get("feedback")
         if feedback_tmpl:
@@ -32,7 +37,12 @@ class MeteorSwarmCard(Card):
 
     def execute(self, run, target, engine) -> str:
         import random
-        dmg = sum(random.randint(1, 12) for _ in range(8))
+        num_dice = 12 if self.upgraded else 8
+        dice_results = [random.randint(1, 12) for _ in range(num_dice)]
+        dmg = sum(dice_results)
+        extra_true_dmg = 0
+        if self.upgraded:
+            extra_true_dmg = sum(2 for d in dice_results if d > 8)
         if self.damage_type == "fire":
             has_ring = any(av.id == "ring_of_elements" for av in run.player.amulets.values())
             if has_ring:
@@ -46,6 +56,12 @@ class MeteorSwarmCard(Card):
         dmg = engine.get_modified_spell_damage(run, self, dmg)
         for idx in range(len(run.enemies) - 1, -1, -1):
             engine._damage_target(run, f"e{idx+1}", dmg, damage_type="fire", card=self)
+            if extra_true_dmg > 0:
+                engine._damage_target(run, f"e{idx+1}", extra_true_dmg, damage_type="true", card=self)
+        if self.upgraded:
+            if extra_true_dmg > 0:
+                return f"释放流星爆！对所有敌人造成了 {dmg} 点火焰伤害，并因大骰子额外造成 {extra_true_dmg} 点真实伤害。"
+            return f"释放流星爆！对所有敌人造成了 {dmg} 点火焰伤害。"
         cfg = CARD_CONFIG.get(self.id, {})
         feedback_tmpl = cfg.get("feedback")
         if feedback_tmpl:
@@ -55,15 +71,31 @@ class MeteorSwarmCard(Card):
 @register_card("archmage_wish")
 class ArchmageWishCard(Card):
     def execute(self, run, target, engine) -> str:
-        run.player.shield += 10
-        engine._add_buff_to(run.player, "wish_power", "祈愿奥术", "本场战斗法术伤害 +4")
-        engine._draw_cards(run.player, 2, run)
-        cfg = CARD_CONFIG.get(self.id, {})
-        return cfg.get("feedback", "完成了大法师的祈愿！获得了 10 点护盾，【祈愿奥术】法术伤害 +4，并抽了 2 张牌。")
+        p = run.player
+        if self.upgraded:
+            p.shield += 15
+            engine._add_buff_to(p, "wish_power+", "祈愿奥术", "本场战斗法术伤害 +6")
+            before_hand = list(p.hand)
+            engine._draw_cards(p, 3, run)
+            drawn = p.hand[len(before_hand):]
+            run.node_data.setdefault("temp_retain_cards", []).extend(drawn)
+            return "完成了大法师的祈愿！获得了 15 点护盾，【祈愿奥术】法术伤害 +6，并抽了 3 张牌且它们本回合获得保留。"
+        else:
+            p.shield += 10
+            engine._add_buff_to(p, "wish_power", "祈愿奥术", "本场战斗法术伤害 +4")
+            engine._draw_cards(p, 2, run)
+            cfg = CARD_CONFIG.get(self.id, {})
+            return cfg.get("feedback", "完成了大法师的祈愿！获得了 10 点护盾，【祈愿奥术】法术伤害 +4，并抽了 2 张牌。")
 
 @register_card("time_stop")
 class TimeStopCard(Card):
     def execute(self, run, target, engine) -> str:
-        run.node_data["extra_turns_left"] = 3
-        cfg = CARD_CONFIG.get(self.id, {})
-        return cfg.get("feedback", "施展了时间停止！你获得了 3 个额外回合。")
+        if self.upgraded:
+            run.node_data["extra_turns_left"] = 4
+            run.node_data["time_stop_upgraded"] = True
+            return "施展了时间停止！你获得了 4 个额外回合，且在额外回合中受到的负面效果暂停生效。"
+        else:
+            run.node_data["extra_turns_left"] = 3
+            run.node_data["time_stop_upgraded"] = False
+            cfg = CARD_CONFIG.get(self.id, {})
+            return cfg.get("feedback", "施展了时间停止！你获得了 3 个额外回合。")
