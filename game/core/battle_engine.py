@@ -97,7 +97,7 @@ class BattleEngine(BaseBattleEngine):
             if random.random() < 0.25:
                 p.bonus_actions += 1
                 self._log_event(run, "⏳ [时序被动] 触发时间跳跃，初始额外获得 1 个附赠动作（BA）！")
-        init_draw = 5
+        init_draw = 6
         for r in p.relics:
             from ..entities.relics.relics import get_relic_impl
             impl = get_relic_impl(r)
