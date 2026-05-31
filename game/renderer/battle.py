@@ -116,7 +116,7 @@ def render_battle(run: GameRun) -> str:
         for idx, cid in enumerate(p.hand, 1):
             card = ALL_CARDS.get(cid)
             if card:
-                color_ch = "🔵" if card.color == "wizard" else "⚪"
+                color_ch = "⚫" if card.color == "curse" else ("🔵" if card.color == "wizard" else "⚪")
                 cost_str = ""
                 if card.cost_a > 0:
                     cost_str += f"{card.cost_a}A"

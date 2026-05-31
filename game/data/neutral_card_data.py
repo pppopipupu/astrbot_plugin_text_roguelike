@@ -166,7 +166,7 @@ NEUTRAL_CARD_CONFIG = {
     },
     "curse_dazed": {
         "name": "晕眩",
-        "color": "neutral",
+        "color": "curse",
         "type": "spell",
         "cost_a": 0,
         "cost_ba": 0,
@@ -177,7 +177,7 @@ NEUTRAL_CARD_CONFIG = {
     },
     "curse_agony": {
         "name": "苦恼",
-        "color": "neutral",
+        "color": "curse",
         "type": "spell",
         "cost_a": 0,
         "cost_ba": 0,

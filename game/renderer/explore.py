@@ -53,7 +53,7 @@ def render_shop(run: GameRun) -> str:
         if itype == "card":
             card = ALL_CARDS.get(item.get("card_id"))
             if card:
-                color_ch = "🔵" if card.color == "wizard" else "⚪"
+                color_ch = "⚫" if card.color == "curse" else ("🔵" if card.color == "wizard" else "⚪")
                 lines.append(f" [{idx}] {color_ch} {card.name} (卡牌) - 🪙 {price}金币 | {card.desc}")
         elif itype == "relic":
             rid = item.get("relic_id")
@@ -112,7 +112,7 @@ def render_reward(run: GameRun) -> str:
     for idx, cid in enumerate(cards, 1):
         card = ALL_CARDS.get(cid)
         if card:
-            color_ch = "🔵" if card.color == "wizard" else "⚪"
+            color_ch = "⚫" if card.color == "curse" else ("🔵" if card.color == "wizard" else "⚪")
             lines.append(f" [{idx}] {color_ch} {card.name} ({card.desc})")
     skip_idx = len(cards) + 1
     lines.append(f" [{skip_idx}] 🪙 跳过奖励卡牌 (获得 15 金币)")
@@ -168,7 +168,7 @@ def render_card_select(run: GameRun) -> str:
     for idx, cid in enumerate(cards, 1):
         card = ALL_CARDS.get(cid)
         if card:
-            color_ch = "🔵" if card.color == "wizard" else "⚪"
+            color_ch = "⚫" if card.color == "curse" else ("🔵" if card.color == "wizard" else "⚪")
             lines.append(f" [{idx}] {color_ch} {card.name} ({card.desc})")
     skip_idx = len(cards) + 1
     lines.append(f" [{skip_idx}] 🚪 跳过卡牌选择")

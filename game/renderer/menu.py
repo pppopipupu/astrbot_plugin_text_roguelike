@@ -41,6 +41,7 @@ def render_card_library() -> str:
     ]
     neutrals = []
     blue_spells = []
+    curses = []
     for cid, card in ALL_CARDS.items():
         cost_str = ""
         if card.cost_a > 0:
@@ -78,7 +79,9 @@ def render_card_library() -> str:
             up_cost_str = up_cost_str.strip() or "免费"
             info += f"\n  └─ 🔨 升级版：{up_card.name} | 消耗: {up_cost_str} | {up_card.desc}"
             
-        if card.color == "neutral":
+        if card.color == "curse":
+            curses.append(info)
+        elif card.color == "neutral":
             neutrals.append(info)
         else:
             blue_spells.append(info)
@@ -87,6 +90,9 @@ def render_card_library() -> str:
     lines.append("")
     lines.append("【蓝色卡牌（法师）】")
     lines.extend(blue_spells)
+    lines.append("")
+    lines.append("【灰色卡牌（诅咒）】")
+    lines.extend(curses)
     lines.append("━━━━━━━━━━━━━━━━━━━━")
     return "\n".join(lines)
 
@@ -153,7 +159,7 @@ def render_deck(run: GameRun) -> str:
     for cid, count in sorted(counts.items()):
         card = ALL_CARDS.get(cid)
         if card:
-            color_type = "🔵" if card.color == "wizard" else "⚪"
+            color_type = "⚫" if card.color == "curse" else ("🔵" if card.color == "wizard" else "⚪")
             rarity_map = {
                 "common": "普通",
                 "rare": "稀有",
