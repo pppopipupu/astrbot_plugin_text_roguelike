@@ -14,6 +14,8 @@ from .fairy_tea import *
 from .void_contract import *
 from .forge_furnace import *
 from .leave import *
+from .portal_chamber import *
+
 
 ALL_EVENTS = [
     EventTemplate(
@@ -119,6 +121,17 @@ ALL_EVENTS = [
         ],
         min_stage=2,
         max_stage=19
+    ),
+    EventTemplate(
+        "portal_chamber",
+        EVENT_CONFIG["portal_chamber"]["description"],
+        [
+            ContractPortalOption("献祭最大生命的 10%，获得遗物【门扉碎片】", "contract_portal"),
+            ArcanePortalOption("获得卡牌【万能钥匙】，但卡组中会被塞入一张诅咒卡【空间撕裂】", "arcane_portal"),
+            LeaveEventOption("悄然离开", "leave_event", "portal_chamber")
+        ],
+        min_stage=21,
+        max_stage=24
     )
 ]
 

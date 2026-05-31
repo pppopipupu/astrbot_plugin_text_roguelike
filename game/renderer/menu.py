@@ -261,6 +261,8 @@ def render_shop(stats: UserStats) -> str:
     unlocked = getattr(stats, "unlocked_subclasses", [])
     status_time = "已解锁" if "时序法师" in unlocked else "未解锁"
     status_element = "已解锁" if "塑能法师" in unlocked else "未解锁"
+    status_key = "已解锁" if "秘钥学者" in unlocked else "未解锁"
+    status_gatekey = "已解锁" if getattr(stats, "unlocked_gatekey", False) else "未解锁"
     status_mystery = "已解锁" if "神秘物品" in unlocked else "未解锁"
     
     welcome_quotes = [
@@ -275,11 +277,19 @@ def render_shop(stats: UserStats) -> str:
     
     killed_icerainboww = getattr(stats, "killed_icerainboww", False)
     if killed_icerainboww:
-        item4_title = " [4] Icerainboww - 状态：已解锁"
-        item4_desc = "     └─ 击败最终BOSS Icerainboww解锁。"
+        item6_title = " [6] Icerainboww - 状态：已解锁"
+        item6_desc = "     └─ 击败最终BOSS Icerainboww解锁。"
     else:
-        item4_title = " [4] ？？？ - 状态：未解锁"
-        item4_desc = "     └─ 击败未知的最终BOSS解锁。"
+        item6_title = " [6] ？？？ - 状态：未解锁"
+        item6_desc = "     └─ 击败未知的最终BOSS解锁。"
+
+    killed_yog = getattr(stats, "killed_yog_sothoth", False)
+    if killed_yog:
+        item7_title = " [7] 尤格-索托斯 - 状态：已解锁"
+        item7_desc = "     └─ 击败超最终BOSS尤格-索托斯解锁。"
+    else:
+        item7_title = " [7] ？？？ - 状态：未解锁"
+        item7_desc = "     └─ 击败未知的超最终BOSS解锁。"
 
     lines = [
         "━━━━━━━━━━━━━━━━━━━━",
@@ -295,15 +305,23 @@ def render_shop(stats: UserStats) -> str:
         "     └─ 操控时间。初始牌组中加入 1 张传奇卡牌“时间停止”（追加 3 个额外回合）。",
         f" [2] 塑能法师子职业 - 售价：2888 GP （状态：{status_element}）",
         "     └─ 元素爆发。所有法术伤害提升 15%，且抓取火球术时 40% 几率替换为流星爆。",
-        f" [3] 神秘物品 - 售价：66666 GP （状态：{status_mystery}）",
+        f" [3] 秘钥学者子职业 - 售价：2888 GP （状态：{status_key}）",
+        "     └─ 门扉共鸣。打出护符时回复 3 生命且获得 4 护盾。抓取卡牌时 35% 几率替换为“秘钥共鸣”。",
+        f" [4] 门之钥匙 - 售价：3000 GP （状态：{status_gatekey}）",
+        "     └─ 传说之钥。开启先古之门，20层击败BOSS后可进入5层长的“先古境地”！",
+        f" [5] 神秘物品 - 售价：66666 GP （状态：{status_mystery}）",
         "     └─ 一件蕴藏着奇异力量的物件，购买后会永久保存在收藏中。",
-        item4_title,
-        item4_desc,
+        item6_title,
+        item6_desc,
+        item7_title,
+        item7_desc,
         "",
         "【购买指令】",
-        "👉 /rogue 商店 购买 1 或 时序法师 -- 购买时序法师",
-        "👉 /rogue 商店 购买 2 或 塑能法师 -- 购买塑能法师",
-        "👉 /rogue 商店 购买 3 或 神秘物品 -- 购买神秘物品",
+        "👉 /rogue 商店 购买 1 -- 购买时序法师",
+        "👉 /rogue 商店 购买 2 -- 购买塑能法师",
+        "👉 /rogue 商店 购买 3 -- 购买秘钥学者",
+        "👉 /rogue 商店 购买 4 -- 购买门之钥匙",
+        "👉 /rogue 商店 购买 5 -- 购买神秘物品",
         "━━━━━━━━━━━━━━━━━━━━"
     ]
     return "\n".join(lines)

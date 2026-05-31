@@ -308,5 +308,22 @@ EVENT_CONFIG = {
     "leave_default": {
         "text": "离开事件",
         "action": "leave_event"
+    },
+    "portal_chamber": {
+        "description": "你走进了一座泛着星光的石室。墙壁上的繁复浮雕与你身上的门之钥匙产生共鸣，开启了三扇闪烁的传送门。",
+        "options": [
+            {
+                "text": "[契约之门] 献祭最大生命的 10%，获得遗物【门扉碎片】",
+                "action": "contract_portal"
+            },
+            {
+                "text": "[奥术之门] 获得卡牌【万能钥匙】，但卡组中会被塞入一张诅咒卡【空间撕裂】",
+                "action": "arcane_portal"
+            },
+            {
+                "text": "[悄然离开] 离开此地",
+                "action": "leave_event"
+            }
+        ]
     }
 }

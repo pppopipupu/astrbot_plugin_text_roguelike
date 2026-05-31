@@ -86,12 +86,14 @@ class EnemyTemplate:
             enemy.shield += intent.val
             logs.append(f"敌人【{enemy.name}】进行防守，获得 {intent.val} 点护盾。")
 
-from .boss import BossRedDragonTemplate, BossCorruptedHeartTemplate, BossIcerainbowwTemplate, BossThunderLordTemplate
+from .boss import BossRedDragonTemplate, BossCorruptedHeartTemplate, BossIcerainbowwTemplate, BossThunderLordTemplate, BossYogSothothTemplate
 from .minions import (
     GoblinCenturionTemplate, GargoylePriestTemplate, BeastMasterTemplate,
     ObsidianDjinnTemplate, GhostArchmageTemplate, ShadowFiendTemplate,
     DoomguardTemplate, NecromancerTemplate, PortalGuardianTemplate,
-    FireGuardTemplate, DemonServantTemplate, LightningOrbTemplate
+    FireGuardTemplate, DemonServantTemplate, LightningOrbTemplate,
+    VoidWandererTemplate, AncientWardenTemplate, AstralHoundTemplate,
+    VoidLurkerTemplate
 )
 
 ALL_ENEMIES = {
@@ -111,6 +113,12 @@ ALL_ENEMIES = {
     "火元素守卫": FireGuardTemplate("火元素守卫"),
     "狂暴魔仆": DemonServantTemplate("狂暴魔仆"),
     "雷影魔仆": LightningOrbTemplate("雷影魔仆"),
+    "虚空之门·尤格-索托斯": BossYogSothothTemplate("虚空之门·尤格-索托斯"),
+    "【觉醒】虚空之门·尤格-索托斯": BossYogSothothTemplate("【觉醒】虚空之门·尤格-索托斯"),
+    "虚空游荡者": VoidWandererTemplate("虚空游荡者"),
+    "先古守卫": AncientWardenTemplate("先古守卫"),
+    "星界猎犬": AstralHoundTemplate("星界猎犬"),
+    "虚空潜伏者": VoidLurkerTemplate("虚空潜伏者"),
 }
 
 def get_enemy_template(name: str) -> EnemyTemplate:

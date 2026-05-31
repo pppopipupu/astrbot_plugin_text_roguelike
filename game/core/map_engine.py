@@ -81,11 +81,16 @@ class MapEngine:
         elif p.stage == 20:
             run.node_type = "battle"
             self.battle_engine._init_battle_node(run, "boss")
+        elif p.stage == 25:
+            run.node_type = "battle"
+            self.battle_engine._init_battle_node(run, "boss")
         else:
             if p.stage == 2:
                 self._generate_map_network(run, 2, 10)
             elif p.stage == 12:
                 self._generate_map_network(run, 12, 20)
+            elif p.stage == 21:
+                self._generate_map_network(run, 21, 25)
             
             run.node_type = "map_select"
             nodes_layer = run.map_data.get("nodes", {}).get(str(p.stage), [])
@@ -142,13 +147,13 @@ class MapEngine:
         types_pool = ["battle", "event", "shop", "elite", "rest"]
         for s in range(start_s, end_s + 1):
             s_str = str(s)
-            if s in (5, 15):
+            if s in (5, 15, 23):
                 nodes[s_str].append({
                     "id": f"{s}_0",
                     "type": "treasure",
                     "next": []
                 })
-            elif s in (10, 20):
+            elif s in (10, 20, 25):
                 nodes[s_str].append({
                     "id": f"{s}_0",
                     "type": "boss",

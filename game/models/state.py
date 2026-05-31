@@ -48,6 +48,9 @@ class UserStats:
     selected_class: str = "法师"
     selected_subclass: str = ""
     killed_icerainboww: bool = False
+    unlocked_gatekey: bool = False
+    killed_yog_sothoth: bool = False
+
 
 if not hasattr(sys, "_rogue_stat_recorder"):
     sys._rogue_stat_recorder = None

@@ -192,6 +192,7 @@ class ClassCommand(CommandHandler, names=["职业", "class"]):
             unlocked = getattr(stats, "unlocked_subclasses", [])
             status_time = "已解锁" if "时序法师" in unlocked else "未解锁（2888 GP）"
             status_element = "已解锁" if "塑能法师" in unlocked else "未解锁（2888 GP）"
+            status_key = "已解锁" if "秘钥学者" in unlocked else "未解锁（2888 GP）"
             lines = [
                 "━━━━━━━━━━━━━━━━━━━━",
                 "🧙 魔法肉鸽卡牌子职业系统",
@@ -204,10 +205,13 @@ class ClassCommand(CommandHandler, names=["职业", "class"]):
                 "   └─ 操控时间。开局获得专属传奇卡牌“时间停止”（追加 3 个额外回合）。",
                 f"2. 塑能法师 - 状态：[{status_element}]",
                 "   └─ 元素爆发。所有法术伤害提升 15%，且抓取火球术时 40% 几率将火球术替换为流星爆。",
+                f"3. 秘钥学者 - 状态：[{status_key}]",
+                "   └─ 门扉共鸣。打出护符时回复 3 生命且获得 4 护盾。抓取卡牌时 35% 几率将普通法术替换为“秘钥共鸣”。",
                 "",
                 "【职业命令】",
                 "👉 /rogue 职业 1 或 选择 1 -- 装备时序法师子职业",
                 "👉 /rogue 职业 2 或 选择 2 -- 装备塑能法师子职业",
+                "👉 /rogue 职业 3 或 选择 3 -- 装备秘钥学者子职业",
                 "👉 /rogue 职业 0 或 选择 0 -- 取消装备子职业",
                 "💡 如需购买子职业，请使用局外商店：/rogue 商店",
                 "━━━━━━━━━━━━━━━━━━━━"
@@ -229,10 +233,12 @@ class ClassCommand(CommandHandler, names=["职业", "class"]):
                     subclass_name = "时序法师"
                 elif subclass_arg in ("2", "塑能法师"):
                     subclass_name = "塑能法师"
+                elif subclass_arg in ("3", "秘钥学者"):
+                    subclass_name = "秘钥学者"
                 elif subclass_arg in ("0", "无", "取消", "none"):
                     subclass_name = ""
                 else:
-                    yield "❌ 无效的子职业。可选：1 (时序法师)、2 (塑能法师)、0 (无)。"
+                    yield "❌ 无效的子职业。可选：1 (时序法师)、2 (塑能法师)、3 (秘钥学者)、0 (无)。"
                     return
                 if subclass_name == "":
                     stats.selected_subclass = ""
@@ -259,30 +265,54 @@ class ShopCommand(CommandHandler, names=["商店", "shop"]):
             unlocked = getattr(stats, "unlocked_subclasses", [])
             gp = getattr(stats, "gp", 0)
             killed_icerainboww = getattr(stats, "killed_icerainboww", False)
+            is_gatekey = False
             if target in ("1", "时序法师"):
                 subclass_name = "时序法师"
                 price = 2888
             elif target in ("2", "塑能法师"):
                 subclass_name = "塑能法师"
                 price = 2888
-            elif target in ("3", "神秘物品"):
+            elif target in ("3", "秘钥学者"):
+                subclass_name = "秘钥学者"
+                price = 2888
+            elif target in ("4", "门之钥匙"):
+                subclass_name = "门之钥匙"
+                price = 3000
+                is_gatekey = True
+            elif target in ("5", "神秘物品"):
                 subclass_name = "神秘物品"
                 price = 66666
-            elif target in ("4", "Icerainboww"):
+            elif target in ("6", "Icerainboww"):
                 if killed_icerainboww:
                     yield "❌ 该商品已自动解锁，无需购买。"
                 else:
                     yield "❌ 无法购买未知的隐藏商品。"
                 return
-            else:
-                if killed_icerainboww:
-                    yield "❌ 无效的商品。可选商品序号：1、2、3、4。"
+            elif target in ("7", "尤格-索托斯", "Yog-Sothoth"):
+                if getattr(stats, "killed_yog_sothoth", False):
+                    yield "❌ 该商品已自动解锁，无需购买。"
                 else:
-                    yield "❌ 无效的商品。可选商品序号：1、2、3。"
+                    yield "❌ 无法购买未知的隐藏商品。"
                 return
-            if subclass_name in unlocked:
-                yield f"❌ 你已经解锁了【{subclass_name}】。"
+            else:
+                valid_ids = ["1", "2", "3", "4", "5"]
+                if killed_icerainboww:
+                    valid_ids.append("6")
+                if getattr(stats, "killed_yog_sothoth", False):
+                    valid_ids.append("7")
+                valid_str = "、".join(valid_ids)
+                yield f"❌ 无效的商品。可选商品序号：{valid_str}。"
                 return
+
+            if is_gatekey:
+                if getattr(stats, "unlocked_gatekey", False):
+                    yield "❌ 你已经解锁了【门之钥匙】。"
+                    return
+            else:
+                if subclass_name in unlocked:
+                    yield f"❌ 你已经解锁了【{subclass_name}】。"
+                    return
+
             if gp < price:
                 import random
                 fail_quotes = [
@@ -294,22 +324,26 @@ class ShopCommand(CommandHandler, names=["商店", "shop"]):
                     "“即使是至高法皇，没钱也得从我这里老老实实地退出去，懂吗？”"
                 ]
                 quote = random.choice(fail_quotes)
-                yield f"❌ 你的 GP 不足。购买【{subclass_name}】需要 {price} GP，你当前只有 {gp} GP。\n🔮 神秘店主说：\n  {quote}"
+                yield f"❌ 你的 GP 不足。购买【{subclass_name if not is_gatekey else '门之钥匙'}】需要 {price} GP，你当前只有 {gp} GP。\n🔮 神秘店主说：\n  {quote}"
                 return
+
             stats.gp -= price
-            stats.unlocked_subclasses.append(subclass_name)
+            if is_gatekey:
+                stats.unlocked_gatekey = True
+            else:
+                stats.unlocked_subclasses.append(subclass_name)
             router.save_manager.save_stats(user_id, stats)
             import random
             success_quotes = [
                 "“明智的选择，它现在属于你了。”",
                 "“收您对应GP，拿好它，祝您好运，勇敢的旅者。”",
                 "“呵呵，这股力量已经在虚空中沉睡了太久，希望你能配得上它。”",
-                "“拿去吧，它会指引你在接下来的地下城里改写宿命。”",
+                "“拿去吧，它会指指引你在接下来的地下城里改写宿命。”",
                 "“噢……它离去时，连虚空的波动都微微震颤了一下。”",
                 "“成交。记住，有些契约一经签订，便无法回头。”"
             ]
             quote = random.choice(success_quotes)
-            yield f"🎉 购买成功！已成功解锁【{subclass_name}】。已扣除 {price} GP。\n🔮 神秘店主说：\n  {quote}"
+            yield f"🎉 购买成功！已成功解锁【{subclass_name if not is_gatekey else '门之钥匙'}】。已扣除 {price} GP。\n🔮 神秘店主说：\n  {quote}"
         else:
             yield "❌ 格式错误。请使用 /rogue 商店 或 /rogue 商店 购买/buy <商品序号/商品名称>。"
 

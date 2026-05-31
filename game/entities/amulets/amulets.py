@@ -123,10 +123,27 @@ class RingOfElementsAmulet(AmuletTemplate):
                 return f"对【{tname}】造成 4 点火焰伤害。"
             return "没有存活的敌人。"
 
+class VoidBeaconAmulet(AmuletTemplate):
+    def on_end_turn(self, run, grid, engine) -> str:
+        av = run.player.amulets.get(grid)
+        is_upgraded = av.id.endswith("+") if av else False
+        damage = 8 if is_upgraded else 5
+        for enemy in list(run.enemies):
+            engine._add_buff_to(enemy, "vulnerable_force", "力场易伤", "受到的力场伤害增加 100%", 1)
+        import random
+        alive_enemies = [e for e in run.enemies if e.hp > 0]
+        if alive_enemies:
+            target = random.choice(alive_enemies)
+            curr_idx = run.enemies.index(target)
+            engine._damage_target(run, f"e{curr_idx+1}", damage, damage_type="force")
+            engine._log_event(run, f"🌌 【虚空信标】使所有敌人获得 1 层力场易伤，并对【{target.name}】造成了 {damage} 点力场伤害！")
+        return ""
+
 ALL_AMULETS = {
     "lucky_coin": LuckyCoinAmulet(),
     "mage_ward": MageWardAmulet(),
     "thorns_necklace": ThornsNecklaceAmulet(),
     "arcane_crystal": ArcaneCrystalAmulet(),
     "ring_of_elements": RingOfElementsAmulet(),
+    "void_beacon": VoidBeaconAmulet(),
 }

@@ -219,5 +219,70 @@ NEUTRAL_CARD_CONFIG = {
         "desc": "消耗所有手牌中的非随从牌，每消耗一个获得6点护盾。",
         "rarity": "rare",
         "feedback": "使用了【重振精神】，消耗了 {exhaust_count} 张非随从牌，获得了 {shield_amount} 点护盾。"
+    },
+    "key_resonance": {
+        "name": "秘钥共鸣",
+        "color": "neutral",
+        "type": "spell",
+        "cost_a": -1,
+        "cost_ba": 0,
+        "desc": "消耗所有的A。进行X次死者召回：10。若拥有门之钥匙，每消耗1A额外对所有敌人造成6点力场伤害。",
+        "rarity": "rare",
+        "feedback": "产生了秘钥共鸣，进行了 {recall_count} 次死者召回，并造成了 {damage_amount} 点力场伤害。"
+    },
+    "gate_guard": {
+        "name": "门扉守卫",
+        "color": "neutral",
+        "type": "minion",
+        "cost_a": 1,
+        "cost_ba": 0,
+        "desc": "生命 12，攻击 2。入场曲：使一个敌人眩晕 1 回合。技能：守卫痛击（消耗 2A，造成 6 点钝击伤害并使目标下回合动作 A 减少 1）。",
+        "rarity": "rare",
+        "minion_hp": 12,
+        "minion_atk": 2,
+        "feedback_success": "在格子 [{grid}] 召唤了【{name}】并使【{target}】眩晕。"
+    },
+    "master_key": {
+        "name": "万能钥匙",
+        "color": "neutral",
+        "type": "spell",
+        "cost_a": 1,
+        "cost_ba": 0,
+        "desc": "使玩家战场中所有护符的吟唱时间减少 2。",
+        "rarity": "rare",
+        "feedback": "使用了万能钥匙，所有护符的吟唱时间减少 2。"
+    },
+    "void_beacon": {
+        "name": "虚空信标",
+        "color": "neutral",
+        "type": "amulet",
+        "cost_a": 1,
+        "cost_ba": 0,
+        "desc": "吟唱 2。每回合开始时，对所有敌人施加 1 层易伤，并对随机敌人造成 5 点力场伤害。",
+        "rarity": "rare",
+        "countdown": 2,
+        "amulet_desc": "每回合开始时，对所有敌人施加 1 层易伤，并对随机敌人造成 5 点力场伤害。",
+        "feedback_success": "将【{name}】部署到了格子 [{grid}]。"
+    },
+    "ancient_wisdom": {
+        "name": "古老智慧",
+        "color": "neutral",
+        "type": "ability",
+        "cost_a": -1,
+        "cost_ba": -1,
+        "desc": "消耗所有的A与BA。立即获得Y*3点护盾，且在本场战斗中获得X层古老智慧Buff：你每打出一张中立卡牌时，获得2点护盾。",
+        "rarity": "rare",
+        "feedback": "获得了 {shield} 点护盾与 {stacks} 层古老智慧形态。"
+    },
+    "curse_dimensional_tear": {
+        "name": "空间撕裂",
+        "color": "curse",
+        "type": "spell",
+        "cost_a": 0,
+        "cost_ba": 0,
+        "desc": "不能被打出。回合结束时，如果仍在手牌中，则对玩家造成 3 点真实伤害并消耗自身。",
+        "rarity": "curse",
+        "unplayable": True,
+        "feedback": "手牌中的空间撕裂发生坍缩，对玩家造成 3 点真实伤害并自身消耗。"
     }
 }

@@ -120,8 +120,27 @@ class CardPlayer:
                 return "❌ 无效的目标选择。"
         if card.type in ("minion", "amulet") and self.engine._get_free_grid(p) is None:
             return "❌ 你的战场格子已满，无法召唤随从或部署护符。"
+        
         req_a = card.cost_a
         req_ba = card.cost_ba
+        real_x_a = 0
+        real_x_ba = 0
+        if req_a == -1:
+            real_x_a = p.actions
+            req_a = p.actions
+        if req_ba == -1:
+            real_x_ba = p.bonus_actions
+            req_ba = p.bonus_actions
+
+        if "chemical_x" in p.relics:
+            if card.cost_a == -1:
+                real_x_a += 2
+            if card.cost_ba == -1:
+                real_x_ba += 2
+
+        run.node_data["last_x_cost_a"] = real_x_a
+        run.node_data["last_x_cost_ba"] = real_x_ba
+
         play_evt = CardPlayEvent(run, card, target, req_a, req_ba)
         self.engine.event_bus.dispatch(play_evt)
         req_a = play_evt.cost_a
@@ -145,7 +164,11 @@ class CardPlayer:
             self.engine.event_bus.dispatch(exhaust_evt)
         else:
             p.discard_pile.append(cid)
-        res = self.engine._execute_card_effect(run, card, target)
+        run.node_data["current_playing_card_id"] = card.id
+        try:
+            res = self.engine._execute_card_effect(run, card, target)
+        finally:
+            run.node_data["current_playing_card_id"] = ""
         played_count = run.node_data.get("cards_played_this_turn", 0)
         played_evt = CardPlayedEvent(run, card, target, res)
         self.engine.event_bus.dispatch(played_evt)
@@ -180,8 +203,27 @@ class CardPlayer:
             return "❌ 卡牌不存在。"
         if getattr(card, "unplayable", False):
             return "❌ 该卡牌不能被打出。"
+        
         req_a = card.cost_a
         req_ba = card.cost_ba
+        real_x_a = 0
+        real_x_ba = 0
+        if req_a == -1:
+            real_x_a = p.actions
+            req_a = p.actions
+        if req_ba == -1:
+            real_x_ba = p.bonus_actions
+            req_ba = p.bonus_actions
+
+        if "chemical_x" in p.relics:
+            if card.cost_a == -1:
+                real_x_a += 2
+            if card.cost_ba == -1:
+                real_x_ba += 2
+
+        run.node_data["last_x_cost_a"] = real_x_a
+        run.node_data["last_x_cost_ba"] = real_x_ba
+
         if p.actions < req_a or p.bonus_actions < req_ba:
             return f"❌ 你的动作资源不足（需要 {req_a}A {req_ba}BA，当前 {p.actions}A {p.bonus_actions}BA）。"
         if target is None:
@@ -202,7 +244,11 @@ class CardPlayer:
                 p.deck.remove(cid)
         else:
             p.discard_pile.append(cid)
-        res = card.special_action(run, target)
+        run.node_data["current_playing_card_id"] = card.id
+        try:
+            res = card.special_action(run, target)
+        finally:
+            run.node_data["current_playing_card_id"] = ""
         self.engine.save_manager.save_save(run.user_id, run)
         has_damaged = False
         for idx, e in enumerate(run.enemies):
@@ -340,6 +386,12 @@ class CardPlayer:
             elif cid in temp_retains:
                 retained.append(cid)
                 temp_retains.remove(cid)
+            elif card and (card.id == "curse_dimensional_tear" or card.id == "curse_dimensional_tear+"):
+                p.exhaust_pile.append(cid)
+                self.engine._log_event(run, f"💥 [空间撕裂] 手牌中的【{card.name}】在回合结束时发生坍缩，被消耗并对玩家造成 3 点真实伤害！")
+                self.engine.combat_resolver.damage_target(run, "p0", 3, source="curse", damage_type="true")
+                exhaust_evt = CardExhaustEvent(run, cid, "curse_dimensional_tear")
+                self.engine.event_bus.dispatch(exhaust_evt)
             elif card and getattr(card, "ethereal", False):
                 p.exhaust_pile.append(cid)
                 self.engine._log_event(run, f"✨ [虚无] 【{card.name}】在回合结束时被消耗。")
@@ -422,7 +474,11 @@ class CardPlayer:
             run.node_data["icerainboww_turn"] = run.node_data.get("icerainboww_turn", 1) + 1
         if run.enemies and any(e.name == "雷霆领主" for e in run.enemies):
             run.node_data["thunder_lord_turn"] = run.node_data.get("thunder_lord_turn", 1) + 1
-        self.draw_cards(p, 6, run)
+        draw_count = 6
+        if run.node_data.get("draw_penalty_next_turn"):
+            draw_count = max(0, draw_count - run.node_data["draw_penalty_next_turn"])
+            run.node_data.pop("draw_penalty_next_turn", None)
+        self.draw_cards(p, draw_count, run)
         self.engine._roll_enemy_intent(run)
         run.node_data["cards_played_this_turn"] = 0
         self._reindex_minions(p)
@@ -451,10 +507,15 @@ class CardPlayer:
         else:
             reward_gold = 10 + random.randint(5, 15)
         p.gold += reward_gold
-        if p.stage == 20:
+        stats = self.engine.save_manager.load_stats(run.user_id)
+        has_gatekey = getattr(stats, "unlocked_gatekey", False)
+        if p.stage == 25:
+            run.node_type = "victory"
+            stats.killed_yog_sothoth = True
+            self.engine.save_manager.save_stats(run.user_id, stats)
+        elif p.stage == 20 and not has_gatekey:
             run.node_type = "victory"
             if run.node_data.get("boss_name") == "Icerainboww":
-                stats = self.engine.save_manager.load_stats(run.user_id)
                 stats.killed_icerainboww = True
                 self.engine.save_manager.save_stats(run.user_id, stats)
         else:
@@ -462,8 +523,14 @@ class CardPlayer:
             card_pool = list(ALL_CARDS.keys())
             normal_cards = [cid for cid in card_pool if ALL_CARDS[cid].rarity != "legendary" and not cid.startswith("curse_")]
             reward_cards = random.sample(normal_cards, 3)
-            reward_cards = [check_and_replace_fireball(run, cid) for cid in reward_cards]
-            run.node_data = {"cards": reward_cards, "quest_bonus": quest_bonus}
+            final_reward_cards = []
+            for cid in reward_cards:
+                cid = check_and_replace_fireball(run, cid)
+                if p.subclass == "秘钥学者" and ALL_CARDS.get(cid) and ALL_CARDS[cid].color == "wizard" and ALL_CARDS[cid].rarity != "legendary":
+                    if random.random() < 0.35:
+                        cid = "key_resonance"
+                final_reward_cards.append(cid)
+            run.node_data = {"cards": final_reward_cards, "quest_bonus": quest_bonus}
             self.engine.save_manager.save_save(run.user_id, run)
 
     def _reindex_minions(self, p: PlayerState):

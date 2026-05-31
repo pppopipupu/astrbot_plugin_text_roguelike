@@ -772,7 +772,7 @@ class TestRoguePlugin(unittest.TestCase):
         self.assertEqual(mgr.stats.selected_subclass, "")
         list(router.handle_command("test_user", ["class", "c", "0"]))
         self.assertEqual(mgr.stats.selected_subclass, "")
-        res = list(router.handle_command("test_user", ["class", "c", "3"]))
+        res = list(router.handle_command("test_user", ["class", "c", "4"]))
         self.assertIn("无效的子职业", res[0])
         list(router.handle_command("test_user", ["class", "c", "时序法师"]))
         self.assertEqual(mgr.stats.selected_subclass, "时序法师")
@@ -1021,7 +1021,7 @@ class TestRoguePlugin(unittest.TestCase):
             user_id="test_user_iron_will_upg",
             node_type="battle",
             player=player,
-            enemies=[EnemyState("测试敌人", 100, 100, 0)]
+            enemies=[EnemyState("测试敌人", 100, 100, 0, max_actions=0)]
         )
         engine.play_card(run, 1, None)
         self.assertEqual(player.shield, 8)
@@ -1080,5 +1080,90 @@ class TestRoguePlugin(unittest.TestCase):
         self.assertEqual(player.minions["2"].name, "雇佣兵 3")
         self.assertNotIn("3", player.minions)
 
+    def test_gatekey_and_ancient_mechanics(self):
+        class DummySaveManager:
+            def __init__(self):
+                self.stats = UserStats()
+            def save_save(self, user_id, run):
+                pass
+            def delete_save(self, user_id):
+                pass
+            def load_stats(self, user_id):
+                return self.stats
+            def save_stats(self, user_id, stats):
+                self.stats = stats
+                return True
+        sm = DummySaveManager()
+        engine = BattleEngine(sm)
+        player = PlayerState(
+            hp=40,
+            max_hp=40,
+            shield=0,
+            gold=100,
+            stage=20,
+            deck=["arcane_torrent", "arcane_barrier"],
+            hand=["arcane_torrent", "arcane_barrier"],
+            actions=3,
+            bonus_actions=2,
+            minion_graveyard=["mercenary"]
+        )
+        run = GameRun(
+            user_id="test_ancient_user",
+            node_type="battle",
+            player=player,
+            enemies=[EnemyState("虚空之门·尤格-索托斯", 5, 5, 0, max_actions=0)]
+        )
+        engine.combat_resolver.damage_target(run, "e1", 10, damage_type="bludgeoning")
+        self.assertEqual(run.enemies[0].name, "【觉醒】虚空之门·尤格-索托斯")
+        self.assertEqual(run.enemies[0].hp, 260)
+        self.assertTrue(any(b.id == "end_gate_passive" for b in run.enemies[0].buffs))
+        msg = engine.combat_resolver.recall_dead_minion(run, 15)
+        self.assertIn("召回", msg)
+        self.assertEqual(len(player.minion_graveyard), 0)
+        self.assertEqual(player.minions["1"].id, "mercenary")
+        res = engine.play_card(run, 1, "e1")
+        self.assertEqual(player.actions, 0, f"Actions not zero! Result: {res}")
+        self.assertEqual(run.node_data.get("last_x_cost_a"), 3)
+        player.actions = 3
+        player.bonus_actions = 2
+        player.relics.append("chemical_x")
+        res2 = engine.play_card(run, 1, "e1")
+        self.assertEqual(player.bonus_actions, 0, f"Bonus actions not zero! Result: {res2}")
+        self.assertEqual(run.node_data.get("last_x_cost_ba"), 4)
+        self.assertEqual(player.actions, 3)
+        enemy_test = EnemyState("测试敌人", 10, 10, 0, actions=2, max_actions=2)
+        run.enemies = [enemy_test]
+        player.relics = ["ancient_compass"]
+        engine._init_battle_node(run)
+        self.assertEqual(enemy_test.actions, 1)
+        run.node_type = "battle"
+        player.stage = 20
+        sm.stats.unlocked_gatekey = False
+        engine.card_player.handle_battle_win(run)
+        self.assertEqual(run.node_type, "victory")
+        run.node_type = "battle"
+        player.stage = 20
+        sm.stats.unlocked_gatekey = True
+        engine.card_player.handle_battle_win(run)
+        self.assertEqual(run.node_type, "reward")
+        player.hand = ["void_beacon"]
+        player.actions = 2
+        player.bonus_actions = 1
+        player.amulets = {}
+        enemy_test2 = EnemyState("测试敌人", 10, 10, 0, actions=2, max_actions=2)
+        run.enemies = [enemy_test2]
+        run.node_type = "battle"
+        engine.play_card(run, 1, None)
+        self.assertIn("1", player.amulets)
+        self.assertEqual(player.amulets["1"].id, "void_beacon")
+        engine.end_turn(run)
+        self.assertTrue(any(b.id == "vulnerable_force" for b in enemy_test2.buffs))
+        run.node_type = "battle"
+        player.stage = 25
+        engine.card_player.handle_battle_win(run)
+        self.assertEqual(run.node_type, "victory")
+        self.assertTrue(sm.stats.killed_yog_sothoth)
+
 if __name__ == "__main__":
     unittest.main()
+

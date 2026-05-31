@@ -130,5 +130,41 @@ RELIC_CONFIG = {
         "rarity": "curse",
         "desc": "每当进入下一个关卡时，玩家失去 6 金币。",
         "price": 80
+    },
+    "chemical_x": {
+        "name": "X化学物",
+        "rarity": "rare",
+        "desc": "所有X费卡牌的X或Y消耗计数在结算时额外+2。",
+        "price": 150
+    },
+    "ancient_compass": {
+        "name": "古老罗盘",
+        "rarity": "rare",
+        "desc": "战斗第一回合开始时，所有敌人下回合的动作点A减少1。",
+        "price": 120
+    },
+    "portal_fragment": {
+        "name": "门扉碎片",
+        "rarity": "epic",
+        "desc": "进入战斗时，随机将一张中立的“秘钥共鸣”、“门扉守卫”、“万能钥匙”、“虚空信标”或“古老智慧”加入手牌。",
+        "price": 160
+    },
+    "ancient_sigil": {
+        "name": "先古印记",
+        "rarity": "legendary",
+        "desc": "每当打出一张具有“消耗”属性的卡牌时，随机恢复3点生命值或获得5点护盾。",
+        "price": 200
+    },
+    "void_lens": {
+        "name": "虚空透镜",
+        "rarity": "rare",
+        "desc": "打出中立卡牌时，如果造成了伤害，伤害增加2点；如果提供了护盾，护盾增加2点。",
+        "price": 120
+    },
+    "ancient_keyring": {
+        "name": "古老钥匙扣",
+        "rarity": "epic",
+        "desc": "部署护符时，该护符有50%几率吟唱时间额外减少1（最低为1）。",
+        "price": 150
     }
 }

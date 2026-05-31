@@ -283,5 +283,33 @@ MINION_CONFIG = {
                 "feedback": "凝聚极光屏障，为所有人附加防护效果。"
             }
         ]
+    },
+    "gate_guard": {
+        "name": "门扉守卫",
+        "skills": [
+            {
+                "id": "gate_strike",
+                "name": "守卫痛击",
+                "cost_a": 2,
+                "cost_ba": 0,
+                "desc": "消耗 2A，造成 6 点钝击伤害并使目标下回合动作 A 减少 1。",
+                "damage": 6,
+                "feedback": "对【{target}】造成了 {damage} 点钝击伤害并使其下回合动作点 A 减少 1。"
+            }
+        ]
+    },
+    "gate_guard+": {
+        "name": "门扉守卫+",
+        "skills": [
+            {
+                "id": "gate_strike",
+                "name": "守卫痛击+",
+                "cost_a": 1,
+                "cost_ba": 0,
+                "desc": "消耗 1A，造成 8 点钝击伤害并使目标下回合动作 A 减少 1。",
+                "damage": 8,
+                "feedback": "对【{target}】造成了 {damage} 点钝击伤害并使其下回合动作点 A 减少 1。"
+            }
+        ]
     }
 }

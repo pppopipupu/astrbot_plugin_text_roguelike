@@ -329,5 +329,70 @@ ENEMY_CONFIG = {
         "intents": [
             {"id": "attack", "desc": "攻击 (造成 2 物理伤害)"}
         ]
+    },
+    "虚空游荡者": {
+        "name": "虚空游荡者",
+        "type": "normal",
+        "hp": "80 (+ 2 * 关卡数)",
+        "actions": "1A 1BA",
+        "intents": [
+            {"id": "void_bite", "val": 8, "desc": "虚空噬咬 (造成 8 点黯蚀伤害，并施加 1 层轻度黯蚀易伤)"},
+            {"id": "void_erosion", "val": 2, "desc": "虚空侵蚀 (使玩家获得 2 级虚空虚弱 Buff)"}
+        ]
+    },
+    "先古守卫": {
+        "name": "先古守卫",
+        "type": "elite",
+        "hp": "120 (+ 3 * 关卡数)",
+        "actions": "2A 0BA",
+        "intents": [
+            {"id": "portal_smash", "val": 15, "desc": "门扉重击 (造成 15 点钝击伤害)"},
+            {"id": "ancient_charge", "val": 3, "desc": "先古充能 (获得 3 层力量)"},
+            {"id": "space_lock", "val": 1, "desc": "空间闭锁 (使玩家下回合减少 1A)"}
+        ]
+    },
+    "星界猎犬": {
+        "name": "星界猎犬",
+        "type": "elite",
+        "hp": "110 (+ 3 * 关卡数)",
+        "actions": "1A 2BA",
+        "intents": [
+            {"id": "star_bite", "val": 10, "desc": "星光撕咬 (造成 10 点力场伤害)"},
+            {"id": "phase_shift", "val": 12, "desc": "相位转移 (获得 12 护盾并净化自身 1 负面 Buff)"},
+            {"id": "star_fury", "val": 1, "desc": "星光狂暴 (使玩家下回合少抽 1 张牌)"}
+        ]
+    },
+    "虚空之门·尤格-索托斯": {
+        "name": "虚空之门·尤格-索托斯",
+        "type": "boss",
+        "hp": "200",
+        "actions": "2A 1BA",
+        "passive": "先古庇护",
+        "intents": [
+            {"id": "gate_gaze", "val": 15, "desc": "门之凝视 (造成 15 点心灵伤害，对随机随从造成 10 点力场伤害，玩家下回合无法抽牌)"},
+            {"id": "void_storm", "val": 10, "desc": "虚空风暴 (对玩家与所有我方随从造成 10 点力场伤害)"},
+            {"id": "ancient_resonance", "val": 30, "desc": "先古共鸣 (获得 30 点护盾，且下回合获得 2 层力量)"}
+        ]
+    },
+    "【觉醒】虚空之门·尤格-索托斯": {
+        "name": "【觉醒】虚空之门·尤格-索托斯",
+        "type": "boss",
+        "hp": "260",
+        "actions": "2A 2BA",
+        "passive": "终焉之门",
+        "intents": [
+            {"id": "time_collapse", "val": 16, "desc": "时空坍缩 (造成 16 点力场伤害，玩家下回合动作减少 1A 1BA，且洗入 2 张空间撕裂)"},
+            {"id": "all_gates_open", "val": 20, "desc": "万门齐开 (召唤 2 个虚空潜伏者，敌方全体获得 2 层力量；若格子满则造成 20 点心灵伤害)"},
+            {"id": "doomsday_tide", "val": 15, "desc": "灭世之潮 (对玩家与所有随从造成 15 点真实伤害，穿透护盾，并恢复自身 20 点生命值)"}
+        ]
+    },
+    "虚空潜伏者": {
+        "name": "虚空潜伏者",
+        "type": "summon",
+        "hp": "20",
+        "actions": "1A 0BA",
+        "intents": [
+            {"id": "void_strike", "val": 6, "desc": "虚空打击 (造成 6 点黯蚀伤害)"}
+        ]
     }
 }

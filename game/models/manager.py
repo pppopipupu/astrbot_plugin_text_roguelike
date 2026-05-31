@@ -43,7 +43,9 @@ class SaveManager:
                 unlocked_subclasses=d.get("unlocked_subclasses", []),
                 selected_class=d.get("selected_class", "法师"),
                 selected_subclass=d.get("selected_subclass", ""),
-                killed_icerainboww=d.get("killed_icerainboww", False)
+                killed_icerainboww=d.get("killed_icerainboww", False),
+                unlocked_gatekey=d.get("unlocked_gatekey", False),
+                killed_yog_sothoth=d.get("killed_yog_sothoth", False)
             )
         except:
             return UserStats()
@@ -270,12 +272,19 @@ class SaveManager:
         gp_gained = gold * 10
         victory_bonus = ""
         unlock_msg = ""
-        if is_victory:
-            gp_gained += 1000
-            victory_bonus = "（含通关奖励 1000 GP）"
-            if run.node_data.get("boss_name") == "Icerainboww":
-                unlock_msg = "\n\n🎉 特别提示：你成功击败了最终BOSS【Icerainboww】！在先古祭坛和先古赐福石碑中已永久解锁传奇随从卡【Icerainboww】！"
         stats = self.load_stats(user_id)
+        if is_victory:
+            if stage >= 25:
+                gp_gained += 3000
+                victory_bonus = "（含超最终通关奖励 3000 GP）"
+                stats.killed_yog_sothoth = True
+                unlock_msg = "\n\n🎉 特别提示：你成功击败了先古的超最终BOSS【虚空之门·尤格-索托斯】！你已完成了最伟大的先古救赎！"
+            else:
+                gp_gained += 1000
+                victory_bonus = "（含通关奖励 1000 GP）"
+                if run.node_data.get("boss_name") == "Icerainboww":
+                    stats.killed_icerainboww = True
+                    unlock_msg = "\n\n🎉 特别提示：你成功击败了最终BOSS【Icerainboww】！在先古祭坛和先古赐福石碑中已永久解锁传奇随从卡【Icerainboww】！"
         stats.gp += gp_gained
         self.save_stats(user_id, stats)
         self.delete_save(user_id)

@@ -437,3 +437,137 @@ class BossThunderLordTemplate(EnemyTemplate):
         elif intent.type == "defend":
             enemy.shield += intent.val
             logs.append(f"【{enemy.name}】凝聚雷电防护，获得 {intent.val} 点护盾。")
+
+class BossYogSothothTemplate(EnemyTemplate):
+    def roll_intents(self, run, engine, enemy) -> List['EnemyIntentState']:
+        from ...models.state import EnemyIntentState
+        phase = run.node_data.get("yog_sothoth_phase", 1)
+        turn = run.node_data.get("yog_sothoth_turn", 1)
+        run.node_data["yog_sothoth_turn"] = turn + 1
+        cycle = (turn - 1) % 3 + 1
+        intents_list = []
+        if phase == 1:
+            if cycle == 1:
+                intents_list.append(EnemyIntentState(type="gate_gaze", val=15, desc="门之凝视 (造成 15 点心灵伤害，对随从造成 10 点力场伤害，且玩家无法抽牌)", cost_a=1, cost_ba=0))
+            elif cycle == 2:
+                intents_list.append(EnemyIntentState(type="void_storm", val=10, desc="虚空风暴 (对玩家与所有我方随从造成 10 点力场伤害)", cost_a=1, cost_ba=0))
+            else:
+                intents_list.append(EnemyIntentState(type="ancient_resonance", val=30, desc="先古共鸣 (获得 30 点护盾，且下回合获得 2 层力量)", cost_a=1, cost_ba=0))
+        else:
+            if cycle == 1:
+                intents_list.append(EnemyIntentState(type="time_collapse", val=16, desc="时空坍缩 (造成 16 点力场伤害，玩家下回合动作减少 1A 1BA，且洗入 2 张空间撕裂)", cost_a=1, cost_ba=0))
+            elif cycle == 2:
+                intents_list.append(EnemyIntentState(type="all_gates_open", val=20, desc="万门齐开 (召唤 2 个虚空潜伏者，敌方全体获得 2 层力量；若格子满则造成 20 点心灵伤害)", cost_a=1, cost_ba=0))
+            else:
+                intents_list.append(EnemyIntentState(type="doomsday_tide", val=15, desc="灭世之潮 (对玩家与所有随从造成 15 点真实伤害，穿透护盾，并恢复自身 20 点生命值)", cost_a=1, cost_ba=0))
+        return intents_list
+
+    def execute_intent(self, run, engine, enemy, intent, logs: List[str] = None):
+        if logs is None:
+            logs = []
+        p = run.player
+        import random
+        
+        strength = 0
+        for b in enemy.buffs:
+            if b.id == "strength":
+                strength += b.stacks
+        val = intent.val + strength
+
+        if intent.type == "gate_gaze":
+            before_len = len(run.node_data.get("battle_logs", []))
+            engine._damage_target(run, "p0", val, source=f"enemy:{enemy.name}", damage_type="psychic")
+            after_logs = run.node_data.get("battle_logs", [])
+            dmg_msg = after_logs.pop() if len(after_logs) > before_len else ""
+            logs.append(f"【{enemy.name}】对玩家施展门之凝视。{dmg_msg}")
+            if p.minions:
+                target_key = random.choice(list(p.minions.keys()))
+                m_name = p.minions[target_key].name
+                before_len = len(run.node_data.get("battle_logs", []))
+                engine._damage_target(run, f"p{target_key}", 10, source=f"enemy:{enemy.name}", damage_type="force")
+                after_logs = run.node_data.get("battle_logs", [])
+                dmg_msg_m = after_logs.pop() if len(after_logs) > before_len else ""
+                logs.append(f"随从【{m_name}】受到波及。{dmg_msg_m}")
+            engine._add_buff_to(run.player, "tactical_focus", "无法抽牌", "本回合无法再抽牌", 1)
+            logs.append(f"【{enemy.name}】的心灵波动使玩家在下一回合【无法抽牌】。")
+
+        elif intent.type == "void_storm":
+            before_len = len(run.node_data.get("battle_logs", []))
+            engine._damage_target(run, "p0", val, source=f"enemy:{enemy.name}", damage_type="force")
+            after_logs = run.node_data.get("battle_logs", [])
+            dmg_msg = after_logs.pop() if len(after_logs) > before_len else ""
+            logs.append(f"【{enemy.name}】引发虚空风暴。{dmg_msg}")
+            for mk in list(p.minions.keys()):
+                m_name = p.minions[mk].name
+                before_len = len(run.node_data.get("battle_logs", []))
+                engine._damage_target(run, f"p{mk}", val, source=f"enemy:{enemy.name}", damage_type="force")
+                after_logs = run.node_data.get("battle_logs", [])
+                dmg_msg_m = after_logs.pop() if len(after_logs) > before_len else ""
+                logs.append(f"我方随从【{m_name}】受到虚空风暴波及。{dmg_msg_m}")
+
+        elif intent.type == "ancient_resonance":
+            enemy.shield += intent.val
+            engine._add_buff_to(enemy, "strength", "力量", "造成的伤害增加", 2)
+            logs.append(f"【{enemy.name}】进行先古共鸣，获得 {intent.val} 点护盾，且攻击力量提升 2 点。")
+
+        elif intent.type == "time_collapse":
+            before_len = len(run.node_data.get("battle_logs", []))
+            engine._damage_target(run, "p0", val, source=f"enemy:{enemy.name}", damage_type="force")
+            after_logs = run.node_data.get("battle_logs", [])
+            dmg_msg = after_logs.pop() if len(after_logs) > before_len else ""
+            run.node_data["drain_a"] = True
+            run.node_data["drain_ba"] = True
+            p.draw_pile.append("curse_dimensional_tear")
+            p.draw_pile.append("curse_dimensional_tear")
+            random.shuffle(p.draw_pile)
+            logs.append(f"【{enemy.name}】施展时空坍缩，使玩家下回合减少 1A 1BA，且洗入 2 张【空间撕裂】。{dmg_msg}")
+
+        elif intent.type == "all_gates_open":
+            empty_slots = 6 - len(run.enemies)
+            summon_count = min(2, empty_slots)
+            from ...models.state import EnemyState, EnemyIntentState
+            for _ in range(summon_count):
+                new_minion = EnemyState(
+                    name="虚空潜伏者",
+                    hp=20,
+                    max_hp=20,
+                    shield=0,
+                    actions=1,
+                    bonus_actions=0,
+                    is_summon=True,
+                    max_actions=1,
+                    max_bonus_actions=0,
+                    intents=[EnemyIntentState(
+                        type="void_strike",
+                        val=6,
+                        desc="虚空打击 (造成 6 点黯蚀伤害)",
+                        cost_a=1,
+                        cost_ba=0
+                    )]
+                )
+                run.enemies.append(new_minion)
+            for e in run.enemies:
+                engine._add_buff_to(e, "strength", "力量", "造成的伤害增加", 2)
+            logs.append(f"【{enemy.name}】开启了万门，召唤了 {summon_count} 个【虚空潜伏者】，且敌方全体力量提升了 2 点。")
+            if summon_count < 2:
+                before_len = len(run.node_data.get("battle_logs", []))
+                engine._damage_target(run, "p0", 20, source=f"enemy:{enemy.name}", damage_type="psychic")
+                after_logs = run.node_data.get("battle_logs", [])
+                dmg_msg = after_logs.pop() if len(after_logs) > before_len else ""
+                logs.append(f"由于传送门受阻，虚空能量直接冲击玩家。{dmg_msg}")
+
+        elif intent.type == "doomsday_tide":
+            before_len = len(run.node_data.get("battle_logs", []))
+            engine._damage_target(run, "p0", val, source=f"enemy:{enemy.name}", damage_type="true")
+            after_logs = run.node_data.get("battle_logs", [])
+            dmg_msg = after_logs.pop() if len(after_logs) > before_len else ""
+            logs.append(f"【{enemy.name}】释放了灭世之潮！造成真实伤害。{dmg_msg}")
+            for mk in list(p.minions.keys()):
+                m_name = p.minions[mk].name
+                before_len = len(run.node_data.get("battle_logs", []))
+                engine._damage_target(run, f"p{mk}", val, source=f"enemy:{enemy.name}", damage_type="true")
+                after_logs = run.node_data.get("battle_logs", [])
+                dmg_msg_m = after_logs.pop() if len(after_logs) > before_len else ""
+                logs.append(f"我方随从【{m_name}】受到波及。{dmg_msg_m}")
+            enemy.hp = min(enemy.max_hp, enemy.hp + 20)
+            logs.append(f"【{enemy.name}】吸取了生命力，恢复了 20 点生命值。")

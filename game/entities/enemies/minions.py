@@ -451,3 +451,119 @@ class LightningOrbTemplate(EnemyTemplate):
         elif intent.type == "charge":
             engine._add_buff_to(enemy, "strength", "力量", "造成的伤害增加", 1)
             logs.append(f"【{enemy.name}】进行蓄能，力量提升了 1 点。")
+
+class VoidWandererTemplate(EnemyTemplate):
+    def roll_intents(self, run, engine, enemy) -> List['EnemyIntentState']:
+        from ...models.state import EnemyIntentState
+        import random
+        cfg = ENEMY_CONFIG.get("虚空游荡者", {})
+        intents = cfg.get("intents", [])
+        chosen = random.choice(intents)
+        return [EnemyIntentState(type=chosen["id"], val=chosen["val"], desc=chosen["desc"], cost_a=1, cost_ba=0)]
+
+    def execute_intent(self, run, engine, enemy, intent, logs: List[str] = None):
+        if logs is None:
+            logs = []
+        strength = 0
+        for b in enemy.buffs:
+            if b.id == "strength":
+                strength += b.stacks
+        val = intent.val + strength
+
+        if intent.type == "void_bite":
+            before_len = len(run.node_data.get("battle_logs", []))
+            engine._damage_target(run, "p0", val, source=f"enemy:{enemy.name}", damage_type="necrotic")
+            after_logs = run.node_data.get("battle_logs", [])
+            dmg_msg = after_logs.pop() if len(after_logs) > before_len else ""
+            engine._add_buff_to(run.player, "minor_vulnerable_necrotic", "轻度黯蚀易伤", "受到的黯蚀伤害增加 50%", 1)
+            logs.append(f"【{enemy.name}】施展虚空噬咬。{dmg_msg}")
+        elif intent.type == "void_erosion":
+            engine._add_buff_to(run.player, "void_weakness", "虚空虚弱", "造成的法术伤害减少 3 点，回合结束时层数减少 1", 2)
+            logs.append(f"【{enemy.name}】施展虚空侵蚀，使玩家获得了 2 级【虚空虚弱】Buff。")
+
+class AncientWardenTemplate(EnemyTemplate):
+    def roll_intents(self, run, engine, enemy) -> List['EnemyIntentState']:
+        from ...models.state import EnemyIntentState
+        import random
+        cfg = ENEMY_CONFIG.get("先古守卫", {})
+        intents = cfg.get("intents", [])
+        chosen = random.choice(intents)
+        return [EnemyIntentState(type=chosen["id"], val=chosen["val"], desc=chosen["desc"], cost_a=1, cost_ba=0)]
+
+    def execute_intent(self, run, engine, enemy, intent, logs: List[str] = None):
+        if logs is None:
+            logs = []
+        strength = 0
+        for b in enemy.buffs:
+            if b.id == "strength":
+                strength += b.stacks
+        val = intent.val + strength
+
+        if intent.type == "portal_smash":
+            before_len = len(run.node_data.get("battle_logs", []))
+            engine._damage_target(run, "p0", val, source=f"enemy:{enemy.name}", damage_type="bludgeoning")
+            after_logs = run.node_data.get("battle_logs", [])
+            dmg_msg = after_logs.pop() if len(after_logs) > before_len else ""
+            logs.append(f"【{enemy.name}】施展门扉重击。{dmg_msg}")
+        elif intent.type == "ancient_charge":
+            engine._add_buff_to(enemy, "strength", "力量", "造成的伤害增加", 3)
+            logs.append(f"【{enemy.name}】进行先古充能，力量提升了 3 点。")
+        elif intent.type == "space_lock":
+            run.node_data["drain_a"] = True
+            logs.append(f"【{enemy.name}】施展空间闭锁，玩家下回合将失去 1 个动作点（A）。")
+
+class AstralHoundTemplate(EnemyTemplate):
+    def roll_intents(self, run, engine, enemy) -> List['EnemyIntentState']:
+        from ...models.state import EnemyIntentState
+        import random
+        cfg = ENEMY_CONFIG.get("星界猎犬", {})
+        intents = cfg.get("intents", [])
+        chosen = random.choice(intents)
+        return [EnemyIntentState(type=chosen["id"], val=chosen["val"], desc=chosen["desc"], cost_a=1, cost_ba=0)]
+
+    def execute_intent(self, run, engine, enemy, intent, logs: List[str] = None):
+        if logs is None:
+            logs = []
+        strength = 0
+        for b in enemy.buffs:
+            if b.id == "strength":
+                strength += b.stacks
+        val = intent.val + strength
+
+        if intent.type == "star_bite":
+            before_len = len(run.node_data.get("battle_logs", []))
+            engine._damage_target(run, "p0", val, source=f"enemy:{enemy.name}", damage_type="force")
+            after_logs = run.node_data.get("battle_logs", [])
+            dmg_msg = after_logs.pop() if len(after_logs) > before_len else ""
+            logs.append(f"【{enemy.name}】星光撕咬玩家。{dmg_msg}")
+        elif intent.type == "phase_shift":
+            enemy.shield += 12
+            to_remove = next((b for b in enemy.buffs if b.id == "stun"), None)
+            if to_remove:
+                enemy.buffs.remove(to_remove)
+                engine._sync_enemy_intents(enemy)
+                logs.append(f"【{enemy.name}】施展相位转移，获得 12 护盾并清除了眩晕！")
+            else:
+                logs.append(f"【{enemy.name}】施展相位转移，获得 12 护盾。")
+        elif intent.type == "star_fury":
+            run.node_data["draw_penalty_next_turn"] = run.node_data.get("draw_penalty_next_turn", 0) + 1
+            logs.append(f"【{enemy.name}】释放星光狂暴，使玩家下回合少抽 1 张牌。")
+
+class VoidLurkerTemplate(EnemyTemplate):
+    def roll_intents(self, run, engine, enemy) -> List['EnemyIntentState']:
+        from ...models.state import EnemyIntentState
+        return [EnemyIntentState(type="void_strike", val=6, desc="虚空打击 (造成 6 点黯蚀伤害)", cost_a=1, cost_ba=0)]
+
+    def execute_intent(self, run, engine, enemy, intent, logs: List[str] = None):
+        if logs is None:
+            logs = []
+        strength = 0
+        for b in enemy.buffs:
+            if b.id == "strength":
+                strength += b.stacks
+        val = intent.val + strength
+        before_len = len(run.node_data.get("battle_logs", []))
+        engine._damage_target(run, "p0", val, source=f"enemy:{enemy.name}", damage_type="necrotic")
+        after_logs = run.node_data.get("battle_logs", [])
+        dmg_msg = after_logs.pop() if len(after_logs) > before_len else ""
+        logs.append(f"【{enemy.name}】对玩家进行虚空打击。{dmg_msg}")

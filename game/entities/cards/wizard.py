@@ -316,3 +316,47 @@ class SunburstCard(Card):
             return feedback_tmpl.format(dmg=dmg) + bonus_msg
         return f"释放【阳炎爆】，对所有除玩家外的生物造成了 {dmg} 点光耀伤害。" + bonus_msg
 
+@register_card("arcane_torrent")
+class ArcaneTorrentCard(Card):
+    def execute(self, run, target, engine) -> str:
+        X = run.node_data.get("last_x_cost_a", 0)
+        single_dmg = 4 if self.upgraded else 3
+        if X <= 2:
+            count = X
+        else:
+            count = X * 2
+        single_dmg = engine.get_modified_spell_damage(run, self, single_dmg)
+        total_dmg = 0
+        name = engine._get_target_name(run, target)
+        if target.startswith("e"):
+            try:
+                idx = int(target[1:]) - 1
+                if idx < 0: idx = 0
+            except ValueError:
+                idx = 0
+            if 0 <= idx < len(run.enemies):
+                original_enemy = run.enemies[idx]
+                for _ in range(count):
+                    if original_enemy in run.enemies:
+                        curr_idx = run.enemies.index(original_enemy)
+                        engine._damage_target(run, f"e{curr_idx+1}", single_dmg, damage_type="true", card=self)
+                        total_dmg += single_dmg
+        cfg = CARD_CONFIG.get(self.id.replace("+", ""), {})
+        feedback_tmpl = cfg.get("feedback")
+        if feedback_tmpl:
+            return feedback_tmpl.format(target=name, count=count)
+        return f"对【{name}】倾泻了奥术洪流，造成了 {count} 次共 {total_dmg} 点真实伤害。"
+
+@register_card("arcane_barrier")
+class ArcaneBarrierCard(Card):
+    def execute(self, run, target, engine) -> str:
+        X = run.node_data.get("last_x_cost_ba", 0)
+        coef = 7 if self.upgraded else 5
+        shield_val = X * coef
+        engine._gain_shield(run, "p0", shield_val)
+        cfg = CARD_CONFIG.get(self.id.replace("+", ""), {})
+        feedback_tmpl = cfg.get("feedback")
+        if feedback_tmpl:
+            return feedback_tmpl.format(shield=shield_val)
+        return f"凝聚了奥法屏障，获得了 {shield_val} 点护盾。"
+

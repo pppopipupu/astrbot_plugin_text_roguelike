@@ -116,6 +116,28 @@ class CombatResolver:
             if grid in p.minions:
                 p.minions[grid].hp = min(p.minions[grid].max_hp, p.minions[grid].hp + heal)
 
+    def recall_dead_minion(self, run: GameRun, hp_limit: int) -> str:
+        p = run.player
+        from ...entities.cards.base import ALL_CARDS
+        eligible = []
+        for cid in p.minion_graveyard:
+            card = ALL_CARDS.get(cid)
+            if card:
+                hp_val = getattr(card, "minion_hp", 999)
+                if hp_val < hp_limit:
+                    eligible.append(cid)
+        if not eligible:
+            return "墓地中没有符合条件的随从。"
+        chosen_cid = random.choice(eligible)
+        p.minion_graveyard.remove(chosen_cid)
+        card = ALL_CARDS[chosen_cid]
+        hp_val = getattr(card, "minion_hp", 10)
+        atk_val = getattr(card, "minion_atk", 1)
+        grid = self.summon_minion(run, chosen_cid, card.name, hp_val, atk_val, 0)
+        if grid:
+            return f"从墓地召回了【{card.name}】（格子 [{grid}]）。"
+        return "战场已满，召回失败。"
+
     def summon_minion(self, run: GameRun, minion_id: str, name: str, hp: int, atk: int, ba: int) -> Optional[str]:
         grid = self.get_free_grid(run.player)
         if grid:
@@ -161,11 +183,27 @@ class CombatResolver:
                         e.hp -= hp_dmg
                         e.shield = 0
                 if e.hp <= 0:
-                    is_fatal = True
-                    p.enemy_graveyard.append(e.name)
-                    run.enemies.pop(idx)
-                    death_evt = MinionDeathEvent(run, e.name, target, e.name, True)
-                    self.engine.event_bus.dispatch(death_evt)
+                    if e.name == "虚空之门·尤格-索托斯":
+                        e.name = "【觉醒】虚空之门·尤格-索托斯"
+                        e.max_hp = 260
+                        e.hp = 260
+                        e.shield = 30
+                        e.actions = 2
+                        e.bonus_actions = 2
+                        e.max_actions = 2
+                        e.max_bonus_actions = 2
+                        e.buffs.clear()
+                        e.buffs.append(BuffState(id="end_gate_passive", name="终焉之门", stacks=1, desc="每回合开始时获得 15 点护盾，且清除自身所有负面效果，受到伤害时 30% 几率反弹 4 点真实伤害"))
+                        run.node_data["yog_sothoth_phase"] = 2
+                        run.node_data["yog_sothoth_turn"] = 0
+                        e.intents.clear()
+                        self.engine._log_event(run, "🌟 虚空之门·尤格-索托斯破裂了！狂暴的虚空能量从中倾泻而出，虚空之门在坍缩中重新觉醒！进入了觉醒形态！")
+                    else:
+                        is_fatal = True
+                        p.enemy_graveyard.append(e.name)
+                        run.enemies.pop(idx)
+                        death_evt = MinionDeathEvent(run, e.name, target, e.name, True)
+                        self.engine.event_bus.dispatch(death_evt)
                 take_evt = DamageTakeEvent(run, source, target, final_dmg, is_fatal)
                 self.engine.event_bus.dispatch(take_evt)
         elif target == "p0":

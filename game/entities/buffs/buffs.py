@@ -349,6 +349,71 @@ class BurningBuff(BuffImpl):
                 if buff_state in entity.buffs:
                     entity.buffs.remove(buff_state)
 
+class KeyScholarPassiveBuff(BuffImpl):
+    def on_card_played(self, event, buff_state, entity):
+        if entity == event.run.player and event.card.type == "amulet":
+            event.engine._heal_target(event.run, "p0", 3)
+            event.engine._gain_shield(event.run, "p0", 4)
+            event.feedback += " 🚪 [门扉共鸣] 回复了 3 点生命值并获得了 4 点护盾。"
+
+class VoidWeaknessBuff(BuffImpl):
+    def on_damage_calculate(self, event, buff_state, entity):
+        if entity == event.run.player and event.damage_type == "spell" and event.source == "p0":
+            event.modified_damage = max(0, event.modified_damage - buff_state.stacks * 3)
+
+    def modify_spell_damage(self, run, card, damage: int, engine) -> int:
+        return max(0, damage - self.stacks * 3)
+
+    def on_turn_end(self, event, buff_state, entity):
+        if entity == event.run.player and event.is_player:
+            buff_state.stacks -= 1
+            if buff_state.stacks <= 0:
+                event.run.player.buffs.remove(buff_state)
+
+class AncientProtectionBuff(BuffImpl):
+    def on_turn_start(self, event, buff_state, entity):
+        if not event.is_player and entity.shield > 0:
+            to_remove = []
+            for b in entity.buffs:
+                if b.id in ("burning", "stun", "shock", "void_weakness") or b.id.startswith("vulnerable_") or b.id.startswith("minor_vulnerable_"):
+                    to_remove.append(b)
+            for b in to_remove:
+                entity.buffs.remove(b)
+            event.engine._log_event(event.run, f"🛡️ 【{entity.name}】触发【先古庇护】：清除了所有负面效果！")
+
+    def on_damage_calculate_defend(self, event, buff_state, entity):
+        if event.modified_damage > 0:
+            recoil_dmg = max(1, int(event.modified_damage * 0.20))
+            event.engine._damage_target(event.run, "p0", recoil_dmg, source=f"buff:{entity.name}", damage_type="true")
+            event.engine._log_event(event.run, f"⚡ 【{entity.name}】的反弹结界触发，对玩家反弹了 {recoil_dmg} 点真实伤害！")
+
+class EndGatePassiveBuff(BuffImpl):
+    def on_turn_start(self, event, buff_state, entity):
+        if not event.is_player:
+            entity.shield += 15
+            to_remove = []
+            for b in entity.buffs:
+                if b.id in ("burning", "stun", "shock", "void_weakness") or b.id.startswith("vulnerable_") or b.id.startswith("minor_vulnerable_"):
+                    to_remove.append(b)
+            for b in to_remove:
+                entity.buffs.remove(b)
+            event.engine._log_event(event.run, f"🚪 【{entity.name}】触发【终焉之门】：获得 15 护盾并清除了所有负面效果！")
+
+    def on_damage_calculate_defend(self, event, buff_state, entity):
+        if event.modified_damage > 0:
+            import random
+            if random.random() < 0.30:
+                event.engine._damage_target(event.run, "p0", 4, source=f"buff:{entity.name}", damage_type="true")
+                event.engine._log_event(event.run, f"⚡ 【{entity.name}】的终焉结界触发，对玩家反弹了 4 点真实伤害！")
+
+class AncientWisdomBuff(BuffImpl):
+    def on_card_played(self, event, buff_state, entity):
+        if entity == event.run.player and event.card.color == "neutral":
+            coef = 3 if self.upgraded else 2
+            shield_gain = buff_state.stacks * coef
+            event.engine._gain_shield(event.run, "p0", shield_gain)
+            event.feedback += f" 🛡️ [古老智慧] 获得了 {shield_gain} 点护盾。"
+
 BUFF_MAP = {
     "tactical_focus": TacticalFocusBuff,
     "quicken": QuickenBuff,
@@ -368,6 +433,11 @@ BUFF_MAP = {
     "shock": ShockBuff,
     "lightning_shield": LightningShieldBuff,
     "burning": BurningBuff,
+    "key_scholar_passive": KeyScholarPassiveBuff,
+    "void_weakness": VoidWeaknessBuff,
+    "ancient_protection": AncientProtectionBuff,
+    "end_gate_passive": EndGatePassiveBuff,
+    "ancient_wisdom_buff": AncientWisdomBuff,
 }
 
 def get_buff_impl(buff_id: str, stacks: int, stacks2: Optional[int] = None) -> Optional[BuffImpl]:

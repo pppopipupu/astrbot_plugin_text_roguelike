@@ -206,6 +206,54 @@ class EnergyCoreRelic(RelicImpl):
         if event.is_player:
             run.player.actions += self.action_bonus
 
+class ChemicalXRelic(RelicImpl):
+    pass
+
+class AncientCompassRelic(RelicImpl):
+    def on_battle_start(self, run, engine):
+        for e in run.enemies:
+            e.actions = max(0, e.actions - 1)
+        engine._log_event(run, "🧭 [古老罗盘] 触发：所有敌人首回合动作点（A）减少 1。")
+
+class PortalFragmentRelic(RelicImpl):
+    def on_battle_start(self, run, engine):
+        import random
+        p = run.player
+        max_hand = 9 if "mask_of_void" in p.relics else 12
+        if len(p.hand) < max_hand:
+            chosen = random.choice(["key_resonance", "gate_guard", "master_key", "void_beacon", "ancient_wisdom"])
+            p.hand.append(chosen)
+            from ...data.card_data import CARD_CONFIG
+            name = CARD_CONFIG.get(chosen, {}).get("name", chosen)
+            engine._log_event(run, f"🌀 [门扉碎片] 触发：随机将一张中立牌【{name}】加入手牌。")
+
+class AncientSigilRelic(RelicImpl):
+    def on_card_played(self, event, run, engine):
+        if getattr(event.card, "exhaust", False):
+            import random
+            if random.random() < 0.5:
+                engine._heal_target(run, "p0", 3)
+                engine._log_event(run, "✨ [先古印记] 触发：为玩家恢复 3 点生命值。")
+            else:
+                engine._gain_shield(run, "p0", 5)
+                engine._log_event(run, "✨ [先古印记] 触发：为玩家获得 5 点护盾。")
+
+class VoidLensRelic(RelicImpl):
+    def on_damage_calculate(self, event, run, engine):
+        if event.card and event.card.color == "neutral" and event.source == "p0":
+            event.modified_damage += 2
+
+    def on_shield_gain(self, event, run, engine):
+        curr_cid = run.node_data.get("current_playing_card_id", "")
+        if curr_cid:
+            from ..cards.base import ALL_CARDS
+            card = ALL_CARDS.get(curr_cid)
+            if card and card.color == "neutral":
+                event.modified_amount += 2
+
+class AncientKeyringRelic(RelicImpl):
+    pass
+
 RELIC_IMPLS = {
     "ancient_page": AncientPageRelic,
     "heavy_armor": HeavyArmorRelic,
@@ -224,6 +272,12 @@ RELIC_IMPLS = {
     "arcane_rune": ArcaneRuneRelic,
     "mark_of_fury": MarkOfFuryRelic,
     "energy_core": EnergyCoreRelic,
+    "chemical_x": ChemicalXRelic,
+    "ancient_compass": AncientCompassRelic,
+    "portal_fragment": PortalFragmentRelic,
+    "ancient_sigil": AncientSigilRelic,
+    "void_lens": VoidLensRelic,
+    "ancient_keyring": AncientKeyringRelic,
 }
 
 def get_relic_impl(relic_id: str) -> Optional[RelicImpl]:

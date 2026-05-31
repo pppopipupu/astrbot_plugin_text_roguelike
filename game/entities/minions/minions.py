@@ -145,6 +145,26 @@ class IcerainbowwShield(BaseMinionSkill):
             mv.hp = min(mv.max_hp, mv.hp + m_heal)
         return cfg["feedback"] + f"（为玩家提供 {p_shield} 点护盾，并为我方所有随从恢复 {m_heal} 点生命）"
 
+class GateGuardStrike(BaseMinionSkill):
+    def execute(self, run, my_grid, target, engine) -> str:
+        m = run.player.minions[my_grid]
+        cfg = MINION_CONFIG[m.id]["skills"][0]
+        damage = cfg["damage"]
+        t = target or "e1"
+        tname = engine._get_target_name(run, t)
+        engine._damage_target(run, t, damage)
+        if t.startswith("e"):
+            try:
+                grid_idx = int(t[1:]) - 1
+            except ValueError:
+                grid_idx = 0
+            if 0 <= grid_idx < len(run.enemies):
+                enemy = run.enemies[grid_idx]
+                enemy.actions = max(0, enemy.actions - 1)
+        return cfg["feedback"].format(target=tname, damage=damage)
+
+
+
 class MinionTemplate:
     def __init__(self, id: str, name: str, skills: List[BaseMinionSkill]):
         self.id = id
@@ -257,6 +277,18 @@ ALL_MINIONS = {
                 MINION_CONFIG["minion_icerainboww"]["skills"][1]["cost_a"],
                 MINION_CONFIG["minion_icerainboww"]["skills"][1]["cost_ba"],
                 MINION_CONFIG["minion_icerainboww"]["skills"][1]["desc"]
+            )
+        ]
+    ),
+    "gate_guard": MinionTemplate(
+        "gate_guard",
+        MINION_CONFIG["gate_guard"]["name"],
+        [
+            GateGuardStrike(
+                MINION_CONFIG["gate_guard"]["skills"][0]["name"],
+                MINION_CONFIG["gate_guard"]["skills"][0]["cost_a"],
+                MINION_CONFIG["gate_guard"]["skills"][0]["cost_ba"],
+                MINION_CONFIG["gate_guard"]["skills"][0]["desc"]
             )
         ]
     )

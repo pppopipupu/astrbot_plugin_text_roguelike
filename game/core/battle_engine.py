@@ -97,6 +97,8 @@ class BattleEngine(BaseBattleEngine):
             if random.random() < 0.25:
                 p.bonus_actions += 1
                 self._log_event(run, "⏳ [时序被动] 触发时间跳跃，初始额外获得 1 个附赠动作（BA）！")
+        if getattr(p, "subclass", "") == "秘钥学者":
+            self._add_buff_to(p, "key_scholar_passive", "门扉共鸣", "打出或部署护符卡牌时，玩家回复 3 点生命值并获得 4 点护盾")
         init_draw = 6
         for r in p.relics:
             from ..entities.relics.relics import get_relic_impl
@@ -141,6 +143,21 @@ class BattleEngine(BaseBattleEngine):
                     )]
                     run.node_data["boss_name"] = "Icerainboww"
                     run.node_data["icerainboww_turn"] = 1
+            elif p.stage == 25:
+                run.enemies = [EnemyState(
+                    name="虚空之门·尤格-索托斯",
+                    hp=200,
+                    max_hp=200,
+                    shield=0,
+                    actions=2,
+                    bonus_actions=1,
+                    max_actions=2,
+                    max_bonus_actions=1
+                )]
+                self._add_buff_to(run.enemies[0], "ancient_protection", "先古庇护", "受到伤害的 20% 反弹为真实伤害，回合开始有盾清除负面效果")
+                run.node_data["boss_name"] = "虚空之门·尤格-索托斯"
+                run.node_data["yog_sothoth_phase"] = 1
+                run.node_data["yog_sothoth_turn"] = 1
             else:
                 boss_name = random.choice(["远古红龙", "雷霆领主"])
                 if boss_name == "远古红龙":

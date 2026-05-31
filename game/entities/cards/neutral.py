@@ -125,6 +125,7 @@ class AdrenalineCard(Card):
 @register_card("ring_of_elements")
 @register_card("arcane_crystal")
 @register_card("mage_ward")
+@register_card("void_beacon")
 class DeployAmuletCard(Card):
     def __init__(self, id, name, color, type, cost_a, cost_ba, countdown, amulet_desc, desc=""):
         super().__init__(id, name, color, type, cost_a, cost_ba, countdown=countdown, desc=desc)
@@ -134,7 +135,12 @@ class DeployAmuletCard(Card):
         grid = engine._get_free_grid(run.player)
         cfg = CARD_CONFIG.get(self.id.replace("+", ""), {})
         if grid:
-            run.player.amulets[grid] = AmuletState(self.id, self.name, self.countdown, self.amulet_desc)
+            cd = self.countdown
+            if "ancient_keyring" in run.player.relics:
+                import random
+                if random.random() < 0.5:
+                    cd = max(1, cd - 1)
+            run.player.amulets[grid] = AmuletState(self.id, self.name, cd, self.amulet_desc)
             feedback_success = cfg.get("feedback_success", "将【{name}】部署到了格子 [{grid}]。")
             return feedback_success.format(name=self.name, grid=grid)
         return cfg.get("feedback_fail", "战场格子已满，部署失败。")
@@ -145,6 +151,7 @@ class DeployAmuletCard(Card):
 @register_card("find_familiar")
 @register_card("arcane_golem")
 @register_card("water_elemental")
+@register_card("gate_guard")
 class SummonMinionCard(Card):
     def __init__(self, id, name, color, type, cost_a, cost_ba, minion_hp, minion_atk, desc=""):
         super().__init__(id, name, color, type, cost_a, cost_ba, desc=desc)
@@ -171,6 +178,16 @@ class SummonMinionCard(Card):
                 for enemy in list(run.enemies):
                     engine._add_buff_to(enemy, "minor_vulnerable_cold", "轻度寒冷易伤", "受到的寒冷伤害增加 50%", 1)
                 battlecry_msg = f"\n❄️ [入场曲] 获得了 8 点护盾，并使所有敌人受到 1 层轻度寒冷易伤！"
+            elif self.id.startswith("gate_guard"):
+                first_enemy = engine._get_first_alive_enemy(run)
+                if first_enemy:
+                    try:
+                        f_idx = int(first_enemy.replace("e", "")) - 1
+                        if 0 <= f_idx < len(run.enemies):
+                            engine._add_buff_to(run.enemies[f_idx], "stun", "眩晕", "无法行动", 1)
+                            battlecry_msg = f"\n🚪 [入场曲] 使【{run.enemies[f_idx].name}】眩晕了 1 回合！"
+                    except ValueError:
+                        pass
                 
             feedback_success = cfg.get("feedback_success", "在格子 [{grid}] 召唤了【{name}】。")
             return feedback_success.format(grid=grid, name=self.name) + battlecry_msg
@@ -342,4 +359,78 @@ class RefreshSpiritCard(Card):
         if feedback_tmpl:
             return feedback_tmpl.format(exhaust_count=exhausted_count, shield_amount=shield_to_gain)
         return f"使用了【{self.name}】，消耗了 {exhausted_count} 张非随从牌，获得了 {shield_to_gain} 点护盾。"
+
+@register_card("key_resonance")
+class KeyResonanceCard(Card):
+    def execute(self, run, target, engine) -> str:
+        X = run.node_data.get("last_x_cost_a", 0)
+        logs = []
+        for _ in range(X):
+            msg = engine.combat_resolver.recall_dead_minion(run, 10)
+            logs.append(msg)
+        stats = engine.save_manager.load_stats(run.user_id)
+        has_key = getattr(stats, "unlocked_gatekey", False)
+        damage_amount = 0
+        if has_key and X > 0:
+            base_dmg = 9 if self.upgraded else 6
+            total_dmg = X * base_dmg
+            for idx in range(len(run.enemies) - 1, -1, -1):
+                engine._damage_target(run, f"e{idx+1}", total_dmg, damage_type="force", card=self)
+            damage_amount = total_dmg
+        cfg = CARD_CONFIG.get(self.id.replace("+", ""), {})
+        feedback_tmpl = cfg.get("feedback")
+        res_str = ""
+        if feedback_tmpl:
+            res_str = feedback_tmpl.format(recall_count=X, damage_amount=damage_amount)
+        else:
+            res_str = f"产生了秘钥共鸣，进行了 {X} 次死者召回，并造成了 {damage_amount} 点力场伤害。"
+        if logs:
+            res_str += "\n召回详情：\n" + "\n".join(logs)
+        return res_str
+
+@register_card("master_key")
+class MasterKeyCard(Card):
+    def execute(self, run, target, engine) -> str:
+        p = run.player
+        reduction = 3 if self.upgraded else 2
+        from ..amulets import ALL_AMULETS
+        lw_logs = []
+        for ak, av in list(p.amulets.items()):
+            av.countdown -= reduction
+            if av.countdown <= 0:
+                del p.amulets[ak]
+                p.discard_pile.append(av.id)
+                base_id = av.id[:-1] if av.id.endswith("+") else av.id
+                template = ALL_AMULETS.get(base_id)
+                lw_msg = ""
+                if template:
+                    is_upgraded = av.id.endswith("+")
+                    lw_msg = template.on_death(run, ak, is_upgraded, engine)
+                if lw_msg:
+                    lw_logs.append(f"🔔 [谢幕曲] 我方【{av.name}】吟唱结束进入墓地：{lw_msg}")
+        if self.upgraded:
+            engine._draw_cards(p, 1, run)
+        cfg = CARD_CONFIG.get(self.id.replace("+", ""), {})
+        res_str = cfg.get("feedback", "使用了万能钥匙，所有护符的吟唱时间减少了。")
+        if lw_logs:
+            res_str += "\n" + "\n".join(lw_logs)
+        return res_str
+
+@register_card("ancient_wisdom")
+class AncientWisdomCard(Card):
+    def execute(self, run, target, engine) -> str:
+        X = run.node_data.get("last_x_cost_a", 0)
+        Y = run.node_data.get("last_x_cost_ba", 0)
+        coef = 4 if self.upgraded else 3
+        shield_val = Y * coef
+        engine._gain_shield(run, "p0", shield_val)
+        if X > 0:
+            buff_name = "古老智慧+" if self.upgraded else "古老智慧"
+            buff_desc = "打中立卡时，获得 3 点护盾（每层）" if self.upgraded else "打中立卡时，获得 2 点护盾（每层）"
+            engine._add_buff_to(run.player, "ancient_wisdom_buff", buff_name, buff_desc, X)
+        cfg = CARD_CONFIG.get(self.id.replace("+", ""), {})
+        feedback_tmpl = cfg.get("feedback")
+        if feedback_tmpl:
+            return feedback_tmpl.format(shield=shield_val, stacks=X)
+        return f"获得了 {shield_val} 点护盾与 {X} 层古老智慧形态。"
 
