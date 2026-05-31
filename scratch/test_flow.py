@@ -251,6 +251,43 @@ class TestRoguePlugin(unittest.TestCase):
         res24 = run_echo_test(24, 4)
         self.assertEqual(res24, [8, 8, 8, 0])
 
+        player = PlayerState(
+            hp=30,
+            max_hp=30,
+            shield=0,
+            gold=100,
+            stage=2,
+            deck=["echo_form"],
+            draw_pile=["echo_form"],
+            discard_pile=[],
+            exhaust_pile=[],
+            graveyard=[],
+            hand=["echo_form"],
+            actions=99,
+            bonus_actions=99
+        )
+        enemy = EnemyState(
+            name="测试敌人",
+            hp=100,
+            max_hp=100,
+            shield=0
+        )
+        run = GameRun(
+            user_id="test_user_echo_self",
+            node_type="battle",
+            player=player,
+            enemies=[enemy]
+        )
+        class DummySaveManager:
+            def save_save(self, user_id, run):
+                pass
+            def delete_save(self, user_id):
+                pass
+        engine = BattleEngine(DummySaveManager())
+        res = engine.play_card(run, 1)
+        self.assertEqual(res.count("[回响触发]"), 0)
+        self.assertEqual(next(b for b in player.buffs if b.id == "echo_form").stacks, 1)
+
     def test_inner_shop_flow(self):
         plugin = MyPlugin(DummyContext())
         user_id = "test_inner_shop_user"

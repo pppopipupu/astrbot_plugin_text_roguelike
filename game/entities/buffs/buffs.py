@@ -73,7 +73,10 @@ class EchoFormBuff(BuffImpl):
         if entity != event.run.player:
             return
         played_count = event.run.node_data.get("cards_played_this_turn", 0)
-        num_echoes = min(8, max(0, buff_state.stacks - 8 * played_count))
+        stacks = buff_state.stacks
+        if event.card.id.startswith("echo_form"):
+            stacks = max(0, stacks - 1)
+        num_echoes = min(8, max(0, stacks - 8 * played_count))
         if num_echoes > 0:
             res = ""
             for _ in range(num_echoes):
@@ -85,7 +88,10 @@ class EchoFormBuff(BuffImpl):
 
     def on_card_played_legacy(self, run, card, target: str, engine) -> str:
         played_count = run.node_data.get("cards_played_this_turn", 0)
-        num_echoes = min(8, max(0, self.stacks - 8 * played_count))
+        stacks = self.stacks
+        if card.id.startswith("echo_form"):
+            stacks = max(0, stacks - 1)
+        num_echoes = min(8, max(0, stacks - 8 * played_count))
         res = ""
         if num_echoes > 0:
             for _ in range(num_echoes):
