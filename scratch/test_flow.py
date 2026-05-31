@@ -838,5 +838,69 @@ class TestRoguePlugin(unittest.TestCase):
         self.assertNotIn("battle_logs", loaded_run.node_data)
         save_manager.delete_save(user_id)
 
+    def test_sunburst_effects(self):
+        class DummySaveManager:
+            def save_save(self, user_id, run):
+                pass
+            def delete_save(self, user_id):
+                pass
+        sm = DummySaveManager()
+        engine = BattleEngine(sm)
+        player = PlayerState(
+            hp=50,
+            max_hp=100,
+            shield=0,
+            gold=100,
+            stage=1,
+            deck=["sunburst", "sunburst+"],
+            hand=["sunburst", "sunburst+"],
+            minions={
+                "1": MinionState("mercenary", "雇佣兵", 30, 30, 4, 1, 0),
+                "2": MinionState("shield_guard", "盾卫", 10, 10, 2, 1, 0)
+            }
+        )
+        player.minions["1"].buffs.append(BuffState(id="burning", name="燃烧", desc="每回合受伤害", stacks=2))
+        run = GameRun(
+            user_id="test_user_sunburst",
+            node_type="battle",
+            player=player,
+            enemies=[EnemyState("测试敌人", 30, 30, 0)]
+        )
+        card_sunburst = ALL_CARDS["sunburst"]
+        card_sunburst.execute(run, None, engine)
+        self.assertEqual(run.enemies[0].hp, 14)
+        self.assertEqual(player.minions["1"].hp, 14)
+        self.assertEqual(len(player.minions["1"].buffs), 1)
+        self.assertEqual(player.minions["1"].atk, 4)
+        self.assertNotIn("2", player.minions)
+        
+        player_upg = PlayerState(
+            hp=50,
+            max_hp=100,
+            shield=0,
+            gold=100,
+            stage=1,
+            deck=["sunburst", "sunburst+"],
+            hand=["sunburst", "sunburst+"],
+            minions={
+                "1": MinionState("mercenary", "雇佣兵", 30, 30, 4, 1, 0),
+                "2": MinionState("shield_guard", "盾卫", 10, 10, 2, 1, 0)
+            }
+        )
+        player_upg.minions["1"].buffs.append(BuffState(id="burning", name="燃烧", desc="每回合受伤害", stacks=2))
+        run_upg = GameRun(
+            user_id="test_user_sunburst_upg",
+            node_type="battle",
+            player=player_upg,
+            enemies=[EnemyState("测试敌人", 30, 30, 0)]
+        )
+        card_sunburst_upg = ALL_CARDS["sunburst+"]
+        card_sunburst_upg.execute(run_upg, None, engine)
+        self.assertEqual(run_upg.enemies[0].hp, 8)
+        self.assertEqual(player_upg.minions["1"].hp, 8)
+        self.assertEqual(len(player_upg.minions["1"].buffs), 0)
+        self.assertEqual(player_upg.minions["1"].atk, 7)
+        self.assertNotIn("2", player_upg.minions)
+
 if __name__ == "__main__":
     unittest.main()

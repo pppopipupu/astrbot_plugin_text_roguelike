@@ -299,6 +299,9 @@ class SunburstCard(Card):
         for idx in range(len(run.enemies) - 1, -1, -1):
             engine._damage_target(run, f"e{idx+1}", dmg, damage_type="radiant", card=self)
             
+        for grid in list(run.player.minions.keys()):
+            engine._damage_target(run, f"p{grid}", dmg, damage_type="radiant", card=self)
+            
         bonus_msg = ""
         if self.upgraded:
             for grid, m_state in list(run.player.minions.items()):
@@ -306,10 +309,7 @@ class SunburstCard(Card):
                 m_state.atk += 3
                 engine._log_event(run, f"☀️ [阳炎爆+ 效果] 净化了我方随从【{m_state.name}】的所有状态，且使其攻击力增加 3 点！")
             bonus_msg = " ☀️ [阳炎爆+] 净化了我方随从并使其攻击力增加 3 点！"
-        else:
-            for grid in list(run.player.minions.keys()):
-                engine._damage_target(run, f"p{grid}", dmg, damage_type="radiant", card=self)
-                
+            
         cfg = CARD_CONFIG.get(self.id.replace("+", ""), {})
         feedback_tmpl = cfg.get("feedback")
         if feedback_tmpl:
