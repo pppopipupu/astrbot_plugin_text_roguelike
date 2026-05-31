@@ -801,7 +801,7 @@ class BattleEngine:
             if cid in p.deck:
                 p.deck.remove(cid)
         elif card.type == "minion":
-            self._log_event(run, f"✨ [消耗] 【{card.name}】进入战场（特殊消耗状态）。")
+            self._log_event(run, f"✨ [消耗] 【{card.name}】进入战场。")
             exhaust_evt = CardExhaustEvent(run, cid, "played")
             self.event_bus.dispatch(exhaust_evt)
         elif getattr(card, "exhaust", False):
