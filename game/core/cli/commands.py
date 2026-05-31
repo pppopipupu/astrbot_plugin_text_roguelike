@@ -44,6 +44,11 @@ class HelpCommand(CommandHandler, names=["帮助", "help"]):
     def execute(self, router, user_id: str, parts: list[str]) -> Generator[str, None, None]:
         yield GameRenderer.render_help()
 
+class TutorialCommand(CommandHandler, names=["教程", "tutorial"]):
+    def execute(self, router, user_id: str, parts: list[str]) -> Generator[str, None, None]:
+        yield GameRenderer.render_tutorial()
+
+
 class ModeCommand(CommandHandler, names=["mode", "模式"]):
     def execute(self, router, user_id: str, parts: list[str]) -> Generator[str, None, None]:
         stats = router.save_manager.load_stats(user_id)

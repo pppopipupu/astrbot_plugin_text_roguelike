@@ -184,7 +184,7 @@ class MyPlugin(Star):
                     "帮助", "help", "使用", "p", "随从", "m", "选择", "c", "特殊", "sa", 
                     "结束", "e", "折叠", "f", "fold", "队列", "q", "queue", "统计", "stat", 
                     "stats", "查询", "query", "info", "i", "放弃", "abandon", "mode", "模式",
-                    "职业", "class", "商店", "shop"
+                    "职业", "class", "商店", "shop", "教程", "tutorial"
                 }
                 if first_word in valid_cmds:
                     is_game_cmd = True
@@ -192,6 +192,7 @@ class MyPlugin(Star):
                     run = self.save_manager.load_save(user_id)
                     if run is not None:
                         is_game_cmd = True
+
                 if is_game_cmd:
                     event.stop_event()
                     res_list = list(self.cli_router.handle_command(user_id, parts))

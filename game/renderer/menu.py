@@ -200,6 +200,7 @@ def render_help() -> str:
         "【基础与非战斗指令】",
         "👉 开启 / start -- 开始一局新游戏（若有存档可输入 开启 确认）",
         "👉 帮助 / help -- 显示本帮助指令列表",
+        "👉 教程 / tutorial -- 查看详细的游戏机制与指令教程",
         "👉 状态 / s -- 查看当前的局内游戏界面与属性状态",
         "👉 牌组 / deck -- 查看当前拥有的全部卡组及卡牌序号",
         "👉 总览 / overview [卡牌/遗物] -- 查看全部卡牌或遗物总览信息",
@@ -225,6 +226,34 @@ def render_help() -> str:
         "━━━━━━━━━━━━━━━━━━━━"
     ]
     return "\n".join(lines)
+
+def strip_markdown(text: str) -> str:
+    import re
+    text = re.sub(r'^#\s+(.+)$', r'🔮 \1', text, flags=re.MULTILINE)
+    text = re.sub(r'^##\s+(.+)$', r'🔹 \1', text, flags=re.MULTILINE)
+    text = re.sub(r'^###\s+(.+)$', r'▫️ \1', text, flags=re.MULTILINE)
+    text = re.sub(r'^---\s*$', r'━━━━━━━━━━━━━━━━━━━━', text, flags=re.MULTILINE)
+    text = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', text)
+    text = text.replace('**', '').replace('___', '').replace('__', '').replace('*', '')
+    text = text.replace('```', '')
+    text = text.replace('`', '')
+    text = re.sub(r'^>\s*', r'  ', text, flags=re.MULTILINE)
+    text = re.sub(r'^-\s+', r'• ', text, flags=re.MULTILINE)
+    return text
+
+def render_tutorial() -> str:
+    import os
+    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    path = os.path.join(base_dir, "TUTORIAL.md")
+    if not os.path.exists(path):
+        return "❌ 未找到游戏教程文档。"
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            content = f.read()
+        return strip_markdown(content)
+    except Exception:
+        return "❌ 读取游戏教程文档失败。"
+
 
 def render_shop(stats: UserStats) -> str:
     import random
