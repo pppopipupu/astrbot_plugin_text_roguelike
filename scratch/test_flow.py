@@ -902,5 +902,146 @@ class TestRoguePlugin(unittest.TestCase):
         self.assertEqual(player_upg.minions["1"].atk, 7)
         self.assertNotIn("2", player_upg.minions)
 
+    def test_chain_lightning_default_target(self):
+        class DummySaveManager:
+            def save_save(self, user_id, run):
+                pass
+            def delete_save(self, user_id):
+                pass
+        sm = DummySaveManager()
+        engine = BattleEngine(sm)
+        player = PlayerState(
+            hp=50,
+            max_hp=100,
+            shield=0,
+            gold=100,
+            stage=1,
+            deck=["chain_lightning"],
+            hand=["chain_lightning"],
+            actions=2,
+            bonus_actions=1
+        )
+        run = GameRun(
+            user_id="test_user_chain",
+            node_type="battle",
+            player=player,
+            enemies=[EnemyState("哥布林 A", 20, 20, 0)]
+        )
+        res = engine.play_card(run, 1, None)
+        self.assertIn("释放【链式闪电】", res)
+        self.assertEqual(run.enemies[0].hp, 8)
+
+    def test_blacklist_spell_targeting(self):
+        class DummySaveManager:
+            def save_save(self, user_id, run):
+                pass
+            def delete_save(self, user_id):
+                pass
+        sm = DummySaveManager()
+        engine = BattleEngine(sm)
+        player = PlayerState(
+            hp=20,
+            max_hp=50,
+            shield=0,
+            gold=100,
+            stage=1,
+            deck=["first_aid", "magic_missile"],
+            hand=["first_aid", "magic_missile"],
+            actions=5,
+            bonus_actions=5
+        )
+        run = GameRun(
+            user_id="test_user_blacklist_targeting",
+            node_type="battle",
+            player=player,
+            enemies=[EnemyState("哥布林 A", 20, 20, 0)]
+        )
+        engine.play_card(run, 1, None)
+        self.assertEqual(player.hp, 24)
+        engine.play_card(run, 1, None)
+        self.assertEqual(run.enemies[0].hp, 11)
+
+    def test_iron_will_upgrade_and_stack(self):
+        class DummySaveManager:
+            def save_save(self, user_id, run):
+                pass
+            def delete_save(self, user_id):
+                pass
+        sm = DummySaveManager()
+        engine = BattleEngine(sm)
+        player = PlayerState(
+            hp=20,
+            max_hp=40,
+            shield=0,
+            gold=100,
+            stage=1,
+            deck=["iron_will+", "first_aid"],
+            hand=["iron_will+", "first_aid"],
+            actions=5,
+            bonus_actions=5
+        )
+        run = GameRun(
+            user_id="test_user_iron_will_upg",
+            node_type="battle",
+            player=player,
+            enemies=[EnemyState("测试敌人", 100, 100, 0)]
+        )
+        engine.play_card(run, 1, None)
+        self.assertEqual(player.shield, 8)
+        self.assertEqual(player.hp, 35)
+        engine.play_card(run, 1, None)
+        self.assertEqual(player.hp, 43)
+        engine.end_turn(run)
+        player.actions = 5
+        player.bonus_actions = 5
+        player.hand = ["first_aid", "first_aid"]
+        engine.play_card(run, 1, None)
+        self.assertEqual(player.hp, 51)
+        engine.end_turn(run)
+        player.actions = 5
+        player.bonus_actions = 5
+        player.hand = ["first_aid"]
+        engine.play_card(run, 1, None)
+        self.assertEqual(player.hp, 55)
+
+    def test_minion_reindexing(self):
+        class DummySaveManager:
+            def save_save(self, user_id, run):
+                pass
+            def delete_save(self, user_id):
+                pass
+        sm = DummySaveManager()
+        engine = BattleEngine(sm)
+        player = PlayerState(
+            hp=50,
+            max_hp=100,
+            shield=0,
+            gold=100,
+            stage=1,
+            deck=["quick_strike"],
+            hand=["quick_strike"],
+            actions=5,
+            bonus_actions=5,
+            minions={
+                "1": MinionState("mercenary", "雇佣兵 1", 20, 20, 4, 1, 0),
+                "2": MinionState("mercenary", "雇佣兵 2", 10, 10, 4, 1, 0),
+                "3": MinionState("mercenary", "雇佣兵 3", 30, 30, 4, 1, 0)
+            }
+        )
+        run = GameRun(
+            user_id="test_user_reindexing",
+            node_type="battle",
+            player=player,
+            enemies=[EnemyState("测试敌人", 30, 30, 0)]
+        )
+        engine._damage_target(run, "p2", 10, damage_type="true")
+        self.assertNotIn("2", player.minions)
+        self.assertIn("3", player.minions)
+        engine.play_card(run, 1, None)
+        self.assertEqual(len(player.minions), 2)
+        self.assertEqual(player.minions["1"].name, "雇佣兵 1")
+        self.assertEqual(player.minions["2"].name, "雇佣兵 3")
+        self.assertNotIn("3", player.minions)
+
 if __name__ == "__main__":
     unittest.main()

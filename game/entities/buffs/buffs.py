@@ -98,15 +98,24 @@ class EchoFormBuff(BuffImpl):
 class IronWillBuff(BuffImpl):
     def on_heal(self, event, buff_state, entity):
         if event.target == "p0":
+            if buff_state.stacks2 is not None and buff_state.stacks2 > 0:
+                event.amount = event.amount * 2
             p = event.run.player
-            limit = p.max_hp + buff_state.stacks * 10
+            val = 15 if self.upgraded else 10
+            limit = p.max_hp + buff_state.stacks * val
             if p.hp + event.amount > limit:
                 event.amount = max(0, limit - p.hp)
 
     def modify_heal_limit(self, run, target: str, current_max: int, engine) -> int:
         if target == "p0":
-            return current_max + self.stacks * 10
+            val = 15 if self.upgraded else 10
+            return current_max + self.stacks * val
         return current_max
+
+    def on_turn_end(self, event, buff_state, entity):
+        if entity == event.run.player and event.is_player:
+            if buff_state.stacks2 is not None and buff_state.stacks2 > 0:
+                buff_state.stacks2 -= 1
 
 class MagicNetworkBuff(BuffImpl):
     def on_card_played(self, event, buff_state, entity):

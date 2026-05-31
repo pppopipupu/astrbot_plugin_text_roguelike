@@ -108,7 +108,9 @@ class CombatResolver:
         heal = heal_evt.amount
         p = run.player
         if target == "p0":
-            p.hp = min(p.max_hp, p.hp + heal)
+            from ...entities.buffs.buffs import apply_modify_heal_limit
+            cur_max_hp = apply_modify_heal_limit(run, "p0", p.max_hp, self.engine)
+            p.hp = min(cur_max_hp, p.hp + heal)
         elif target.startswith("p"):
             grid = target[1:]
             if grid in p.minions:

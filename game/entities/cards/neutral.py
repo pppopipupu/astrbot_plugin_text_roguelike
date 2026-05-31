@@ -211,13 +211,28 @@ class TacticalFocusCard(Card):
 class IronWillCard(Card):
     def execute(self, run, target, engine) -> str:
         from ...data.buff_data import BUFF_CONFIG
-        buff_info = BUFF_CONFIG.get(self.id, {})
-        buff_name = buff_info.get("name", "钢铁意志")
-        buff_desc = buff_info.get("desc", "最大生命上限增加 10 并回复 10 生命")
-        engine._add_buff_to(run.player, self.id, buff_name, buff_desc)
-        engine._heal_target(run, "p0", 10)
-        cfg = CARD_CONFIG.get(self.id, {})
-        return cfg.get("feedback", "使用了【钢铁意志】，获得了【钢铁意志】buff（最大生命上限增加 10 并回复 10 生命，可叠加）。")
+        buff_info = BUFF_CONFIG.get(self.id.replace("+", ""), {})
+        buff_name = "钢铁意志+" if self.upgraded else "钢铁意志"
+        buff_desc = "最大生命上限增加 15 并回复 15 生命，治疗翻倍" if self.upgraded else "最大生命上限增加 10 并回复 10 生命"
+        engine._add_buff_to(run.player, self.id, buff_name, buff_desc, 1, None)
+        heal_val = 15 if self.upgraded else 10
+        engine._heal_target(run, "p0", heal_val)
+        if self.upgraded:
+            for b in run.player.buffs:
+                if b.id == self.id:
+                    b.stacks2 = 2
+                    break
+        shield_msg = ""
+        if self.upgraded:
+            engine._gain_shield(run, "p0", 8)
+            shield_msg = "，并获得了 8 点护盾"
+        cfg = CARD_CONFIG.get(self.id.replace("+", ""), {})
+        if self.upgraded:
+            return f"使用了【钢铁意志+】，获得了【钢铁意志+】buff（最大生命上限增加 15 并回复 15 生命，治疗翻倍）{shield_msg}。"
+        feedback_tmpl = cfg.get("feedback")
+        if feedback_tmpl:
+            return feedback_tmpl.format(name=self.name)
+        return f"使用了【钢铁意志】，获得了【钢铁意志】buff（最大生命上限增加 10 并回复 10 生命，可叠加）。"
 
 @register_card("misty_step")
 class MistyStepCard(Card):

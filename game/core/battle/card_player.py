@@ -51,10 +51,11 @@ class CardPlayer:
         if getattr(card, "agile", False):
             target = None
             if card.type == "spell":
-                if card.id in ("dagger_throw", "fire_bolt", "fireball", "thunderwave", "magic_missile", "quick_strike", "arcane_spark", "agile_strike", "fleeting_spark"):
-                    target = self.engine._get_first_alive_enemy(run)
-                else:
+                p0_spells = {"first_aid", "get_ready", "adrenaline", "mana_potion", "mass_healing_word", "refresh_spirit", "shield", "misty_step", "arcane_intellect", "calculated_gamble", "time_warp", "time_stop", "archmage_wish"}
+                if card.id.replace("+", "") in p0_spells:
                     target = "p0"
+                else:
+                    target = self.engine._get_first_alive_enemy(run)
                 if target == "0" or target == "e0":
                     target = "e1"
             res = self.engine._execute_card_effect(run, card, target)
@@ -71,9 +72,11 @@ class CardPlayer:
                 self.engine.event_bus.dispatch(exhaust_evt)
             else:
                 p.discard_pile.append(cid)
+            self._reindex_minions(p)
             return self.engine._append_logs_to_res(run, f"✨ 触发[灵巧]：丢弃【{card.name}】时自动打出！效果：{res}")
         else:
             p.discard_pile.append(cid)
+            self._reindex_minions(p)
             return self.engine._append_logs_to_res(run, "")
 
     def play_card(self, run: GameRun, hand_idx: int, target: Optional[str] = None) -> str:
@@ -91,10 +94,11 @@ class CardPlayer:
             return "❌ 该卡牌不能被打出。"
         if card.type == "spell":
             if target is None:
-                if card.id in ("dagger_throw", "fire_bolt", "fireball", "thunderwave", "magic_missile", "quick_strike", "arcane_spark", "agile_strike", "fleeting_spark"):
-                    target = self.engine._get_first_alive_enemy(run)
-                else:
+                p0_spells = {"first_aid", "get_ready", "adrenaline", "mana_potion", "mass_healing_word", "refresh_spirit", "shield", "misty_step", "arcane_intellect", "calculated_gamble", "time_warp", "time_stop", "archmage_wish"}
+                if card.id.replace("+", "") in p0_spells:
                     target = "p0"
+                else:
+                    target = self.engine._get_first_alive_enemy(run)
             if target == "0" or target == "e0":
                 target = "e1"
             elif target == "p":
@@ -160,6 +164,7 @@ class CardPlayer:
             res += f"\n⏳ [时间停止] 额外回合中对敌人造成了伤害，当前额外回合提前结束！\n{end_turn_res}"
         for enemy in run.enemies:
             self.engine._sync_enemy_intents(enemy)
+        self._reindex_minions(p)
         return self.engine._append_logs_to_res(run, res)
 
     def play_special_action(self, run: GameRun, hand_idx: int, target: Optional[str] = None) -> str:
@@ -180,10 +185,11 @@ class CardPlayer:
         if p.actions < req_a or p.bonus_actions < req_ba:
             return f"❌ 你的动作资源不足（需要 {req_a}A {req_ba}BA，当前 {p.actions}A {p.bonus_actions}BA）。"
         if target is None:
-            if card.id in ("dagger_throw", "fire_bolt", "fireball", "thunderwave", "magic_missile", "quick_strike", "arcane_spark", "agile_strike", "fleeting_spark"):
-                target = self.engine._get_first_alive_enemy(run)
-            else:
+            p0_spells = {"first_aid", "get_ready", "adrenaline", "mana_potion", "mass_healing_word", "refresh_spirit", "shield", "misty_step", "arcane_intellect", "calculated_gamble", "time_warp", "time_stop", "archmage_wish"}
+            if card.id.replace("+", "") in p0_spells:
                 target = "p0"
+            else:
+                target = self.engine._get_first_alive_enemy(run)
         if target == "0" or target == "e0":
             target = "e1"
         elif target == "p":
@@ -210,6 +216,7 @@ class CardPlayer:
             res += f"\n⏳ [时间停止] 额外回合中对敌人造成了伤害，当前额外回合提前结束！\n{end_turn_res}"
         for enemy in run.enemies:
             self.engine._sync_enemy_intents(enemy)
+        self._reindex_minions(p)
         return self.engine._append_logs_to_res(run, res)
 
     def minion_attack(self, run: GameRun, my_grid: str, opp_grid: Optional[str] = None) -> str:
@@ -252,6 +259,7 @@ class CardPlayer:
             res += f"\n⏳ [时间停止] 额外回合中对敌人造成了伤害，当前额外回合提前结束！\n{end_turn_res}"
         for enemy in run.enemies:
             self.engine._sync_enemy_intents(enemy)
+        self._reindex_minions(p)
         return self.engine._append_logs_to_res(run, res)
 
     def minion_skill(self, run: GameRun, my_grid: str, skill_idx: int = 1, target: Optional[str] = None) -> str:
@@ -314,6 +322,7 @@ class CardPlayer:
             msg += f"\n⏳ [时间停止] 额外回合中对敌人造成了伤害，当前额外回合提前结束！\n{end_turn_res}"
         for enemy in run.enemies:
             self.engine._sync_enemy_intents(enemy)
+        self._reindex_minions(p)
         return self.engine._append_logs_to_res(run, msg)
 
     def end_turn(self, run: GameRun) -> str:
@@ -359,6 +368,7 @@ class CardPlayer:
                     self.engine._log_event(run, f"🔔 我方【{av.name}】吟唱结束进入墓地。")
         if self.engine.is_battle_won(run):
             self.handle_battle_win(run)
+            self._reindex_minions(p)
             return self.engine._append_logs_to_res(run, "战斗胜利！敌方单位已被全部击败。")
         extra_turns = run.node_data.get("extra_turns_left", 0)
         if extra_turns > 0:
@@ -415,6 +425,7 @@ class CardPlayer:
         self.draw_cards(p, 6, run)
         self.engine._roll_enemy_intent(run)
         run.node_data["cards_played_this_turn"] = 0
+        self._reindex_minions(p)
         self.engine.save_manager.save_save(run.user_id, run)
         return self.engine._append_logs_to_res(run, f"{enemy_actions}\n{decay_info}进入玩家回合。已重置动作并抽取手牌。")
 
@@ -454,3 +465,10 @@ class CardPlayer:
             reward_cards = [check_and_replace_fireball(run, cid) for cid in reward_cards]
             run.node_data = {"cards": reward_cards, "quest_bonus": quest_bonus}
             self.engine.save_manager.save_save(run.user_id, run)
+
+    def _reindex_minions(self, p: PlayerState):
+        new_minions = {}
+        sorted_keys = sorted(list(p.minions.keys()), key=lambda x: int(x))
+        for idx, k in enumerate(sorted_keys, 1):
+            new_minions[str(idx)] = p.minions[k]
+        p.minions = new_minions
