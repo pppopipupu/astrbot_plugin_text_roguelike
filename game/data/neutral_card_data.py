@@ -226,7 +226,7 @@ NEUTRAL_CARD_CONFIG = {
         "type": "spell",
         "cost_a": -1,
         "cost_ba": 0,
-        "desc": "消耗所有的A。进行X次死者召回：10。若拥有门之钥匙，每消耗1A额外对所有敌人造成6点力场伤害。",
+        "desc": "进行X次死者召回：10。若拥有门之钥匙，每消耗1A额外对所有敌人造成6点力场伤害。",
         "rarity": "rare",
         "feedback": "产生了秘钥共鸣，进行了 {recall_count} 次死者召回，并造成了 {damage_amount} 点力场伤害。"
     },
@@ -270,7 +270,7 @@ NEUTRAL_CARD_CONFIG = {
         "type": "ability",
         "cost_a": -1,
         "cost_ba": -1,
-        "desc": "消耗所有的A与BA。立即获得Y*3点护盾，且在本场战斗中获得X层古老智慧Buff：你每打出一张中立卡牌时，获得2点护盾。",
+        "desc": "立即获得Y*3点护盾，且在本场战斗中获得X层古老智慧Buff：你每打出一张中立卡牌时，获得2点护盾。",
         "rarity": "rare",
         "feedback": "获得了 {shield} 点护盾与 {stacks} 层古老智慧形态。"
     },

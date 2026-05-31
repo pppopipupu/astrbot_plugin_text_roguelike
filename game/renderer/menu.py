@@ -33,6 +33,21 @@ def render_menu(stats: UserStats = None) -> str:
     ]
     return "\n".join(lines)
 
+def get_card_cost_str(card) -> str:
+    cost_str = ""
+    if card.cost_a == -1 and card.cost_ba == -1:
+        cost_str = "X A Y BA"
+    else:
+        if card.cost_a == -1:
+            cost_str += "X A "
+        elif card.cost_a > 0:
+            cost_str += f"{card.cost_a}A "
+        if card.cost_ba == -1:
+            cost_str += "X BA "
+        elif card.cost_ba > 0:
+            cost_str += f"{card.cost_ba}BA "
+    return cost_str.strip() or "免费"
+
 def render_card_library() -> str:
     lines = [
         "━━━━━━━━━━━━━━━━━━━━",
@@ -43,12 +58,7 @@ def render_card_library() -> str:
     blue_spells = []
     curses = []
     for cid, card in ALL_CARDS.items():
-        cost_str = ""
-        if card.cost_a > 0:
-            cost_str += f"{card.cost_a}A "
-        if card.cost_ba > 0:
-            cost_str += f"{card.cost_ba}BA "
-        cost_str = cost_str.strip() or "免费"
+        cost_str = get_card_cost_str(card)
         type_ch = ""
         if card.type == "spell":
             type_ch = "法术"
@@ -71,12 +81,7 @@ def render_card_library() -> str:
         
         up_card = ALL_CARDS.get(cid + "+")
         if up_card:
-            up_cost_str = ""
-            if up_card.cost_a > 0:
-                up_cost_str += f"{up_card.cost_a}A "
-            if up_card.cost_ba > 0:
-                up_cost_str += f"{up_card.cost_ba}BA "
-            up_cost_str = up_cost_str.strip() or "免费"
+            up_cost_str = get_card_cost_str(up_card)
             info += f"\n  └─ 🔨 升级版：{up_card.name} | 消耗: {up_cost_str} | {up_card.desc}"
             
         if card.color == "curse":
@@ -169,7 +174,8 @@ def render_deck(run: GameRun) -> str:
                 "curse": "诅咒"
             }
             rname = rarity_map.get(getattr(card, "rarity", "common"), "普通")
-            lines.append(f"{idx}. {color_type} {card.name} <{rname}> x{count} ({card.desc})")
+            cost_str = get_card_cost_str(card)
+            lines.append(f"{idx}. {color_type} {card.name} <{rname}> (消耗: {cost_str}) x{count} ({card.desc})")
             idx += 1
     lines.append("━━━━━━━━━━━━━━━━━━━━")
     return "\n".join(lines)

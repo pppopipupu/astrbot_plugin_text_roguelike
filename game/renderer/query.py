@@ -3,6 +3,7 @@ from ..data.buff_data import BUFF_CONFIG
 from ..data.minion_data import MINION_CONFIG
 from ..data.card_data import CARD_CONFIG
 from ..data.enemy_data import ENEMY_CONFIG
+from .menu import get_card_cost_str
 
 def render_query_info(query_str: str) -> str:
     q = query_str.strip().lower()
@@ -91,29 +92,20 @@ def render_query_info(query_str: str) -> str:
                 "curse": "诅咒"
             }
             rname_rarity = rarity_map.get(rarity, rarity)
-            cost_str = ""
-            if cfg.get("cost_a", 0) > 0:
-                cost_str += f"{cfg['cost_a']}A "
-            if cfg.get("cost_ba", 0) > 0:
-                cost_str += f"{cfg['cost_ba']}BA "
-            cost_str = cost_str.strip() or "免费"
+            from ..cards import ALL_CARDS
+            card_obj = ALL_CARDS.get(cid)
+            cost_str = get_card_cost_str(card_obj) if card_obj else "免费"
             desc = cfg.get("desc", "")
             lines.append(f"📜 卡牌：{cname} ({ctype_ch} | {rname_rarity})")
             lines.append(f"消耗：{cost_str}")
             lines.append(f"效果：{desc}")
             lines.append("")
             
-            from ..cards import ALL_CARDS
             from ..data.card_upgrade_data import CARD_UPGRADE_CONFIG
             if cid in CARD_UPGRADE_CONFIG:
                 up_card = ALL_CARDS.get(cid + "+")
                 if up_card:
-                    up_cost_str = ""
-                    if up_card.cost_a > 0:
-                        up_cost_str += f"{up_card.cost_a}A "
-                    if up_card.cost_ba > 0:
-                        up_cost_str += f"{up_card.cost_ba}BA "
-                    up_cost_str = up_cost_str.strip() or "免费"
+                    up_cost_str = get_card_cost_str(up_card)
                     lines.append(f"🔨 升级变体：{up_card.name} ({ctype_ch} | {rname_rarity})")
                     lines.append(f"升级消耗：{up_cost_str}")
                     lines.append(f"升级效果：{up_card.desc}")

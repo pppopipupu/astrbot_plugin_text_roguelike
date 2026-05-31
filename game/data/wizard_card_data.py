@@ -331,7 +331,7 @@ WIZARD_CARD_CONFIG = {
         "type": "spell",
         "cost_a": -1,
         "cost_ba": 0,
-        "desc": "消耗所有的A。对目标造成多次 3 点真实伤害（穿透护盾）。若最终X不大于2，则造成X次伤害；若最终X大于2，则造成X*2次伤害。",
+        "desc": "对目标造成多次 3 点真实伤害（穿透护盾）。若最终X不大于2，则造成X次伤害；若最终X大于2，则造成X*2次伤害。",
         "rarity": "rare",
         "damage_type": "true",
         "feedback": "对【{target}】倾泻了奥术洪流，造成了 {count} 次 3 点真实伤害。"
@@ -342,7 +342,7 @@ WIZARD_CARD_CONFIG = {
         "type": "spell",
         "cost_a": 0,
         "cost_ba": -1,
-        "desc": "消耗所有的BA。获得X*5点护盾。",
+        "desc": "获得X*5点护盾。",
         "rarity": "common",
         "feedback": "凝聚了奥法屏障，获得了 {shield} 点护盾。"
     }

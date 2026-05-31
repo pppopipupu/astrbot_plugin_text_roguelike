@@ -4,6 +4,7 @@ from ..cards import ALL_CARDS, MINION_SKILLS
 from ..entities import get_relic_name, get_relic_desc
 from ..data.buff_data import BUFF_CONFIG
 from ..data.minion_data import MINION_CONFIG
+from .menu import get_card_cost_str
 
 def adjust_intent_desc_with_strength(desc: str, strength: int) -> str:
     if strength <= 0:
@@ -117,12 +118,7 @@ def render_battle(run: GameRun) -> str:
             card = ALL_CARDS.get(cid)
             if card:
                 color_ch = "⚫" if card.color == "curse" else ("🔵" if card.color == "wizard" else "⚪")
-                cost_str = ""
-                if card.cost_a > 0:
-                    cost_str += f"{card.cost_a}A"
-                if card.cost_ba > 0:
-                    cost_str += f"{card.cost_ba}BA"
-                cost_str = cost_str or "免费"
+                cost_str = get_card_cost_str(card)
                 rarity_map = {
                     "common": "普通",
                     "rare": "稀有",

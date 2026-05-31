@@ -1,6 +1,7 @@
 from ..models.state import GameRun
 from ..entities import get_relic_name, get_relic_desc
 from ..cards import ALL_CARDS
+from .menu import get_card_cost_str
 
 def render_event(run: GameRun) -> str:
     p = run.player
@@ -54,7 +55,8 @@ def render_shop(run: GameRun) -> str:
             card = ALL_CARDS.get(item.get("card_id"))
             if card:
                 color_ch = "⚫" if card.color == "curse" else ("🔵" if card.color == "wizard" else "⚪")
-                lines.append(f" [{idx}] {color_ch} {card.name} (卡牌) - 🪙 {price}金币 | {card.desc}")
+                cost_str = get_card_cost_str(card)
+                lines.append(f" [{idx}] {color_ch} {card.name} (卡牌 | 消耗: {cost_str}) - 🪙 {price}金币 | {card.desc}")
         elif itype == "relic":
             rid = item.get("relic_id")
             lines.append(f" [{idx}] 🎒 {get_relic_name(rid)} (遗物) - 🪙 {price}金币 | {get_relic_desc(rid)}")
@@ -113,7 +115,8 @@ def render_reward(run: GameRun) -> str:
         card = ALL_CARDS.get(cid)
         if card:
             color_ch = "⚫" if card.color == "curse" else ("🔵" if card.color == "wizard" else "⚪")
-            lines.append(f" [{idx}] {color_ch} {card.name} ({card.desc})")
+            cost_str = get_card_cost_str(card)
+            lines.append(f" [{idx}] {color_ch} {card.name} (消耗: {cost_str}) - {card.desc}")
     skip_idx = len(cards) + 1
     lines.append(f" [{skip_idx}] 🪙 跳过奖励卡牌 (获得 15 金币)")
     lines.append("━━━━━━━━━━━━━━━━━━━━")
@@ -169,7 +172,8 @@ def render_card_select(run: GameRun) -> str:
         card = ALL_CARDS.get(cid)
         if card:
             color_ch = "⚫" if card.color == "curse" else ("🔵" if card.color == "wizard" else "⚪")
-            lines.append(f" [{idx}] {color_ch} {card.name} ({card.desc})")
+            cost_str = get_card_cost_str(card)
+            lines.append(f" [{idx}] {color_ch} {card.name} (消耗: {cost_str}) - {card.desc}")
     skip_idx = len(cards) + 1
     lines.append(f" [{skip_idx}] 🚪 跳过卡牌选择")
     lines.append("━━━━━━━━━━━━━━━━━━━━")
