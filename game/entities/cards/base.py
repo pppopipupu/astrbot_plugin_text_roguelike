@@ -6,6 +6,7 @@ from . import neutral
 from . import wizard
 from . import legendary
 from . import curse
+from . import warrior
 
 import copy
 

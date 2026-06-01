@@ -29,7 +29,9 @@ class MapEngine:
         if p.stage == 1:
             run.node_type = "start_ancient"
             style = random.choice(["default", "abyss", "glacier"])
-            if style == "default":
+            stats = self.save_manager.load_stats(run.user_id)
+            p_class = getattr(stats, "selected_class", "法师")
+            if p_class == "战士":
                 relics_pool = [
                     {"type": "double", "relic": "mark_of_fury"},
                     {"type": "double", "relic": "greedy_contract"},
@@ -39,49 +41,65 @@ class MapEngine:
                     {"type": "double", "relic": "ancient_page"}
                 ]
                 cards_pool = [
-                    {"type": "contract", "relic": "rust_shackle", "card": "doomsday_judgment"},
-                    {"type": "contract", "relic": "fool_oath", "card": "time_warp"},
-                    {"type": "contract", "relic": "wither_seed", "card": "magic_network"},
-                    {"type": "contract", "relic": "blind_spot", "card": "meteor_swarm"},
-                    {"type": "contract", "relic": "tax_contract", "card": "archmage_wish"}
+                    {"type": "contract", "relic": "rust_shackle", "card": "demon_form"},
+                    {"type": "contract", "relic": "fool_oath", "card": "impervious"},
+                    {"type": "contract", "relic": "blind_spot", "card": "demon_form"},
+                    {"type": "contract", "relic": "tax_contract", "card": "impervious"}
                 ]
                 cards_pool.append({"type": "contract", "relic": "blind_spot", "card": "break_limits"})
-                stats = self.save_manager.load_stats(run.user_id)
                 if getattr(stats, "killed_icerainboww", False):
                     cards_pool.append({"type": "contract", "relic": "wither_seed", "card": "minion_icerainboww"})
-            elif style == "abyss":
-                relics_pool = [
-                    {"type": "double", "relic": "abyss_gaze"},
-                    {"type": "double", "relic": "mark_of_fury"},
-                    {"type": "double", "relic": "greedy_contract"},
-                    {"type": "double", "relic": "abyss_contract"}
-                ]
-                cards_pool = [
-                    {"type": "contract", "relic": "shadow_curse", "card": "abyss_collapse"},
-                    {"type": "contract", "relic": "shadow_curse", "card": "demon_contract"},
-                    {"type": "contract", "relic": "shadow_curse", "card": "abyss_erosion"},
-                    {"type": "contract", "relic": "shadow_curse", "card": "abyss_altar"}
-                ]
-                cards_pool.append({"type": "contract", "relic": "shadow_curse", "card": "break_limits"})
-                stats = self.save_manager.load_stats(run.user_id)
-                if getattr(stats, "killed_icerainboww", False):
-                    cards_pool.append({"type": "contract", "relic": "shadow_curse", "card": "minion_icerainboww"})
             else:
-                relics_pool = [
-                    {"type": "double", "relic": "glacier_armor"},
-                    {"type": "double", "relic": "unstable_crystal"},
-                    {"type": "double", "relic": "vampiric_touch"},
-                    {"type": "double", "relic": "glacier_core"}
-                ]
-                cards_pool = [
-                    {"type": "contract", "relic": "glacier_chill", "card": "frost_nova"},
-                    {"type": "contract", "relic": "glacier_chill", "card": "glacier_fortress"},
-                    {"type": "contract", "relic": "glacier_chill", "card": "glacier_tempest"}
-                ]
-                cards_pool.append({"type": "contract", "relic": "glacier_chill", "card": "break_limits"})
-                stats = self.save_manager.load_stats(run.user_id)
-                if getattr(stats, "killed_icerainboww", False):
-                    cards_pool.append({"type": "contract", "relic": "glacier_chill", "card": "minion_icerainboww"})
+                if style == "default":
+                    relics_pool = [
+                        {"type": "double", "relic": "mark_of_fury"},
+                        {"type": "double", "relic": "greedy_contract"},
+                        {"type": "double", "relic": "mask_of_void"},
+                        {"type": "double", "relic": "unstable_crystal"},
+                        {"type": "double", "relic": "vampiric_touch"},
+                        {"type": "double", "relic": "ancient_page"}
+                    ]
+                    cards_pool = [
+                        {"type": "contract", "relic": "rust_shackle", "card": "doomsday_judgment"},
+                        {"type": "contract", "relic": "fool_oath", "card": "time_warp"},
+                        {"type": "contract", "relic": "wither_seed", "card": "magic_network"},
+                        {"type": "contract", "relic": "blind_spot", "card": "meteor_swarm"},
+                        {"type": "contract", "relic": "tax_contract", "card": "archmage_wish"}
+                    ]
+                    cards_pool.append({"type": "contract", "relic": "blind_spot", "card": "break_limits"})
+                    if getattr(stats, "killed_icerainboww", False):
+                        cards_pool.append({"type": "contract", "relic": "wither_seed", "card": "minion_icerainboww"})
+                elif style == "abyss":
+                    relics_pool = [
+                        {"type": "double", "relic": "abyss_gaze"},
+                        {"type": "double", "relic": "mark_of_fury"},
+                        {"type": "double", "relic": "greedy_contract"},
+                        {"type": "double", "relic": "abyss_contract"}
+                    ]
+                    cards_pool = [
+                        {"type": "contract", "relic": "shadow_curse", "card": "abyss_collapse"},
+                        {"type": "contract", "relic": "shadow_curse", "card": "demon_contract"},
+                        {"type": "contract", "relic": "shadow_curse", "card": "abyss_erosion"},
+                        {"type": "contract", "relic": "shadow_curse", "card": "abyss_altar"}
+                    ]
+                    cards_pool.append({"type": "contract", "relic": "shadow_curse", "card": "break_limits"})
+                    if getattr(stats, "killed_icerainboww", False):
+                        cards_pool.append({"type": "contract", "relic": "shadow_curse", "card": "minion_icerainboww"})
+                else:
+                    relics_pool = [
+                        {"type": "double", "relic": "glacier_armor"},
+                        {"type": "double", "relic": "unstable_crystal"},
+                        {"type": "double", "relic": "vampiric_touch"},
+                        {"type": "double", "relic": "glacier_core"}
+                    ]
+                    cards_pool = [
+                        {"type": "contract", "relic": "glacier_chill", "card": "frost_nova"},
+                        {"type": "contract", "relic": "glacier_chill", "card": "glacier_fortress"},
+                        {"type": "contract", "relic": "glacier_chill", "card": "glacier_tempest"}
+                    ]
+                    cards_pool.append({"type": "contract", "relic": "glacier_chill", "card": "break_limits"})
+                    if getattr(stats, "killed_icerainboww", False):
+                        cards_pool.append({"type": "contract", "relic": "glacier_chill", "card": "minion_icerainboww"})
             
             num_relics = random.choice([1, 2])
             selected_relics = random.sample(relics_pool, min(len(relics_pool), num_relics))
@@ -96,18 +114,23 @@ class MapEngine:
         elif p.stage == 11:
             run.node_type = "ancient"
             style = random.choice(["default", "abyss", "glacier"])
-            if style == "default":
-                legends_pool = ["doomsday_judgment", "time_warp", "magic_network", "meteor_swarm", "archmage_wish"]
+            stats = self.save_manager.load_stats(run.user_id)
+            p_class = getattr(stats, "selected_class", "法师")
+            if p_class == "战士":
+                legends_pool = ["demon_form", "impervious"]
                 relics_pool = ["ancient_eye", "gold_compass", "dragon_blood", "energy_core", "heavy_armor"]
-            elif style == "abyss":
-                legends_pool = ["abyss_collapse", "demon_contract", "abyss_erosion", "abyss_altar"]
-                relics_pool = ["abyss_whisper", "gold_compass", "dragon_blood", "abyss_contract"]
             else:
-                legends_pool = ["frost_nova", "glacier_fortress", "glacier_tempest"]
-                relics_pool = ["frost_blade", "energy_core", "heavy_armor", "glacier_core"]
+                if style == "default":
+                    legends_pool = ["doomsday_judgment", "time_warp", "magic_network", "meteor_swarm", "archmage_wish"]
+                    relics_pool = ["ancient_eye", "gold_compass", "dragon_blood", "energy_core", "heavy_armor"]
+                elif style == "abyss":
+                    legends_pool = ["abyss_collapse", "demon_contract", "abyss_erosion", "abyss_altar"]
+                    relics_pool = ["abyss_whisper", "gold_compass", "dragon_blood", "abyss_contract"]
+                else:
+                    legends_pool = ["frost_nova", "glacier_fortress", "glacier_tempest"]
+                    relics_pool = ["frost_blade", "energy_core", "heavy_armor", "glacier_core"]
             
             legends_pool.append("break_limits")
-            stats = self.save_manager.load_stats(run.user_id)
             if getattr(stats, "killed_icerainboww", False):
                 legends_pool.append("minion_icerainboww")
                 

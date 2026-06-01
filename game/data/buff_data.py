@@ -322,5 +322,40 @@ BUFF_CONFIG = {
         "name": "魔力泄漏",
         "desc": "你打出的法术卡牌需要额外消耗 1BA，且造成的法术伤害减少 2 点",
         "is_debuff": True
+    },
+    "minor_vulnerable": {
+        "name": "轻度易伤",
+        "desc": "受到的所有类型伤害增加 50%",
+        "is_debuff": True
+    },
+    "vulnerable": {
+        "name": "易伤",
+        "desc": "受到的所有类型伤害翻倍",
+        "is_debuff": True
+    },
+    "weak": {
+        "name": "虚弱",
+        "desc": "造成的物理伤害减少 3 点",
+        "is_debuff": True
+    },
+    "flame_barrier_buff": {
+        "name": "火焰屏障",
+        "desc": "受到伤害时对攻击源反弹真实伤害"
+    },
+    "metallicize": {
+        "name": "金属化",
+        "desc": "回合结束时额外获得护盾"
+    },
+    "demon_form": {
+        "name": "恶魔形态",
+        "desc": "回合开始时获得力量"
+    },
+    "double_tap_buff": {
+        "name": "双发",
+        "desc": "下一次物理伤害卡将触发额外打出"
+    },
+    "barricade": {
+        "name": "壁垒",
+        "desc": "护盾回合开始时不衰减一半"
     }
 }

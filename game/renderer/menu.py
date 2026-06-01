@@ -4,18 +4,22 @@ from ..cards import ALL_CARDS
 def render_menu(stats: UserStats = None) -> str:
     subclass_str = "无"
     gp_val = 0
+    selected_class = "法师"
     if stats:
         gp_val = getattr(stats, "gp", 0)
+        selected_class = getattr(stats, "selected_class", "法师")
         subclass_str = getattr(stats, "selected_subclass", "") or "无"
+    title_suffix = " 战士篇" if selected_class == "战士" else " DND 5.5E 法师篇"
+    class_info = f"🔴 当前职业：战士" if selected_class == "战士" else f"🧙 当前职业：法师  🔮 子职业：{subclass_str}"
     lines = [
         "━━━━━━━━━━━━━━━━━━━━",
-        "🔮 魔法肉鸽卡牌游戏 (DND 5.5E 法师篇)",
+        f"🔮 魔法肉鸽卡牌游戏 ({title_suffix})",
         "",
         f"💰 我的 GP：{gp_val}",
-        f"🧙 当前职业：法师  🔮 子职业：{subclass_str}",
+        class_info,
         "",
         "一款使用纯文字游玩的策略肉鸽卡牌游戏。",
-        "每回合拥有 2 个动作 (A) 和 1 个附赠动作 (BA)。",
+        "每回合拥有 2 个动作 (A) 和 1 个附赠动作 (BA) 。",
         "召唤随从和护符可帮助战斗。随从拥有独立的动作，需手动指挥！",
         "",
         "【开始游戏】",
@@ -56,6 +60,7 @@ def render_card_library() -> str:
     ]
     neutrals = []
     blue_spells = []
+    red_cards = []
     curses = []
     for cid, card in ALL_CARDS.items():
         cost_str = get_card_cost_str(card)
@@ -89,6 +94,8 @@ def render_card_library() -> str:
             curses.append(info)
         elif card.color == "neutral":
             neutrals.append(info)
+        elif card.color == "warrior":
+            red_cards.append(info)
         else:
             blue_spells.append(info)
     lines.append("【无色卡牌（中立）】")
@@ -96,6 +103,9 @@ def render_card_library() -> str:
     lines.append("")
     lines.append("【蓝色卡牌（法师）】")
     lines.extend(blue_spells)
+    lines.append("")
+    lines.append("【红色卡牌（战士）】")
+    lines.extend(red_cards)
     lines.append("")
     lines.append("【灰色卡牌（诅咒）】")
     lines.extend(curses)
@@ -184,7 +194,7 @@ def render_deck(run: GameRun) -> str:
     for cid, count in sorted(counts.items()):
         card = ALL_CARDS.get(cid)
         if card:
-            color_type = "⚫" if card.color == "curse" else ("🔵" if card.color == "wizard" else "⚪")
+            color_type = "⚫" if card.color == "curse" else ("🔴" if card.color == "warrior" else ("🔵" if card.color == "wizard" else "⚪"))
             rarity_map = {
                 "common": "普通",
                 "rare": "稀有",

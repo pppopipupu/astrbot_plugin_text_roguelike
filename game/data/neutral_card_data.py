@@ -429,5 +429,15 @@ NEUTRAL_CARD_CONFIG = {
         "base_dmg": 12,
         "damage_type": "cold",
         "feedback": "释放了极寒风暴！"
+    },
+    "curse_wound": {
+        "name": "伤口",
+        "color": "curse",
+        "type": "spell",
+        "cost_a": 0,
+        "cost_ba": 0,
+        "desc": "不能被打出。无效果。",
+        "rarity": "curse",
+        "unplayable": True
     }
 }

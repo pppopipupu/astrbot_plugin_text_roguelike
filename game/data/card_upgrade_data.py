@@ -255,5 +255,90 @@ CARD_UPGRADE_CONFIG = {
         "cost_ba": 1,
         "base_dmg": 18,
         "desc": "对所有敌人造成 18 点冰霜伤害。若场上存在任何我方随从，则获得等同于本次造成总伤害值 50% 的护盾。消耗。"
+    },
+    "warrior_strike": {
+        "base_dmg": 9,
+        "desc": "造成 9 点挥砍伤害。"
+    },
+    "warrior_defend": {
+        "desc": "获得 8 点护盾。"
+    },
+    "warrior_bash": {
+        "base_dmg": 11,
+        "desc": "造成 11 点钝击伤害，施加 3 层轻度易伤。"
+    },
+    "iron_wave": {
+        "base_dmg": 7,
+        "desc": "造成 7 点挥砍伤害，获得 7 点护盾。"
+    },
+    "warrior_anger": {
+        "base_dmg": 6,
+        "desc": "造成 6 点挥砍伤害。将一张此牌的复制品加入弃牌堆。"
+    },
+    "body_slam": {
+        "cost_a": 0,
+        "desc": "造成等同于玩家当前护盾值的钝击伤害。"
+    },
+    "pommel_strike": {
+        "base_dmg": 12,
+        "desc": "造成 12 点挥砍伤害，抽 2 张牌。"
+    },
+    "shrug_it_off": {
+        "desc": "获得 11 点护盾，抽 1 张牌。"
+    },
+    "heavy_blade": {
+        "base_dmg": 18,
+        "desc": "造成 18 点挥砍伤害。力量对该牌伤害的加成效果乘以 5。"
+    },
+    "shockwave": {
+        "desc": "对所有敌人施加 3 层轻度易伤和 3 层虚弱。消耗。"
+    },
+    "flame_barrier": {
+        "desc": "获得 16 点护盾。本回合每次受到攻击，对攻击源反弹 6 点真实伤害。"
+    },
+    "uppercut": {
+        "base_dmg": 17,
+        "desc": "造成 17 点钝击伤害，施加 3 层轻度易伤和 3 层虚弱。"
+    },
+    "spot_weakness": {
+        "desc": "若目标敌人的意图包含攻击，玩家获得 4 层力量。"
+    },
+    "ghostly_armor": {
+        "desc": "获得 14 点护盾。虚无。"
+    },
+    "power_through": {
+        "desc": "手牌中添加两张诅咒牌“伤口”，获得 22 点护盾。"
+    },
+    "double_tap": {
+        "cost_a": 0,
+        "cost_ba": 0,
+        "exhaust": True,
+        "desc": "本回合你打出的下一张物理伤害牌额外打出 2 次。消耗。"
+    },
+    "feed": {
+        "base_dmg": 14,
+        "desc": "造成 14 点挥砍伤害。若击杀目标，则玩家最大生命值永久 +4 并回复 4 点生命。消耗。"
+    },
+    "inflame": {
+        "desc": "玩家获得 3 层力量。"
+    },
+    "barricade": {
+        "cost_a": 1,
+        "desc": "获得 1 层缓冲。本场战斗中，玩家在回合开始时护盾不会流失一半。"
+    },
+    "metallicize": {
+        "desc": "本场战斗中，玩家在每回合结束时获得 6 点护盾。"
+    },
+    "bludgeon": {
+        "base_dmg": 42,
+        "desc": "造成 42 点钝击伤害。"
+    },
+    "demon_form": {
+        "desc": "本场战斗中，玩家在回合开始时获得 4 层力量。且在使用时额外获得 1A。"
+    },
+    "impervious": {
+        "cost_a": 1,
+        "cost_ba": 1,
+        "desc": "获得 40 点护盾。消耗。"
     }
 }

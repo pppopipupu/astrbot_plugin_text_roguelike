@@ -90,6 +90,8 @@ class BattleEngine(BaseBattleEngine):
         p.bonus_actions = 1
         p.shield = 0
         run.node_data["cards_played_this_turn"] = 0
+        if getattr(p, "selected_class", "法师") == "战士":
+            run.node_data["action_surge_uses"] = 2
 
         from ..models.events import BattleStartEvent, TurnStartEvent
         evt_start = BattleStartEvent(run)

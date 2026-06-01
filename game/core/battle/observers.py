@@ -103,6 +103,7 @@ class BuffTriggerHandler:
         event_bus.subscribe(DamageCalculateEvent, self.on_damage_calculate)
         event_bus.subscribe(HealEvent, self.on_heal)
         event_bus.subscribe(ShieldGainEvent, self.on_shield_gain)
+        event_bus.subscribe(DamageTakeEvent, self.on_damage_take)
 
     def on_turn_start(self, event):
         from ...entities.buffs.buffs import get_buff_impl
@@ -204,6 +205,25 @@ class BuffTriggerHandler:
                 impl = get_buff_impl(b.id, b.stacks, getattr(b, "stacks2", None))
                 if impl and hasattr(impl, "on_shield_gain"):
                     impl.on_shield_gain(event, b, event.run.player)
+
+    def on_damage_take(self, event):
+        from ...entities.buffs.buffs import get_buff_impl
+        if event.target == "p0":
+            for b in list(event.run.player.buffs):
+                impl = get_buff_impl(b.id, b.stacks, getattr(b, "stacks2", None))
+                if impl and hasattr(impl, "on_damage_take_defend"):
+                    impl.on_damage_take_defend(event, b, event.run.player, self.engine)
+        elif event.target.startswith("e"):
+            try:
+                idx = int(event.target[1:]) - 1
+            except ValueError:
+                idx = -1
+            if 0 <= idx < len(event.run.enemies):
+                enemy = event.run.enemies[idx]
+                for b in list(enemy.buffs):
+                    impl = get_buff_impl(b.id, b.stacks, getattr(b, "stacks2", None))
+                    if impl and hasattr(impl, "on_damage_take_defend"):
+                        impl.on_damage_take_defend(event, b, enemy, self.engine)
 
 class AmuletTriggerHandler:
     def __init__(self, event_bus, engine):

@@ -117,7 +117,7 @@ def render_battle(run: GameRun) -> str:
         for idx, cid in enumerate(p.hand, 1):
             card = ALL_CARDS.get(cid)
             if card:
-                color_ch = "⚫" if card.color == "curse" else ("🔵" if card.color == "wizard" else "⚪")
+                color_ch = "⚫" if card.color == "curse" else ("🔴" if card.color == "warrior" else ("🔵" if card.color == "wizard" else "⚪"))
                 cost_str = get_card_cost_str(card)
                 rarity_map = {
                     "common": "普通",

@@ -137,6 +137,7 @@ class PlayerState:
     buffs: List[BuffState] = field(default_factory=list)
     relics: List[str] = field(default_factory=list)
     subclass: str = ""
+    selected_class: str = "法师"
 
 @dataclass
 class EnemyIntentState:

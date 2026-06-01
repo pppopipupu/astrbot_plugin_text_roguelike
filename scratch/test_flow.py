@@ -770,7 +770,7 @@ class TestRoguePlugin(unittest.TestCase):
         mgr = DummySaveManagerLocal()
         router = CLIRouter(mgr, None)
         res = list(router.handle_command("test_user", ["class"]))
-        self.assertIn("魔法肉鸽卡牌子职业系统", res[0])
+        self.assertIn("魔法肉鸽卡牌职业系统", res[0])
         list(router.handle_command("test_user", ["class", "c", "1"]))
         self.assertEqual(mgr.stats.selected_subclass, "时序法师")
         list(router.handle_command("test_user", ["class", "c", "2"]))
@@ -1636,6 +1636,107 @@ class TestRoguePlugin(unittest.TestCase):
             plugin.save_manager.delete_save(user_id)
 
         asyncio.run(go())
+
+    def test_warrior_class_and_features(self):
+        class DummySaveManager:
+            def save_save(self, user_id, run):
+                pass
+            def delete_save(self, user_id):
+                pass
+            def load_stats(self, user_id):
+                class DummyStats:
+                    def __init__(self):
+                        self.selected_class = "战士"
+                        self.selected_subclass = ""
+                return DummyStats()
+        sm = DummySaveManager()
+        engine = BattleEngine(sm)
+        
+        player = PlayerState(
+            hp=80,
+            max_hp=80,
+            shield=0,
+            gold=20,
+            stage=1,
+            deck=["warrior_strike", "warrior_defend", "power_through", "barricade", "heavy_blade", "bludgeon"],
+            hand=["warrior_strike", "warrior_defend", "power_through", "barricade", "heavy_blade", "bludgeon"],
+            actions=2,
+            bonus_actions=1
+        )
+        enemies = [EnemyState("测试敌人A", 100, 100, 0)]
+        run = GameRun(
+            user_id="test_warrior_user",
+            node_type="battle",
+            player=player,
+            enemies=enemies
+        )
+        run.node_data["action_surge_uses"] = 2
+        
+        card_strike = ALL_CARDS["warrior_strike"]
+        card_strike.execute(run, "e1", engine)
+        self.assertEqual(enemies[0].hp, 94)
+        
+        card_defend = ALL_CARDS["warrior_defend"]
+        card_defend.execute(run, None, engine)
+        self.assertEqual(player.shield, 5)
+        
+        card_power = ALL_CARDS["power_through"]
+        card_power.execute(run, None, engine)
+        self.assertEqual(player.shield, 20)
+        self.assertEqual(player.hand.count("curse_wound"), 2)
+        
+        card_wound = ALL_CARDS["curse_wound"]
+        self.assertTrue(getattr(card_wound, "unplayable", False))
+        
+        card_barricade = ALL_CARDS["barricade"]
+        card_barricade.execute(run, None, engine)
+        self.assertTrue(any(b.id == "barricade" for b in player.buffs))
+        
+        prev_shield = player.shield
+        engine.card_player.end_turn(run)
+        self.assertEqual(player.shield, prev_shield)
+        
+        engine._add_buff_to(player, "strength", "力量", "伤害加成", 3)
+        card_heavy = ALL_CARDS["heavy_blade"]
+        enemies[0].hp = 100
+        engine.combat_resolver.card_player = engine.card_player
+        
+        damage = engine.combat_resolver.get_modified_spell_damage(run, card_heavy, 14)
+        self.assertEqual(damage, 14 + 3 * 3)
+        
+        card_heavy_up = ALL_CARDS["heavy_blade+"]
+        damage_up = engine.combat_resolver.get_modified_spell_damage(run, card_heavy_up, 18)
+        self.assertEqual(damage_up, 18 + 3 * 5)
+        
+        router = CLIRouter(sm, engine)
+        run.node_data["action_surge_uses"] = 2
+        
+        class DummySaveManagerWithSave:
+            def __init__(self, run):
+                self.run = run
+                class DummyStats:
+                    def __init__(self):
+                        self.selected_class = "战士"
+                        self.selected_subclass = ""
+                self.stats = DummyStats()
+            def load_save(self, user_id):
+                return self.run
+            def save_save(self, user_id, run):
+                self.run = run
+            def delete_save(self, user_id):
+                pass
+            def load_stats(self, user_id):
+                return self.stats
+            def save_stats(self, user_id, stats):
+                pass
+        
+        router.save_manager = DummySaveManagerWithSave(run)
+        generator = router.handle_command("test_warrior_user", ["技能", "as"])
+        res_list = list(generator)
+        res_text = "\n".join(res_list)
+        self.assertIn("额外", res_text)
+        self.assertEqual(run.player.actions, 4)
+        self.assertEqual(run.node_data["action_surge_uses"], 1)
 
 if __name__ == "__main__":
     unittest.main()

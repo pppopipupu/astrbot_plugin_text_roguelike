@@ -64,7 +64,8 @@ class CombatResolver:
         return None
 
     def get_modified_spell_damage(self, run: GameRun, card: Card, damage: int) -> int:
-        calc_evt = DamageCalculateEvent(run, card, "p0", "e1", "spell", damage, damage)
+        dtype = getattr(card, "damage_type", "spell")
+        calc_evt = DamageCalculateEvent(run, card, "p0", "e1", dtype, damage, damage)
         self.engine.event_bus.dispatch(calc_evt)
         return calc_evt.modified_damage
 

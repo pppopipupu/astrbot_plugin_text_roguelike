@@ -194,7 +194,8 @@ class SaveManager:
             fold_guide=p_data.get("fold_guide", False),
             buffs=p_buffs,
             relics=p_data.get("relics", []),
-            subclass=p_data.get("subclass", "")
+            subclass=p_data.get("subclass", ""),
+            selected_class=p_data.get("selected_class", "法师")
         )
         
         enemies = []

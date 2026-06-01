@@ -186,21 +186,28 @@ class AbandonCommand(CommandHandler, names=["放弃", "abandon"]):
 class ClassCommand(CommandHandler, names=["职业", "class"]):
     def execute(self, router, user_id: str, parts: list[str]) -> Generator[str, None, None]:
         stats = router.save_manager.load_stats(user_id)
+        selected_class = getattr(stats, "selected_class", "法师")
+        selected_subclass = getattr(stats, "selected_subclass", "") or "无"
         if len(parts) == 1:
             gp = getattr(stats, "gp", 0)
-            selected_subclass = getattr(stats, "selected_subclass", "") or "无"
             unlocked = getattr(stats, "unlocked_subclasses", [])
             status_time = "已解锁" if "时序法师" in unlocked else "未解锁（2888 GP）"
             status_element = "已解锁" if "塑能法师" in unlocked else "未解锁（2888 GP）"
             status_key = "已解锁" if "秘钥学者" in unlocked else "未解锁（2888 GP）"
             lines = [
                 "━━━━━━━━━━━━━━━━━━━━",
-                "🧙 魔法肉鸽卡牌子职业系统",
+                "🧙 魔法肉鸽卡牌职业系统",
                 "",
                 f"💰 我的 GP：{gp}",
-                f"🧙 当前职业：法师  🔮 子职业：{selected_subclass}",
+                f"🧙 当前主职业：{selected_class}  🔮 当前子职业：{selected_subclass}",
                 "",
-                "【可用的子职业】",
+                "【可用的主职业】",
+                "1. 法师 (wizard)",
+                "   └─ 使用蓝色法术牌和护符。可以使用子职业。初始生命 45。",
+                "2. 战士 (warrior)",
+                "   └─ 使用红色物理牌。无子职业。拥有被动“动作如潮”（/rogue 技能 as 获得 2A，一场战斗限两次，初始生命 80）。",
+                "",
+                "【可用的子职业（仅法师可用）】",
                 f"1. 时序法师 - 状态：[{status_time}]",
                 "   └─ 操控时间。开局获得专属传奇卡牌“时间停止”（追加 3 个额外回合）。",
                 f"2. 塑能法师 - 状态：[{status_element}]",
@@ -208,11 +215,13 @@ class ClassCommand(CommandHandler, names=["职业", "class"]):
                 f"3. 秘钥学者 - 状态：[{status_key}]",
                 "   └─ 门扉共鸣。打出护符时回复 3 生命且获得 4 护盾。抓取卡牌时 35% 几率将普通法术替换为“秘钥共鸣”。",
                 "",
-                "【职业命令】",
-                "👉 /rogue 职业 1 或 选择 1 -- 装备时序法师子职业",
-                "👉 /rogue 职业 2 或 选择 2 -- 装备塑能法师子职业",
-                "👉 /rogue 职业 3 或 选择 3 -- 装备秘钥学者子职业",
-                "👉 /rogue 职业 0 或 选择 0 -- 取消装备子职业",
+                "【职业选择命令】",
+                "👉 /rogue 职业 法师 (或 c wizard) -- 切换到法师职业",
+                "👉 /rogue 职业 战士 (或 c warrior) -- 切换到战士职业",
+                "👉 /rogue 职业 选择 1 (或 c 1) -- 装备时序法师子职业",
+                "👉 /rogue 职业 选择 2 (或 c 2) -- 装备塑能法师子职业",
+                "👉 /rogue 职业 选择 3 (或 c 3) -- 装备秘钥学者子职业",
+                "👉 /rogue 职业 选择 0 (或 c 0) -- 取消装备子职业",
                 "💡 如需购买子职业，请使用局外商店：/rogue 商店",
                 "━━━━━━━━━━━━━━━━━━━━"
             ]
@@ -229,6 +238,20 @@ class ClassCommand(CommandHandler, names=["职业", "class"]):
             if action in ("购买", "buy"):
                 yield "💡 请使用商店命令前往局外商店进行商品购买：/rogue 商店"
             elif action in ("选择", "c"):
+                if subclass_arg in ("战士", "warrior", "war"):
+                    stats.selected_class = "战士"
+                    stats.selected_subclass = ""
+                    router.save_manager.save_stats(user_id, stats)
+                    yield "🔴 主职业已切换为【战士】。将在新的一局游戏中生效！"
+                    return
+                elif subclass_arg in ("法师", "wizard", "wiz"):
+                    stats.selected_class = "法师"
+                    router.save_manager.save_stats(user_id, stats)
+                    yield "🧙 主职业已切换为【法师】。将在新的一局游戏中生效！"
+                    return
+                if selected_class == "战士":
+                    yield "❌ 战士职业没有子职业，无法装备子职业。如需装备子职业，请先切换到法师职业。"
+                    return
                 if subclass_arg in ("1", "时序法师"):
                     subclass_name = "时序法师"
                 elif subclass_arg in ("2", "塑能法师"):
@@ -238,7 +261,7 @@ class ClassCommand(CommandHandler, names=["职业", "class"]):
                 elif subclass_arg in ("0", "无", "取消", "none"):
                     subclass_name = ""
                 else:
-                    yield "❌ 无效的子职业。可选：1 (时序法师)、2 (塑能法师)、3 (秘钥学者)、0 (无)。"
+                    yield "❌ 无效的子职业。可选：1 (时序法师)、2 (塑能法师)、3 (秘钥学者)、0 (无)，或输入 法师/战士 切换主职业。"
                     return
                 if subclass_name == "":
                     stats.selected_subclass = ""
@@ -253,7 +276,31 @@ class ClassCommand(CommandHandler, names=["职业", "class"]):
                 router.save_manager.save_stats(user_id, stats)
                 yield f"🔮 已选择子职业为【{subclass_name}】。将在新的一局游戏中生效！"
             else:
-                yield "❌ 格式错误。请使用 /rogue 职业 或 /rogue 职业 选择/c <子职业序号|无>。"
+                yield "❌ 格式错误。请使用 /rogue 职业 或 /rogue 职业 选择/c <职业名|子职业序号>。"
+
+class SkillCommand(CommandHandler, names=["技能", "skill"]):
+    def execute(self, router, user_id: str, parts: list[str]) -> Generator[str, None, None]:
+        run = router.save_manager.load_save(user_id)
+        if not run or run.node_type != "battle":
+            yield "❌ 只有在战斗中才能使用职业技能。"
+            return
+        stats = router.save_manager.load_stats(user_id)
+        p_class = getattr(stats, "selected_class", "法师")
+        if p_class != "战士":
+            yield "❌ 当前职业不是战士，无法使用【动作如潮】技能。"
+            return
+        if len(parts) < 2 or parts[1].lower() not in ("as", "action_surge", "动作如潮"):
+            yield "💡 战士职业技能使用命令：/rogue 技能 as （或 /rogue skill as）"
+            return
+        uses = run.node_data.get("action_surge_uses", 0)
+        if uses <= 0:
+            yield "❌ 动作如潮在一场战斗中只能使用两次，本场战斗的使用次数已用尽！"
+            return
+        run.node_data["action_surge_uses"] = uses - 1
+        p = run.player
+        p.actions += 2
+        router.save_manager.save_save(user_id, run)
+        yield f"🔥 战士发动了【动作如潮】！获得了额外的 2A 动作点！(本场战斗还可使用 {uses - 1} 次)\n当前行动点: {p.actions}A, {p.bonus_actions}BA"
 
 class ShopCommand(CommandHandler, names=["商店", "shop"]):
     def execute(self, router, user_id: str, parts: list[str]) -> Generator[str, None, None]:

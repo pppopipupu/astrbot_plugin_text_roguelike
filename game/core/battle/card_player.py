@@ -498,13 +498,16 @@ class CardPlayer:
             settle_msg = self.engine.save_manager.settle_game_and_delete(run.user_id, run, is_victory=False)
             return f"{enemy_actions}\n💀 冒险结束。你被击败了！存档已被清除。\n{settle_msg}"
         decay_msgs = []
-        if p.shield > 0:
+        has_barricade = any(b.id.startswith("barricade") for b in p.buffs)
+        if p.shield > 0 and not has_barricade:
             lost = p.shield - (p.shield // 2)
             p.shield = p.shield // 2
             if lost > 0:
                 decay_msgs.append(f"玩家失去 {lost} 点护盾")
                 from ...models.events import ShieldDecayEvent
                 self.engine.event_bus.dispatch(ShieldDecayEvent(run, "p0", lost))
+        elif p.shield > 0 and has_barricade:
+            pass
         else:
             p.shield = 0
         decay_info = ""
@@ -589,7 +592,9 @@ class CardPlayer:
         else:
             run.node_type = "reward"
             card_pool = list(ALL_CARDS.keys())
-            normal_cards = [cid for cid in card_pool if ALL_CARDS[cid].rarity not in ("legendary", "mythic", "artifact") and not cid.startswith("curse_")]
+            p_class = getattr(stats, "selected_class", "法师")
+            target_color = "warrior" if p_class == "战士" else "wizard"
+            normal_cards = [cid for cid in card_pool if ALL_CARDS[cid].rarity not in ("legendary", "mythic", "artifact") and not cid.startswith("curse_") and ALL_CARDS[cid].color in (target_color, "neutral")]
             reward_cards = random.sample(normal_cards, 3)
             final_reward_cards = []
             for cid in reward_cards:

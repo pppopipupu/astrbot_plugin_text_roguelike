@@ -199,7 +199,104 @@ class BeatOfDeathBuff(BuffImpl):
         engine._damage_target(event.run, "p0", dmg, source="beat_of_death", damage_type="force")
 
 class StrengthBuff(BuffImpl):
-    pass
+    def on_damage_calculate(self, event, buff_state, entity):
+        if entity == event.run.player and event.source == "p0":
+            dtype_str = event.damage_type.value if hasattr(event.damage_type, "value") else str(event.damage_type)
+            if dtype_str in ("slashing", "bludgeoning", "piercing"):
+                mult = 1
+                if event.card and event.card.id.startswith("heavy_blade"):
+                    mult = 5 if event.card.upgraded else 3
+                event.modified_damage += buff_state.stacks * mult
+
+class GenericMinorVulnerableBuff(BuffImpl):
+    def on_damage_calculate_defend(self, event, buff_state, entity):
+        event.modified_damage = int(event.modified_damage * 1.5)
+
+    def on_turn_end(self, event, buff_state, entity):
+        if event.is_player == (entity == event.run.player):
+            buff_state.stacks -= 1
+            if buff_state.stacks <= 0:
+                entity.buffs.remove(buff_state)
+
+class GenericVulnerableBuff(BuffImpl):
+    def on_damage_calculate_defend(self, event, buff_state, entity):
+        event.modified_damage = int(event.modified_damage * 2)
+
+    def on_turn_end(self, event, buff_state, entity):
+        if event.is_player == (entity == event.run.player):
+            buff_state.stacks -= 1
+            if buff_state.stacks <= 0:
+                entity.buffs.remove(buff_state)
+
+class WeakBuff(BuffImpl):
+    def on_damage_calculate(self, event, buff_state, entity):
+        is_owner = False
+        if entity == event.run.player:
+            if event.source == "p0":
+                is_owner = True
+        elif entity in event.run.enemies:
+            try:
+                idx = event.run.enemies.index(entity)
+                if event.source == f"e{idx+1}":
+                    is_owner = True
+            except ValueError:
+                pass
+        if is_owner:
+            dtype_str = event.damage_type.value if hasattr(event.damage_type, "value") else str(event.damage_type)
+            if dtype_str in ("slashing", "bludgeoning", "piercing"):
+                event.modified_damage = max(0, event.modified_damage - buff_state.stacks * 3)
+
+    def on_turn_end(self, event, buff_state, entity):
+        if event.is_player == (entity == event.run.player):
+            buff_state.stacks -= 1
+            if buff_state.stacks <= 0:
+                entity.buffs.remove(buff_state)
+
+class FlameBarrierBuff(BuffImpl):
+    def on_damage_take_defend(self, event, buff_state, entity, engine):
+        if entity == event.run.player and event.target == "p0" and event.source.startswith("e"):
+            engine._damage_target(event.run, event.source, buff_state.stacks, damage_type="true")
+            engine._log_event(event.run, f"🔥 [火焰屏障] 对攻击源造成了 {buff_state.stacks} 点反弹伤害。")
+
+    def on_turn_end(self, event, buff_state, entity):
+        if event.is_player == (entity == event.run.player):
+            if buff_state in entity.buffs:
+                entity.buffs.remove(buff_state)
+
+class MetallicizeBuff(BuffImpl):
+    def on_turn_end(self, event, buff_state, entity):
+        if entity == event.run.player and event.is_player:
+            shield_gain = buff_state.stacks
+            event.engine._gain_shield(event.run, "p0", shield_gain)
+            event.engine._log_event(event.run, f"🛡️ [金属化] 触发：玩家获得了 {shield_gain} 点额外护盾。")
+
+class DemonFormBuff(BuffImpl):
+    def on_turn_start(self, event, buff_state, entity):
+        if entity == event.run.player and event.is_player:
+            amount = buff_state.stacks
+            event.engine._add_buff_to(entity, "strength", "力量", "造成的伤害增加", amount)
+            event.engine._log_event(event.run, f"😈 [恶魔形态] 触发：玩家获得了 {amount} 点力量。")
+
+class DoubleTapBuff(BuffImpl):
+    def on_card_played(self, event, buff_state, entity):
+        if entity == event.run.player:
+            dtype = getattr(event.card, "damage_type", "spell")
+            if dtype in ("slashing", "bludgeoning", "piercing"):
+                stacks = buff_state.stacks
+                res = ""
+                for _ in range(stacks):
+                    if event.engine.is_battle_won(event.run):
+                        break
+                    extra_res = event.engine._execute_card_effect(event.run, event.card, event.target)
+                    res += f" 🔁 [双发触发] {extra_res}"
+                event.feedback += res
+                if buff_state in event.run.player.buffs:
+                    event.run.player.buffs.remove(buff_state)
+
+    def on_turn_end(self, event, buff_state, entity):
+        if entity == event.run.player and event.is_player:
+            if buff_state in event.run.player.buffs:
+                event.run.player.buffs.remove(buff_state)
 
 class FuryBuff(BuffImpl):
     def on_card_played(self, event, buff_state, entity):
@@ -521,6 +618,13 @@ BUFF_MAP = {
     "glacier_fortress_buff": GlacierFortressBuff,
     "void_exhaustion": VoidExhaustionBuff,
     "mana_leak": ManaLeakBuff,
+    "minor_vulnerable": GenericMinorVulnerableBuff,
+    "vulnerable": GenericVulnerableBuff,
+    "weak": WeakBuff,
+    "flame_barrier_buff": FlameBarrierBuff,
+    "metallicize": MetallicizeBuff,
+    "demon_form": DemonFormBuff,
+    "double_tap_buff": DoubleTapBuff,
 }
 
 def get_buff_impl(buff_id: str, stacks: int, stacks2: Optional[int] = None) -> Optional[BuffImpl]:
