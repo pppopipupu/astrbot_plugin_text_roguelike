@@ -187,6 +187,73 @@ class AbyssAltarEndAmulet(AmuletTemplate):
         engine._damage_target(run, "p0", dmg_player, damage_type="true", source="abyss_altar_end")
         return "深渊仪式终结！" + "，".join(feedback_parts) + f"，玩家受到 {dmg_player} 点真实伤害。"
 
+class TacticalBarrackAmulet(AmuletTemplate):
+    def on_death(self, run, grid, is_upgraded, engine) -> str:
+        shield = 8 if is_upgraded else 4
+        engine._gain_shield(run, "p0", shield)
+        from ..cards.base import ALL_CARDS
+        minion_pool = [cid for cid, card in ALL_CARDS.items() if card.color == "warrior" and card.type == "minion" and not cid.endswith("+")]
+        import random
+        if minion_pool:
+            cid = random.choice(minion_pool)
+            if is_upgraded:
+                cid = cid + "+" if not cid.endswith("+") else cid
+            if len(run.player.hand) < 12:
+                run.player.hand.append(cid)
+                card_name = ALL_CARDS[cid].name
+                return f"获得 {shield} 点护盾，且将【{card_name}】加入手牌。"
+        return f"获得 {shield} 点护盾。"
+
+class IronPhalanxSealAmulet(AmuletTemplate):
+    def on_minion_summon(self, run, grid, event, engine):
+        if not event.grid.startswith("e"):
+            av = run.player.amulets.get(grid)
+            is_upgraded = av.id.endswith("+") if av else False
+            val = 4 if is_upgraded else 3
+            m = event.minion_state
+            m.max_hp += val
+            m.hp += val
+            engine._gain_shield(run, "p0", val)
+            engine._log_event(run, f"🛡️ 【铁壁法阵】效果触发：使新进场随从【{m.name}】最大生命值与当前生命值提升了 {val} 点，且为玩家提供了 {val} 点护盾。")
+
+class GrandCoronationAmulet(AmuletTemplate):
+    def on_card_played(self, run, grid, event, engine):
+        card_id = event.card.id
+        if card_id.startswith("commander_"):
+            av = run.player.amulets.get(grid)
+            is_upgraded = av.id.endswith("+") if av else False
+            val = 4 if is_upgraded else 2
+            for mk, mv in run.player.minions.items():
+                if mv.id == card_id and not any(b.id == "ward" for b in mv.buffs):
+                    engine._add_buff_to(mv, "ward", "守护", "敌方单体攻击只能指向该随从")
+                    mv.atk += val
+                    engine._log_event(run, f"👑 【加冕典礼】使新进场的指挥官【{mv.name}】获得了【守护】，且本回合攻击力提升了 {val} 点。")
+                    break
+
+    def on_death(self, run, grid, is_upgraded, engine) -> str:
+        hp_gain = 8 if is_upgraded else 4
+        run.player.max_hp += hp_gain
+        run.player.hp = run.player.max_hp
+        return f"使玩家最大生命值永久提升了 {hp_gain} 点，且将生命值回复满。"
+
+class BladeRegimentBannerAmulet(AmuletTemplate):
+    def on_damage_calculate(self, run, grid, event, engine):
+        if event.source.startswith("p"):
+            if event.damage_type in ("slashing", "bludgeoning", "piercing"):
+                av = run.player.amulets.get(grid)
+                is_upgraded = av.id.endswith("+") if av else False
+                val = 5 if is_upgraded else 3
+                event.modified_damage += val
+                engine._log_event(run, f"⚔️ 【锋刃军旗】使本次造成的物理伤害额外增加了 {val} 点。")
+
+    def on_death(self, run, grid, is_upgraded, engine) -> str:
+        dmg = 10 if is_upgraded else 6
+        heal = 10 if is_upgraded else 6
+        for idx in range(len(run.enemies)):
+            engine._damage_target(run, f"e{idx+1}", dmg, damage_type="true")
+        engine._heal_target(run, "p0", heal)
+        return f"对所有敌人造成了 {dmg} 点真实伤害，且为玩家回复了 {heal} 点生命。"
+
 ALL_AMULETS = {
     "lucky_coin": LuckyCoinAmulet(),
     "mage_ward": MageWardAmulet(),
@@ -199,4 +266,8 @@ ALL_AMULETS = {
     "abyss_altar_converge": AbyssAltarConvergeAmulet(),
     "abyss_altar_burst": AbyssAltarBurstAmulet(),
     "abyss_altar_end": AbyssAltarEndAmulet(),
+    "tactical_barrack": TacticalBarrackAmulet(),
+    "iron_phalanx_seal": IronPhalanxSealAmulet(),
+    "grand_coronation": GrandCoronationAmulet(),
+    "blade_regiment_banner": BladeRegimentBannerAmulet(),
 }

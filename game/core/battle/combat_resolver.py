@@ -208,6 +208,7 @@ class CombatResolver:
                 take_evt = DamageTakeEvent(run, source, target, final_dmg, is_fatal, damage_type)
                 self.engine.event_bus.dispatch(take_evt)
         elif target == "p0":
+            run.node_data["last_shield_before_dmg"] = p.shield
             if final_dmg > 0:
                 run.node_data["player_damaged_this_turn"] = True
             if is_true:

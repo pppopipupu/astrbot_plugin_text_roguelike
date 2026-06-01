@@ -51,8 +51,13 @@ class EnemyTemplate:
                     if b.id == "strength":
                         strength += b.stacks
         final_dmg = dmg + strength
-        if p.minions and random.random() < 0.5:
-            target_key = random.choice(list(p.minions.keys()))
+        ward_grids = []
+        if p.minions:
+            for grid, mstate in p.minions.items():
+                if any(bf.id == "ward" for bf in mstate.buffs):
+                    ward_grids.append(grid)
+        if ward_grids:
+            target_key = random.choice(ward_grids)
             target = p.minions[target_key]
             m_name = target.name
             before_len = len(run.node_data.get("battle_logs", []))
@@ -60,14 +65,25 @@ class EnemyTemplate:
             after_logs = run.node_data.get("battle_logs", [])
             if len(after_logs) > before_len:
                 dmg_msg = after_logs.pop()
-                logs.append(f"敌人【{enemy.name}】攻击了我方随从【{m_name}】。{dmg_msg}")
+                logs.append(f"敌人【{enemy.name}】受【守护】吸引，攻击了我方随从【{m_name}】。{dmg_msg}")
         else:
-            before_len = len(run.node_data.get("battle_logs", []))
-            engine._damage_target(run, "p0", final_dmg, source=f"enemy:{enemy.name}", damage_type="bludgeoning")
-            after_logs = run.node_data.get("battle_logs", [])
-            if len(after_logs) > before_len:
-                dmg_msg = after_logs.pop()
-                logs.append(f"敌人【{enemy.name}】对玩家发动攻击。{dmg_msg}")
+            if p.minions and random.random() < 0.5:
+                target_key = random.choice(list(p.minions.keys()))
+                target = p.minions[target_key]
+                m_name = target.name
+                before_len = len(run.node_data.get("battle_logs", []))
+                engine._damage_target(run, f"p{target_key}", final_dmg, source=f"enemy:{enemy.name}", damage_type="bludgeoning")
+                after_logs = run.node_data.get("battle_logs", [])
+                if len(after_logs) > before_len:
+                    dmg_msg = after_logs.pop()
+                    logs.append(f"敌人【{enemy.name}】攻击了我方随从【{m_name}】。{dmg_msg}")
+            else:
+                before_len = len(run.node_data.get("battle_logs", []))
+                engine._damage_target(run, "p0", final_dmg, source=f"enemy:{enemy.name}", damage_type="bludgeoning")
+                after_logs = run.node_data.get("battle_logs", [])
+                if len(after_logs) > before_len:
+                    dmg_msg = after_logs.pop()
+                    logs.append(f"敌人【{enemy.name}】对玩家发动攻击。{dmg_msg}")
 
     def execute_intent(self, run, engine, enemy, intent, logs: List[str] = None):
         if logs is None:

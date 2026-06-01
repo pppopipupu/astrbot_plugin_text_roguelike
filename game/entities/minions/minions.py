@@ -164,6 +164,123 @@ class GateGuardStrike(BaseMinionSkill):
         return cfg["feedback"].format(target=tname, damage=damage)
 
 
+class BannerBearerBuff(BaseMinionSkill):
+    def execute(self, run, my_grid, target, engine) -> str:
+        m = run.player.minions[my_grid]
+        is_upgraded = m.id.endswith("+")
+        eligible = [mk for mk, mv in run.player.minions.items() if mk != my_grid]
+        if not eligible:
+            return "没有其他我方随从可以激励。"
+        import random
+        chosen_grid = random.choice(eligible)
+        chosen_minion = run.player.minions[chosen_grid]
+        val = 3 if is_upgraded else 2
+        chosen_minion.atk += val
+        shield_msg = ""
+        if is_upgraded:
+            m.hp = min(m.max_hp, m.hp + 3)
+            shield_msg = "，并恢复自身 3 点生命值"
+        return f"成功激励了【{chosen_minion.name}】使其攻击力本回合提升 {val} 点{shield_msg}。"
+
+
+class PatrolCaptainOrder(BaseMinionSkill):
+    def execute(self, run, my_grid, target, engine) -> str:
+        m = run.player.minions[my_grid]
+        is_upgraded = m.id.endswith("+")
+        heal_val = 5 if is_upgraded else 3
+        shield_val = 5 if is_upgraded else 3
+        for mk, mv in run.player.minions.items():
+            mv.hp = min(mv.max_hp, mv.hp + heal_val)
+        engine._gain_shield(run, "p0", shield_val)
+        return f"为我方所有随从恢复了 {heal_val} 点生命，并为玩家提供了 {shield_val} 点护盾。"
+
+
+class GarrisonLeaderWall(BaseMinionSkill):
+    def execute(self, run, my_grid, target, engine) -> str:
+        m = run.player.minions[my_grid]
+        is_upgraded = m.id.endswith("+")
+        shield_val = 9 if is_upgraded else 6
+        heal_val = 5 if is_upgraded else 3
+        engine._gain_shield(run, "p0", shield_val)
+        for mk, mv in run.player.minions.items():
+            if mv.id.startswith("officer_"):
+                mv.hp = min(mv.max_hp, mv.hp + heal_val)
+        return f"为玩家提供了 {shield_val} 点护盾，并使我方全体士兵随从恢复了 {heal_val} 点生命。"
+
+
+class ValiantHeraldSignal(BaseMinionSkill):
+    def execute(self, run, my_grid, target, engine) -> str:
+        m = run.player.minions[my_grid]
+        is_upgraded = m.id.endswith("+")
+        val = 3 if is_upgraded else 2
+        for mk, mv in run.player.minions.items():
+            mv.atk += val
+        return f"吹响了冲锋信号，我方所有在场随从本回合攻击力提升了 {val} 点！"
+
+
+class SteelcladTacticianStrike(BaseMinionSkill):
+    def execute(self, run, my_grid, target, engine) -> str:
+        m = run.player.minions[my_grid]
+        is_upgraded = m.id.endswith("+")
+        dmg = 9 if is_upgraded else 6
+        t = target or "e1"
+        tname = engine._get_target_name(run, t)
+        enemy_to_attack = None
+        if t.startswith("e"):
+            try:
+                idx = int(t[1:]) - 1
+                if 0 <= idx < len(run.enemies):
+                    enemy_to_attack = run.enemies[idx]
+            except ValueError:
+                pass
+        engine._damage_target(run, t, dmg, damage_type="bludgeoning", source=f"p{my_grid}")
+        is_kill = False
+        if enemy_to_attack and enemy_to_attack.hp <= 0:
+            is_kill = True
+        tok_msg = ""
+        if is_kill:
+            tok_id = "officer_soldier_token+" if is_upgraded else "officer_soldier_token"
+            tok_name = "步兵轻卒+" if is_upgraded else "步兵轻卒"
+            summon_count = 0
+            for _ in range(2):
+                tok_grid = engine._summon_minion(run, tok_id, tok_name, 4 if is_upgraded else 3, 2 if is_upgraded else 1, 0)
+                if tok_grid:
+                    summon_count += 1
+                    tm = run.player.minions[tok_grid]
+                    engine._add_buff_to(tm, "ward", "守护", "敌方单体攻击只能指向该随从")
+            if summon_count > 0:
+                tok_msg = f"\n📢 [战术压制] 成功斩杀目标！在战场上召唤了 {summon_count} 个具有守护的【{tok_name}】！"
+        return f"执行战术压制，对【{tname}】造成了 {dmg} 点钝击伤害。{tok_msg}"
+
+
+class BladeDancerSlash(BaseMinionSkill):
+    def execute(self, run, my_grid, target, engine) -> str:
+        m = run.player.minions[my_grid]
+        is_upgraded = m.id.endswith("+")
+        dmg = 6 if is_upgraded else 4
+        t = target or "e1"
+        tname = engine._get_target_name(run, t)
+        for _ in range(2):
+            engine._damage_target(run, t, dmg, damage_type="slashing", source=f"p{my_grid}")
+        return f"对【{tname}】连续发动两次双重斩击，造成了 {dmg}*2 点伤害。"
+
+
+class AuroraEmperorJudgment(BaseMinionSkill):
+    def execute(self, run, my_grid, target, engine) -> str:
+        m = run.player.minions[my_grid]
+        is_upgraded = m.id.endswith("+")
+        rally = run.node_data.get("rally_count", 0)
+        if rally >= 15:
+            dmg = 22 if is_upgraded else 15
+            dtype = "true"
+        else:
+            dmg = 12 if is_upgraded else 8
+            dtype = "radiant"
+        for idx in range(len(run.enemies) - 1, -1, -1):
+            engine._damage_target(run, f"e{idx+1}", dmg, damage_type=dtype, source=f"p{my_grid}")
+        type_name = "真实" if dtype == "true" else "光耀"
+        return f"降下极光审判，对所有敌人造成了 {dmg} 点{type_name}伤害。"
+
 
 class MinionTemplate:
     def __init__(self, id: str, name: str, skills: List[BaseMinionSkill]):
@@ -171,8 +288,260 @@ class MinionTemplate:
         self.name = name
         self.skills = skills
 
+    def on_minion_death(self, run, grid, event, engine):
+        pass
+
+    def on_card_played(self, run, grid, event, engine):
+        pass
+
+    def on_shield_gain(self, run, grid, event, engine):
+        pass
+
+    def on_damage_take(self, run, grid, event, engine):
+        pass
+
+    def on_card_exhaust(self, run, grid, event, engine):
+        pass
+
+    def on_turn_end(self, run, grid, event, engine):
+        pass
+
+    def on_damage_calculate(self, run, grid, event, engine):
+        pass
+
+    def on_attack(self, run, grid, event, engine):
+        pass
+
+    def on_minion_summon(self, run, grid, event, engine):
+        pass
+
+
+class ShieldGuardTemplate(MinionTemplate):
+    def on_minion_summon(self, run, grid, event, engine):
+        if event.minion_state.id == self.id:
+            engine._add_buff_to(event.minion_state, "ward", "守护", "敌方单体攻击只能指向该随从")
+
+
+class GateGuardTemplate(MinionTemplate):
+    def on_minion_summon(self, run, grid, event, engine):
+        if event.minion_state.id == self.id:
+            engine._add_buff_to(event.minion_state, "ward", "守护", "敌方单体攻击指向该随从")
+
+
+class SoldierTokenTemplate(MinionTemplate):
+    def on_minion_summon(self, run, grid, event, engine):
+        if event.minion_state.id == self.id:
+            engine._add_buff_to(event.minion_state, "ward", "守护", "敌方单体攻击只能指向该随从")
+
+
+class CommanderPatrolCaptainTemplate(MinionTemplate):
+    def on_minion_summon(self, run, grid, event, engine):
+        if event.minion_state.id == self.id:
+            is_upgraded = event.minion_state.id.endswith("+")
+            tok_id = "officer_soldier_token+" if is_upgraded else "officer_soldier_token"
+            tok_name = "步兵轻卒+" if is_upgraded else "步兵轻卒"
+            tok_grid = engine._summon_minion(run, tok_id, tok_name, 4 if is_upgraded else 3, 2 if is_upgraded else 1, 0)
+            if tok_grid:
+                tm = run.player.minions[tok_grid]
+                engine._add_buff_to(tm, "ward", "守护", "敌方单体攻击只能指向该随从")
+                engine._log_event(run, f"📢 【{event.minion_state.name}】进场触发：在格子 [{tok_grid}] 召唤了具有守护的【{tok_name}】。")
+
+
+class MercenaryTemplate(MinionTemplate):
+    def on_attack(self, run, grid, event, engine):
+        m = run.player.minions.get(grid)
+        if m:
+            is_upgraded = m.id.endswith("+")
+            val = 2 if is_upgraded else 1
+            m.atk += val
+            engine._log_event(run, f"⚔️ 【{m.name}】发起攻击，触发攻击时效果：本回合自身攻击力提升了 {val} 点。")
+
+
+class RecruitVanguardTemplate(MinionTemplate):
+    def on_attack(self, run, grid, event, engine):
+        m = run.player.minions.get(grid)
+        if m:
+            rally = run.node_data.get("rally_count", 0)
+            if rally >= 6:
+                is_upgraded = m.id.endswith("+")
+                val = 4 if is_upgraded else 2
+                event.modified_damage += val
+                shield_msg = ""
+                if is_upgraded:
+                    engine._gain_shield(run, "p0", 2)
+                    shield_msg = "并获得 2 点护盾"
+                engine._log_event(run, f"⚔️ 【{m.name}】发起攻击，协作达到了 {rally}！该次攻击伤害额外增加 {val} 点{shield_msg}。")
+
+
+class BannerBearerTemplate(MinionTemplate):
+    def on_card_played(self, run, grid, event, engine):
+        m = run.player.minions.get(grid)
+        if m and event.card.id.replace("+", "") in ("warrior_strike", "warrior_bash", "iron_wave", "warrior_anger", "body_slam", "pommel_strike", "heavy_blade", "uppercut", "feed", "bludgeon"):
+            is_upgraded = m.id.endswith("+")
+            turn_uses = run.node_data.get(f"banner_bearer_use_{grid}", 0)
+            if turn_uses < 1:
+                eligible = [mk for mk, mv in run.player.minions.items() if mk != grid]
+                if eligible:
+                    import random
+                    chosen_grid = random.choice(eligible)
+                    chosen_minion = run.player.minions[chosen_grid]
+                    chosen_minion.attack_actions = 1
+                    val = 3 if is_upgraded else 2
+                    chosen_minion.atk += val
+                    run.node_data[f"banner_bearer_use_{grid}"] = turn_uses + 1
+                    shield_msg = ""
+                    if is_upgraded:
+                        engine._gain_shield(run, f"p{grid}", 3)
+                        shield_msg = f"，且【{m.name}】获得 3 点护盾"
+                    engine._log_event(run, f"🎺 【{m.name}】被动触发！由于打出了物理卡牌，使我方随从【{chosen_minion.name}】重置了攻击次数，且攻击力本回合 +{val}{shield_msg}。")
+
+
+class RoyalGuardTemplate(MinionTemplate):
+    def on_shield_gain(self, run, grid, event, engine):
+        m = run.player.minions.get(grid)
+        if m and event.target == "p0" and event.modified_amount > 0:
+            is_upgraded = m.id.endswith("+")
+            val = 2 if is_upgraded else 1
+            m.atk += val
+            dmg = 3 if is_upgraded else 2
+            dtype = "true" if is_upgraded else "piercing"
+            first_enemy = engine._get_first_alive_enemy(run)
+            if first_enemy:
+                engine._damage_target(run, first_enemy, dmg, damage_type=dtype, source=f"p{grid}")
+                tname = engine._get_target_name(run, first_enemy)
+                engine._log_event(run, f"🛡️ 【{m.name}】在场触发被动：玩家获得护盾使自身攻击力永久提升 {val}，且对【{tname}】造成了 {dmg} 点物理伤害。")
+
+
+class GarrisonLeaderTemplate(MinionTemplate):
+    def on_minion_summon(self, run, grid, event, engine):
+        if event.minion_state.id == self.id:
+            engine._add_buff_to(event.minion_state, "ward", "守护", "敌方单体攻击指向该随从")
+
+    def on_damage_take(self, run, grid, event, engine):
+        m = run.player.minions.get(grid)
+        if m and event.target == "p0" and event.amount > 0:
+            p = run.player
+            if p.shield == 0 and "last_shield_before_dmg" in run.node_data and run.node_data["last_shield_before_dmg"] > 0:
+                is_upgraded = m.id.endswith("+")
+                tok_id = "officer_soldier_token+" if is_upgraded else "officer_soldier_token"
+                tok_name = "步兵轻卒+" if is_upgraded else "步兵轻卒"
+                tok_grid = engine._summon_minion(run, tok_id, tok_name, 4 if is_upgraded else 3, 2 if is_upgraded else 1, 0)
+                shield_val = 5 if is_upgraded else 3
+                engine._gain_shield(run, "p0", shield_val)
+                ref_msg = ""
+                if is_upgraded:
+                    engine._damage_target(run, event.source, event.amount, damage_type="true", source=f"p{grid}")
+                    ref_msg = f"，且向【{engine._get_target_name(run, event.source)}】反弹了 {event.amount} 点真实伤害"
+                tok_msg = f"\n📢 [要塞卫队长] 在格子 [{tok_grid}] 召唤了【{tok_name}】{ref_msg}！" if tok_grid else ""
+                engine._log_event(run, f"🛡️ 【{m.name}】在场被动触发：玩家护盾破碎，玩家获得 {shield_val} 点护盾。{tok_msg}")
+
+
+class SquadSkirmisherTemplate(MinionTemplate):
+    def on_minion_death(self, run, grid, event, engine):
+        m = run.player.minions.get(grid)
+        if m and event.is_enemy and event.source == f"p{grid}":
+            is_upgraded = m.id.endswith("+")
+            tok_id = "officer_soldier_token+" if is_upgraded else "officer_soldier_token"
+            tok_name = "步兵轻卒+" if is_upgraded else "步兵轻卒"
+            tok_grid = engine._summon_minion(run, tok_id, tok_name, 4 if is_upgraded else 3, 2 if is_upgraded else 1, 0)
+            if tok_grid:
+                tm = run.player.minions[tok_grid]
+                engine._add_buff_to(tm, "ward", "守护", "敌方单体攻击指向该随从")
+                if is_upgraded:
+                    tm.attack_actions = 2
+                    engine._log_event(run, f"⚔️ 【{m.name}】斩杀了【{event.name}】！触发被动：在格子 [{tok_grid}] 召唤了【{tok_name}】（本回合可攻击两次）。")
+                else:
+                    engine._log_event(run, f"⚔️ 【{m.name}】斩杀了【{event.name}】！触发被动：在格子 [{tok_grid}] 召唤了【{tok_name}】。")
+
+    def on_card_exhaust(self, run, grid, event, engine):
+        m = run.player.minions.get(grid)
+        if m:
+            is_upgraded = m.id.endswith("+")
+            val = 3 if is_upgraded else 2
+            m.atk += val
+            if is_upgraded:
+                for enemy in list(run.enemies):
+                    engine._add_buff_to(enemy, "minor_vulnerable", "轻度易伤", "受到的所有类型伤害增加 50%", 1)
+                engine._log_event(run, f"🧩 【{m.name}】被动触发：由于有卡牌被消耗，自身本回合攻击力 +{val}，且使所有敌人获得 1 层【轻度易伤】。")
+            else:
+                first_enemy = engine._get_first_alive_enemy(run)
+                if first_enemy:
+                    try:
+                        f_idx = int(first_enemy.replace("e", "")) - 1
+                        if 0 <= f_idx < len(run.enemies):
+                            engine._add_buff_to(run.enemies[f_idx], "minor_vulnerable", "轻度易伤", "受到的所有类型伤害增加 50%", 1)
+                    except ValueError:
+                        pass
+                    tname = engine._get_target_name(run, first_enemy)
+                    engine._log_event(run, f"🧩 【{m.name}】被动触发：由于有卡牌被消耗，自身本回合攻击力 +{val}，且使【{tname}】获得 1 层【轻度易伤】。")
+
+
+class ValiantHeraldTemplate(MinionTemplate):
+    def on_minion_death(self, run, grid, event, engine):
+        from ..cards.base import ALL_CARDS
+        if event.grid == f"p{grid}" and not event.is_enemy:
+            is_upgraded = event.minion_id.endswith("+")
+            if is_upgraded:
+                eligible = [cid for cid in run.player.hand if ALL_CARDS.get(cid) and ALL_CARDS.get(cid).type == "minion"]
+                for cid in eligible:
+                    run.node_data.setdefault("free_minion_cards", []).append(cid)
+                engine._log_event(run, f"🔔 【英勇传令官+】死亡触发谢幕曲：使手牌中所有的随从牌动作点费用全部降为 0！")
+            else:
+                eligible = [cid for cid in run.player.hand if ALL_CARDS.get(cid) and ALL_CARDS.get(cid).type == "minion"]
+                if eligible:
+                    import random
+                    chosen = random.choice(eligible)
+                    run.node_data.setdefault("free_minion_cards", []).append(chosen)
+                    cname = ALL_CARDS.get(chosen).name
+                    engine._log_event(run, f"🔔 【英勇传令官】死亡触发谢幕曲：使手牌随从牌【{cname}】本回合费用降为 0！")
+
+
+class SteelcladTacticianTemplate(MinionTemplate):
+    def on_turn_end(self, run, grid, event, engine):
+        m = run.player.minions.get(grid)
+        if m:
+            rally = run.node_data.get("rally_count", 0)
+            if rally >= 10:
+                is_upgraded = m.id.endswith("+")
+                tok_id = "officer_soldier_token+" if is_upgraded else "officer_soldier_token"
+                tok_name = "步兵轻卒+" if is_upgraded else "步兵轻卒"
+                tok_grid = engine._summon_minion(run, tok_id, tok_name, 4 if is_upgraded else 3, 2 if is_upgraded else 1, 0)
+                coef = 2 if is_upgraded else 1
+                shield_val = len(run.player.minions) * coef
+                engine._gain_shield(run, "p0", shield_val)
+                tok_msg = f"并在格子 [{tok_grid}] 召唤了【{tok_name}】" if tok_grid else "但没有多余格子召唤步兵轻卒"
+                engine._log_event(run, f"🛡️ 【{m.name}】在场回合结束触发被动：协作达到了 {rally}！获得了 {shield_val} 点护盾，{tok_msg}。")
+
+
+class BladeDancerTemplate(MinionTemplate):
+    def on_damage_calculate(self, run, grid, event, engine):
+        if event.source == f"p{grid}":
+            target_enemy = None
+            if event.target.startswith("e"):
+                try:
+                    idx = int(event.target[1:]) - 1
+                    if 0 <= idx < len(run.enemies):
+                        target_enemy = run.enemies[idx]
+                except ValueError:
+                    pass
+            if target_enemy and target_enemy.shield > 0:
+                m = run.player.minions.get(grid)
+                is_upgraded = m.id.endswith("+") if m else False
+                coef = 2.0 if is_upgraded else 1.5
+                event.modified_damage = int(event.modified_damage * coef)
+                event.damage_type = "true"
+                engine._log_event(run, f"⚔️ 【{m.name if m else '双刃轻卫'}】被动触发：由于目标敌人拥有护盾，本次造成的伤害提升为原有的 {int(coef*100)}% 且全部转化为真实伤害（穿透护盾）！")
+
+
+class MinionTemplate:
+    def __init__(self, id: str, name: str, skills: List[BaseMinionSkill]):
+        self.id = id
+        self.name = name
+        self.skills = skills
+
+
 ALL_MINIONS = {
-    "mercenary": MinionTemplate(
+    "mercenary": MercenaryTemplate(
         "mercenary",
         MINION_CONFIG["mercenary"]["name"],
         [
@@ -190,7 +559,7 @@ ALL_MINIONS = {
             )
         ]
     ),
-    "shield_guard": MinionTemplate(
+    "shield_guard": ShieldGuardTemplate(
         "shield_guard",
         MINION_CONFIG["shield_guard"]["name"],
         [
@@ -280,7 +649,7 @@ ALL_MINIONS = {
             )
         ]
     ),
-    "gate_guard": MinionTemplate(
+    "gate_guard": GateGuardTemplate(
         "gate_guard",
         MINION_CONFIG["gate_guard"]["name"],
         [
@@ -291,6 +660,110 @@ ALL_MINIONS = {
                 MINION_CONFIG["gate_guard"]["skills"][0]["desc"]
             )
         ]
+    ),
+    "officer_recruit_vanguard": RecruitVanguardTemplate(
+        "officer_recruit_vanguard",
+        MINION_CONFIG["officer_recruit_vanguard"]["name"],
+        []
+    ),
+    "officer_banner_bearer": BannerBearerTemplate(
+        "officer_banner_bearer",
+        MINION_CONFIG["officer_banner_bearer"]["name"],
+        [
+            BannerBearerBuff(
+                MINION_CONFIG["officer_banner_bearer"]["skills"][0]["name"],
+                MINION_CONFIG["officer_banner_bearer"]["skills"][0]["cost_a"],
+                MINION_CONFIG["officer_banner_bearer"]["skills"][0]["cost_ba"],
+                MINION_CONFIG["officer_banner_bearer"]["skills"][0]["desc"]
+            )
+        ]
+    ),
+    "commander_patrol_captain": CommanderPatrolCaptainTemplate(
+        "commander_patrol_captain",
+        MINION_CONFIG["commander_patrol_captain"]["name"],
+        [
+            PatrolCaptainOrder(
+                MINION_CONFIG["commander_patrol_captain"]["skills"][0]["name"],
+                MINION_CONFIG["commander_patrol_captain"]["skills"][0]["cost_a"],
+                MINION_CONFIG["commander_patrol_captain"]["skills"][0]["cost_ba"],
+                MINION_CONFIG["commander_patrol_captain"]["skills"][0]["desc"]
+            )
+        ]
+    ),
+    "officer_royal_guard": RoyalGuardTemplate(
+        "officer_royal_guard",
+        MINION_CONFIG["officer_royal_guard"]["name"],
+        []
+    ),
+    "commander_garrison_leader": GarrisonLeaderTemplate(
+        "commander_garrison_leader",
+        MINION_CONFIG["commander_garrison_leader"]["name"],
+        [
+            GarrisonLeaderWall(
+                MINION_CONFIG["commander_garrison_leader"]["skills"][0]["name"],
+                MINION_CONFIG["commander_garrison_leader"]["skills"][0]["cost_a"],
+                MINION_CONFIG["commander_garrison_leader"]["skills"][0]["cost_ba"],
+                MINION_CONFIG["commander_garrison_leader"]["skills"][0]["desc"]
+            )
+        ]
+    ),
+    "officer_squad_skirmisher": SquadSkirmisherTemplate(
+        "officer_squad_skirmisher",
+        MINION_CONFIG["officer_squad_skirmisher"]["name"],
+        []
+    ),
+    "commander_valiant_herald": ValiantHeraldTemplate(
+        "commander_valiant_herald",
+        MINION_CONFIG["commander_valiant_herald"]["name"],
+        [
+            ValiantHeraldSignal(
+                MINION_CONFIG["commander_valiant_herald"]["skills"][0]["name"],
+                MINION_CONFIG["commander_valiant_herald"]["skills"][0]["cost_a"],
+                MINION_CONFIG["commander_valiant_herald"]["skills"][0]["cost_ba"],
+                MINION_CONFIG["commander_valiant_herald"]["skills"][0]["desc"]
+            )
+        ]
+    ),
+    "commander_steelclad_tactician": SteelcladTacticianTemplate(
+        "commander_steelclad_tactician",
+        MINION_CONFIG["commander_steelclad_tactician"]["name"],
+        [
+            SteelcladTacticianStrike(
+                MINION_CONFIG["commander_steelclad_tactician"]["skills"][0]["name"],
+                MINION_CONFIG["commander_steelclad_tactician"]["skills"][0]["cost_a"],
+                MINION_CONFIG["commander_steelclad_tactician"]["skills"][0]["cost_ba"],
+                MINION_CONFIG["commander_steelclad_tactician"]["skills"][0]["desc"]
+            )
+        ]
+    ),
+    "officer_blade_dancer": BladeDancerTemplate(
+        "officer_blade_dancer",
+        MINION_CONFIG["officer_blade_dancer"]["name"],
+        [
+            BladeDancerSlash(
+                MINION_CONFIG["officer_blade_dancer"]["skills"][0]["name"],
+                MINION_CONFIG["officer_blade_dancer"]["skills"][0]["cost_a"],
+                MINION_CONFIG["officer_blade_dancer"]["skills"][0]["cost_ba"],
+                MINION_CONFIG["officer_blade_dancer"]["skills"][0]["desc"]
+            )
+        ]
+    ),
+    "commander_aurora_emperor": MinionTemplate(
+        "commander_aurora_emperor",
+        MINION_CONFIG["commander_aurora_emperor"]["name"],
+        [
+            AuroraEmperorJudgment(
+                MINION_CONFIG["commander_aurora_emperor"]["skills"][0]["name"],
+                MINION_CONFIG["commander_aurora_emperor"]["skills"][0]["cost_a"],
+                MINION_CONFIG["commander_aurora_emperor"]["skills"][0]["cost_ba"],
+                MINION_CONFIG["commander_aurora_emperor"]["skills"][0]["desc"]
+            )
+        ]
+    ),
+    "officer_soldier_token": SoldierTokenTemplate(
+        "officer_soldier_token",
+        MINION_CONFIG["officer_soldier_token"]["name"],
+        []
     )
 }
 

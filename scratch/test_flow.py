@@ -1738,6 +1738,72 @@ class TestRoguePlugin(unittest.TestCase):
         self.assertEqual(run.player.actions, 4)
         self.assertEqual(run.node_data["action_surge_uses"], 1)
 
+        run.node_data["action_surge_uses"] = 2
+        run.player.actions = 2
+        generator_sk = router.handle_command("test_warrior_user", ["sk"])
+        res_text_sk = "\n".join(list(generator_sk))
+        self.assertIn("额外", res_text_sk)
+        self.assertEqual(run.player.actions, 4)
+        self.assertEqual(run.node_data["action_surge_uses"], 1)
+
+        run.node_data["action_surge_uses"] = 2
+        run.player.actions = 2
+        generator_k = router.handle_command("test_warrior_user", ["k"])
+        res_text_k = "\n".join(list(generator_k))
+        self.assertIn("额外", res_text_k)
+        self.assertEqual(run.player.actions, 4)
+        self.assertEqual(run.node_data["action_surge_uses"], 1)
+
+    def test_warrior_ward_and_rally(self):
+        from game.core.battle_engine import BattleEngine
+        from game.models.state import GameRun, PlayerState, EnemyState, MinionState, Card
+        from game.entities.enemies.base import EnemyTemplate
+        class DummySaveManager:
+            def load_admin_config(self):
+                return {}
+            def load_stats(self, uid):
+                class DummyStats:
+                    def __init__(self):
+                        self.selected_class = "战士"
+                        self.selected_subclass = ""
+                return DummyStats()
+            def save_save(self, uid, run):
+                pass
+            def save_stats(self, uid, stats):
+                pass
+        sm = DummySaveManager()
+        engine = BattleEngine(sm)
+        player = PlayerState(
+            hp=80,
+            max_hp=80,
+            shield=0,
+            gold=100,
+            stage=1,
+            deck=["officer_recruit_vanguard"],
+            hand=["officer_recruit_vanguard"],
+            actions=2,
+            bonus_actions=1
+        )
+        run = GameRun("test_user_w", "battle", player=player, enemies=[EnemyState("测试史莱姆", 20, 20, 0, 1, 0, 1, 0)])
+        p = run.player
+        p.selected_class = "战士"
+        engine._init_battle_node(run)
+        self.assertIn("rally_count", run.node_data)
+        self.assertEqual(run.node_data["rally_count"], 0)
+        engine._summon_minion(run, "shield_guard", "盾卫", 6, 2, 0)
+        self.assertEqual(run.node_data["rally_count"], 1)
+        self.assertIn("1", p.minions)
+        m = p.minions["1"]
+        self.assertTrue(any(b.id == "ward" for b in m.buffs))
+        enemy_template = EnemyTemplate("test_slime")
+        run.enemies[0].hp = 20
+        enemy_template._perform_attack(run, engine, run.enemies[0], 5, [])
+        self.assertEqual(p.minions["1"].hp, 1)
+        p.hand = ["officer_recruit_vanguard"]
+        run.node_data["free_minion_cards"] = ["officer_recruit_vanguard"]
+        engine.play_card(run, 1, "e1")
+        self.assertEqual(run.player.actions, 2)
+
 if __name__ == "__main__":
     unittest.main()
 

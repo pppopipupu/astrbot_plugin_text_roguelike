@@ -278,7 +278,7 @@ class ClassCommand(CommandHandler, names=["职业", "class"]):
             else:
                 yield "❌ 格式错误。请使用 /rogue 职业 或 /rogue 职业 选择/c <职业名|子职业序号>。"
 
-class SkillCommand(CommandHandler, names=["技能", "skill"]):
+class SkillCommand(CommandHandler, names=["技能", "skill", "sk", "k"]):
     def execute(self, router, user_id: str, parts: list[str]) -> Generator[str, None, None]:
         run = router.save_manager.load_save(user_id)
         if not run or run.node_type != "battle":
@@ -289,8 +289,9 @@ class SkillCommand(CommandHandler, names=["技能", "skill"]):
         if p_class != "战士":
             yield "❌ 当前职业不是战士，无法使用【动作如潮】技能。"
             return
-        if len(parts) < 2 or parts[1].lower() not in ("as", "action_surge", "动作如潮"):
-            yield "💡 战士职业技能使用命令：/rogue 技能 as （或 /rogue skill as）"
+        skill_arg = parts[1].lower() if len(parts) >= 2 else "as"
+        if skill_arg not in ("as", "action_surge", "动作如潮"):
+            yield "💡 战士职业技能使用命令：/rogue 技能 as （或 /rogue sk as）"
             return
         uses = run.node_data.get("action_surge_uses", 0)
         if uses <= 0:

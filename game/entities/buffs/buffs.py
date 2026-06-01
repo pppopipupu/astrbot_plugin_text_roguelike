@@ -589,6 +589,17 @@ class ManaLeakBuff(BuffImpl):
                 if buff_state in event.run.player.buffs:
                     event.run.player.buffs.remove(buff_state)
 
+class AuroraEmperorBuff(BuffImpl):
+    def on_damage_calculate(self, event, buff_state, entity):
+        if event.source.startswith("p") and event.source != "p0" and event.damage_type == "attack":
+            shield = 3 if self.upgraded else 2
+            event.engine._gain_shield(event.run, "p0", shield)
+            msg = f"🛡️ [极光圣域] 我方随从发起攻击，玩家获得 {shield} 点护盾。"
+            if self.upgraded:
+                event.engine._draw_cards(event.run.player, 1, event.run)
+                msg = f"🛡️ [极光圣域+] 我方随从发起攻击，玩家获得 {shield} 点护盾并抽取 1 张牌。"
+            event.engine._log_event(event.run, msg)
+
 BUFF_MAP = {
     "tactical_focus": TacticalFocusBuff,
     "quicken": QuickenBuff,
@@ -625,6 +636,7 @@ BUFF_MAP = {
     "metallicize": MetallicizeBuff,
     "demon_form": DemonFormBuff,
     "double_tap_buff": DoubleTapBuff,
+    "commander_aurora_emperor": AuroraEmperorBuff,
 }
 
 def get_buff_impl(buff_id: str, stacks: int, stacks2: Optional[int] = None) -> Optional[BuffImpl]:

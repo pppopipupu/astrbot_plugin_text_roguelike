@@ -1,7 +1,8 @@
 from ...models.events import (
     BattleStartEvent, BattleWinEvent, TurnStartEvent, TurnEndEvent,
     CardPlayEvent, CardPlayedEvent, DamageCalculateEvent, DamageTakeEvent,
-    HealEvent, MinionSummonEvent, ShieldGainEvent, ShieldDecayEvent
+    HealEvent, MinionSummonEvent, ShieldGainEvent, ShieldDecayEvent,
+    MinionDeathEvent, CardExhaustEvent
 )
 
 class RelicTriggerHandler:
@@ -154,7 +155,7 @@ class BuffTriggerHandler:
 
     def on_damage_calculate(self, event):
         from ...entities.buffs.buffs import get_buff_impl
-        if event.source == "p0":
+        if event.source.startswith("p"):
             for b in list(event.run.player.buffs):
                 impl = get_buff_impl(b.id, b.stacks, getattr(b, "stacks2", None))
                 if impl and hasattr(impl, "on_damage_calculate"):
@@ -230,14 +231,19 @@ class AmuletTriggerHandler:
         self.engine = engine
         event_bus.subscribe(CardPlayedEvent, self.on_card_played)
         event_bus.subscribe(DamageTakeEvent, self.on_damage_take)
+        event_bus.subscribe(MinionSummonEvent, self.on_minion_summon)
+        event_bus.subscribe(DamageCalculateEvent, self.on_damage_calculate)
 
     def on_card_played(self, event):
         from ...entities.amulets.amulets import ALL_AMULETS
         for ak, av in list(event.run.player.amulets.items()):
             base_id = av.id[:-1] if av.id.endswith("+") else av.id
             template = ALL_AMULETS.get(base_id)
-            if template and hasattr(template, "on_spell_played") and event.card.type == "spell":
-                template.on_spell_played(event.run, ak, event.card, self.engine)
+            if template:
+                if event.card.type == "spell" and hasattr(template, "on_spell_played"):
+                    template.on_spell_played(event.run, ak, event.card, self.engine)
+                if hasattr(template, "on_card_played"):
+                    template.on_card_played(event.run, ak, event, self.engine)
 
     def on_damage_take(self, event):
         from ...entities.amulets.amulets import ALL_AMULETS
@@ -249,3 +255,136 @@ class AmuletTriggerHandler:
                     msg = template.on_take_damage(event.run, ak, event.source, event.amount, self.engine)
                     if msg:
                         self.engine._log_event(event.run, msg)
+
+    def on_minion_summon(self, event):
+        from ...entities.amulets.amulets import ALL_AMULETS
+        for ak, av in list(event.run.player.amulets.items()):
+            base_id = av.id[:-1] if av.id.endswith("+") else av.id
+            template = ALL_AMULETS.get(base_id)
+            if template and hasattr(template, "on_minion_summon"):
+                template.on_minion_summon(event.run, ak, event, self.engine)
+
+    def on_damage_calculate(self, event):
+        from ...entities.amulets.amulets import ALL_AMULETS
+        for ak, av in list(event.run.player.amulets.items()):
+            base_id = av.id[:-1] if av.id.endswith("+") else av.id
+            template = ALL_AMULETS.get(base_id)
+            if template and hasattr(template, "on_damage_calculate"):
+                template.on_damage_calculate(event.run, ak, event, self.engine)
+
+
+class RallyTriggerHandler:
+    def __init__(self, event_bus, engine):
+        self.engine = engine
+        event_bus.subscribe(BattleStartEvent, self.on_battle_start)
+        event_bus.subscribe(MinionSummonEvent, self.on_minion_summon)
+
+    def on_battle_start(self, event):
+        event.run.node_data["rally_count"] = 0
+
+    def on_minion_summon(self, event):
+        event.run.node_data["rally_count"] = event.run.node_data.get("rally_count", 0) + 1
+
+
+class MinionTriggerHandler:
+    def __init__(self, event_bus, engine):
+        self.engine = engine
+        event_bus.subscribe(MinionDeathEvent, self.on_minion_death)
+        event_bus.subscribe(CardPlayedEvent, self.on_card_played)
+        event_bus.subscribe(ShieldGainEvent, self.on_shield_gain)
+        event_bus.subscribe(DamageTakeEvent, self.on_damage_take)
+        event_bus.subscribe(CardExhaustEvent, self.on_card_exhaust)
+        event_bus.subscribe(TurnEndEvent, self.on_turn_end)
+        event_bus.subscribe(DamageCalculateEvent, self.on_damage_calculate)
+        event_bus.subscribe(MinionSummonEvent, self.on_minion_summon)
+        event_bus.subscribe(CardPlayEvent, self.on_card_play)
+
+    def on_card_play(self, event):
+        free_cards = event.run.node_data.get("free_minion_cards", [])
+        if free_cards:
+            matched = None
+            if event.card.id in free_cards:
+                matched = event.card.id
+            elif event.card.id.endswith("+") and event.card.id[:-1] in free_cards:
+                matched = event.card.id[:-1]
+            elif (event.card.id + "+") in free_cards:
+                matched = event.card.id + "+"
+            if matched:
+                event.cost_a = 0
+                event.cost_ba = 0
+                try:
+                    free_cards.remove(matched)
+                except ValueError:
+                    pass
+
+    def on_minion_death(self, event):
+        from ...entities.minions.minions import ALL_MINIONS
+        for grid, mstate in list(event.run.player.minions.items()):
+            base_id = mstate.id.rstrip("+")
+            template = ALL_MINIONS.get(base_id)
+            if template and hasattr(template, "on_minion_death"):
+                template.on_minion_death(event.run, grid, event, self.engine)
+
+    def on_card_played(self, event):
+        from ...entities.minions.minions import ALL_MINIONS
+        for grid, mstate in list(event.run.player.minions.items()):
+            base_id = mstate.id.rstrip("+")
+            template = ALL_MINIONS.get(base_id)
+            if template and hasattr(template, "on_card_played"):
+                template.on_card_played(event.run, grid, event, self.engine)
+
+    def on_shield_gain(self, event):
+        from ...entities.minions.minions import ALL_MINIONS
+        for grid, mstate in list(event.run.player.minions.items()):
+            base_id = mstate.id.rstrip("+")
+            template = ALL_MINIONS.get(base_id)
+            if template and hasattr(template, "on_shield_gain"):
+                template.on_shield_gain(event.run, grid, event, self.engine)
+
+    def on_damage_take(self, event):
+        from ...entities.minions.minions import ALL_MINIONS
+        for grid, mstate in list(event.run.player.minions.items()):
+            base_id = mstate.id.rstrip("+")
+            template = ALL_MINIONS.get(base_id)
+            if template and hasattr(template, "on_damage_take"):
+                template.on_damage_take(event.run, grid, event, self.engine)
+
+    def on_card_exhaust(self, event):
+        from ...entities.minions.minions import ALL_MINIONS
+        for grid, mstate in list(event.run.player.minions.items()):
+            base_id = mstate.id.rstrip("+")
+            template = ALL_MINIONS.get(base_id)
+            if template and hasattr(template, "on_card_exhaust"):
+                template.on_card_exhaust(event.run, grid, event, self.engine)
+
+    def on_turn_end(self, event):
+        from ...entities.minions.minions import ALL_MINIONS
+        for grid, mstate in list(event.run.player.minions.items()):
+            base_id = mstate.id.rstrip("+")
+            template = ALL_MINIONS.get(base_id)
+            if template and hasattr(template, "on_turn_end"):
+                template.on_turn_end(event.run, grid, event, self.engine)
+
+    def on_damage_calculate(self, event):
+        from ...entities.minions.minions import ALL_MINIONS
+        for grid, mstate in list(event.run.player.minions.items()):
+            base_id = mstate.id.rstrip("+")
+            template = ALL_MINIONS.get(base_id)
+            if template and hasattr(template, "on_damage_calculate"):
+                template.on_damage_calculate(event.run, grid, event, self.engine)
+            if event.source == f"p{grid}" and event.damage_type == "attack":
+                if template and hasattr(template, "on_attack"):
+                    template.on_attack(event.run, grid, event, self.engine)
+
+    def on_minion_summon(self, event):
+        from ...entities.minions.minions import ALL_MINIONS
+        for grid, mstate in list(event.run.player.minions.items()):
+            base_id = mstate.id.rstrip("+")
+            template = ALL_MINIONS.get(base_id)
+            if template and hasattr(template, "on_minion_summon"):
+                template.on_minion_summon(event.run, grid, event, self.engine)
+        new_mstate = event.minion_state
+        base_id = new_mstate.id.rstrip("+")
+        template = ALL_MINIONS.get(base_id)
+        if template and hasattr(template, "on_minion_summon"):
+            template.on_minion_summon(event.run, event.grid, event, self.engine)

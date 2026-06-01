@@ -185,8 +185,8 @@ class SummonMinionCard(Card):
                     tname = engine._get_target_name(run, first_enemy)
                     battlecry_msg = f"\n⚔️ [入场曲] 【雇佣兵+】立即攻击了【{tname}】，造成了 {self.minion_atk} 点伤害！"
             elif self.id == "shield_guard+":
-                engine._gain_shield(run, "p0", 6)
-                battlecry_msg = f"\n🛡️ [入场曲] 获得了 6 点入场曲护盾！"
+                engine._gain_shield(run, "p0", 8)
+                battlecry_msg = f"\n🛡️ [入场曲] 获得了 8 点入场曲护盾！"
             elif self.id == "minion_icerainboww+":
                 engine._gain_shield(run, "p0", 8)
                 for enemy in list(run.enemies):

@@ -252,3 +252,271 @@ class ImperviousCard(Card):
         shield = 40 if self.upgraded else 30
         engine._gain_shield(run, "p0", shield)
         return f"使用了【岿然不动】，获得了 {shield} 点护盾。"
+
+
+@register_card("officer_recruit_vanguard")
+class OfficerRecruitVanguardCard(Card):
+    def execute(self, run, target, engine) -> str:
+        hp = 6 if self.upgraded else 4
+        atk = 3 if self.upgraded else 2
+        grid = engine._summon_minion(run, self.id, self.name, hp, atk, 0)
+        if grid:
+            msg = f"在格子 [{grid}] 召唤了【{self.name}】。"
+            rally = run.node_data.get("rally_count", 0)
+            if rally >= 4:
+                dmg = 5 if self.upgraded else 3
+                first_enemy = engine._get_first_alive_enemy(run)
+                if first_enemy:
+                    engine._damage_target(run, first_enemy, dmg, damage_type="piercing")
+                    tname = engine._get_target_name(run, first_enemy)
+                    msg += f"\n⚔️ [入场曲] 协作达到了 {rally}！对【{tname}】造成了 {dmg} 点穿刺伤害，并抽了 1 张牌。"
+                else:
+                    msg += f"\n⚔️ [入场曲] 协作达到了 {rally}！但场上没有活着的敌人，抽了 1 张牌。"
+                engine._draw_cards(run.player, 1, run)
+            else:
+                shield = 4 if self.upgraded else 3
+                engine._gain_shield(run, "p0", shield)
+                msg += f"\n🛡️ [入场曲] 协作仅为 {rally}，玩家获得了 {shield} 点护盾。"
+            return msg
+        return "战场已满，召唤失败。"
+
+
+@register_card("officer_banner_bearer")
+class OfficerBannerBearerCard(Card):
+    def execute(self, run, target, engine) -> str:
+        hp = 8 if self.upgraded else 5
+        atk = 2 if self.upgraded else 1
+        grid = engine._summon_minion(run, self.id, self.name, hp, atk, 0)
+        if grid:
+            msg = f"在格子 [{grid}] 召唤了【{self.name}】。"
+            has_cmd = any(m.id.startswith("commander_") for m in run.player.minions.values() if m.id != self.id)
+            if has_cmd:
+                engine._draw_cards(run.player, 1, run)
+                if self.upgraded:
+                    run.player.actions += 1
+                    run.player.bonus_actions += 1
+                    msg += f"\n✨ [入场曲] 检测到我方指挥官随从在场，抽了 1 张牌且获得了 1A 1BA！"
+                else:
+                    run.player.bonus_actions += 1
+                    msg += f"\n✨ [入场曲] 检测到我方指挥官随从在场，抽了 1 张牌且获得了 1BA！"
+            return msg
+        return "战场已满，召唤失败。"
+
+
+@register_card("commander_patrol_captain")
+class CommanderPatrolCaptainCard(Card):
+    def execute(self, run, target, engine) -> str:
+        hp = 10 if self.upgraded else 7
+        atk = 4 if self.upgraded else 3
+        grid = engine._summon_minion(run, self.id, self.name, hp, atk, 0)
+        if grid:
+            msg = f"在格子 [{grid}] 召唤了【{self.name}】。"
+            tok_id = "officer_soldier_token+" if self.upgraded else "officer_soldier_token"
+            tok_name = "步兵轻卒+" if self.upgraded else "步兵轻卒"
+            tok_grid = engine._summon_minion(run, tok_id, tok_name, 4 if self.upgraded else 3, 2 if self.upgraded else 1, 0)
+            if tok_grid:
+                msg += f"\n📢 [入场曲] 并在格子 [{tok_grid}] 召唤了【{tok_name}】。"
+                m = run.player.minions[tok_grid]
+                engine._add_buff_to(m, "ward", "守护", "敌方单体攻击只能指向该随从")
+            return msg
+        return "战场已满，召唤失败。"
+
+
+@register_card("officer_royal_guard")
+class OfficerRoyalGuardCard(Card):
+    def execute(self, run, target, engine) -> str:
+        hp = 11 if self.upgraded else 8
+        atk = 4 if self.upgraded else 3
+        grid = engine._summon_minion(run, self.id, self.name, hp, atk, 0)
+        if grid:
+            msg = f"在格子 [{grid}] 召唤了【{self.name}】。"
+            rally = run.node_data.get("rally_count", 0)
+            if rally >= 6:
+                m = run.player.minions[grid]
+                engine._add_buff_to(m, "ward", "守护", "敌方单体攻击只能指向该随从")
+                msg += f"\n🛡️ [入场曲] 协作达到了 {rally}！近卫铁骑获得了【守护】！"
+            return msg
+        return "战场已满，召唤失败。"
+
+
+@register_card("commander_garrison_leader")
+class CommanderGarrisonLeaderCard(Card):
+    def execute(self, run, target, engine) -> str:
+        hp = 13 if self.upgraded else 9
+        atk = 5 if self.upgraded else 4
+        grid = engine._summon_minion(run, self.id, self.name, hp, atk, 0)
+        if grid:
+            msg = f"在格子 [{grid}] 召唤了【{self.name}】。"
+            m = run.player.minions[grid]
+            engine._add_buff_to(m, "ward", "守护", "敌方单体攻击只能指向该随从")
+            buff_hp = 6 if self.upgraded else 4
+            for mk, mv in run.player.minions.items():
+                if mk != grid and mv.id.startswith("officer_"):
+                    mv.max_hp += buff_hp
+                    mv.hp += buff_hp
+            msg += f"\n🏰 [入场曲] 要塞卫队长自身获得【守护】，并使其他在场士兵最大生命值与血量值提升 {buff_hp} 点！"
+            return msg
+        return "战场已满，召唤失败。"
+
+
+@register_card("officer_squad_skirmisher")
+class OfficerSquadSkirmisherCard(Card):
+    def execute(self, run, target, engine) -> str:
+        hp = 8 if self.upgraded else 5
+        atk = 4 if self.upgraded else 3
+        grid = engine._summon_minion(run, self.id, self.name, hp, atk, 0)
+        if grid:
+            msg = f"在格子 [{grid}] 召唤了【{self.name}】。"
+            rally = run.node_data.get("rally_count", 0)
+            first_enemy = engine._get_first_alive_enemy(run)
+            if rally >= 8:
+                dmg = 9 if self.upgraded else 6
+                if first_enemy:
+                    engine._damage_target(run, first_enemy, dmg, damage_type="slashing")
+                    tname = engine._get_target_name(run, first_enemy)
+                    try:
+                        f_idx = int(first_enemy.replace("e", "")) - 1
+                        if 0 <= f_idx < len(run.enemies):
+                            engine._add_buff_to(run.enemies[f_idx], "stun", "眩晕", "下一回合无法行动", 1)
+                    except ValueError:
+                        pass
+                    msg += f"\n⚡ [入场曲] 协作达到了 {rally}！对【{tname}】造成了 {dmg} 点挥砍伤害并使其眩晕了 1 回合！"
+                else:
+                    msg += f"\n⚡ [入场曲] 协作达到了 {rally}！但场上没有活着的敌人。"
+            else:
+                dmg = 5 if self.upgraded else 3
+                if first_enemy:
+                    engine._damage_target(run, first_enemy, dmg, damage_type="slashing")
+                    tname = engine._get_target_name(run, first_enemy)
+                    msg += f"\n⚔️ [入场曲] 对【{tname}】造成了 {dmg} 点挥砍伤害。"
+                else:
+                    msg += f"\n⚔️ [入场曲] 没有活着的敌人。"
+            return msg
+        return "战场已满，召唤失败。"
+
+
+@register_card("commander_valiant_herald")
+class CommanderValiantHeraldCard(Card):
+    def execute(self, run, target, engine) -> str:
+        hp = 11 if self.upgraded else 8
+        atk = 4 if self.upgraded else 3
+        grid = engine._summon_minion(run, self.id, self.name, hp, atk, 0)
+        if grid:
+            msg = f"在格子 [{grid}] 召唤了【{self.name}】。"
+            eligible = []
+            from .base import ALL_CARDS
+            for cid in run.player.draw_pile:
+                card = ALL_CARDS.get(cid)
+                if card and card.type == "minion" and card.id.startswith("officer_"):
+                    eligible.append(cid)
+            if eligible:
+                import random
+                chosen = random.choice(eligible)
+                run.player.draw_pile.remove(chosen)
+                run.player.hand.append(chosen)
+                cname = ALL_CARDS.get(chosen).name
+                rally = run.node_data.get("rally_count", 0)
+                if rally >= 6:
+                    run.player.hand.remove(chosen)
+                    new_cid = chosen + "+" if (not chosen.endswith("+")) else chosen
+                    run.player.hand.append(new_cid)
+                    run.node_data.setdefault("temp_retain_cards", []).append(new_cid)
+                    msg += f"\n📣 [入场曲] 协作达到了 {rally}！从卡组中检索并抽取了士兵随从牌【{cname}】，并使其本回合获得【保留】且动作费用 A 减少了 1！"
+                else:
+                    msg += f"\n📣 [入场曲] 从卡组中检索并抽取了士兵随从牌【{cname}】。"
+            else:
+                msg += "\n📣 [入场曲] 检索失败，卡组中没有士兵随从牌。"
+            return msg
+        return "战场已满，召唤失败。"
+
+
+@register_card("commander_steelclad_tactician")
+class CommanderSteelcladTacticianCard(Card):
+    def execute(self, run, target, engine) -> str:
+        hp = 16 if self.upgraded else 12
+        atk = 5 if self.upgraded else 4
+        grid = engine._summon_minion(run, self.id, self.name, hp, atk, 0)
+        if grid:
+            return f"在格子 [{grid}] 召唤了【{self.name}】。"
+        return "战场已满，召唤失败。"
+
+
+@register_card("officer_blade_dancer")
+class OfficerBladeDancerCard(Card):
+    def execute(self, run, target, engine) -> str:
+        hp = 12 if self.upgraded else 9
+        atk = 6 if self.upgraded else 5
+        grid = engine._summon_minion(run, self.id, self.name, hp, atk, 0)
+        if grid:
+            msg = f"在格子 [{grid}] 召唤了【{self.name}】。"
+            m = run.player.minions[grid]
+            rally = run.node_data.get("rally_count", 0)
+            if rally >= 12:
+                m.attack_actions = 2
+                bonus = ""
+                if self.upgraded:
+                    run.player.actions += 1
+                    bonus = "，且玩家获得了 1A"
+                msg += f"\n⚔️ [入场曲] 协作达到了 {rally}！双刃轻卫本回合可以攻击两次{bonus}！"
+            has_cmd = any(mv.id.startswith("commander_") for mv in run.player.minions.values() if mv.id != self.id)
+            if has_cmd:
+                tok_id = "officer_blade_dancer+" if self.upgraded else "officer_blade_dancer"
+                tok_name = "【克隆体】双刃轻卫+" if self.upgraded else "【克隆体】双刃轻卫"
+                tok_grid = engine._summon_minion(run, tok_id, tok_name, hp, atk, 0)
+                if tok_grid:
+                    msg += f"\n👥 [入场曲] 指挥官在场！在格子 [{tok_grid}] 召唤了该随从的克隆体！"
+            return msg
+        return "战场已满，召唤失败。"
+
+
+@register_card("commander_aurora_emperor")
+class CommanderAuroraEmperorCard(Card):
+    def execute(self, run, target, engine) -> str:
+        hp = 18 if self.upgraded else 14
+        atk = 8 if self.upgraded else 6
+        grid = engine._summon_minion(run, self.id, self.name, hp, atk, 0)
+        if grid:
+            msg = f"在格子 [{grid}] 召唤了【{self.name}】。"
+            for mk, mv in run.player.minions.items():
+                if mk != grid and mv.id.startswith("officer_"):
+                    mv.actions += 2
+                    mv.attack_actions = 1
+            buff_name = "极光圣域+" if self.upgraded else "极光圣域"
+            buff_desc = "我方随从发起普攻时玩家获得 3 点护盾且抽 1 卡" if self.upgraded else "我方随从发起普攻时玩家获得 2 点护盾"
+            engine._add_buff_to(run.player, self.id, buff_name, buff_desc, 1)
+            if self.upgraded:
+                engine._gain_shield(run, "p0", 12)
+                msg += f"\n🌟 [入场曲] 使在场所有士兵随从行动点 A 增加 2 且能够立刻发起一次攻击！挂载了【极光圣域+】并为玩家提供了 12 点护盾。"
+            else:
+                msg += f"\n🌟 [入场曲] 使在场所有士兵随从行动点 A 增加 2 且能够立刻发起一次攻击！挂载了【极光圣域】形态。"
+            return msg
+        return "战场已满，召唤失败。"
+
+
+@register_card("tactical_barrack")
+@register_card("iron_phalanx_seal")
+@register_card("grand_coronation")
+@register_card("blade_regiment_banner")
+class DeployWarriorAmuletCard(Card):
+    def __init__(self, id, name, color, type, cost_a, cost_ba, countdown, amulet_desc, desc=""):
+        super().__init__(id, name, color, type, cost_a, cost_ba, countdown=countdown, desc=desc)
+        self.amulet_desc = amulet_desc
+
+    def execute(self, run, target, engine) -> str:
+        grid = engine._get_free_grid(run.player)
+        from ...data.card_data import CARD_CONFIG
+        cfg = CARD_CONFIG.get(self.id.replace("+", ""), {})
+        if grid:
+            cd = self.countdown
+            if "ancient_keyring" in run.player.relics:
+                import random
+                if random.random() < 0.5:
+                    cd = max(1, cd - 1)
+            from ...models.state import AmuletState
+            run.player.amulets[grid] = AmuletState(self.id, self.name, cd, self.amulet_desc)
+            if getattr(run.player, "subclass", "") == "秘钥学者":
+                engine._heal_target(run, "p0", 3)
+                engine._gain_shield(run, "p0", 4)
+            feedback_success = cfg.get("feedback_success", "将【{name}】部署到了格子 [{grid}]。")
+            return feedback_success.format(name=self.name, grid=grid)
+        return cfg.get("feedback_fail", "战场格子已满，部署失败。")
