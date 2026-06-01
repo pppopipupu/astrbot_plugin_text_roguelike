@@ -165,9 +165,18 @@ class TestRoguePlugin(unittest.TestCase):
         engine.end_turn(run)
         self.assertFalse(any(b.id == "tactical_focus" for b in player.buffs))
         player.buffs.append(BuffState(id="tactical_focus", name="无法抽牌", desc="本回合无法再抽牌", stacks=2))
+        player.draw_pile = ["dagger_throw"] * 10
+        player.discard_pile = []
+        player.hand = []
         engine.end_turn(run)
+        self.assertEqual(len(player.hand), 6)
         self.assertTrue(any(b.id == "tactical_focus" for b in player.buffs))
         self.assertEqual(next(b for b in player.buffs if b.id == "tactical_focus").stacks, 1)
+        curr_hand_len = len(player.hand)
+        engine._draw_cards(player, 1, run)
+        self.assertEqual(len(player.hand), curr_hand_len)
+        engine._draw_cards(player, 1, run, ignore_focus=True)
+        self.assertEqual(len(player.hand), curr_hand_len + 1)
         engine.end_turn(run)
         self.assertFalse(any(b.id == "tactical_focus" for b in player.buffs))
 

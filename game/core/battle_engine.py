@@ -70,8 +70,8 @@ class BattleEngine(BaseBattleEngine):
     def _get_free_grid(self, p: PlayerState) -> Optional[str]:
         return self.combat_resolver.get_free_grid(p)
 
-    def _draw_cards(self, p: PlayerState, count: int, run: Optional[GameRun] = None):
-        self.card_player.draw_cards(p, count, run)
+    def _draw_cards(self, p: PlayerState, count: int, run: Optional[GameRun] = None, ignore_focus: bool = False):
+        self.card_player.draw_cards(p, count, run, ignore_focus)
 
     def _init_battle_node(self, run: GameRun, difficulty: str = "normal"):
         p = run.player
@@ -107,7 +107,7 @@ class BattleEngine(BaseBattleEngine):
             impl = get_relic_impl(r)
             if impl:
                 init_draw = impl.modify_initial_draw(run, init_draw, self)
-        self._draw_cards(p, init_draw, run)
+        self._draw_cards(p, init_draw, run, ignore_focus=True)
         run.node_data["difficulty"] = difficulty
 
         if difficulty == "boss":

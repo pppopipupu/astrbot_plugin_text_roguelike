@@ -71,8 +71,8 @@ class CardPlayer:
             else:
                 p.discard_pile.append(cid)
 
-    def draw_cards(self, p: PlayerState, count: int, run: Optional[GameRun] = None):
-        if any(b.id == "tactical_focus" for b in p.buffs):
+    def draw_cards(self, p: PlayerState, count: int, run: Optional[GameRun] = None, ignore_focus: bool = False):
+        if not ignore_focus and any(b.id == "tactical_focus" for b in p.buffs):
             if run is not None:
                 self.engine._log_event(run, "⚠️ [无法抽牌] 本回合无法再抽牌。")
             return
@@ -546,7 +546,7 @@ class CardPlayer:
         if run.node_data.get("draw_penalty_next_turn"):
             draw_count = max(0, draw_count - run.node_data["draw_penalty_next_turn"])
             run.node_data.pop("draw_penalty_next_turn", None)
-        self.draw_cards(p, draw_count, run)
+        self.draw_cards(p, draw_count, run, ignore_focus=True)
         self.engine._roll_enemy_intent(run)
         run.node_data["cards_played_this_turn"] = 0
         self._reindex_minions(p)
