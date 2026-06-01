@@ -17,7 +17,7 @@ class CoinFountainOption(EventOption, action="coin_fountain", text="投入金币
         if p.gold < 10:
             return "❌ 你的金币不足 10。"
         p.gold -= 10
-        wizards = [cid for cid, c in ALL_CARDS.items() if c.color == "wizard" and c.rarity != "legendary"]
+        wizards = [cid for cid, c in ALL_CARDS.items() if c.color == "wizard" and c.rarity not in ("legendary", "mythic", "artifact")]
         reward_cards = random.sample(wizards, 3) if len(wizards) >= 3 else wizards
         run.node_type = "card_select"
         run.node_data = {

@@ -124,7 +124,8 @@ def render_battle(run: GameRun) -> str:
                     "rare": "稀有",
                     "epic": "珍奇",
                     "legendary": "传奇",
-                    "mythic": "神器",
+                    "mythic": "神话",
+                    "artifact": "神器",
                     "curse": "诅咒"
                 }
                 rname = rarity_map.get(getattr(card, "rarity", "common"), "普通")

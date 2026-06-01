@@ -26,7 +26,7 @@ class ContractLegendOption(EventOption, action="contract_legend", text="以血�
         p = run.player
         p.max_hp = max(5, p.max_hp - 6)
         p.hp = min(p.hp, p.max_hp)
-        legends = [cid for cid, c in ALL_CARDS.items() if c.rarity == "legendary" and not cid.startswith("curse_")]
+        legends = [cid for cid, c in ALL_CARDS.items() if c.rarity in ("legendary", "mythic", "artifact") and not cid.startswith("curse_")]
         got_card = random.choice(legends) if legends else "doomsday_judgment"
         p.deck.append(got_card)
         engine.enter_next_stage(run)

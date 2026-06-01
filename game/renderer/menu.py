@@ -73,7 +73,8 @@ def render_card_library() -> str:
             "rare": "稀有",
             "epic": "珍奇",
             "legendary": "传奇",
-            "mythic": "神器",
+            "mythic": "神话",
+            "artifact": "神器",
             "curse": "诅咒"
         }
         rname = rarity_map.get(getattr(card, "rarity", "common"), "普通")
@@ -113,12 +114,16 @@ def render_relic_library() -> str:
         "rare": "稀有",
         "epic": "珍奇",
         "legendary": "传奇",
-        "mythic": "神器",
+        "mythic": "神话",
+        "artifact": "神器",
         "curse": "诅咒"
     }
     commons = []
     rares = []
     epics = []
+    legendaries = []
+    mythics = []
+    artifacts = []
     curses = []
     for rid, relic in RELIC_CONFIG.items():
         r = relic.get("rarity", "common")
@@ -131,10 +136,16 @@ def render_relic_library() -> str:
             commons.append(info)
         elif r == "rare":
             rares.append(info)
+        elif r == "epic":
+            epics.append(info)
+        elif r == "legendary":
+            legendaries.append(info)
+        elif r == "mythic":
+            mythics.append(info)
+        elif r == "artifact":
+            artifacts.append(info)
         elif r == "curse":
             curses.append(info)
-        else:
-            epics.append(info)
     lines.append("【普通遗物】")
     lines.extend(commons)
     lines.append("")
@@ -143,6 +154,15 @@ def render_relic_library() -> str:
     lines.append("")
     lines.append("【珍奇遗物】")
     lines.extend(epics)
+    lines.append("")
+    lines.append("【传奇遗物】")
+    lines.extend(legendaries)
+    lines.append("")
+    lines.append("【神话遗物】")
+    lines.extend(mythics)
+    lines.append("")
+    lines.append("【神器遗物】")
+    lines.extend(artifacts)
     lines.append("")
     lines.append("【诅咒遗物】")
     lines.extend(curses)
@@ -170,7 +190,8 @@ def render_deck(run: GameRun) -> str:
                 "rare": "稀有",
                 "epic": "珍奇",
                 "legendary": "传奇",
-                "mythic": "神器",
+                "mythic": "神话",
+                "artifact": "神器",
                 "curse": "诅咒"
             }
             rname = rarity_map.get(getattr(card, "rarity", "common"), "普通")

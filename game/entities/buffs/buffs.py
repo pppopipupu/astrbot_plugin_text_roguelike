@@ -203,7 +203,7 @@ class StrengthBuff(BuffImpl):
 
 class FuryBuff(BuffImpl):
     def on_card_played(self, event, buff_state, entity):
-        if event.card.rarity in ("rare", "legendary"):
+        if event.card.rarity in ("rare", "legendary", "mythic", "artifact"):
             event.engine._add_buff_to(entity, "strength", "力量", "造成的伤害增加", buff_state.stacks)
             event.engine._log_event(event.run, f"🔥 【{entity.name}】的【愤怒】被玩家的【{event.card.name}】激怒，力量增加了 {buff_state.stacks} 点！")
 
@@ -460,6 +460,38 @@ class GlacierFortressBuff(BuffImpl):
             event.engine._gain_shield(event.run, "p0", shield_gain)
             event.engine._log_event(event.run, f"🏔️ [冰川壁垒] 触发：玩家获得了 {shield_gain} 点额外护盾。")
 
+class VoidExhaustionBuff(BuffImpl):
+    def on_turn_end(self, event, buff_state, entity):
+        if entity == event.run.player and event.is_player:
+            buff_state.stacks -= 1
+            if buff_state.stacks <= 0:
+                if buff_state in event.run.player.buffs:
+                    event.run.player.buffs.remove(buff_state)
+
+class ManaLeakBuff(BuffImpl):
+    def on_card_play(self, event, buff_state, entity):
+        if entity == event.run.player and event.card.type == "spell":
+            event.cost_ba += buff_state.stacks
+
+    def modify_spell_cost_ba(self, run, card, cost_ba: int, engine) -> int:
+        if card.type == "spell":
+            return cost_ba + self.stacks
+        return cost_ba
+
+    def on_damage_calculate(self, event, buff_state, entity):
+        if entity == event.run.player and event.damage_type == "spell" and event.source == "p0":
+            event.modified_damage = max(0, event.modified_damage - buff_state.stacks * 2)
+
+    def modify_spell_damage(self, run, card, damage: int, engine) -> int:
+        return max(0, damage - self.stacks * 2)
+
+    def on_turn_end(self, event, buff_state, entity):
+        if entity == event.run.player and event.is_player:
+            buff_state.stacks -= 1
+            if buff_state.stacks <= 0:
+                if buff_state in event.run.player.buffs:
+                    event.run.player.buffs.remove(buff_state)
+
 BUFF_MAP = {
     "tactical_focus": TacticalFocusBuff,
     "quicken": QuickenBuff,
@@ -487,6 +519,8 @@ BUFF_MAP = {
     "buffer": BufferBuff,
     "demon_contract_buff": DemonContractBuff,
     "glacier_fortress_buff": GlacierFortressBuff,
+    "void_exhaustion": VoidExhaustionBuff,
+    "mana_leak": ManaLeakBuff,
 }
 
 def get_buff_impl(buff_id: str, stacks: int, stacks2: Optional[int] = None) -> Optional[BuffImpl]:

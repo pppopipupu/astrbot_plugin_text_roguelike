@@ -298,7 +298,7 @@ WIZARD_CARD_CONFIG = {
         "cost_a": 2,
         "cost_ba": 1,
         "desc": "在回合结束时，额外追加 3 个额外回合。额外回合中若造成伤害，则立即结束。消耗。",
-        "rarity": "legendary",
+        "rarity": "mythic",
         "exhaust": True,
         "feedback": "施展了【时间停止】！你掌握了时空的掌控权，获得了 3 个额外回合。在额外回合中造成伤害将提前打破时间停止状态。"
     },

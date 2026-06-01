@@ -312,5 +312,15 @@ BUFF_CONFIG = {
     "glacier_fortress_buff": {
         "name": "冰川壁垒",
         "desc": "回合结束时额外获得护盾"
+    },
+    "void_exhaustion": {
+        "name": "虚空耗竭",
+        "desc": "本回合内打出的所有非随从和护符卡牌都会在结算后被强制消耗移入消耗堆",
+        "is_debuff": True
+    },
+    "mana_leak": {
+        "name": "魔力泄漏",
+        "desc": "你打出的法术卡牌需要额外消耗 1BA，且造成的法术伤害减少 2 点",
+        "is_debuff": True
     }
 }

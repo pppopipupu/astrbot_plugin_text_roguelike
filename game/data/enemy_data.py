@@ -369,9 +369,15 @@ ENEMY_CONFIG = {
         "actions": "2A 1BA",
         "passive": "先古庇护",
         "intents": [
-            {"id": "gate_gaze", "val": 15, "desc": "门之凝视 (造成 15 点心灵伤害，对随机随从造成 10 点力场伤害，玩家下回合无法抽牌)"},
-            {"id": "void_storm", "val": 10, "desc": "虚空风暴 (对玩家与所有我方随从造成 10 点力场伤害)"},
-            {"id": "ancient_resonance", "val": 30, "desc": "先古共鸣 (获得 30 点护盾，且下回合获得 2 层力量)"}
+            {"id": "gate_gaze", "val": 12, "desc": "门之凝视 (造成 12 点心灵伤害，对随机随从造成 8 点力场伤害，玩家下回合无法抽牌)"},
+            {"id": "void_storm", "val": 8, "desc": "虚空风暴 (对玩家与所有我方随从造成 8 点力场伤害)"},
+            {"id": "ancient_resonance", "val": 20, "desc": "先古共鸣 (获得 20 点护盾，且下回合获得 2 层力量)"},
+            {"id": "void_corruption", "val": 8, "desc": "虚空腐蚀 (造成 8 点强酸伤害并施加 1 层虚空虚弱)"},
+            {"id": "gravity_press", "val": 10, "desc": "重力压迫 (造成 10 点钝击伤害，如果玩家身上有护盾，额外损失 5 点护盾；对随机随从造成 6 点钝击伤害)"},
+            {"id": "void_exhaust", "val": 1, "desc": "虚空耗竭 (使玩家获得 1 层虚空耗竭 Buff)"},
+            {"id": "decay_whisper", "val": 2, "desc": "衰退低语 (使玩家获得 2 层虚空虚弱 Buff)"},
+            {"id": "mana_block", "val": 1, "desc": "魔力阻断 (使玩家获得 1 层魔力泄漏 Buff)"},
+            {"id": "dimensional_distortion", "val": 15, "desc": "维度扭曲 (获得 15 点护盾)"}
         ]
     },
     "【觉醒】虚空之门·尤格-索托斯": {
@@ -381,9 +387,16 @@ ENEMY_CONFIG = {
         "actions": "2A 2BA",
         "passive": "终焉之门",
         "intents": [
-            {"id": "time_collapse", "val": 16, "desc": "时空坍缩 (造成 16 点力场伤害，玩家下回合动作减少 1A 1BA，且洗入 2 张空间撕裂)"},
+            {"id": "time_collapse", "val": 14, "desc": "时空坍缩 (造成 14 点力场伤害，玩家下回合动作减少 1A 1BA，且洗入 2 张空间撕裂)"},
             {"id": "all_gates_open", "val": 20, "desc": "万门齐开 (召唤 2 个虚空潜伏者，敌方全体获得 2 层力量；若格子满则造成 20 点心灵伤害)"},
-            {"id": "doomsday_tide", "val": 15, "desc": "灭世之潮 (对玩家与所有随从造成 15 点真实伤害，穿透护盾，并恢复自身 20 点生命值)"}
+            {"id": "doomsday_tide", "val": 12, "desc": "灭世之潮 (对玩家与所有随从造成 12 点真实伤害，穿透护盾，并恢复自身 15 点生命值)"},
+            {"id": "chaos_beam", "val": 10, "desc": "混乱光束 (造成 10 点光耀伤害，对所有随从造成 6 点光耀伤害)"},
+            {"id": "abyss_gaze", "val": 12, "desc": "深渊凝视 (造成 12 点心灵伤害，使玩家下回合少抽 2 张牌)"},
+            {"id": "abyss_exhaust", "val": 1, "desc": "深渊耗竭 (使玩家获得 1 层虚空耗竭 Buff)"},
+            {"id": "void_shield_large", "val": 20, "desc": "虚空大盾 (获得 20 点护盾并净化自身 1 负面 Buff)"},
+            {"id": "end_whisper", "val": 6, "desc": "终焉低语 (造成 6 点心灵伤害，且迫使玩家随机丢弃 1 张手牌)"},
+            {"id": "strength_infuse", "val": 2, "desc": "力量注入 (敌方全体获得 2 层力量)"},
+            {"id": "reality_shatter", "val": 8, "desc": "现实碎裂 (造成 8 点真实伤害)"}
         ]
     },
     "虚空潜伏者": {

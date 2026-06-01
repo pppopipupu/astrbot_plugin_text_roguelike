@@ -37,6 +37,9 @@ def render_query_info(query_str: str) -> str:
                 "common": "普通",
                 "rare": "稀有",
                 "epic": "珍奇",
+                "legendary": "传奇",
+                "mythic": "神话",
+                "artifact": "神器",
                 "curse": "诅咒"
             }
             rname_rarity = rarity_map.get(rarity, rarity)
@@ -105,7 +108,8 @@ def render_query_info(query_str: str) -> str:
                 "rare": "稀有",
                 "epic": "珍奇",
                 "legendary": "传奇",
-                "mythic": "神器",
+                "mythic": "神话",
+                "artifact": "神器",
                 "curse": "诅咒"
             }
             rname_rarity = rarity_map.get(rarity, rarity)

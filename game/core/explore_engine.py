@@ -22,7 +22,7 @@ class ExploreEngine:
         }
 
     def _init_shop_node(self, run: GameRun):
-        card_pool = [cid for cid, c in ALL_CARDS.items() if c.rarity != "legendary" and not cid.startswith("curse_")]
+        card_pool = [cid for cid, c in ALL_CARDS.items() if c.rarity not in ("legendary", "mythic", "artifact") and not cid.startswith("curse_")]
         shop_cards = random.sample(card_pool, 3)
         from ..models.state import check_and_replace_fireball
         shop_cards = [check_and_replace_fireball(run, cid) for cid in shop_cards]
@@ -215,7 +215,7 @@ class ExploreEngine:
                 self.save_manager.save_save(run.user_id, run)
                 return f"你感到精力充沛，恢复了 {heal} 点生命值，开启下一关。"
             elif option_idx == 2:
-                wizards = [cid for cid, c in ALL_CARDS.items() if c.color == "wizard" and c.type == "spell" and c.rarity != "legendary" and not cid.startswith("curse_")]
+                wizards = [cid for cid, c in ALL_CARDS.items() if c.color == "wizard" and c.type == "spell" and c.rarity not in ("legendary", "mythic", "artifact") and not cid.startswith("curse_")]
                 reward_cards = random.sample(wizards, 3) if len(wizards) >= 3 else wizards
                 from ..models.state import check_and_replace_fireball
                 reward_cards = [check_and_replace_fireball(run, cid) for cid in reward_cards]

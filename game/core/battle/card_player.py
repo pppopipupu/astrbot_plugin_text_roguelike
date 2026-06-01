@@ -39,6 +39,11 @@ class CardPlayer:
                     self.engine._log_event(run, f"✨ [消耗] 【{card.name}】已被移入消耗堆。")
                     exhaust_evt = CardExhaustEvent(run, next_cid, source)
                     self.engine.event_bus.dispatch(exhaust_evt)
+                elif any(b.id == "void_exhaustion" for b in p.buffs):
+                    p.exhaust_pile.append(next_cid)
+                    self.engine._log_event(run, f"✨ [虚空耗竭] 【{card.name}】已被强行移入消耗堆！")
+                    exhaust_evt = CardExhaustEvent(run, next_cid, source)
+                    self.engine.event_bus.dispatch(exhaust_evt)
                 else:
                     p.discard_pile.append(next_cid)
                     self.engine._log_event(run, f"🧩 【{card.name}】磨损，变更为【{ALL_CARDS.get(next_cid).name}】并移入弃牌堆。")
@@ -46,6 +51,11 @@ class CardPlayer:
             if getattr(card, "fleeting", False):
                 if cid in p.deck:
                     p.deck.remove(cid)
+            elif any(b.id == "void_exhaustion" for b in p.buffs):
+                p.exhaust_pile.append(cid)
+                self.engine._log_event(run, f"✨ [虚空耗竭] 【{card.name}】已被强行移入消耗堆！")
+                exhaust_evt = CardExhaustEvent(run, cid, source)
+                self.engine.event_bus.dispatch(exhaust_evt)
             elif card.type in ("minion", "amulet"):
                 if card.type == "minion":
                     self.engine._log_event(run, f"✨ [消耗] 【{card.name}】进入战场。")
@@ -281,6 +291,11 @@ class CardPlayer:
                 if getattr(card, "fleeting", False):
                     if base_cid in p.deck:
                         p.deck.remove(base_cid)
+                elif any(b.id == "void_exhaustion" for b in p.buffs):
+                    p.exhaust_pile.append(next_cid)
+                    self.engine._log_event(run, f"✨ [虚空耗竭] 【{card.name}】已被强行移入消耗堆！")
+                    exhaust_evt = CardExhaustEvent(run, next_cid, "played")
+                    self.engine.event_bus.dispatch(exhaust_evt)
                 else:
                     p.discard_pile.append(next_cid)
                     self.engine._log_event(run, f"🧩 【{card.name}】磨损，变更为【{ALL_CARDS.get(next_cid).name}】并移入弃牌堆。")
@@ -288,6 +303,11 @@ class CardPlayer:
             if getattr(card, "fleeting", False):
                 if cid in p.deck:
                     p.deck.remove(cid)
+            elif any(b.id == "void_exhaustion" for b in p.buffs):
+                p.exhaust_pile.append(cid)
+                self.engine._log_event(run, f"✨ [虚空耗竭] 【{card.name}】已被强行移入消耗堆！")
+                exhaust_evt = CardExhaustEvent(run, cid, "played")
+                self.engine.event_bus.dispatch(exhaust_evt)
             else:
                 p.discard_pile.append(cid)
         run.node_data["current_playing_card_id"] = card.id
@@ -569,12 +589,12 @@ class CardPlayer:
         else:
             run.node_type = "reward"
             card_pool = list(ALL_CARDS.keys())
-            normal_cards = [cid for cid in card_pool if ALL_CARDS[cid].rarity != "legendary" and not cid.startswith("curse_")]
+            normal_cards = [cid for cid in card_pool if ALL_CARDS[cid].rarity not in ("legendary", "mythic", "artifact") and not cid.startswith("curse_")]
             reward_cards = random.sample(normal_cards, 3)
             final_reward_cards = []
             for cid in reward_cards:
                 cid = check_and_replace_fireball(run, cid)
-                if p.subclass == "秘钥学者" and ALL_CARDS.get(cid) and ALL_CARDS[cid].color == "wizard" and ALL_CARDS[cid].rarity != "legendary":
+                if p.subclass == "秘钥学者" and ALL_CARDS.get(cid) and ALL_CARDS[cid].color == "wizard" and ALL_CARDS[cid].rarity not in ("legendary", "mythic", "artifact"):
                     if random.random() < 0.35:
                         cid = "key_resonance"
                 final_reward_cards.append(cid)

@@ -444,22 +444,46 @@ class BossYogSothothTemplate(EnemyTemplate):
         phase = run.node_data.get("yog_sothoth_phase", 1)
         turn = run.node_data.get("yog_sothoth_turn", 1)
         run.node_data["yog_sothoth_turn"] = turn + 1
-        cycle = (turn - 1) % 3 + 1
+        cycle = (turn - 1) % 4 + 1
         intents_list = []
         if phase == 1:
             if cycle == 1:
-                intents_list.append(EnemyIntentState(type="gate_gaze", val=15, desc="门之凝视 (造成 15 点心灵伤害，对随从造成 10 点力场伤害，且玩家无法抽牌)", cost_a=1, cost_ba=0))
+                intents_list.append(EnemyIntentState(type="gate_gaze", val=12, desc="门之凝视 (造成 12 点心灵伤害，对随机随从造成 8 点力场伤害，玩家下回合无法抽牌)", cost_a=1, cost_ba=0))
+                intents_list.append(EnemyIntentState(type="void_corruption", val=8, desc="虚空腐蚀 (造成 8 点强酸伤害并施加 1 层虚空虚弱)", cost_a=1, cost_ba=0))
+                intents_list.append(EnemyIntentState(type="void_exhaust", val=1, desc="虚空耗竭 (使玩家获得 1 层虚空耗竭 Buff)", cost_a=0, cost_ba=1))
             elif cycle == 2:
                 intents_list.append(EnemyIntentState(type="void_storm", val=10, desc="虚空风暴 (对玩家与所有我方随从造成 10 点力场伤害)", cost_a=1, cost_ba=0))
+                intents_list.append(EnemyIntentState(type="gravity_press", val=10, desc="重力压迫 (造成 10 点钝击伤害，如果玩家身上有护盾，额外损失 5 点护盾；对随机随从造成 6 点钝击伤害)", cost_a=1, cost_ba=0))
+                intents_list.append(EnemyIntentState(type="decay_whisper", val=2, desc="衰退低语 (使玩家获得 2 层虚空虚弱 Buff)", cost_a=0, cost_ba=1))
+            elif cycle == 3:
+                intents_list.append(EnemyIntentState(type="ancient_resonance", val=20, desc="先古共鸣 (获得 20 点护盾，且下回合获得 2 层力量)", cost_a=1, cost_ba=0))
+                intents_list.append(EnemyIntentState(type="void_storm", val=8, desc="虚空风暴 (对玩家与所有我方随从造成 8 点力场伤害)", cost_a=1, cost_ba=0))
+                intents_list.append(EnemyIntentState(type="mana_block", val=1, desc="魔力阻断 (使玩家获得 1 层魔力泄漏 Buff)", cost_a=0, cost_ba=1))
             else:
-                intents_list.append(EnemyIntentState(type="ancient_resonance", val=30, desc="先古共鸣 (获得 30 点护盾，且下回合获得 2 层力量)", cost_a=1, cost_ba=0))
+                intents_list.append(EnemyIntentState(type="gate_gaze", val=12, desc="门之凝视 (造成 12 点心灵伤害，对随机随从造成 8 点力场伤害，玩家下回合无法抽牌)", cost_a=1, cost_ba=0))
+                intents_list.append(EnemyIntentState(type="gravity_press", val=10, desc="重力压迫 (造成 10 点钝击伤害，如果玩家身上有护盾，额外损失 5 点护盾；对随机随从造成 6 点钝击伤害)", cost_a=1, cost_ba=0))
+                intents_list.append(EnemyIntentState(type="dimensional_distortion", val=15, desc="维度扭曲 (获得 15 点护盾)", cost_a=0, cost_ba=1))
         else:
             if cycle == 1:
-                intents_list.append(EnemyIntentState(type="time_collapse", val=16, desc="时空坍缩 (造成 16 点力场伤害，玩家下回合动作减少 1A 1BA，且洗入 2 张空间撕裂)", cost_a=1, cost_ba=0))
+                intents_list.append(EnemyIntentState(type="time_collapse", val=14, desc="时空坍缩 (造成 14 点力场伤害，玩家下回合动作减少 1A 1BA，且洗入 2 张空间撕裂)", cost_a=1, cost_ba=0))
+                intents_list.append(EnemyIntentState(type="chaos_beam", val=10, desc="混乱光束 (造成 10 点光耀伤害，对所有随从造成 6 点光耀伤害)", cost_a=1, cost_ba=0))
+                intents_list.append(EnemyIntentState(type="void_shield_large", val=20, desc="虚空大盾 (获得 20 点护盾并净化自身 1 负面 Buff)", cost_a=0, cost_ba=1))
+                intents_list.append(EnemyIntentState(type="abyss_exhaust", val=1, desc="深渊耗竭 (使玩家获得 1 层虚空耗竭 Buff)", cost_a=0, cost_ba=1))
             elif cycle == 2:
                 intents_list.append(EnemyIntentState(type="all_gates_open", val=20, desc="万门齐开 (召唤 2 个虚空潜伏者，敌方全体获得 2 层力量；若格子满则造成 20 点心灵伤害)", cost_a=1, cost_ba=0))
+                intents_list.append(EnemyIntentState(type="abyss_gaze", val=12, desc="深渊凝视 (造成 12 点心灵伤害，使玩家下回合少抽 2 张牌)", cost_a=1, cost_ba=0))
+                intents_list.append(EnemyIntentState(type="strength_infuse", val=2, desc="力量注入 (敌方全体获得 2 层力量)", cost_a=0, cost_ba=1))
+                intents_list.append(EnemyIntentState(type="end_whisper", val=6, desc="终焉低语 (造成 6 点心灵伤害，且迫使玩家随机丢弃 1 张手牌)", cost_a=0, cost_ba=1))
+            elif cycle == 3:
+                intents_list.append(EnemyIntentState(type="doomsday_tide", val=12, desc="灭世之潮 (对玩家与所有随从造成 12 点真实伤害，穿透护盾，并恢复自身 15 点生命值)", cost_a=1, cost_ba=0))
+                intents_list.append(EnemyIntentState(type="time_collapse", val=10, desc="时空坍缩 (造成 10 点力场伤害，玩家下回合动作减少 1A 1BA，且洗入 2 张空间撕裂)", cost_a=1, cost_ba=0))
+                intents_list.append(EnemyIntentState(type="mana_block", val=1, desc="魔力阻断 (使玩家获得 1 层魔力泄漏 Buff)", cost_a=0, cost_ba=1))
+                intents_list.append(EnemyIntentState(type="reality_shatter", val=8, desc="现实碎裂 (造成 8 点真实伤害)", cost_a=0, cost_ba=1))
             else:
-                intents_list.append(EnemyIntentState(type="doomsday_tide", val=15, desc="灭世之潮 (对玩家与所有随从造成 15 点真实伤害，穿透护盾，并恢复自身 20 点生命值)", cost_a=1, cost_ba=0))
+                intents_list.append(EnemyIntentState(type="chaos_beam", val=12, desc="混乱光束 (造成 12 点光耀伤害，对所有随从造成 6 点光耀伤害)", cost_a=1, cost_ba=0))
+                intents_list.append(EnemyIntentState(type="doomsday_tide", val=10, desc="灭世之潮 (对玩家与所有随从造成 10 点真实伤害，穿透护盾，并恢复自身 15 点生命值)", cost_a=1, cost_ba=0))
+                intents_list.append(EnemyIntentState(type="strength_infuse", val=2, desc="力量注入 (敌方全体获得 2 层力量)", cost_a=0, cost_ba=1))
+                intents_list.append(EnemyIntentState(type="void_shield_large", val=20, desc="虚空大盾 (获得 20 点护盾并净化自身 1 负面 Buff)", cost_a=0, cost_ba=1))
         return intents_list
 
     def execute_intent(self, run, engine, enemy, intent, logs: List[str] = None):
@@ -467,7 +491,8 @@ class BossYogSothothTemplate(EnemyTemplate):
             logs = []
         p = run.player
         import random
-        
+        from ..buffs.buffs import is_debuff
+
         strength = 0
         for b in enemy.buffs:
             if b.id == "strength":
@@ -484,7 +509,7 @@ class BossYogSothothTemplate(EnemyTemplate):
                 target_key = random.choice(list(p.minions.keys()))
                 m_name = p.minions[target_key].name
                 before_len = len(run.node_data.get("battle_logs", []))
-                engine._damage_target(run, f"p{target_key}", 10, source=f"enemy:{enemy.name}", damage_type="force")
+                engine._damage_target(run, f"p{target_key}", 8, source=f"enemy:{enemy.name}", damage_type="force")
                 after_logs = run.node_data.get("battle_logs", [])
                 dmg_msg_m = after_logs.pop() if len(after_logs) > before_len else ""
                 logs.append(f"随从【{m_name}】受到波及。{dmg_msg_m}")
@@ -510,6 +535,51 @@ class BossYogSothothTemplate(EnemyTemplate):
             engine._add_buff_to(enemy, "strength", "力量", "造成的伤害增加", 2)
             logs.append(f"【{enemy.name}】进行先古共鸣，获得 {intent.val} 点护盾，且攻击力量提升 2 点。")
 
+        elif intent.type == "void_corruption":
+            before_len = len(run.node_data.get("battle_logs", []))
+            engine._damage_target(run, "p0", val, source=f"enemy:{enemy.name}", damage_type="acid")
+            after_logs = run.node_data.get("battle_logs", [])
+            dmg_msg = after_logs.pop() if len(after_logs) > before_len else ""
+            engine._add_buff_to(run.player, "void_weakness", "虚空虚弱", "造成的法术伤害减少 3 点，回合结束时层数减少 1", 1)
+            logs.append(f"【{enemy.name}】引发虚空腐蚀对玩家造成酸蚀。{dmg_msg}")
+            logs.append(f"玩家获得了 1 层【虚空虚弱】状态。")
+
+        elif intent.type == "gravity_press":
+            lost_shield_msg = ""
+            if p.shield > 0:
+                lost_amount = min(5, p.shield)
+                p.shield -= lost_amount
+                lost_shield_msg = f"（重力场额外压碎了玩家 {lost_amount} 点护盾）"
+            before_len = len(run.node_data.get("battle_logs", []))
+            engine._damage_target(run, "p0", val, source=f"enemy:{enemy.name}", damage_type="bludgeoning")
+            after_logs = run.node_data.get("battle_logs", [])
+            dmg_msg = after_logs.pop() if len(after_logs) > before_len else ""
+            logs.append(f"【{enemy.name}】施展重力压迫。{dmg_msg}{lost_shield_msg}")
+            if p.minions:
+                target_key = random.choice(list(p.minions.keys()))
+                m_name = p.minions[target_key].name
+                before_len = len(run.node_data.get("battle_logs", []))
+                engine._damage_target(run, f"p{target_key}", 6, source=f"enemy:{enemy.name}", damage_type="bludgeoning")
+                after_logs = run.node_data.get("battle_logs", [])
+                dmg_msg_m = after_logs.pop() if len(after_logs) > before_len else ""
+                logs.append(f"我方随从【{m_name}】受到重力余波打击。{dmg_msg_m}")
+
+        elif intent.type in ("void_exhaust", "abyss_exhaust"):
+            engine._add_buff_to(run.player, "void_exhaustion", "虚空耗竭", "本回合内打出的所有非随从和护符卡牌都会在结算后被强制消耗移入消耗堆", 1)
+            logs.append(f"【{enemy.name}】引动了虚空耗竭，玩家被施加了 1 层【虚空耗竭】状态！")
+
+        elif intent.type == "decay_whisper":
+            engine._add_buff_to(run.player, "void_weakness", "虚空虚弱", "造成的法术伤害减少 3 点，回合结束时层数减少 1", 2)
+            logs.append(f"【{enemy.name}】低吟起衰退歌谣，使玩家获得了 2 层【虚空虚弱】状态。")
+
+        elif intent.type == "mana_block":
+            engine._add_buff_to(run.player, "mana_leak", "魔力泄漏", "你打出的法术卡牌需要额外消耗 1BA，且造成的法术伤害减少 2 点", 1)
+            logs.append(f"【{enemy.name}】施加魔力阻断，使玩家获得了 1 层【魔力泄漏】状态。")
+
+        elif intent.type == "dimensional_distortion":
+            enemy.shield += intent.val
+            logs.append(f"【{enemy.name}】扭曲周围的维度，获得了 {intent.val} 点护盾。")
+
         elif intent.type == "time_collapse":
             before_len = len(run.node_data.get("battle_logs", []))
             engine._damage_target(run, "p0", val, source=f"enemy:{enemy.name}", damage_type="force")
@@ -521,6 +591,33 @@ class BossYogSothothTemplate(EnemyTemplate):
             p.draw_pile.append("curse_dimensional_tear")
             random.shuffle(p.draw_pile)
             logs.append(f"【{enemy.name}】施展时空坍缩，使玩家下回合减少 1A 1BA，且洗入 2 张【空间撕裂】。{dmg_msg}")
+
+        elif intent.type == "chaos_beam":
+            before_len = len(run.node_data.get("battle_logs", []))
+            engine._damage_target(run, "p0", val, source=f"enemy:{enemy.name}", damage_type="radiant")
+            after_logs = run.node_data.get("battle_logs", [])
+            dmg_msg = after_logs.pop() if len(after_logs) > before_len else ""
+            logs.append(f"【{enemy.name}】射出混乱光束。{dmg_msg}")
+            for mk in list(p.minions.keys()):
+                m_name = p.minions[mk].name
+                before_len = len(run.node_data.get("battle_logs", []))
+                engine._damage_target(run, f"p{mk}", 6, source=f"enemy:{enemy.name}", damage_type="radiant")
+                after_logs = run.node_data.get("battle_logs", [])
+                dmg_msg_m = after_logs.pop() if len(after_logs) > before_len else ""
+                logs.append(f"我方随从【{m_name}】受到混乱光束穿透。{dmg_msg_m}")
+
+        elif intent.type == "void_shield_large":
+            enemy.shield += intent.val
+            neg_buff = next((b for b in enemy.buffs if is_debuff(b.id)), None)
+            if neg_buff:
+                neg_name = neg_buff.name
+                neg_buff.stacks -= 1
+                if neg_buff.stacks <= 0:
+                    enemy.buffs.remove(neg_buff)
+                engine._sync_enemy_intents(enemy)
+                logs.append(f"【{enemy.name}】施展虚空大盾，获得 {intent.val} 点护盾，并解除了 1 层自身的负面状态【{neg_name}】！")
+            else:
+                logs.append(f"【{enemy.name}】施展虚空大盾，获得 {intent.val} 点护盾。")
 
         elif intent.type == "all_gates_open":
             empty_slots = 6 - len(run.enemies)
@@ -556,6 +653,36 @@ class BossYogSothothTemplate(EnemyTemplate):
                 dmg_msg = after_logs.pop() if len(after_logs) > before_len else ""
                 logs.append(f"由于传送门受阻，虚空能量直接冲击玩家。{dmg_msg}")
 
+        elif intent.type == "abyss_gaze":
+            before_len = len(run.node_data.get("battle_logs", []))
+            engine._damage_target(run, "p0", val, source=f"enemy:{enemy.name}", damage_type="psychic")
+            after_logs = run.node_data.get("battle_logs", [])
+            dmg_msg = after_logs.pop() if len(after_logs) > before_len else ""
+            run.node_data["draw_penalty_next_turn"] = 2
+            logs.append(f"【{enemy.name}】投射深渊凝视，玩家下回合少抽 2 张牌。{dmg_msg}")
+
+        elif intent.type == "strength_infuse":
+            for e in run.enemies:
+                engine._add_buff_to(e, "strength", "力量", "造成的伤害增加", 2)
+            logs.append(f"【{enemy.name}】进行力量注入，敌方全体力量提升 2 点。")
+
+        elif intent.type == "end_whisper":
+            before_len = len(run.node_data.get("battle_logs", []))
+            engine._damage_target(run, "p0", val, source=f"enemy:{enemy.name}", damage_type="psychic")
+            after_logs = run.node_data.get("battle_logs", [])
+            dmg_msg = after_logs.pop() if len(after_logs) > before_len else ""
+            logs.append(f"【{enemy.name}】发出终焉低语。{dmg_msg}")
+            if p.hand:
+                discarded = p.hand.pop(random.randint(0, len(p.hand) - 1))
+                from ..cards import ALL_CARDS
+                card_name = ALL_CARDS[discarded].name if discarded in ALL_CARDS else "未知卡牌"
+                agile_msg = engine._discard_card(run, discarded)
+                logs.append(f"玩家被迫随机丢弃了卡牌【{card_name}】。")
+                if agile_msg:
+                    logs.append(agile_msg)
+            else:
+                logs.append("但玩家没有手牌可以丢弃。")
+
         elif intent.type == "doomsday_tide":
             before_len = len(run.node_data.get("battle_logs", []))
             engine._damage_target(run, "p0", val, source=f"enemy:{enemy.name}", damage_type="true")
@@ -568,6 +695,13 @@ class BossYogSothothTemplate(EnemyTemplate):
                 engine._damage_target(run, f"p{mk}", val, source=f"enemy:{enemy.name}", damage_type="true")
                 after_logs = run.node_data.get("battle_logs", [])
                 dmg_msg_m = after_logs.pop() if len(after_logs) > before_len else ""
-                logs.append(f"我方随从【{m_name}】受到波及。{dmg_msg_m}")
-            enemy.hp = min(enemy.max_hp, enemy.hp + 20)
-            logs.append(f"【{enemy.name}】吸取了生命力，恢复了 20 点生命值。")
+                logs.append(f"我方随从【{m_name}】受到真实伤害波及。{dmg_msg_m}")
+            enemy.hp = min(enemy.max_hp, enemy.hp + 15)
+            logs.append(f"【{enemy.name}】吸取了生命力，恢复了 15 点生命值。")
+
+        elif intent.type == "reality_shatter":
+            before_len = len(run.node_data.get("battle_logs", []))
+            engine._damage_target(run, "p0", val, source=f"enemy:{enemy.name}", damage_type="true")
+            after_logs = run.node_data.get("battle_logs", [])
+            dmg_msg = after_logs.pop() if len(after_logs) > before_len else ""
+            logs.append(f"【{enemy.name}】引爆现实碎裂，对玩家造成真实伤害。{dmg_msg}")
