@@ -32,6 +32,8 @@ class BattleEngine(BaseBattleEngine):
         return res
 
     def is_battle_won(self, run: GameRun) -> bool:
+        if run.node_type != "battle":
+            return False
         if not run.enemies:
             return True
         if all(e.hp <= 0 for e in run.enemies):

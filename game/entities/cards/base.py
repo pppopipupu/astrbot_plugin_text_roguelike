@@ -11,6 +11,22 @@ import copy
 
 class CardRegistryDict(dict):
     def __getitem__(self, key):
+        if isinstance(key, str) and ":fragile:" in key:
+            parts = key.split(":fragile:")
+            base_key = parts[0]
+            fragile_val = int(parts[1])
+            base_card = self[base_key]
+            fragile_card = copy.copy(base_card)
+            fragile_card.id = key
+            fragile_card.fragile = fragile_val
+            clean_name = base_card.name
+            if " (易碎 " in clean_name:
+                clean_name = clean_name.split(" (易碎 ")[0]
+            fragile_card.name = f"{clean_name} (易碎 {fragile_val})"
+            import re
+            fragile_card.desc = re.sub(r"易碎 \d+。", f"易碎 {fragile_val}。", base_card.desc)
+            return fragile_card
+
         if isinstance(key, str) and key.endswith("+"):
             base_key = key[:-1]
             if base_key not in self:
@@ -18,8 +34,14 @@ class CardRegistryDict(dict):
             base_card = super().__getitem__(base_key)
             upgraded_card = copy.copy(base_card)
             upgraded_card.id = key
-            if not upgraded_card.name.endswith("+"):
-                upgraded_card.name += "+"
+            if " (易碎 " in upgraded_card.name:
+                parts = upgraded_card.name.split(" (易碎 ")
+                name_part = parts[0]
+                fragile_part = " (易碎 " + parts[1]
+                upgraded_card.name = name_part + "+" + fragile_part
+            else:
+                if not upgraded_card.name.endswith("+"):
+                    upgraded_card.name += "+"
             upgraded_card.upgraded = True
             
             from ...data.card_upgrade_data import CARD_UPGRADE_CONFIG
@@ -102,3 +124,7 @@ for cid, cfg in CARD_CONFIG.items():
         ALL_CARDS[cid].ethereal = cfg.get("ethereal", False)
         ALL_CARDS[cid].unplayable = cfg.get("unplayable", False)
         ALL_CARDS[cid].damage_type = cfg.get("damage_type", "effect")
+        ALL_CARDS[cid].fragile = cfg.get("fragile", 0)
+        if ALL_CARDS[cid].fragile > 0:
+            if " (易碎 " not in ALL_CARDS[cid].name:
+                ALL_CARDS[cid].name = f"{ALL_CARDS[cid].name} (易碎 {ALL_CARDS[cid].fragile})"

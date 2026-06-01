@@ -779,6 +779,79 @@ class TestRoguePlugin(unittest.TestCase):
         list(router.handle_command("test_user", ["class", "无"]))
         self.assertEqual(mgr.stats.selected_subclass, "")
 
+    def test_fragile_card_mechanism(self):
+        player = PlayerState(
+            hp=30,
+            max_hp=30,
+            shield=0,
+            gold=100,
+            stage=2,
+            deck=["thunderwave"],
+            draw_pile=["thunderwave"],
+            discard_pile=[],
+            exhaust_pile=[],
+            graveyard=[],
+            hand=["thunderwave"],
+            actions=10,
+            bonus_actions=10
+        )
+        enemy = EnemyState(
+            name="测试敌人",
+            hp=50,
+            max_hp=50,
+            shield=0
+        )
+        run = GameRun(
+            user_id="test_user_fragile",
+            node_type="battle",
+            player=player,
+            enemies=[enemy]
+        )
+        class DummySaveManager:
+            def save_save(self, user_id, run):
+                pass
+            def delete_save(self, user_id):
+                pass
+        engine = BattleEngine(DummySaveManager())
+        card_wave = ALL_CARDS.get("thunderwave")
+        self.assertEqual(card_wave.fragile, 3)
+        self.assertIn("(易碎 3)", card_wave.name)
+        self.assertIn("易碎 3。", card_wave.desc)
+        
+        engine.play_card(run, 1)
+        self.assertIn("thunderwave:fragile:2", player.discard_pile)
+        self.assertEqual(len(player.deck), 1)
+        self.assertEqual(player.deck[0], "thunderwave")
+        
+        player.hand = ["thunderwave:fragile:2"]
+        card_fragile_2 = ALL_CARDS.get("thunderwave:fragile:2")
+        self.assertEqual(card_fragile_2.fragile, 2)
+        self.assertIn("(易碎 2)", card_fragile_2.name)
+        self.assertIn("易碎 2。", card_fragile_2.desc)
+        
+        engine.play_card(run, 1)
+        self.assertIn("thunderwave:fragile:1", player.discard_pile)
+        self.assertEqual(len(player.deck), 1)
+        
+        player.discard_pile.clear()
+        player.hand = ["thunderwave:fragile:1"]
+        engine.play_card(run, 1)
+        self.assertNotIn("thunderwave:fragile:0", player.discard_pile)
+        self.assertNotIn("thunderwave", player.discard_pile)
+        self.assertNotIn("thunderwave:fragile:1", player.discard_pile)
+        self.assertEqual(len(player.deck), 0)
+        
+        card_wave_plus = ALL_CARDS.get("thunderwave+")
+        self.assertEqual(card_wave_plus.fragile, 3)
+        self.assertIn("(易碎 3)", card_wave_plus.name)
+        self.assertIn("雷鸣波+", card_wave_plus.name)
+        self.assertIn("易碎 3。", card_wave_plus.desc)
+        
+        card_wave_plus_2 = ALL_CARDS.get("thunderwave+:fragile:2")
+        self.assertEqual(card_wave_plus_2.fragile, 2)
+        self.assertIn("雷鸣波+", card_wave_plus_2.name)
+        self.assertIn("(易碎 2)", card_wave_plus_2.name)
+
     def test_awaiting_target_cancel(self):
         save_manager = SaveManager()
         engine = GameEngine(save_manager)
@@ -1163,6 +1236,43 @@ class TestRoguePlugin(unittest.TestCase):
         engine.card_player.handle_battle_win(run)
         self.assertEqual(run.node_type, "victory")
         self.assertTrue(sm.stats.killed_yog_sothoth)
+
+    def test_non_battle_play_card(self):
+        class DummySaveManager:
+            def __init__(self):
+                self.stats = UserStats()
+                self.saved_run = None
+            def save_save(self, user_id, run):
+                self.saved_run = run
+            def delete_save(self, user_id):
+                pass
+            def load_stats(self, user_id):
+                return self.stats
+            def save_stats(self, user_id, stats):
+                self.stats = stats
+                return True
+        sm = DummySaveManager()
+        engine = BattleEngine(sm)
+        router = CLIRouter(sm, engine)
+        player = PlayerState(
+            hp=45,
+            max_hp=45,
+            shield=0,
+            gold=20,
+            stage=1,
+            deck=["arcane_torrent"],
+            hand=["arcane_torrent"]
+        )
+        run = GameRun(
+            user_id="test_non_battle_user",
+            node_type="covenant",
+            player=player,
+            enemies=[]
+        )
+        res, should_terminate = router._execute_sub_action("test_non_battle_user", run, ["使用", "1"])
+        self.assertEqual(res, "❌ 只有在战斗中才能使用卡牌。")
+        self.assertFalse(should_terminate)
+        self.assertEqual(run.node_type, "covenant")
 
 if __name__ == "__main__":
     unittest.main()

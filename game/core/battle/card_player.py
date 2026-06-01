@@ -11,6 +11,50 @@ class CardPlayer:
     def __init__(self, engine):
         self.engine = engine
 
+    def _handle_card_post_play(self, run, card, cid, source="played"):
+        p = run.player
+        is_fragile = getattr(card, "fragile", 0) > 0
+        if is_fragile:
+            base_cid = cid.split(":fragile:")[0]
+            curr_fragile = card.fragile
+            if curr_fragile <= 1:
+                if base_cid in p.deck:
+                    p.deck.remove(base_cid)
+                self.engine._log_event(run, f"💥 【{card.name}】彻底碎裂，已从牌组中移除！")
+            else:
+                next_fragile = curr_fragile - 1
+                next_cid = f"{base_cid}:fragile:{next_fragile}"
+                if getattr(card, "fleeting", False):
+                    if base_cid in p.deck:
+                        p.deck.remove(base_cid)
+                elif card.type == "minion":
+                    self.engine._log_event(run, f"✨ [消耗] 【{card.name}】进入战场。")
+                    exhaust_evt = CardExhaustEvent(run, next_cid, source)
+                    self.engine.event_bus.dispatch(exhaust_evt)
+                elif getattr(card, "exhaust", False):
+                    p.exhaust_pile.append(next_cid)
+                    self.engine._log_event(run, f"✨ [消耗] 【{card.name}】已被移入消耗堆。")
+                    exhaust_evt = CardExhaustEvent(run, next_cid, source)
+                    self.engine.event_bus.dispatch(exhaust_evt)
+                else:
+                    p.discard_pile.append(next_cid)
+                    self.engine._log_event(run, f"🧩 【{card.name}】磨损，变更为【{ALL_CARDS.get(next_cid).name}】并移入弃牌堆。")
+        else:
+            if getattr(card, "fleeting", False):
+                if cid in p.deck:
+                    p.deck.remove(cid)
+            elif card.type == "minion":
+                self.engine._log_event(run, f"✨ [消耗] 【{card.name}】进入战场。")
+                exhaust_evt = CardExhaustEvent(run, cid, source)
+                self.engine.event_bus.dispatch(exhaust_evt)
+            elif getattr(card, "exhaust", False):
+                p.exhaust_pile.append(cid)
+                self.engine._log_event(run, f"✨ [消耗] 【{card.name}】已被移入消耗堆。")
+                exhaust_evt = CardExhaustEvent(run, cid, source)
+                self.engine.event_bus.dispatch(exhaust_evt)
+            else:
+                p.discard_pile.append(cid)
+
     def draw_cards(self, p: PlayerState, count: int, run: Optional[GameRun] = None):
         if any(b.id == "tactical_focus" for b in p.buffs):
             if run is not None:
@@ -62,16 +106,7 @@ class CardPlayer:
             played_evt = CardPlayedEvent(run, card, target, res)
             self.engine.event_bus.dispatch(played_evt)
             res = played_evt.feedback
-            if getattr(card, "fleeting", False):
-                if cid in p.deck:
-                    p.deck.remove(cid)
-            elif getattr(card, "exhaust", False):
-                p.exhaust_pile.append(cid)
-                self.engine._log_event(run, f"✨ [消耗] 【{card.name}】已被移入消耗堆。")
-                exhaust_evt = CardExhaustEvent(run, cid, "agile")
-                self.engine.event_bus.dispatch(exhaust_evt)
-            else:
-                p.discard_pile.append(cid)
+            self._handle_card_post_play(run, card, cid, source="agile")
             self._reindex_minions(p)
             return self.engine._append_logs_to_res(run, f"✨ 触发[灵巧]：丢弃【{card.name}】时自动打出！效果：{res}")
         else:
@@ -150,20 +185,7 @@ class CardPlayer:
         p.actions -= req_a
         p.bonus_actions -= req_ba
         p.hand.pop(hand_idx - 1)
-        if getattr(card, "fleeting", False):
-            if cid in p.deck:
-                p.deck.remove(cid)
-        elif card.type == "minion":
-            self.engine._log_event(run, f"✨ [消耗] 【{card.name}】进入战场。")
-            exhaust_evt = CardExhaustEvent(run, cid, "played")
-            self.engine.event_bus.dispatch(exhaust_evt)
-        elif getattr(card, "exhaust", False):
-            p.exhaust_pile.append(cid)
-            self.engine._log_event(run, f"✨ [消耗] 【{card.name}】已被移入消耗堆。")
-            exhaust_evt = CardExhaustEvent(run, cid, "played")
-            self.engine.event_bus.dispatch(exhaust_evt)
-        else:
-            p.discard_pile.append(cid)
+        self._handle_card_post_play(run, card, cid, source="played")
         run.node_data["current_playing_card_id"] = card.id
         try:
             res = self.engine._execute_card_effect(run, card, target)
@@ -239,11 +261,29 @@ class CardPlayer:
         p.actions -= req_a
         p.bonus_actions -= req_ba
         p.hand.pop(hand_idx - 1)
-        if getattr(card, "fleeting", False):
-            if cid in p.deck:
-                p.deck.remove(cid)
+        is_fragile = getattr(card, "fragile", 0) > 0
+        if is_fragile:
+            base_cid = cid.split(":fragile:")[0]
+            curr_fragile = card.fragile
+            if curr_fragile <= 1:
+                if base_cid in p.deck:
+                    p.deck.remove(base_cid)
+                self.engine._log_event(run, f"💥 【{card.name}】彻底碎裂，已从牌组中移除！")
+            else:
+                next_fragile = curr_fragile - 1
+                next_cid = f"{base_cid}:fragile:{next_fragile}"
+                if getattr(card, "fleeting", False):
+                    if base_cid in p.deck:
+                        p.deck.remove(base_cid)
+                else:
+                    p.discard_pile.append(next_cid)
+                    self.engine._log_event(run, f"🧩 【{card.name}】磨损，变更为【{ALL_CARDS.get(next_cid).name}】并移入弃牌堆。")
         else:
-            p.discard_pile.append(cid)
+            if getattr(card, "fleeting", False):
+                if cid in p.deck:
+                    p.deck.remove(cid)
+            else:
+                p.discard_pile.append(cid)
         run.node_data["current_playing_card_id"] = card.id
         try:
             res = card.special_action(run, target)

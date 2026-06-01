@@ -84,7 +84,8 @@ CARD_UPGRADE_CONFIG = {
         "cost_a": 1,
         "cost_ba": 1,
         "base_dmg": 9,
-        "desc": "对所有敌人造成 9 点雷鸣伤害，使敌人下回合减少 1A，并使首个敌人陷入眩晕 1 回合。"
+        "desc": "易碎 3。对所有敌人造成 9 点雷鸣伤害，使敌人下回合减少 1A，并使首个敌人陷入眩晕 1 回合。",
+        "fragile": 3
     },
     "shield": {
         "shield_amount": 12,
