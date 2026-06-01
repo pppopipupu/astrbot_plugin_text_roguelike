@@ -414,6 +414,17 @@ class AncientWisdomBuff(BuffImpl):
             event.engine._gain_shield(event.run, "p0", shield_gain)
             event.feedback += f" 🛡️ [古老智慧] 获得了 {shield_gain} 点护盾。"
 
+class BufferBuff(BuffImpl):
+    def on_damage_calculate_defend(self, event, buff_state, entity):
+        if event.modified_damage > 0:
+            event.modified_damage = 0
+            buff_state.stacks -= 1
+            name = "玩家" if entity == event.run.player else getattr(entity, "name", "未知")
+            event.engine._log_event(event.run, f"🛡️ 【{name}】的【缓冲】消耗了 1 层，免疫了本次伤害。")
+            if buff_state.stacks <= 0:
+                if buff_state in entity.buffs:
+                    entity.buffs.remove(buff_state)
+
 BUFF_MAP = {
     "tactical_focus": TacticalFocusBuff,
     "quicken": QuickenBuff,
@@ -438,6 +449,7 @@ BUFF_MAP = {
     "ancient_protection": AncientProtectionBuff,
     "end_gate_passive": EndGatePassiveBuff,
     "ancient_wisdom_buff": AncientWisdomBuff,
+    "buffer": BufferBuff,
 }
 
 def get_buff_impl(buff_id: str, stacks: int, stacks2: Optional[int] = None) -> Optional[BuffImpl]:

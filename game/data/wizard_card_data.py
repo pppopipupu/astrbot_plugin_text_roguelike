@@ -332,10 +332,10 @@ WIZARD_CARD_CONFIG = {
         "type": "spell",
         "cost_a": -1,
         "cost_ba": 0,
-        "desc": "对目标造成多次 3 点真实伤害（穿透护盾）。若最终X不大于2，则造成X次伤害；若最终X大于2，则造成X*2次伤害。",
+        "desc": "对所有敌人造成多次 3 点真实伤害（穿透护盾）。若最终X不大于2，则造成X*2次伤害；若最终X大于2，则造成X*4次伤害。",
         "rarity": "rare",
         "damage_type": "true",
-        "feedback": "对【{target}】倾泻了奥术洪流，造成了 {count} 次 3 点真实伤害。"
+        "feedback": "释放了奥术洪流，对所有敌人造成了 {count} 次 3 点真实伤害。"
     },
     "arcane_barrier": {
         "name": "奥法屏障",
@@ -343,7 +343,7 @@ WIZARD_CARD_CONFIG = {
         "type": "spell",
         "cost_a": 0,
         "cost_ba": -1,
-        "desc": "获得X*5点护盾。",
+        "desc": "获得X*6点护盾。若X>1，则获得1层缓冲。",
         "rarity": "common",
         "feedback": "凝聚了奥法屏障，获得了 {shield} 点护盾。"
     }

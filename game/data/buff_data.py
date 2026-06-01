@@ -294,5 +294,9 @@ BUFF_CONFIG = {
     "ancient_wisdom_buff": {
         "name": "古老智慧",
         "desc": "打出中立卡牌时，获得 2 点护盾（每层）"
+    },
+    "buffer": {
+        "name": "缓冲",
+        "desc": "免疫接下来的伤害，受到一次伤害减少一层"
     }
 }

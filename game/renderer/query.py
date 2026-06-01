@@ -3,6 +3,7 @@ from ..data.buff_data import BUFF_CONFIG
 from ..data.minion_data import MINION_CONFIG
 from ..data.card_data import CARD_CONFIG
 from ..data.enemy_data import ENEMY_CONFIG
+from ..data.keyword_data import KEYWORD_CONFIG
 from .menu import get_card_cost_str
 
 def render_query_info(query_str: str) -> str:
@@ -18,6 +19,14 @@ def render_query_info(query_str: str) -> str:
             bname = cfg.get("name", bid)
             desc = cfg.get("desc", "")
             lines.append(f"  • 【{bname}】: {desc}")
+        lines.append("")
+    if q in ("keyword", "keywords", "词条", "机制"):
+        found = True
+        lines.append("🧩 【全体卡牌词条与机制一览】")
+        for kid, cfg in KEYWORD_CONFIG.items():
+            kname = cfg.get("name", kid)
+            desc = cfg.get("desc", "")
+            lines.append(f"  • 【{kname}】: {desc}")
         lines.append("")
     for rid, cfg in RELIC_CONFIG.items():
         if q == rid.lower() or q in cfg.get("name", "").lower():
@@ -43,6 +52,14 @@ def render_query_info(query_str: str) -> str:
             bname = cfg.get("name", bid)
             desc = cfg.get("desc", "")
             lines.append(f"✨ 战斗效果 (Buff)：{bname}")
+            lines.append(f"描述：{desc}")
+            lines.append("")
+    for kid, cfg in KEYWORD_CONFIG.items():
+        if q == kid.lower() or q in cfg.get("name", "").lower():
+            found = True
+            kname = cfg.get("name", kid)
+            desc = cfg.get("desc", "")
+            lines.append(f"🧩 词条/机制：{kname}")
             lines.append(f"描述：{desc}")
             lines.append("")
     for mid, cfg in MINION_CONFIG.items():

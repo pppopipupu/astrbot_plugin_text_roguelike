@@ -852,6 +852,14 @@ class TestRoguePlugin(unittest.TestCase):
         self.assertIn("雷鸣波+", card_wave_plus_2.name)
         self.assertIn("(易碎 2)", card_wave_plus_2.name)
 
+        from game.renderer.query import render_query_info
+        q_fragile = render_query_info("易碎")
+        self.assertIn("易碎", q_fragile)
+        self.assertIn("从牌组中永久移除", q_fragile)
+        q_recall = render_query_info("死者召回")
+        self.assertIn("死者召回", q_recall)
+        self.assertIn("阵亡随从", q_recall)
+
     def test_awaiting_target_cancel(self):
         save_manager = SaveManager()
         engine = GameEngine(save_manager)
@@ -1273,6 +1281,108 @@ class TestRoguePlugin(unittest.TestCase):
         self.assertEqual(res, "❌ 只有在战斗中才能使用卡牌。")
         self.assertFalse(should_terminate)
         self.assertEqual(run.node_type, "covenant")
+
+    def test_arcane_barrier_and_buffer_buff(self):
+        class DummySaveManager:
+            def save_save(self, user_id, run):
+                pass
+            def delete_save(self, user_id):
+                pass
+        sm = DummySaveManager()
+        engine = BattleEngine(sm)
+        player = PlayerState(
+            hp=30,
+            max_hp=30,
+            shield=0,
+            gold=100,
+            stage=1,
+            deck=["arcane_barrier", "arcane_barrier+"],
+            hand=["arcane_barrier", "arcane_barrier+"],
+            actions=3,
+            bonus_actions=3
+        )
+        enemy = EnemyState("测试敌人", 50, 50, 0)
+        run = GameRun(
+            user_id="test_buffer_user",
+            node_type="battle",
+            player=player,
+            enemies=[enemy]
+        )
+        
+        run.node_data["last_x_cost_ba"] = 1
+        card_barrier = ALL_CARDS["arcane_barrier"]
+        card_barrier.execute(run, None, engine)
+        self.assertEqual(player.shield, 6)
+        self.assertFalse(any(b.id == "buffer" for b in player.buffs))
+        
+        player.shield = 0
+        run.node_data["last_x_cost_ba"] = 2
+        card_barrier.execute(run, None, engine)
+        self.assertEqual(player.shield, 12)
+        self.assertTrue(any(b.id == "buffer" for b in player.buffs))
+        buffer_buff = next(b for b in player.buffs if b.id == "buffer")
+        self.assertEqual(buffer_buff.stacks, 1)
+        
+        engine.combat_resolver.damage_target(run, "p0", 15, damage_type="bludgeoning")
+        self.assertEqual(player.hp, 30)
+        self.assertEqual(player.shield, 12)
+        self.assertFalse(any(b.id == "buffer" for b in player.buffs))
+        
+        player.shield = 0
+        run.node_data["last_x_cost_ba"] = 1
+        card_barrier_plus = ALL_CARDS["arcane_barrier+"]
+        card_barrier_plus.execute(run, None, engine)
+        self.assertEqual(player.shield, 9)
+        self.assertFalse(any(b.id == "buffer" for b in player.buffs))
+        
+        player.shield = 0
+        run.node_data["last_x_cost_ba"] = 2
+        card_barrier_plus.execute(run, None, engine)
+        self.assertEqual(player.shield, 18)
+        self.assertTrue(any(b.id == "buffer" for b in player.buffs))
+
+    def test_arcane_torrent_aoe(self):
+        class DummySaveManager:
+            def save_save(self, user_id, run):
+                pass
+            def delete_save(self, user_id):
+                pass
+        sm = DummySaveManager()
+        engine = BattleEngine(sm)
+        player = PlayerState(
+            hp=30,
+            max_hp=30,
+            shield=0,
+            gold=100,
+            stage=1,
+            deck=["arcane_torrent", "arcane_torrent+"],
+            hand=["arcane_torrent", "arcane_torrent+"],
+            actions=3,
+            bonus_actions=3
+        )
+        enemies = [
+            EnemyState("测试敌人A", 50, 50, 0),
+            EnemyState("测试敌人B", 50, 50, 0)
+        ]
+        run = GameRun(
+            user_id="test_torrent_user",
+            node_type="battle",
+            player=player,
+            enemies=enemies
+        )
+        
+        run.node_data["last_x_cost_a"] = 1
+        card_torrent = ALL_CARDS["arcane_torrent"]
+        card_torrent.execute(run, None, engine)
+        self.assertEqual(enemies[0].hp, 44)
+        self.assertEqual(enemies[1].hp, 44)
+        
+        enemies[0].hp = 50
+        enemies[1].hp = 50
+        run.node_data["last_x_cost_a"] = 3
+        card_torrent.execute(run, None, engine)
+        self.assertEqual(enemies[0].hp, 14)
+        self.assertEqual(enemies[1].hp, 14)
 
 if __name__ == "__main__":
     unittest.main()
