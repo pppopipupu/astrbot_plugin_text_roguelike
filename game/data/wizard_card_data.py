@@ -42,7 +42,7 @@ WIZARD_CARD_CONFIG = {
         "type": "spell",
         "cost_a": 2,
         "cost_ba": 0,
-        "desc": "易碎 3。对所有敌人造成 6 点雷鸣伤害，使敌人下回合减少 1A。",
+        "desc": "对所有敌人造成 6 点雷鸣伤害，使敌人下回合减少 1A。易碎 3。",
         "rarity": "rare",
         "base_dmg": 6,
         "damage_type": "thunder",
