@@ -101,6 +101,22 @@ class EnemyTurnController:
         for enemy in run.enemies:
             if enemy.hp <= 0:
                 continue
+            enemy.intent_type = ""
+            enemy.intent_val = 0
+            enemy.intent_desc = ""
+            enemy.intent_a_type = ""
+            enemy.intent_a_val = 0
+            enemy.intent_a_desc = ""
+            enemy.intent_a2_type = ""
+            enemy.intent_a2_val = 0
+            enemy.intent_a2_desc = ""
+            enemy.intent_ba_type = ""
+            enemy.intent_ba_val = 0
+            enemy.intent_ba_desc = ""
+            enemy.intent_ba2_type = ""
+            enemy.intent_ba2_val = 0
+            enemy.intent_ba2_desc = ""
+            enemy.intents = []
             template = get_enemy_template(enemy.name)
             enemy.intents = template.roll_intents(run, self.engine, enemy)
             self.sync_enemy_intents(enemy)
