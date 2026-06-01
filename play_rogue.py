@@ -36,6 +36,12 @@ class DummyEvent:
 
 async def run_command(plugin, cmd_str: str) -> str:
     event = DummyEvent(cmd_str)
+    parts = cmd_str.strip().split()
+    if parts and parts[0].lower() in ("/rogueadmin", "rogueadmin"):
+        generator_cmd = plugin.rogueadmin(event)
+        async for _ in generator_cmd:
+            pass
+        return "\n".join(event.results)
     await plugin.shortcut_rogue(event)
     if not event.results:
         generator_cmd = plugin.rogue(event)

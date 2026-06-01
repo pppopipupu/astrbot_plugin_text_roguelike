@@ -93,3 +93,19 @@ class GameEngine:
 
     def upgrade_card_in_deck(self, run: GameRun, deck_idx: int) -> str:
         return self.map_engine.upgrade_card_in_deck(run, deck_idx)
+
+    def jump_to_stage(self, run: GameRun, target_stage: int) -> str:
+        p = run.player
+        p.stage = target_stage - 1
+        if 2 <= target_stage <= 10:
+            self.map_engine._generate_map_network(run, 2, 10)
+            run.map_data["current_node_id"] = None
+        elif 12 <= target_stage <= 19:
+            self.map_engine._generate_map_network(run, 12, 20)
+            run.map_data["current_node_id"] = None
+        elif 21 <= target_stage <= 24:
+            self.map_engine._generate_map_network(run, 21, 25)
+            run.map_data["current_node_id"] = None
+        self.map_engine.enter_next_stage(run)
+        self.save_manager.save_save(run.user_id, run)
+        return f"成功跳转到第 {target_stage} 层。"

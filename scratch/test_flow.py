@@ -1571,6 +1571,63 @@ class TestRoguePlugin(unittest.TestCase):
         self.assertNotIn("1", player.amulets)
         self.assertIn("thorns_necklace", player.minion_graveyard)
 
+    def test_admin_jump_command(self):
+        plugin = MyPlugin(DummyContext())
+        user_id = "test_jump_user"
+        plugin.save_manager.delete_save(user_id)
+
+        async def go():
+            await run_command(plugin, ".rogue 开启", sender_id=user_id)
+            await run_command(plugin, ".rogue 选择 1", sender_id=user_id)
+            run = plugin.save_manager.load_save(user_id)
+            self.assertIsNotNone(run)
+
+            event_help = DummyEvent("/rogueadmin", sender_id=user_id)
+            generator = plugin.rogueadmin(event_help)
+            async for _ in generator:
+                pass
+            self.assertIn("立即跳到某一层", "\n".join(event_help.results))
+
+            event_jump_11 = DummyEvent(f"/rogueadmin jump {user_id} 11", sender_id=user_id)
+            generator = plugin.rogueadmin(event_jump_11)
+            async for _ in generator:
+                pass
+            res_text = "\n".join(event_jump_11.results)
+            self.assertIn("成功跳转到第 11 层", res_text)
+            self.assertIn("赐福", res_text)
+
+            run = plugin.save_manager.load_save(user_id)
+            self.assertEqual(run.player.stage, 11)
+            self.assertEqual(run.node_type, "ancient")
+
+            event_jump_20 = DummyEvent(f"/rogueadmin jump {user_id} 20", sender_id=user_id)
+            generator = plugin.rogueadmin(event_jump_20)
+            async for _ in generator:
+                pass
+            res_text = "\n".join(event_jump_20.results)
+            self.assertIn("成功跳转到第 20 层", res_text)
+            self.assertIn("战斗阶段", res_text)
+
+            run = plugin.save_manager.load_save(user_id)
+            self.assertEqual(run.player.stage, 20)
+            self.assertEqual(run.node_type, "battle")
+
+            event_jump_15 = DummyEvent(f"/rogueadmin jump {user_id} 15", sender_id=user_id)
+            generator = plugin.rogueadmin(event_jump_15)
+            async for _ in generator:
+                pass
+            res_text = "\n".join(event_jump_15.results)
+            self.assertIn("成功跳转到第 15 层", res_text)
+            self.assertTrue(any(x in res_text for x in ["路线选择", "遭遇战", "神秘事件", "奇妙商店", "篝火营地", "古老宝箱"]))
+
+            run = plugin.save_manager.load_save(user_id)
+            self.assertEqual(run.player.stage, 15)
+            self.assertEqual(run.node_type, "map_select")
+
+            plugin.save_manager.delete_save(user_id)
+
+        asyncio.run(go())
+
 if __name__ == "__main__":
     unittest.main()
 

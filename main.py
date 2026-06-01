@@ -101,7 +101,8 @@ class MyPlugin(Star):
                 "💬 /rogueadmin 管理指令帮助：\n"
                 "• 查看当前最终BOSS：/rogueadmin boss\n"
                 "• 设置随机轮换：/rogueadmin boss set random\n"
-                "• 固定最终BOSS：/rogueadmin boss set 腐化之心 或 Icerainboww"
+                "• 固定最终BOSS：/rogueadmin boss set 腐化之心 或 Icerainboww\n"
+                "• 立即跳到某一层：/rogueadmin jump <层数> 或 /rogueadmin jump <玩家ID> <层数>"
             )
             return
 
@@ -125,6 +126,30 @@ class MyPlugin(Star):
                     yield event.plain_result("❌ 错误：无效的BOSS名称。可选值：random, 腐化之心, Icerainboww")
             else:
                 yield event.plain_result("❌ 错误：无效指令。请使用 /rogueadmin boss set <random/腐化之心/Icerainboww>")
+        elif cmd == "jump":
+            if len(parts) == 2:
+                target_user_id = event.get_sender_id()
+                stage_str = parts[1]
+            elif len(parts) >= 3:
+                target_user_id = parts[1]
+                stage_str = parts[2]
+            else:
+                yield event.plain_result("❌ 错误：无效指令。请使用 /rogueadmin jump <层数> 或 /rogueadmin jump <玩家ID> <层数>")
+                return
+            try:
+                target_stage = int(stage_str)
+            except ValueError:
+                yield event.plain_result("❌ 错误：层数必须是整数")
+                return
+            if not (1 <= target_stage <= 25):
+                yield event.plain_result("❌ 错误：层数范围必须在 1 到 25 之间")
+                return
+            run = self.save_manager.load_save(target_user_id)
+            if not run:
+                yield event.plain_result("❌ 错误：未找到该玩家的活跃游戏存档。")
+                return
+            msg = self.engine.jump_to_stage(run, target_stage)
+            yield event.plain_result(f"⚙️ {msg}\n\n{GameRenderer.render_game(run)}")
         else:
             yield event.plain_result("❌ 错误：未知管理命令，请输入 /rogueadmin 查看帮助。")
 
