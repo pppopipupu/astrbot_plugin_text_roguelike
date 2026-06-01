@@ -100,6 +100,9 @@ class ExploreEngine:
             elif rid == "vampiric_touch":
                 p.max_hp = max(5, p.max_hp - 4)
                 p.hp = min(p.hp, p.max_hp)
+            elif rid == "glacier_armor":
+                p.max_hp = max(5, p.max_hp - 6)
+                p.hp = min(p.hp, p.max_hp)
             
             bonus_str = f"获得了先古遗物：【{get_relic_name(rid)}】"
             if chosen["type"] == "contract":

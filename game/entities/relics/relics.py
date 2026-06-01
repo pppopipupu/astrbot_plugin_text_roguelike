@@ -14,6 +14,12 @@ class RelicImpl:
     def modify_initial_draw(self, run, draw_count: int, engine) -> int:
         return draw_count
 
+    def on_damage_take(self, event, run, engine):
+        pass
+
+    def on_shield_decay(self, event, run, engine):
+        pass
+
 class AncientPageRelic(RelicImpl):
     def __init__(self, relic_id: str):
         super().__init__(relic_id)
@@ -254,6 +260,68 @@ class VoidLensRelic(RelicImpl):
 class AncientKeyringRelic(RelicImpl):
     pass
 
+class AbyssGazeRelic(RelicImpl):
+    def on_damage_calculate(self, event, run, engine):
+        if event.damage_type == "spell" and event.source == "p0":
+            event.modified_damage += 4
+
+    def on_damage_take(self, event, run, engine):
+        if event.target == "p0" and event.amount > 0 and event.source != "abyss_gaze":
+            engine._damage_target(run, "p0", 2, source="abyss_gaze", damage_type="true")
+            engine._log_event(run, "👁️ [深渊凝视] 触发：额外受到 2 点真实伤害。")
+
+class GlacierArmorRelic(RelicImpl):
+    def on_battle_start(self, run, engine):
+        run.player.shield += 12
+        engine._log_event(run, "🛡️ [冰川装甲] 触发：获得 12 点初始护盾。")
+
+class AbyssWhisperRelic(RelicImpl):
+    def on_battle_start(self, run, engine):
+        if run.enemies:
+            import random
+            enemy = random.choice(run.enemies)
+            engine._add_buff_to(enemy, "stun", "眩晕", "无法行动", 1)
+            engine._log_event(run, f"👁️ [深渊低语] 触发：使【{enemy.name}】在首回合陷入眩晕！")
+
+class FrostBladeRelic(RelicImpl):
+    def on_damage_calculate(self, event, run, engine):
+        dtype_str = event.damage_type.value if hasattr(event.damage_type, "value") else str(event.damage_type)
+        if dtype_str == "cold" and event.source == "p0":
+            event.modified_damage += 4
+
+class ShadowCurseRelic(RelicImpl):
+    def on_card_played(self, event, run, engine):
+        if event.card.type == "spell" and not event.card.id.startswith("demon_contract"):
+            engine._damage_target(run, "p0", 2, source="shadow_curse", damage_type="true")
+            engine._log_event(run, "🕸️ [影之诅咒] 触发：失去 2 点生命值。")
+
+class GlacierChillRelic(RelicImpl):
+    def on_turn_start(self, event, run, engine):
+        if event.is_player:
+            run.player.actions = max(0, run.player.actions - 1)
+            engine._log_event(run, "❄️ [严寒侵袭] 触发：玩家本回合动作点 A 减少 1。")
+
+class AbyssContractRelic(RelicImpl):
+    def on_damage_take(self, event, run, engine):
+        dtype_str = event.damage_type.value if hasattr(event.damage_type, "value") else str(event.damage_type)
+        if event.target == "p0" and dtype_str == "true" and event.amount > 0:
+            engine._draw_cards(run.player, 1, run)
+            engine._log_event(run, "📖 [深渊契约书] 触发：受到真实伤害，抽取 1 张卡牌。")
+
+class GlacierCoreRelic(RelicImpl):
+    def on_shield_decay(self, event, run, engine):
+        if event.target == "p0" and event.amount > 0:
+            lost = event.amount
+            dmg = lost // 2
+            if dmg > 0:
+                feedback_parts = []
+                for idx in range(len(run.enemies) - 1, -1, -1):
+                    enemy = run.enemies[idx]
+                    engine._damage_target(run, f"e{idx+1}", dmg, damage_type="cold", source="glacier_core")
+                    feedback_parts.append(f"【{enemy.name}】受到 {dmg} 点冰霜伤害")
+                if feedback_parts:
+                    engine._log_event(run, "🏔️ [极寒之核] 触发：" + "，".join(feedback_parts) + "。")
+
 RELIC_IMPLS = {
     "ancient_page": AncientPageRelic,
     "heavy_armor": HeavyArmorRelic,
@@ -278,6 +346,14 @@ RELIC_IMPLS = {
     "ancient_sigil": AncientSigilRelic,
     "void_lens": VoidLensRelic,
     "ancient_keyring": AncientKeyringRelic,
+    "abyss_gaze": AbyssGazeRelic,
+    "glacier_armor": GlacierArmorRelic,
+    "abyss_whisper": AbyssWhisperRelic,
+    "frost_blade": FrostBladeRelic,
+    "shadow_curse": ShadowCurseRelic,
+    "glacier_chill": GlacierChillRelic,
+    "abyss_contract": AbyssContractRelic,
+    "glacier_core": GlacierCoreRelic,
 }
 
 def get_relic_impl(relic_id: str) -> Optional[RelicImpl]:

@@ -1,7 +1,7 @@
 from ...models.events import (
     BattleStartEvent, BattleWinEvent, TurnStartEvent, TurnEndEvent,
     CardPlayEvent, CardPlayedEvent, DamageCalculateEvent, DamageTakeEvent,
-    HealEvent, MinionSummonEvent, ShieldGainEvent
+    HealEvent, MinionSummonEvent, ShieldGainEvent, ShieldDecayEvent
 )
 
 class RelicTriggerHandler:
@@ -15,6 +15,8 @@ class RelicTriggerHandler:
         event_bus.subscribe(MinionSummonEvent, self.on_minion_summon)
         event_bus.subscribe(ShieldGainEvent, self.on_shield_gain)
         event_bus.subscribe(HealEvent, self.on_heal)
+        event_bus.subscribe(DamageTakeEvent, self.on_damage_take)
+        event_bus.subscribe(ShieldDecayEvent, self.on_shield_decay)
 
     def on_battle_start(self, event):
         from ...entities.relics.relics import get_relic_impl
@@ -76,6 +78,20 @@ class RelicTriggerHandler:
                 impl = get_relic_impl(r)
                 if impl and hasattr(impl, "on_heal"):
                     impl.on_heal(event, event.run, self.engine)
+
+    def on_damage_take(self, event):
+        from ...entities.relics.relics import get_relic_impl
+        for r in list(event.run.player.relics):
+            impl = get_relic_impl(r)
+            if impl and hasattr(impl, "on_damage_take"):
+                impl.on_damage_take(event, event.run, self.engine)
+
+    def on_shield_decay(self, event):
+        from ...entities.relics.relics import get_relic_impl
+        for r in list(event.run.player.relics):
+            impl = get_relic_impl(r)
+            if impl and hasattr(impl, "on_shield_decay"):
+                impl.on_shield_decay(event, event.run, self.engine)
 
 class BuffTriggerHandler:
     def __init__(self, event_bus, engine):

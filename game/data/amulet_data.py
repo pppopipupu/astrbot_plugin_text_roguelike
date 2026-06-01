@@ -28,5 +28,30 @@ AMULET_CONFIG = {
         "countdown": 3,
         "desc": "玩家回合结束时获得 4 点护盾",
         "shield_on_end": 4
+    },
+    "abyss_altar": {
+        "name": "深渊祭坛",
+        "countdown": 1,
+        "desc": "谢幕曲：召唤【苏醒的深渊祭坛】。"
+    },
+    "abyss_altar_awaken": {
+        "name": "苏醒的深渊祭坛",
+        "countdown": 1,
+        "desc": "谢幕曲：召唤【汇集的深渊祭坛】。"
+    },
+    "abyss_altar_converge": {
+        "name": "汇集的深渊祭坛",
+        "countdown": 1,
+        "desc": "谢幕曲：召唤【爆发的深渊祭坛】。"
+    },
+    "abyss_altar_burst": {
+        "name": "爆发的深渊祭坛",
+        "countdown": 1,
+        "desc": "谢幕曲：召唤【终结的深渊祭坛】。"
+    },
+    "abyss_altar_end": {
+        "name": "终结的深渊祭坛",
+        "countdown": 1,
+        "desc": "谢幕曲对场上所有敌人造成 500 点真实伤害，玩家受到 10 点真实伤害。"
     }
 }

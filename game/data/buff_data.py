@@ -1,7 +1,8 @@
 BUFF_CONFIG = {
     "tactical_focus": {
         "name": "无法抽牌",
-        "desc": "本回合无法再抽牌"
+        "desc": "本回合无法再抽牌",
+        "is_debuff": True
     },
     "quicken": {
         "name": "超魔-瞬发",
@@ -25,7 +26,8 @@ BUFF_CONFIG = {
     },
     "beat_of_death": {
         "name": "死亡律动",
-        "desc": "每当玩家打出一张牌，玩家受到 1 点力场伤害"
+        "desc": "每当玩家打出一张牌，玩家受到 1 点力场伤害",
+        "is_debuff": True
     },
     "strength": {
         "name": "力量",
@@ -157,11 +159,13 @@ BUFF_CONFIG = {
     },
     "stun": {
         "name": "眩晕",
-        "desc": "无法行动，回合开始时扣除一层恢复"
+        "desc": "无法行动，回合开始时扣除一层恢复",
+        "is_debuff": True
     },
     "shock": {
         "name": "电击",
-        "desc": "受到的闪电和雷鸣伤害每层增加 3 点"
+        "desc": "受到的闪电和雷鸣伤害每层增加 3 点",
+        "is_debuff": True
     },
     "lightning_shield": {
         "name": "闪电护体",
@@ -273,7 +277,8 @@ BUFF_CONFIG = {
     },
     "burning": {
         "name": "燃烧",
-        "desc": "每回合开始时受到火焰伤害"
+        "desc": "每回合开始时受到火焰伤害",
+        "is_debuff": True
     },
     "key_scholar_passive": {
         "name": "门扉共鸣",
@@ -281,11 +286,12 @@ BUFF_CONFIG = {
     },
     "void_weakness": {
         "name": "虚空虚弱",
-        "desc": "造成的法术伤害减少 3 点，回合结束时层数减少 1"
+        "desc": "造成的法术伤害减少 3 点，回合结束时层数减少 1",
+        "is_debuff": True
     },
     "ancient_protection": {
         "name": "先古庇护",
-        "desc": "每回合开始时如果拥有护盾，则清除自身所有负面效果，且受到伤害的 20% 反弹为真实伤害给来源"
+        "desc": "每回合开始时如果拥有护盾，则清除自身所有负面效果，且受到伤害 the 20% 反弹为真实伤害给来源"
     },
     "end_gate_passive": {
         "name": "终焉之门",
@@ -298,5 +304,13 @@ BUFF_CONFIG = {
     "buffer": {
         "name": "缓冲",
         "desc": "免疫接下来的伤害，受到一次伤害减少一层"
+    },
+    "demon_contract_buff": {
+        "name": "恶魔契约",
+        "desc": "打出的下一张法术牌额外打出多次"
+    },
+    "glacier_fortress_buff": {
+        "name": "冰川壁垒",
+        "desc": "回合结束时额外获得护盾"
     }
 }

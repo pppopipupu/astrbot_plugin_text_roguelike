@@ -1,5 +1,13 @@
 from typing import List, Optional
 
+def is_debuff(buff_id: str) -> bool:
+    clean_id = buff_id[:-1] if buff_id.endswith("+") else buff_id
+    if clean_id.startswith("minor_vulnerable_") or clean_id.startswith("vulnerable_"):
+        return True
+    from ...data.buff_data import BUFF_CONFIG
+    cfg = BUFF_CONFIG.get(clean_id, {})
+    return cfg.get("is_debuff", False)
+
 class BuffImpl:
     def __init__(self, stacks: int):
         self.stacks = stacks
@@ -375,7 +383,7 @@ class AncientProtectionBuff(BuffImpl):
         if not event.is_player and entity.shield > 0:
             to_remove = []
             for b in entity.buffs:
-                if b.id in ("burning", "stun", "shock", "void_weakness") or b.id.startswith("vulnerable_") or b.id.startswith("minor_vulnerable_"):
+                if is_debuff(b.id):
                     to_remove.append(b)
             for b in to_remove:
                 entity.buffs.remove(b)
@@ -393,7 +401,7 @@ class EndGatePassiveBuff(BuffImpl):
             entity.shield += 15
             to_remove = []
             for b in entity.buffs:
-                if b.id in ("burning", "stun", "shock", "void_weakness") or b.id.startswith("vulnerable_") or b.id.startswith("minor_vulnerable_"):
+                if is_debuff(b.id):
                     to_remove.append(b)
             for b in to_remove:
                 entity.buffs.remove(b)
@@ -425,6 +433,33 @@ class BufferBuff(BuffImpl):
                 if buff_state in entity.buffs:
                     entity.buffs.remove(buff_state)
 
+class DemonContractBuff(BuffImpl):
+    def on_card_played(self, event, buff_state, entity):
+        if entity == event.run.player and event.card.type == "spell" and not event.card.id.startswith("demon_contract"):
+            stacks = buff_state.stacks
+            res = ""
+            for _ in range(stacks):
+                if event.engine.is_battle_won(event.run):
+                    break
+                extra_res = event.engine._execute_card_effect(event.run, event.card, event.target)
+                res += f" 🔁 [契约回响] {extra_res}"
+            event.feedback += res
+            if buff_state in event.run.player.buffs:
+                event.run.player.buffs.remove(buff_state)
+
+    def on_turn_end(self, event, buff_state, entity):
+        if entity == event.run.player and event.is_player:
+            if buff_state in event.run.player.buffs:
+                event.run.player.buffs.remove(buff_state)
+
+class GlacierFortressBuff(BuffImpl):
+    def on_turn_end(self, event, buff_state, entity):
+        if entity == event.run.player and event.is_player:
+            coef = 6 if self.upgraded else 4
+            shield_gain = buff_state.stacks * coef
+            event.engine._gain_shield(event.run, "p0", shield_gain)
+            event.engine._log_event(event.run, f"🏔️ [冰川壁垒] 触发：玩家获得了 {shield_gain} 点额外护盾。")
+
 BUFF_MAP = {
     "tactical_focus": TacticalFocusBuff,
     "quicken": QuickenBuff,
@@ -450,6 +485,8 @@ BUFF_MAP = {
     "end_gate_passive": EndGatePassiveBuff,
     "ancient_wisdom_buff": AncientWisdomBuff,
     "buffer": BufferBuff,
+    "demon_contract_buff": DemonContractBuff,
+    "glacier_fortress_buff": GlacierFortressBuff,
 }
 
 def get_buff_impl(buff_id: str, stacks: int, stacks2: Optional[int] = None) -> Optional[BuffImpl]:

@@ -92,12 +92,19 @@ def render_map_select(run: GameRun) -> str:
 def render_start_ancient(run: GameRun) -> str:
     p = run.player
     options = run.node_data.get("options", [])
+    style = run.node_data.get("style", "default")
+    style_names = {
+        "default": "先古",
+        "abyss": "深渊",
+        "glacier": "极寒"
+    }
+    name_str = style_names.get(style, "先古")
     lines = [
         "━━━━━━━━━━━━━━━━━━━━",
-        "🌌 【第 1 关：先古契约】",
+        f"🌌 【第 1 关：{name_str}契约】",
         f"玩家：❤️ HP {p.hp}/{p.max_hp} | 🪙 金币 {p.gold}",
         "",
-        "在你面前浮现出了三座石碑，每座石碑上都铭刻着不同的命运契约。选择其中的契约以获取力量，但命运总会索取它的代价：",
+        f"在你面前浮现出了三座石碑，每座石碑上都铭刻着不同的{name_str}契约。选择其中的契约以获取力量，但命运总会索取它的代价：",
         ""
     ]
     for idx, opt in enumerate(options, 1):
@@ -105,12 +112,12 @@ def render_start_ancient(run: GameRun) -> str:
         rname = get_relic_name(rid)
         rdesc = get_relic_desc(rid)
         if opt["type"] == "double":
-            lines.append(f" [{idx}] ⚖️ 先古遗物：【{rname}】\n     效果：{rdesc}")
+            lines.append(f" [{idx}] ⚖️ {name_str}遗物：【{rname}】\n     效果：{rdesc}")
         else:
             cid = opt["card"]
             cname = ALL_CARDS[cid].name
             cdesc = ALL_CARDS[cid].desc
-            lines.append(f" [{idx}] 🕸️ 先古卡牌：【{cname}】 ➕ 代价遗物【{rname}】\n     效果：获得该强力卡牌 ({cdesc}) 同时获得其伴随的代价 ({rdesc})")
+            lines.append(f" [{idx}] 🕸️ {name_str}卡牌：【{cname}】 ➕ 代价遗物【{rname}】\n     效果：获得该强力卡牌 ({cdesc}) 同时获得其伴随的代价 ({rdesc})")
     lines.append("")
     lines.append("━━━━━━━━━━━━━━━━━━━━")
     lines.append("💬 选择契约指令：/rogue 选择 <契约序号>")
@@ -120,12 +127,19 @@ def render_start_ancient(run: GameRun) -> str:
 def render_ancient(run: GameRun) -> str:
     p = run.player
     options = run.node_data.get("options", [])
+    style = run.node_data.get("style", "default")
+    style_names = {
+        "default": "先古",
+        "abyss": "深渊",
+        "glacier": "极寒"
+    }
+    name_str = style_names.get(style, "先古")
     lines = [
         "━━━━━━━━━━━━━━━━━━━━",
-        f"🌟 【第 {p.stage} 关：先古赐福】",
+        f"🌟 【第 {p.stage} 关：{name_str}赐福】",
         f"玩家：❤️ HP {p.hp}/{p.max_hp} | 🪙 金币 {p.gold}",
         "",
-        "空气中浮现出纯净的奥术光辉。先古的意志再次眷顾了你，向你降下丰厚的赐福礼包：",
+        f"空气中浮现出纯净的奥术光辉。{name_str}的意志再次眷顾了你，向你降下丰厚的赐福礼包：",
         ""
     ]
     for idx, opt in enumerate(options, 1):

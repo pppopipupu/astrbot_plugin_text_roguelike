@@ -71,7 +71,7 @@ class ThornsNecklaceAmulet(AmuletTemplate):
         av.countdown -= 1
         if av.countdown <= 0:
             del run.player.amulets[grid]
-            run.player.discard_pile.append(av.id)
+            run.player.minion_graveyard.append(av.id)
             lw = self.on_death(run, grid, is_upgraded, engine)
             msg += f"\n🔔 [谢幕曲] 我方【{av.name}】吟唱结束进入墓地：{lw}"
         return msg
@@ -139,6 +139,54 @@ class VoidBeaconAmulet(AmuletTemplate):
             engine._log_event(run, f"🌌 【虚空信标】使所有敌人获得 1 层力场易伤，并对【{target.name}】造成了 {damage} 点力场伤害！")
         return ""
 
+class AbyssAltarAmulet(AmuletTemplate):
+    def on_death(self, run, grid, is_upgraded, engine) -> str:
+        from ...models.state import AmuletState
+        next_id = "abyss_altar_awaken+" if is_upgraded else "abyss_altar_awaken"
+        next_name = "【觉醒】苏醒的深渊祭坛" if is_upgraded else "苏醒的深渊祭坛"
+        next_desc = "谢幕曲：在此格子部署【汇集的深渊祭坛】。"
+        run.player.amulets[grid] = AmuletState(next_id, next_name, 1, next_desc)
+        return f"部署了【{next_name}】。"
+
+class AbyssAltarAwakenAmulet(AmuletTemplate):
+    def on_death(self, run, grid, is_upgraded, engine) -> str:
+        from ...models.state import AmuletState
+        next_id = "abyss_altar_converge+" if is_upgraded else "abyss_altar_converge"
+        next_name = "【觉醒】汇集的深渊祭坛" if is_upgraded else "汇集的深渊祭坛"
+        next_desc = "谢幕曲：在此格子部署【爆发的深渊祭坛】。"
+        run.player.amulets[grid] = AmuletState(next_id, next_name, 1, next_desc)
+        return f"部署了【{next_name}】。"
+
+class AbyssAltarConvergeAmulet(AmuletTemplate):
+    def on_death(self, run, grid, is_upgraded, engine) -> str:
+        from ...models.state import AmuletState
+        next_id = "abyss_altar_burst+" if is_upgraded else "abyss_altar_burst"
+        next_name = "【觉醒】爆发的深渊祭坛" if is_upgraded else "爆发的深渊祭坛"
+        next_desc = "谢幕曲：在此格子部署【终结的深渊祭坛】。"
+        run.player.amulets[grid] = AmuletState(next_id, next_name, 1, next_desc)
+        return f"部署了【{next_name}】。"
+
+class AbyssAltarBurstAmulet(AmuletTemplate):
+    def on_death(self, run, grid, is_upgraded, engine) -> str:
+        from ...models.state import AmuletState
+        next_id = "abyss_altar_end+" if is_upgraded else "abyss_altar_end"
+        next_name = "【觉醒】终结的深渊祭坛" if is_upgraded else "终结的深渊祭坛"
+        next_desc = "谢幕曲对场上所有敌人造成 500 点真实伤害，玩家受到 10 点真实伤害。"
+        run.player.amulets[grid] = AmuletState(next_id, next_name, 1, next_desc)
+        return f"部署了【{next_name}】。"
+
+class AbyssAltarEndAmulet(AmuletTemplate):
+    def on_death(self, run, grid, is_upgraded, engine) -> str:
+        dmg_enemies = 600 if is_upgraded else 500
+        dmg_player = 5 if is_upgraded else 10
+        feedback_parts = []
+        for idx in range(len(run.enemies) - 1, -1, -1):
+            enemy = run.enemies[idx]
+            engine._damage_target(run, f"e{idx+1}", dmg_enemies, damage_type="true", source="abyss_altar_end")
+            feedback_parts.append(f"【{enemy.name}】受到 {dmg_enemies} 点真实伤害")
+        engine._damage_target(run, "p0", dmg_player, damage_type="true", source="abyss_altar_end")
+        return "深渊仪式终结！" + "，".join(feedback_parts) + f"，玩家受到 {dmg_player} 点真实伤害。"
+
 ALL_AMULETS = {
     "lucky_coin": LuckyCoinAmulet(),
     "mage_ward": MageWardAmulet(),
@@ -146,4 +194,9 @@ ALL_AMULETS = {
     "arcane_crystal": ArcaneCrystalAmulet(),
     "ring_of_elements": RingOfElementsAmulet(),
     "void_beacon": VoidBeaconAmulet(),
+    "abyss_altar": AbyssAltarAmulet(),
+    "abyss_altar_awaken": AbyssAltarAwakenAmulet(),
+    "abyss_altar_converge": AbyssAltarConvergeAmulet(),
+    "abyss_altar_burst": AbyssAltarBurstAmulet(),
+    "abyss_altar_end": AbyssAltarEndAmulet(),
 }

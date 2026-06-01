@@ -108,12 +108,14 @@ class EnemyTurnController:
     def enemy_turn(self, run: GameRun) -> str:
         logs = []
         decay_enemies = []
-        for enemy in run.enemies:
+        for idx, enemy in enumerate(run.enemies):
             if enemy.hp > 0 and enemy.shield > 0:
                 lost = enemy.shield - (enemy.shield // 2)
                 enemy.shield = enemy.shield // 2
                 if lost > 0:
                     decay_enemies.append(f"【{enemy.name}】失去 {lost} 点护盾")
+                    from ...models.events import ShieldDecayEvent
+                    self.engine.event_bus.dispatch(ShieldDecayEvent(run, f"e{idx+1}", lost))
             else:
                 enemy.shield = 0
         if decay_enemies:

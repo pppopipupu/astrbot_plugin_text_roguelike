@@ -27,8 +27,11 @@ class CardPlayer:
                 if getattr(card, "fleeting", False):
                     if base_cid in p.deck:
                         p.deck.remove(base_cid)
-                elif card.type == "minion":
-                    self.engine._log_event(run, f"✨ [消耗] 【{card.name}】进入战场。")
+                elif card.type in ("minion", "amulet"):
+                    if card.type == "minion":
+                        self.engine._log_event(run, f"✨ [消耗] 【{card.name}】进入战场。")
+                    else:
+                        self.engine._log_event(run, f"✨ [消耗] 【{card.name}】部署完毕。")
                     exhaust_evt = CardExhaustEvent(run, next_cid, source)
                     self.engine.event_bus.dispatch(exhaust_evt)
                 elif getattr(card, "exhaust", False):
@@ -43,8 +46,11 @@ class CardPlayer:
             if getattr(card, "fleeting", False):
                 if cid in p.deck:
                     p.deck.remove(cid)
-            elif card.type == "minion":
-                self.engine._log_event(run, f"✨ [消耗] 【{card.name}】进入战场。")
+            elif card.type in ("minion", "amulet"):
+                if card.type == "minion":
+                    self.engine._log_event(run, f"✨ [消耗] 【{card.name}】进入战场。")
+                else:
+                    self.engine._log_event(run, f"✨ [消耗] 【{card.name}】部署完毕。")
                 exhaust_evt = CardExhaustEvent(run, cid, source)
                 self.engine.event_bus.dispatch(exhaust_evt)
             elif getattr(card, "exhaust", False):
@@ -449,7 +455,7 @@ class CardPlayer:
             av.countdown -= 1
             if av.countdown <= 0:
                 del p.amulets[ak]
-                p.discard_pile.append(av.id)
+                p.minion_graveyard.append(av.id)
                 lw_msg = ""
                 if template:
                     is_upgraded = av.id.endswith("+")
@@ -477,6 +483,8 @@ class CardPlayer:
             p.shield = p.shield // 2
             if lost > 0:
                 decay_msgs.append(f"玩家失去 {lost} 点护盾")
+                from ...models.events import ShieldDecayEvent
+                self.engine.event_bus.dispatch(ShieldDecayEvent(run, "p0", lost))
         else:
             p.shield = 0
         decay_info = ""

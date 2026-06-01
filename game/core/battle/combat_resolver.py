@@ -122,7 +122,7 @@ class CombatResolver:
         eligible = []
         for cid in p.minion_graveyard:
             card = ALL_CARDS.get(cid)
-            if card:
+            if card and card.type == "minion":
                 hp_val = getattr(card, "minion_hp", 999)
                 if hp_val < hp_limit:
                     eligible.append(cid)
@@ -204,7 +204,7 @@ class CombatResolver:
                         run.enemies.pop(idx)
                         death_evt = MinionDeathEvent(run, e.name, target, e.name, True)
                         self.engine.event_bus.dispatch(death_evt)
-                take_evt = DamageTakeEvent(run, source, target, final_dmg, is_fatal)
+                take_evt = DamageTakeEvent(run, source, target, final_dmg, is_fatal, damage_type)
                 self.engine.event_bus.dispatch(take_evt)
         elif target == "p0":
             if final_dmg > 0:
@@ -223,7 +223,7 @@ class CombatResolver:
                     p.shield = 0
             if p.hp <= 0:
                 is_fatal = True
-            take_evt = DamageTakeEvent(run, source, target, final_dmg, is_fatal)
+            take_evt = DamageTakeEvent(run, source, target, final_dmg, is_fatal, damage_type)
             self.engine.event_bus.dispatch(take_evt)
         elif target.startswith("p"):
             grid = target[1:]
@@ -237,7 +237,7 @@ class CombatResolver:
                     del p.minions[grid]
                     death_evt = MinionDeathEvent(run, m.id, target, m.name, False)
                     self.engine.event_bus.dispatch(death_evt)
-                take_evt = DamageTakeEvent(run, source, target, final_dmg, is_fatal)
+                take_evt = DamageTakeEvent(run, source, target, final_dmg, is_fatal, damage_type)
                 self.engine.event_bus.dispatch(take_evt)
         damage_type_str = damage_type.value if hasattr(damage_type, "value") else str(damage_type)
         type_name = DAMAGE_TYPE_NAMES.get(damage_type_str, "物理" if damage_type_str == "attack" else "特殊")

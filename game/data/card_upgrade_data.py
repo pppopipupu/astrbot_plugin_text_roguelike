@@ -213,5 +213,47 @@ CARD_UPGRADE_CONFIG = {
     },
     "arcane_barrier": {
         "desc": "获得X*9点护盾。若X>1，则获得1层缓冲。"
+    },
+    "break_limits": {
+        "cost_a": 2,
+        "cost_ba": 0,
+        "desc": "使玩家的所有正面 Buff 计数器翻倍，并获得 1A 1BA。消耗。"
+    },
+    "abyss_collapse": {
+        "cost_a": 1,
+        "cost_ba": 1,
+        "base_dmg": 32,
+        "desc": "对所有敌人造成 32 点黯蚀伤害。若目标被眩晕，则造成双倍伤害。消耗。"
+    },
+    "demon_contract": {
+        "desc": "获得 3BA 动作点与抽 4 张卡，且本回合内你打出的下一张非恶魔契约法术牌额外打出 2 次。消耗。"
+    },
+    "frost_nova": {
+        "cost_a": 2,
+        "cost_ba": 0,
+        "base_dmg": 20,
+        "desc": "对所有敌人造成 20 点冰霜伤害，对所有敌人施加 3 层轻度寒冷易伤并使所有敌人眩晕 1 回合。消耗。"
+    },
+    "glacier_fortress": {
+        "cost_a": 1,
+        "cost_ba": 0,
+        "desc": "获得 28 点护盾，且在本场战斗中，玩家回合结束时获得的护盾量增加 6 点。消耗。"
+    },
+    "abyss_altar": {
+        "cost_a": 2,
+        "cost_ba": 0,
+        "desc": "(消耗: 2A) 部署【深渊祭坛】。拍下直接跳过第一阶段，在格子上部署【苏醒的深渊祭坛】护符。"
+    },
+    "abyss_erosion": {
+        "cost_a": 0,
+        "cost_ba": 0,
+        "base_dmg": 15,
+        "desc": "对目标敌人造成 15 点黯蚀伤害，并施加 5 层虚空弱化。消耗。"
+    },
+    "glacier_tempest": {
+        "cost_a": 2,
+        "cost_ba": 1,
+        "base_dmg": 18,
+        "desc": "对所有敌人造成 18 点冰霜伤害。若场上存在任何我方随从，则获得等同于本次造成总伤害值 50% 的护盾。消耗。"
     }
 }

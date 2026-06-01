@@ -166,5 +166,53 @@ RELIC_CONFIG = {
         "rarity": "epic",
         "desc": "部署护符时，该护符有50%几率吟唱时间额外减少1（最低为1）。",
         "price": 150
+    },
+    "abyss_gaze": {
+        "name": "深渊凝视",
+        "rarity": "epic",
+        "desc": "玩家使用的法术造成的伤害增加 4 点，但每当玩家受到伤害时，额外受到 2 点真实伤害。",
+        "price": 100
+    },
+    "glacier_armor": {
+        "name": "冰川装甲",
+        "rarity": "epic",
+        "desc": "每场战斗开始时自动获得 12 点护盾，但玩家的最大生命上限永久减少 6 点。",
+        "price": 100
+    },
+    "abyss_whisper": {
+        "name": "深渊低语",
+        "rarity": "epic",
+        "desc": "战斗开始时，随机使一个敌人眩晕 1 回合。",
+        "price": 120
+    },
+    "frost_blade": {
+        "name": "凝霜之刃",
+        "rarity": "epic",
+        "desc": "每当玩家对敌人造成冰霜伤害时，伤害值增加 4 点。",
+        "price": 120
+    },
+    "shadow_curse": {
+        "name": "影之诅咒",
+        "rarity": "curse",
+        "desc": "每当玩家打出一张法术牌时，失去 2 点生命值。",
+        "price": 80
+    },
+    "glacier_chill": {
+        "name": "严寒侵袭",
+        "rarity": "curse",
+        "desc": "玩家每回合开始时，动作点 A 减少 1。",
+        "price": 80
+    },
+    "abyss_contract": {
+        "name": "深渊契约书",
+        "rarity": "epic",
+        "desc": "每当玩家受到真实伤害时，抽取 1 张卡牌。",
+        "price": 120
+    },
+    "glacier_core": {
+        "name": "极寒之核",
+        "rarity": "epic",
+        "desc": "每当玩家的护盾在回合开始自动流失时，对所有敌人造成等同于流失量 50% 的冰霜伤害。",
+        "price": 120
     }
 }

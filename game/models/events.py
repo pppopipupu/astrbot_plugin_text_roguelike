@@ -60,6 +60,7 @@ class DamageTakeEvent(GameEvent):
     target: str
     amount: int
     is_fatal: bool = False
+    damage_type: str = "effect"
 
 @dataclass
 class HealEvent(GameEvent):
@@ -99,3 +100,9 @@ class ShieldGainEvent(GameEvent):
     target: str
     base_amount: int
     modified_amount: int = 0
+
+@dataclass
+class ShieldDecayEvent(GameEvent):
+    run: GameRun
+    target: str
+    amount: int

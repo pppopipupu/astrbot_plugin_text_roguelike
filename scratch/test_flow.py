@@ -62,7 +62,7 @@ class TestRoguePlugin(unittest.TestCase):
         
         async def go():
             res = await run_command(plugin, ".rogue 开启 确认")
-            self.assertIn("先古契约", res)
+            self.assertTrue(any(x in res for x in ["先古契约", "深渊契约", "极寒契约"]))
             res = await run_command(plugin, ".rogue 选择 1")
             self.assertIn("契约达成", res)
             res = await run_command(plugin, ".rogue 状态")
@@ -589,7 +589,7 @@ class TestRoguePlugin(unittest.TestCase):
             event_start = DummyEvent("开启", sender_id="test_user_rogue")
             await plugin.shortcut_rogue(event_start)
             self.assertTrue(event_start.stopped)
-            self.assertIn("先古契约", "\n".join(event_start.results))
+            self.assertTrue(any(x in "\n".join(event_start.results) for x in ["先古契约", "深渊契约", "极寒契约"]))
             
             event_chat = DummyEvent("你好吗", sender_id="test_user_rogue")
             await plugin.shortcut_rogue(event_chat)
@@ -1383,6 +1383,193 @@ class TestRoguePlugin(unittest.TestCase):
         card_torrent.execute(run, None, engine)
         self.assertEqual(enemies[0].hp, 14)
         self.assertEqual(enemies[1].hp, 14)
+
+    def test_new_ancient_features(self):
+        class DummySaveManager:
+            def save_save(self, user_id, run):
+                pass
+        sm = DummySaveManager()
+        engine = BattleEngine(sm)
+        player = PlayerState(
+            hp=30,
+            max_hp=30,
+            shield=0,
+            gold=100,
+            stage=1,
+            deck=["break_limits", "abyss_collapse", "demon_contract", "frost_nova", "glacier_fortress"],
+            hand=["break_limits", "abyss_collapse", "demon_contract", "frost_nova", "glacier_fortress"],
+            actions=5,
+            bonus_actions=5,
+            buffs=[]
+        )
+        enemies = [
+            EnemyState("测试敌人A", 50, 50, 0)
+        ]
+        run = GameRun(
+            user_id="test_new_features_user",
+            node_type="battle",
+            player=player,
+            enemies=enemies
+        )
+        engine._add_buff_to(player, "strength", "力量", "造成的伤害增加", 3)
+        engine._add_buff_to(player, "stun", "眩晕", "无法行动", 1)
+        card_limits = ALL_CARDS["break_limits"]
+        card_limits.execute(run, None, engine)
+        strength_buff = next(b for b in player.buffs if b.id == "strength")
+        stun_buff = next(b for b in player.buffs if b.id == "stun")
+        self.assertEqual(strength_buff.stacks, 6)
+        self.assertEqual(stun_buff.stacks, 1)
+        card_collapse = ALL_CARDS["abyss_collapse"]
+        enemies[0].hp = 50
+        card_collapse.execute(run, None, engine)
+        self.assertEqual(enemies[0].hp, 26)
+        engine._add_buff_to(enemies[0], "stun", "眩晕", "无法行动", 1)
+        enemies[0].hp = 50
+        card_collapse.execute(run, None, engine)
+        self.assertEqual(enemies[0].hp, 2)
+
+    def test_more_ancient_relics_and_cards(self):
+        class DummySaveManager:
+            def save_save(self, user_id, run):
+                pass
+            def load_stats(self, user_id):
+                class DummyStats:
+                    def __init__(self):
+                        self.unlocked_gatekey = True
+                        self.killed_icerainboww = True
+                        self.killed_yog_sothoth = False
+                return DummyStats()
+            def save_stats(self, user_id, stats):
+                pass
+        sm = DummySaveManager()
+        engine = BattleEngine(sm)
+        player = PlayerState(
+            hp=40,
+            max_hp=40,
+            shield=20,
+            gold=100,
+            stage=1,
+            deck=[],
+            hand=["abyss_altar", "abyss_erosion", "glacier_tempest", "abyss_altar+"],
+            actions=5,
+            bonus_actions=5,
+            buffs=[],
+            relics=["abyss_contract", "glacier_core"]
+        )
+        enemies = [
+            EnemyState("测试敌人A", 600, 600, 0)
+        ]
+        run = GameRun(
+            user_id="test_more_features_user",
+            node_type="battle",
+            player=player,
+            enemies=enemies
+        )
+        engine.card_player.end_turn(run)
+        self.assertEqual(enemies[0].hp, 595)
+        self.assertEqual(player.shield, 10)
+        player.draw_pile = ["mass_healing_word"]
+        initial_hand_len = len(player.hand)
+        engine._damage_target(run, "p0", 2, damage_type="true", source="test")
+        self.assertEqual(len(player.hand), initial_hand_len + 1)
+        self.assertIn("mass_healing_word", player.hand)
+        card_erosion = ALL_CARDS["abyss_erosion"]
+        card_erosion.execute(run, "e1", engine)
+        self.assertEqual(enemies[0].hp, 585)
+        weakness_buff = next(b for b in enemies[0].buffs if b.id == "void_weakness")
+        self.assertEqual(weakness_buff.stacks, 3)
+        player.minions["1"] = MinionState("mercenary", "雇佣兵", 5, 5, 4, 1, 0)
+        card_tempest = ALL_CARDS["glacier_tempest"]
+        card_tempest.execute(run, None, engine)
+        self.assertEqual(enemies[0].hp, 573)
+        self.assertEqual(player.shield, 16)
+        card_altar_up = ALL_CARDS["abyss_altar+"]
+        card_altar_up.execute(run, None, engine)
+        self.assertIn("2", player.amulets)
+        self.assertEqual(player.amulets["2"].id, "abyss_altar_awaken")
+        card_altar = ALL_CARDS["abyss_altar"]
+        card_altar.execute(run, None, engine)
+        self.assertIn("3", player.amulets)
+        self.assertEqual(player.amulets["3"].id, "abyss_altar")
+        engine.card_player.end_turn(run)
+        self.assertEqual(player.amulets["3"].id, "abyss_altar_awaken")
+        engine.card_player.end_turn(run)
+        self.assertEqual(player.amulets["3"].id, "abyss_altar_converge")
+        engine.card_player.end_turn(run)
+        self.assertEqual(player.amulets["3"].id, "abyss_altar_burst")
+        engine.card_player.end_turn(run)
+        self.assertEqual(player.amulets["3"].id, "abyss_altar_end")
+        prev_player_hp = player.hp
+        engine.card_player.end_turn(run)
+        self.assertNotIn("3", player.amulets)
+        self.assertEqual(player.hp, prev_player_hp - 10)
+
+    def test_amulet_exhaust_and_graveyard(self):
+        class DummySaveManager:
+            def save_save(self, user_id, run):
+                pass
+            def load_stats(self, user_id):
+                class DummyStats:
+                    def __init__(self):
+                        self.unlocked_gatekey = False
+                        self.killed_icerainboww = False
+                        self.killed_yog_sothoth = False
+                return DummyStats()
+            def save_stats(self, user_id, stats):
+                pass
+        sm = DummySaveManager()
+        engine = BattleEngine(sm)
+        player = PlayerState(
+            hp=40,
+            max_hp=40,
+            shield=20,
+            gold=100,
+            stage=1,
+            deck=["lucky_coin", "thorns_necklace"],
+            hand=["lucky_coin", "thorns_necklace"],
+            actions=5,
+            bonus_actions=5,
+            buffs=[],
+            relics=[]
+        )
+        enemies = [
+            EnemyState("测试敌人A", 50, 50, 0)
+        ]
+        run = GameRun(
+            user_id="test_amulet_user",
+            node_type="battle",
+            player=player,
+            enemies=enemies
+        )
+        engine.card_player.play_card(run, 1)
+        self.assertIn("1", player.amulets)
+        self.assertEqual(player.amulets["1"].id, "lucky_coin")
+        self.assertNotIn("lucky_coin", player.discard_pile)
+        self.assertNotIn("lucky_coin", player.exhaust_pile)
+        engine.card_player.end_turn(run)
+        self.assertEqual(player.amulets["1"].countdown, 2)
+        engine.card_player.end_turn(run)
+        self.assertEqual(player.amulets["1"].countdown, 1)
+        prev_gold = player.gold
+        engine.card_player.end_turn(run)
+        self.assertNotIn("1", player.amulets)
+        self.assertIn("lucky_coin", player.minion_graveyard)
+        self.assertNotIn("lucky_coin", player.discard_pile)
+        self.assertEqual(player.gold, prev_gold + 13)
+        res = engine.combat_resolver.recall_dead_minion(run, 999)
+        self.assertIn("没有符合条件的随从", res)
+        player.hand = ["master_key"]
+        player.actions = 2
+        player.bonus_actions = 1
+        card_thorns = ALL_CARDS["thorns_necklace"]
+        card_thorns.execute(run, None, engine)
+        engine.card_player._handle_card_post_play(run, card_thorns, "thorns_necklace")
+        self.assertIn("1", player.amulets)
+        self.assertEqual(player.amulets["1"].id, "thorns_necklace")
+        self.assertNotIn("thorns_necklace", player.discard_pile)
+        engine.card_player.play_card(run, 1)
+        self.assertNotIn("1", player.amulets)
+        self.assertIn("thorns_necklace", player.minion_graveyard)
 
 if __name__ == "__main__":
     unittest.main()

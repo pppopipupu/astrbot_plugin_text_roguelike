@@ -118,7 +118,7 @@ class AdrenalineCard(Card):
             run.player.actions += 1
             run.player.hp -= 2
             cfg = CARD_CONFIG.get(self.id.replace("+", ""), {})
-            return cfg.get("feedback", "获得了 1A，失去了 2 点生命值。")
+            return cfg.get("feedback", "获得了 1A 并失去了 2 点生命值。")
 
 @register_card("lucky_coin")
 @register_card("thorns_necklace")
@@ -126,6 +126,11 @@ class AdrenalineCard(Card):
 @register_card("arcane_crystal")
 @register_card("mage_ward")
 @register_card("void_beacon")
+@register_card("abyss_altar")
+@register_card("abyss_altar_awaken")
+@register_card("abyss_altar_converge")
+@register_card("abyss_altar_burst")
+@register_card("abyss_altar_end")
 class DeployAmuletCard(Card):
     def __init__(self, id, name, color, type, cost_a, cost_ba, countdown, amulet_desc, desc=""):
         super().__init__(id, name, color, type, cost_a, cost_ba, countdown=countdown, desc=desc)
@@ -140,7 +145,15 @@ class DeployAmuletCard(Card):
                 import random
                 if random.random() < 0.5:
                     cd = max(1, cd - 1)
-            run.player.amulets[grid] = AmuletState(self.id, self.name, cd, self.amulet_desc)
+            deploy_id = self.id
+            deploy_name = self.name
+            deploy_desc = self.amulet_desc
+            if self.id == "abyss_altar+":
+                deploy_id = "abyss_altar_awaken"
+                aw_cfg = CARD_CONFIG.get("abyss_altar_awaken", {})
+                deploy_name = aw_cfg.get("name", "苏醒的深渊祭坛")
+                deploy_desc = aw_cfg.get("amulet_desc", "谢幕曲：在此格子部署【汇集的深渊祭坛】。")
+            run.player.amulets[grid] = AmuletState(deploy_id, deploy_name, cd, deploy_desc)
             feedback_success = cfg.get("feedback_success", "将【{name}】部署到了格子 [{grid}]。")
             return feedback_success.format(name=self.name, grid=grid)
         return cfg.get("feedback_fail", "战场格子已满，部署失败。")
@@ -164,6 +177,7 @@ class SummonMinionCard(Card):
         grid = engine._summon_minion(run, self.id, self.name, self.minion_hp, self.minion_atk, ba)
         if grid:
             battlecry_msg = ""
+            target_name = "无"
             if self.id == "mercenary+":
                 first_enemy = engine._get_first_alive_enemy(run)
                 if first_enemy:
@@ -184,13 +198,14 @@ class SummonMinionCard(Card):
                     try:
                         f_idx = int(first_enemy.replace("e", "")) - 1
                         if 0 <= f_idx < len(run.enemies):
+                            target_name = run.enemies[f_idx].name
                             engine._add_buff_to(run.enemies[f_idx], "stun", "眩晕", "无法行动", 1)
-                            battlecry_msg = f"\n🚪 [入场曲] 使【{run.enemies[f_idx].name}】眩晕了 1 回合！"
+                            battlecry_msg = f"\n🚪 [入场曲] 使【{target_name}】眩晕了 1 回合！"
                     except ValueError:
                         pass
                 
             feedback_success = cfg.get("feedback_success", "在格子 [{grid}] 召唤了【{name}】。")
-            return feedback_success.format(grid=grid, name=self.name) + battlecry_msg
+            return feedback_success.format(grid=grid, name=self.name, target=target_name) + battlecry_msg
         return cfg.get("feedback_fail", "战场已满，召唤失败。")
 
 @register_card("quicken")
@@ -399,7 +414,7 @@ class MasterKeyCard(Card):
             av.countdown -= reduction
             if av.countdown <= 0:
                 del p.amulets[ak]
-                p.discard_pile.append(av.id)
+                p.minion_graveyard.append(av.id)
                 base_id = av.id[:-1] if av.id.endswith("+") else av.id
                 template = ALL_AMULETS.get(base_id)
                 lw_msg = ""
