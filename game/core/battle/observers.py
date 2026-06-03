@@ -2,7 +2,8 @@ from ...models.events import (
     BattleStartEvent, BattleWinEvent, TurnStartEvent, TurnEndEvent,
     CardPlayEvent, CardPlayedEvent, DamageCalculateEvent, DamageTakeEvent,
     HealEvent, MinionSummonEvent, ShieldGainEvent, ShieldDecayEvent,
-    MinionDeathEvent, CardExhaustEvent
+    MinionDeathEvent, CardExhaustEvent, HealCalculateEvent, EnemyBeforeDeathEvent,
+    EnemySyncIntentsEvent
 )
 
 class RelicTriggerHandler:
@@ -105,6 +106,8 @@ class BuffTriggerHandler:
         event_bus.subscribe(HealEvent, self.on_heal)
         event_bus.subscribe(ShieldGainEvent, self.on_shield_gain)
         event_bus.subscribe(DamageTakeEvent, self.on_damage_take)
+        event_bus.subscribe(HealCalculateEvent, self.on_heal_calculate)
+        event_bus.subscribe(EnemySyncIntentsEvent, self.on_enemy_sync_intents)
 
     def on_turn_start(self, event):
         from ...entities.buffs.buffs import get_buff_impl
@@ -198,6 +201,21 @@ class BuffTriggerHandler:
                 impl = get_buff_impl(b.id, b.stacks, getattr(b, "stacks2", None))
                 if impl and hasattr(impl, "on_heal"):
                     impl.on_heal(event, b, event.run.player)
+
+    def on_heal_calculate(self, event):
+        from ...entities.buffs.buffs import get_buff_impl
+        if event.target == "p0":
+            for b in list(event.run.player.buffs):
+                impl = get_buff_impl(b.id, b.stacks, getattr(b, "stacks2", None))
+                if impl and hasattr(impl, "on_heal_calculate"):
+                    impl.on_heal_calculate(event, b, event.run.player)
+
+    def on_enemy_sync_intents(self, event):
+        from ...entities.buffs.buffs import get_buff_impl
+        for b in list(event.enemy.buffs):
+            impl = get_buff_impl(b.id, b.stacks, getattr(b, "stacks2", None))
+            if impl and hasattr(impl, "on_enemy_sync_intents"):
+                impl.on_enemy_sync_intents(event, b, event.enemy)
 
     def on_shield_gain(self, event):
         from ...entities.buffs.buffs import get_buff_impl
@@ -388,3 +406,16 @@ class MinionTriggerHandler:
         template = ALL_MINIONS.get(base_id)
         if template and hasattr(template, "on_minion_summon"):
             template.on_minion_summon(event.run, event.grid, event, self.engine)
+
+
+class EnemyTriggerHandler:
+    def __init__(self, event_bus, engine):
+        self.engine = engine
+        event_bus.subscribe(EnemyBeforeDeathEvent, self.on_enemy_before_death)
+
+    def on_enemy_before_death(self, event):
+        from ...entities import get_enemy_template
+        template = get_enemy_template(event.enemy.name)
+        if template and hasattr(template, "on_enemy_before_death"):
+            template.on_enemy_before_death(event.run, event.enemy, event, self.engine)
+

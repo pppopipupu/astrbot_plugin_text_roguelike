@@ -53,6 +53,9 @@ def get_card_cost_str(card) -> str:
     return cost_str.strip() or "免费"
 
 def render_card_library() -> str:
+    from ..models.manager import SaveManager
+    boss_cfg = SaveManager().load_admin_config()
+    icerainboww_enabled = boss_cfg.get("icerainboww_enabled", True)
     lines = [
         "━━━━━━━━━━━━━━━━━━━━",
         "📜 魔法肉鸽卡牌总览",
@@ -63,6 +66,8 @@ def render_card_library() -> str:
     red_cards = []
     curses = []
     for cid, card in ALL_CARDS.items():
+        if not icerainboww_enabled and cid in ("minion_icerainboww", "minion_icerainboww+"):
+            continue
         cost_str = get_card_cost_str(card)
         type_ch = ""
         if card.type == "spell":
@@ -312,13 +317,21 @@ def render_shop(stats: UserStats) -> str:
     ]
     welcome_quote = random.choice(welcome_quotes)
     
-    killed_icerainboww = getattr(stats, "killed_icerainboww", False)
-    if killed_icerainboww:
-        item6_title = " [6] Icerainboww - 状态：已解锁"
-        item6_desc = "     └─ 击败最终BOSS Icerainboww解锁。"
+    from ..models.manager import SaveManager
+    boss_cfg = SaveManager().load_admin_config()
+    icerainboww_enabled = boss_cfg.get("icerainboww_enabled", True)
+    
+    if not icerainboww_enabled:
+        item6_title = " [6] 商品已禁用 - 状态：不可用"
+        item6_desc = "     └─ 该内容已被管理员禁用。"
     else:
-        item6_title = " [6] ？？？ - 状态：未解锁"
-        item6_desc = "     └─ 击败未知的最终BOSS解锁。"
+        killed_icerainboww = getattr(stats, "killed_icerainboww", False)
+        if killed_icerainboww:
+            item6_title = " [6] Icerainboww - 状态：已解锁"
+            item6_desc = "     └─ 击败最终BOSS Icerainboww解锁。"
+        else:
+            item6_title = " [6] ？？？ - 状态：未解锁"
+            item6_desc = "     └─ 击败未知的最终BOSS解锁。"
 
     killed_yog = getattr(stats, "killed_yog_sothoth", False)
     if killed_yog:

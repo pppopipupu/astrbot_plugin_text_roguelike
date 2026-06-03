@@ -7,6 +7,9 @@ from ..data.keyword_data import KEYWORD_CONFIG
 from .menu import get_card_cost_str
 
 def render_query_info(query_str: str) -> str:
+    from ..models.manager import SaveManager
+    boss_cfg = SaveManager().load_admin_config()
+    icerainboww_enabled = boss_cfg.get("icerainboww_enabled", True)
     q = query_str.strip().lower()
     if not q:
         return "❌ 请输入具体的查询内容。"
@@ -66,6 +69,8 @@ def render_query_info(query_str: str) -> str:
             lines.append(f"描述：{desc}")
             lines.append("")
     for mid, cfg in MINION_CONFIG.items():
+        if not icerainboww_enabled and (mid == "minion_icerainboww" or mid == "minion_icerainboww+" or "icerainboww" in mid.lower() or "icerainboww" in cfg.get("name", "").lower()):
+            continue
         if q == mid.lower() or q in cfg.get("name", "").lower():
             found = True
             mname = cfg.get("name", mid)
@@ -90,6 +95,8 @@ def render_query_info(query_str: str) -> str:
                 lines.append("技能列表：仅有普通攻击 (消耗 1A)。")
             lines.append("")
     for cid, cfg in CARD_CONFIG.items():
+        if not icerainboww_enabled and (cid == "minion_icerainboww" or cid == "minion_icerainboww+" or "icerainboww" in cid.lower() or "icerainboww" in cfg.get("name", "").lower()):
+            continue
         q_clean = q[:-1] if q.endswith("+") else q
         if q_clean and (q_clean == cid.lower() or q_clean == cfg.get("name", "").lower() or q_clean in cid.lower() or q_clean in cfg.get("name", "").lower()):
             found = True
@@ -132,6 +139,8 @@ def render_query_info(query_str: str) -> str:
                     lines.append(f"升级效果：{up_card.desc}")
                     lines.append("")
     for eid, cfg in ENEMY_CONFIG.items():
+        if not icerainboww_enabled and (eid == "Icerainboww" or "icerainboww" in eid.lower() or "icerainboww" in cfg.get("name", "").lower()):
+            continue
         if q == eid.lower() or q in cfg.get("name", "").lower():
             found = True
             ename = cfg.get("name", eid)

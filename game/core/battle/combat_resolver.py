@@ -2,7 +2,7 @@ import random
 from typing import Optional
 from ...models.state import GameRun, PlayerState, EnemyState, MinionState, Card, BuffState
 from ...models.events import (
-    DamageCalculateEvent, DamageTakeEvent, HealEvent, MinionDeathEvent, MinionSummonEvent, ShieldGainEvent
+    DamageCalculateEvent, DamageTakeEvent, HealEvent, MinionDeathEvent, MinionSummonEvent, ShieldGainEvent, HealCalculateEvent, EnemyBeforeDeathEvent
 )
 
 DAMAGE_TYPE_NAMES = {
@@ -109,8 +109,9 @@ class CombatResolver:
         heal = heal_evt.amount
         p = run.player
         if target == "p0":
-            from ...entities.buffs.buffs import apply_modify_heal_limit
-            cur_max_hp = apply_modify_heal_limit(run, "p0", p.max_hp, self.engine)
+            calc_evt = HealCalculateEvent(run, "p0", p.max_hp, p.max_hp)
+            self.engine.event_bus.dispatch(calc_evt)
+            cur_max_hp = calc_evt.modified_max_hp
             p.hp = min(cur_max_hp, p.hp + heal)
         elif target.startswith("p"):
             grid = target[1:]
@@ -184,21 +185,10 @@ class CombatResolver:
                         e.hp -= hp_dmg
                         e.shield = 0
                 if e.hp <= 0:
-                    if e.name == "虚空之门·尤格-索托斯":
-                        e.name = "【觉醒】虚空之门·尤格-索托斯"
-                        e.max_hp = 260
-                        e.hp = 260
-                        e.shield = 30
-                        e.actions = 2
-                        e.bonus_actions = 2
-                        e.max_actions = 2
-                        e.max_bonus_actions = 2
-                        e.buffs.clear()
-                        e.buffs.append(BuffState(id="end_gate_passive", name="终焉之门", stacks=1, desc="每回合开始时获得 15 点护盾，且清除自身所有负面效果，受到伤害时 30% 几率反弹 4 点真实伤害"))
-                        run.node_data["yog_sothoth_phase"] = 2
-                        run.node_data["yog_sothoth_turn"] = 0
-                        e.intents.clear()
-                        self.engine._log_event(run, "🌟 虚空之门·尤格-索托斯破裂了！狂暴的虚空能量从中倾泻而出，虚空之门在坍缩中重新觉醒！进入了觉醒形态！")
+                    before_death_evt = EnemyBeforeDeathEvent(run, e)
+                    self.engine.event_bus.dispatch(before_death_evt)
+                    if before_death_evt.cancelled:
+                        pass
                     else:
                         is_fatal = True
                         p.enemy_graveyard.append(e.name)

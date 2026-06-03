@@ -12,6 +12,11 @@ class MapEngine:
     def enter_next_stage(self, run: GameRun):
         p = run.player
         p.stage += 1
+        if hasattr(self.save_manager, "load_admin_config"):
+            admin_cfg = self.save_manager.load_admin_config()
+        else:
+            admin_cfg = {}
+        icerainboww_enabled = admin_cfg.get("icerainboww_enabled", True)
         if p.stage > 1:
             self.save_manager.record_stage_passed(run.user_id)
         p.shield = 0
@@ -47,7 +52,7 @@ class MapEngine:
                     {"type": "contract", "relic": "tax_contract", "card": "impervious"}
                 ]
                 cards_pool.append({"type": "contract", "relic": "blind_spot", "card": "break_limits"})
-                if getattr(stats, "killed_icerainboww", False):
+                if getattr(stats, "killed_icerainboww", False) and icerainboww_enabled:
                     cards_pool.append({"type": "contract", "relic": "wither_seed", "card": "minion_icerainboww"})
             else:
                 if style == "default":
@@ -67,7 +72,7 @@ class MapEngine:
                         {"type": "contract", "relic": "tax_contract", "card": "archmage_wish"}
                     ]
                     cards_pool.append({"type": "contract", "relic": "blind_spot", "card": "break_limits"})
-                    if getattr(stats, "killed_icerainboww", False):
+                    if getattr(stats, "killed_icerainboww", False) and icerainboww_enabled:
                         cards_pool.append({"type": "contract", "relic": "wither_seed", "card": "minion_icerainboww"})
                 elif style == "abyss":
                     relics_pool = [
@@ -83,7 +88,7 @@ class MapEngine:
                         {"type": "contract", "relic": "shadow_curse", "card": "abyss_altar"}
                     ]
                     cards_pool.append({"type": "contract", "relic": "shadow_curse", "card": "break_limits"})
-                    if getattr(stats, "killed_icerainboww", False):
+                    if getattr(stats, "killed_icerainboww", False) and icerainboww_enabled:
                         cards_pool.append({"type": "contract", "relic": "shadow_curse", "card": "minion_icerainboww"})
                 else:
                     relics_pool = [
@@ -98,7 +103,7 @@ class MapEngine:
                         {"type": "contract", "relic": "glacier_chill", "card": "glacier_tempest"}
                     ]
                     cards_pool.append({"type": "contract", "relic": "glacier_chill", "card": "break_limits"})
-                    if getattr(stats, "killed_icerainboww", False):
+                    if getattr(stats, "killed_icerainboww", False) and icerainboww_enabled:
                         cards_pool.append({"type": "contract", "relic": "glacier_chill", "card": "minion_icerainboww"})
             
             num_relics = random.choice([1, 2])
@@ -131,7 +136,7 @@ class MapEngine:
                     relics_pool = ["frost_blade", "energy_core", "heavy_armor", "glacier_core"]
             
             legends_pool.append("break_limits")
-            if getattr(stats, "killed_icerainboww", False):
+            if getattr(stats, "killed_icerainboww", False) and icerainboww_enabled:
                 legends_pool.append("minion_icerainboww")
                 
             available_relics = [r for r in relics_pool if r not in p.relics]

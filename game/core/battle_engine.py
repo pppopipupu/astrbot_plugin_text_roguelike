@@ -5,7 +5,7 @@ from .battle.base import BaseBattleEngine
 from .battle.combat_resolver import CombatResolver
 from .battle.card_player import CardPlayer
 from .battle.enemy_controller import EnemyTurnController
-from .battle.observers import RelicTriggerHandler, BuffTriggerHandler, AmuletTriggerHandler, RallyTriggerHandler, MinionTriggerHandler
+from .battle.observers import RelicTriggerHandler, BuffTriggerHandler, AmuletTriggerHandler, RallyTriggerHandler, MinionTriggerHandler, EnemyTriggerHandler
 
 class BattleEngine(BaseBattleEngine):
     def __init__(self, save_manager):
@@ -18,6 +18,7 @@ class BattleEngine(BaseBattleEngine):
         self.amulet_handler = AmuletTriggerHandler(self.event_bus, self)
         self.rally_handler = RallyTriggerHandler(self.event_bus, self)
         self.minion_handler = MinionTriggerHandler(self.event_bus, self)
+        self.enemy_handler = EnemyTriggerHandler(self.event_bus, self)
 
     def _log_event(self, run: Optional[GameRun], msg: str):
         if run is None:
@@ -116,12 +117,19 @@ class BattleEngine(BaseBattleEngine):
 
         if difficulty == "boss":
             if p.stage == 20:
-                boss_cfg = self.save_manager.load_admin_config()
-                boss_setting = boss_cfg.get("final_boss", "random")
-                if boss_setting == "random":
-                    boss_name = random.choice(["腐化之心", "Icerainboww"])
+                if hasattr(self.save_manager, "load_admin_config"):
+                    boss_cfg = self.save_manager.load_admin_config()
                 else:
-                    boss_name = boss_setting
+                    boss_cfg = {}
+                boss_setting = boss_cfg.get("final_boss", "random")
+                icerainboww_enabled = boss_cfg.get("icerainboww_enabled", True)
+                if not icerainboww_enabled:
+                    boss_name = "腐化之心"
+                else:
+                    if boss_setting == "random":
+                        boss_name = random.choice(["腐化之心", "Icerainboww"])
+                    else:
+                        boss_name = boss_setting
 
                 if boss_name == "腐化之心":
                     run.enemies = [EnemyState(

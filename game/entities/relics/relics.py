@@ -1,5 +1,7 @@
 from typing import Dict, List, Optional
 from ...data.relic_data import RELIC_CONFIG
+from .registry import register_relic, RELIC_CLASS_REGISTRY
+import re
 
 class RelicImpl:
     def __init__(self, relic_id: str):
@@ -322,42 +324,15 @@ class GlacierCoreRelic(RelicImpl):
                 if feedback_parts:
                     engine._log_event(run, "🏔️ [极寒之核] 触发：" + "，".join(feedback_parts) + "。")
 
-RELIC_IMPLS = {
-    "ancient_page": AncientPageRelic,
-    "heavy_armor": HeavyArmorRelic,
-    "leather_armor": LeatherArmorRelic,
-    "rust_shackle": RustShackleRelic,
-    "greedy_contract": GreedyContractRelic,
-    "ready_pack": ReadyPackRelic,
-    "ancient_eye": AncientEyeRelic,
-    "blind_spot": BlindSpotRelic,
-    "dragon_blood": DragonBloodRelic,
-    "unstable_crystal": UnstableCrystalRelic,
-    "vampiric_touch": VampiricTouchRelic,
-    "fool_oath": FoolOathRelic,
-    "wither_seed": WitherSeedRelic,
-    "whetstone": WhetstoneRelic,
-    "arcane_rune": ArcaneRuneRelic,
-    "mark_of_fury": MarkOfFuryRelic,
-    "energy_core": EnergyCoreRelic,
-    "chemical_x": ChemicalXRelic,
-    "ancient_compass": AncientCompassRelic,
-    "portal_fragment": PortalFragmentRelic,
-    "ancient_sigil": AncientSigilRelic,
-    "void_lens": VoidLensRelic,
-    "ancient_keyring": AncientKeyringRelic,
-    "abyss_gaze": AbyssGazeRelic,
-    "glacier_armor": GlacierArmorRelic,
-    "abyss_whisper": AbyssWhisperRelic,
-    "frost_blade": FrostBladeRelic,
-    "shadow_curse": ShadowCurseRelic,
-    "glacier_chill": GlacierChillRelic,
-    "abyss_contract": AbyssContractRelic,
-    "glacier_core": GlacierCoreRelic,
-}
+for name, obj in list(globals().items()):
+    if isinstance(obj, type) and issubclass(obj, RelicImpl) and obj is not RelicImpl:
+        snake = re.sub(r'(?<!^)(?=[A-Z])', '_', name).lower()
+        if snake.endswith('_relic'):
+            relic_id = snake[:-6]
+            register_relic(relic_id)(obj)
 
 def get_relic_impl(relic_id: str) -> Optional[RelicImpl]:
-    cls = RELIC_IMPLS.get(relic_id)
+    cls = RELIC_CLASS_REGISTRY.get(relic_id)
     if cls:
         return cls(relic_id)
     return None

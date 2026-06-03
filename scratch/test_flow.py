@@ -1804,6 +1804,37 @@ class TestRoguePlugin(unittest.TestCase):
         engine.play_card(run, 1, "e1")
         self.assertEqual(run.player.actions, 2)
 
+    def test_admin_icerainboww_command(self):
+        plugin = MyPlugin(DummyContext())
+        user_id = "test_icerainboww_admin_user"
+        
+        async def go():
+            event_check = DummyEvent("/rogueadmin icerainboww", sender_id=user_id)
+            generator = plugin.rogueadmin(event_check)
+            async for _ in generator:
+                pass
+            res_text = "\n".join(event_check.results)
+            self.assertIn("配置状态", res_text)
+
+            event_off = DummyEvent("/rogueadmin icerainboww off", sender_id=user_id)
+            generator = plugin.rogueadmin(event_off)
+            async for _ in generator:
+                pass
+            self.assertIn("成功【关闭】", "\n".join(event_off.results))
+
+            cfg = plugin.save_manager.load_admin_config()
+            self.assertFalse(cfg.get("icerainboww_enabled", True))
+
+            event_on = DummyEvent("/rogueadmin icerainboww on", sender_id=user_id)
+            generator = plugin.rogueadmin(event_on)
+            async for _ in generator:
+                pass
+            self.assertIn("成功【开启】", "\n".join(event_on.results))
+
+            cfg = plugin.save_manager.load_admin_config()
+            self.assertTrue(cfg.get("icerainboww_enabled", True))
+
+        asyncio.run(go())
+
 if __name__ == "__main__":
     unittest.main()
-

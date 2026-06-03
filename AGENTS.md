@@ -49,8 +49,8 @@
   - `entities/`: 实体行为与逻辑多态实现。
     - `effects.py`: 原子游戏效果定义。
     - `cards/`: 卡牌逻辑包，包含 registry.py，base.py，neutral.py，wizard.py，warrior.py，legendary.py，curse.py 等卡牌具体打出效果类实现。
-    - `buffs/`: 包含 buffs.py，继承自 BuffImpl 的各种战斗 Buff 响应逻辑。
-    - `relics/`: 包含 relics.py，包含各种遗物的被动监听逻辑实现。
+    - `buffs/`: 战斗 Buff 逻辑包，包含 registry.py 提供装饰器注册机制，以及 buffs.py 继承自 BuffImpl 的各种 Buff 响应逻辑。
+    - `relics/`: 遗物逻辑包，包含 registry.py 提供装饰器注册机制，以及 relics.py 包含各种遗物的被动监听逻辑实现。
     - `minions/`: 随从技能子类多态逻辑。
     - `amulets/`: 护符特有钩子回调实现。
     - `enemies/`: 各种怪物与 Boss 意图的具体执行逻辑。
@@ -97,8 +97,8 @@
 - 引入 0 动作消耗牌机制，当卡牌的 cost_a 与 cost_ba 为 0 时打出不扣除动作资源。
 - 随从动作机制：在玩家回合交替时，我方随从的 actions 增加 1（即 actions 累加），特定被动支持附赠动作增加的随从其 bonus_actions 会增加 1，其余随从的 bonus_actions 不变，随从的攻击动作点（AA）每回合重置为 1。非 epic 随从不具备 BA，且未升级技能消耗通常为 2A 或 3A，部分升级版技能的行动消耗会更低。
 - 敌人行动与爪牙：普通/爪牙与精英角色拥有各自的动作分配规则，首领 BOSS 在每回合行动点通常会获得对应的专属额外动作扩容。当存活敌人全为爪牙时自动判定玩家获胜。
-- 引入眩晕（Stun）状态：处于该状态下的敌人在下一回合无法行动，并扣除一层眩晕 buff 恢复。
-- Buff 逻辑多态与解耦规范：所有 Buff 的应用与修改逻辑从战斗引擎与卡牌类中抽离，统一实现于 `game/entities/buffs/buffs.py` 的 Buff 子类中。
+- 引入眩晕（Stun）状态：处于该状态下的敌人在下一回合无法行动。其意图重写、动作点归零完全由 `StunBuff` 中的 `on_enemy_sync_intents` 监听 `EnemySyncIntentsEvent` 处理并扣除眩晕 Buff，严禁在控制器的核心逻辑中硬编码对 `"stun"` 字符串的特异判定。
+- Buff 逻辑多态与解耦规范：所有 Buff 的应用与修改逻辑从战斗引擎与卡牌类中抽离，统一实现于 `game/entities/buffs/buffs.py` 的 Buff 子类中。所有 Buff 的生效和属性值计算必须完全通过事件总线以观察者模式在 `observers.py` 中分发处理（如 `HealCalculateEvent`、`DamageCalculateEvent`），严禁在战斗引擎主流程中调用任何全局 `apply_` 静态辅助函数。
 - 回响形态触发机制：每回合打出的卡牌额外打出，每张牌最多回响 8 次，多余的层数会顺延回响每回合后续打出的卡牌。
 - 护盾流失机制：在各自回合开始时，玩家和所有存活敌人的护盾均会自动失去一半（向下取整），并在回合更替的反馈信息中提供流失详情提示。
 - 玩家手牌回合结束弃牌与保留机制：在玩家回合结束时，手牌中不具备保留（retain）效果的所有卡牌将被自动丢弃并移入弃牌堆。具有保留效果的卡牌继续保存在玩家手牌中。回合结束的丢弃操作绝不会触发卡牌的灵巧（agile）效果。
@@ -160,9 +160,10 @@
 - 当引入新的遗物、Buff 或卡牌特性时，绝对禁止直接修改核心战斗引擎 (`battle_engine.py`) 或其它基础状态逻辑。
 - 新增逻辑必须通过实现独立的监听器，并在加载时将其绑定到 `event_bus.py` 定义的原子事件（如 `BattleStartEvent`、`CardPlayedEvent`、`DamageCalculateEvent`）上来完成交互。确保任何特异性的判断和数值加成都内聚在具体实体类的回调中，不污染基础流转逻辑。
 
-### 2.9 卡牌与指令模式重构规范
-- 卡牌注册使用装饰器模式自动完成注册。全局统一在 `game/entities/cards/registry.py` 中导出 `@register_card(cid, **kwargs)`，在具体卡牌类声明处使用，并在 `base.py` 中通过 `inspect.signature` 获取参数自适应实例化，禁止任何硬编码的卡牌注册 `if-else` 分支。
-- 命令行路由使用命令模式（Command Pattern）。全局将具体子动作和指令分别拆分为继承自 `ActionHandler` 和 `CommandHandler` 的命令类，在 `CLIRouter` 内部由映射字典分发，解耦并消除庞大的 `if-else` structure，从而完全符合开闭原则。
+### 2.9 卡牌、遗物、Buff与指令注册规范
+- 卡牌注册使用装饰器模式自动完成注册。全局统一在 `game/entities/cards/registry.py` 中导出 `@register_card(cid, **kwargs)`，在具体卡牌类声明处使用，并在 `base.py` 中自动装配实例化，禁止任何硬编码的卡牌注册分支。
+- 遗物与 Buff 注册使用声明式装饰器注册与动态扫描反射机制实现。全局通过 `game/entities/relics/registry.py` 的 `@register_relic` 与 `game/entities/buffs/registry.py` 的 `@register_buff` 将具体类发布到全局注册表 `RELIC_CLASS_REGISTRY` 与 `BUFF_CLASS_REGISTRY` 中。特例（如 `GenericMinorVulnerableBuff` 等）在声明时使用 `@register_buff` 手动标注，其余普通实体在文件加载完毕后通过全局 globals() 按照类名驼峰自动转蛇形规则由系统自适应装载，彻底消灭 `RELIC_IMPLS` 与 `BUFF_MAP` 静态硬编码字典。
+- 命令行路由使用命令模式（Command Pattern）。全局将具体子动作和指令分别拆分为继承自 `ActionHandler` 和 `CommandHandler` 的命令类，在 `CLIRouter` 内部由映射字典分发，解耦并消除庞大的 `if-else` 结构，完全符合开闭原则。
 
 ### 2.10 上帝类拆分与现代化 OOP 规范
 - **禁止无限将逻辑堆叠进单个类**：核心引擎类（如 `BattleEngine`、`CLIRouter`、`ExploreEngine`）禁止无限膨胀。如果某个类的代码行数或职责过多，必须根据单一职责原则（SRP）进行重构，将相关业务逻辑组合委派给专门的子战略类（如 `CombatResolver`、`CardPlayer`、`EnemyTurnController`），由原上帝类作为 Facade 门面对外提供一致的 API 兼容。
@@ -180,6 +181,7 @@
 - **可扩展的新机制设计**：
   - 添加新战斗或底层机制时，必须定义新的原子事件（继承自 `GameEvent` 并由 `event_bus` 调度），并对外提供可由 Relic 或 Buff 修改机制参数的标准化字段。
   - 核心处理引擎在进行机制计算时，应只依赖该事件的最终结算数据，以便后续的新卡牌、新被动能够通过单纯订阅该事件完成逻辑扩展，禁止在核心流程中加入特定卡牌或状态的 `if` 逻辑。
+  - 任何怪物或 Boss 特异性的生存被动、死亡拦截或形态觉醒逻辑（如“尤格-索托斯”濒死时进入觉醒形态），绝对禁止在核心结算机制 `CombatResolver` 中硬编码。必须完全通过在具体 `EnemyTemplate` 模板中订阅 `EnemyBeforeDeathEvent` 并执行 `event.cancel()` 拦截，进而自适应重组其属性状态，保证核心引擎纯净、高复用。
 
 ### 2.12 版本控制与命令规范
 - 除非明确提及，否则绝对不能使用任何 git 相关命令。

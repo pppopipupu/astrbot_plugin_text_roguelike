@@ -277,6 +277,7 @@ CARD_UPGRADE_CONFIG = {
     },
     "body_slam": {
         "cost_a": 0,
+        "cost_ba": 0,
         "desc": "造成等同于玩家当前护盾值的钝击伤害。"
     },
     "pommel_strike": {

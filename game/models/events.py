@@ -69,6 +69,15 @@ class HealEvent(GameEvent):
     amount: int
 
 @dataclass
+class HealCalculateEvent(GameEvent):
+    run: GameRun
+    target: str
+    base_max_hp: int
+    modified_max_hp: int = 0
+
+
+
+@dataclass
 class CardDiscardEvent(GameEvent):
     run: GameRun
     card_id: str
@@ -81,6 +90,12 @@ class MinionDeathEvent(GameEvent):
     grid: str
     name: str
     is_enemy: bool
+
+@dataclass
+class EnemyBeforeDeathEvent(GameEvent):
+    run: GameRun
+    enemy: EnemyState
+
 
 @dataclass
 class MinionSummonEvent(GameEvent):
@@ -106,3 +121,8 @@ class ShieldDecayEvent(GameEvent):
     run: GameRun
     target: str
     amount: int
+
+@dataclass
+class EnemySyncIntentsEvent(GameEvent):
+    enemy: EnemyState
+

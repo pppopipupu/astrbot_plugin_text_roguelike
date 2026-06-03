@@ -1,4 +1,6 @@
 from typing import List, Optional
+from .registry import register_buff, BUFF_CLASS_REGISTRY
+import re
 
 def is_debuff(buff_id: str) -> bool:
     clean_id = buff_id[:-1] if buff_id.endswith("+") else buff_id
@@ -13,26 +15,35 @@ class BuffImpl:
         self.stacks = stacks
         self.upgraded = False
 
-    def modify_heal_limit(self, run, target: str, current_max: int, engine) -> int:
-        return current_max
-
-    def modify_spell_cost_ba(self, run, card, cost_ba: int, engine) -> int:
-        return cost_ba
-
-    def modify_spell_damage(self, run, card, damage: int, engine) -> int:
-        return damage
+    def on_card_play(self, event, buff_state, entity):
+        pass
 
     def on_card_played(self, event, buff_state, entity):
         pass
 
-    def on_player_turn_start(self, run, engine):
+    def on_turn_start(self, event, buff_state, entity):
         pass
 
-    def on_player_turn_end(self, run, buff_state, engine):
+    def on_turn_end(self, event, buff_state, entity):
         pass
 
-    def prevent_enemy_action(self, run, enemy, buff_state, engine, logs: list) -> bool:
-        return False
+    def on_damage_calculate(self, event, buff_state, entity):
+        pass
+
+    def on_damage_calculate_defend(self, event, buff_state, entity):
+        pass
+
+    def on_damage_take_defend(self, event, buff_state, entity, engine):
+        pass
+
+    def on_heal(self, event, buff_state, entity):
+        pass
+
+    def on_heal_calculate(self, event, buff_state, entity):
+        pass
+
+    def on_shield_gain(self, event, buff_state, entity):
+        pass
 
 class TacticalFocusBuff(BuffImpl):
     def on_player_turn_end(self, run, buff_state, engine):
@@ -120,11 +131,10 @@ class IronWillBuff(BuffImpl):
             if p.hp + event.amount > limit:
                 event.amount = max(0, limit - p.hp)
 
-    def modify_heal_limit(self, run, target: str, current_max: int, engine) -> int:
-        if target == "p0":
+    def on_heal_calculate(self, event, buff_state, entity):
+        if event.target == "p0":
             val = 15 if self.upgraded else 10
-            return current_max + self.stacks * val
-        return current_max
+            event.modified_max_hp = event.modified_max_hp + buff_state.stacks * val
 
     def on_turn_end(self, event, buff_state, entity):
         if entity == event.run.player and event.is_player:
@@ -177,12 +187,19 @@ class StunBuff(BuffImpl):
             entity.bonus_actions = 0
             event.engine._log_event(event.run, f"⚠️ 【{entity.name}】处于眩晕状态，本回合无法行动。")
 
-    def prevent_enemy_action(self, run, enemy, buff_state, engine, logs: list) -> bool:
-        buff_state.stacks -= 1
-        if buff_state.stacks <= 0:
-            enemy.buffs.remove(buff_state)
-        logs.append(f"【{enemy.name}】处于眩晕状态，本回合无法行动。")
-        return True
+    def on_enemy_sync_intents(self, event, buff_state, entity):
+        from ...models.state import EnemyIntentState
+        entity.actions = 0
+        entity.bonus_actions = 0
+        entity.intents = [
+            EnemyIntentState(
+                type="stun",
+                val=0,
+                desc="眩晕 (本回合无法行动)",
+                cost_a=0,
+                cost_ba=0
+            )
+        ]
 
 class BeatOfDeathBuff(BuffImpl):
     def __init__(self, stacks: int):
@@ -208,6 +225,7 @@ class StrengthBuff(BuffImpl):
                     mult = 5 if event.card.upgraded else 3
                 event.modified_damage += buff_state.stacks * mult
 
+@register_buff("minor_vulnerable")
 class GenericMinorVulnerableBuff(BuffImpl):
     def on_damage_calculate_defend(self, event, buff_state, entity):
         event.modified_damage = int(event.modified_damage * 1.5)
@@ -218,6 +236,7 @@ class GenericMinorVulnerableBuff(BuffImpl):
             if buff_state.stacks <= 0:
                 entity.buffs.remove(buff_state)
 
+@register_buff("vulnerable")
 class GenericVulnerableBuff(BuffImpl):
     def on_damage_calculate_defend(self, event, buff_state, entity):
         event.modified_damage = int(event.modified_damage * 2)
@@ -589,6 +608,7 @@ class ManaLeakBuff(BuffImpl):
                 if buff_state in event.run.player.buffs:
                     event.run.player.buffs.remove(buff_state)
 
+@register_buff("commander_aurora_emperor")
 class AuroraEmperorBuff(BuffImpl):
     def on_damage_calculate(self, event, buff_state, entity):
         if event.source.startswith("p") and event.source != "p0" and event.damage_type == "attack":
@@ -600,44 +620,15 @@ class AuroraEmperorBuff(BuffImpl):
                 msg = f"🛡️ [极光圣域+] 我方随从发起攻击，玩家获得 {shield} 点护盾并抽取 1 张牌。"
             event.engine._log_event(event.run, msg)
 
-BUFF_MAP = {
-    "tactical_focus": TacticalFocusBuff,
-    "quicken": QuickenBuff,
-    "spell_surge": SpellSurgeBuff,
-    "arcane_charge": ArcaneChargeBuff,
-    "echo_form": EchoFormBuff,
-    "iron_will": IronWillBuff,
-    "magic_network": MagicNetworkBuff,
-    "wish_power": WishPowerBuff,
-    "stun": StunBuff,
-    "beat_of_death": BeatOfDeathBuff,
-    "strength": StrengthBuff,
-    "fury": FuryBuff,
-    "fire_grow": FireGrowBuff,
-    "forge_backfire": ForgeBackfireBuff,
-    "time_warp_spell_boost": TimeWarpSpellBoostBuff,
-    "shock": ShockBuff,
-    "lightning_shield": LightningShieldBuff,
-    "burning": BurningBuff,
-    "key_scholar_passive": KeyScholarPassiveBuff,
-    "void_weakness": VoidWeaknessBuff,
-    "ancient_protection": AncientProtectionBuff,
-    "end_gate_passive": EndGatePassiveBuff,
-    "ancient_wisdom_buff": AncientWisdomBuff,
-    "buffer": BufferBuff,
-    "demon_contract_buff": DemonContractBuff,
-    "glacier_fortress_buff": GlacierFortressBuff,
-    "void_exhaustion": VoidExhaustionBuff,
-    "mana_leak": ManaLeakBuff,
-    "minor_vulnerable": GenericMinorVulnerableBuff,
-    "vulnerable": GenericVulnerableBuff,
-    "weak": WeakBuff,
-    "flame_barrier_buff": FlameBarrierBuff,
-    "metallicize": MetallicizeBuff,
-    "demon_form": DemonFormBuff,
-    "double_tap_buff": DoubleTapBuff,
-    "commander_aurora_emperor": AuroraEmperorBuff,
-}
+for name, obj in list(globals().items()):
+    if isinstance(obj, type) and issubclass(obj, BuffImpl) and obj is not BuffImpl:
+        if obj not in BUFF_CLASS_REGISTRY.values():
+            snake = re.sub(r'(?<!^)(?=[A-Z])', '_', name).lower()
+            if snake.endswith('_buff'):
+                buff_id = snake[:-5]
+            else:
+                buff_id = snake
+            register_buff(buff_id)(obj)
 
 def get_buff_impl(buff_id: str, stacks: int, stacks2: Optional[int] = None) -> Optional[BuffImpl]:
     upgraded = False
@@ -668,67 +659,10 @@ def get_buff_impl(buff_id: str, stacks: int, stacks2: Optional[int] = None) -> O
         inst.stacks2 = stacks2
         inst.upgraded = upgraded
         return inst
-    cls = BUFF_MAP.get(buff_id)
+    cls = BUFF_CLASS_REGISTRY.get(buff_id)
     if cls:
         inst = cls(stacks)
         inst.stacks2 = stacks2
         inst.upgraded = upgraded
         return inst
     return None
-
-def apply_modify_heal_limit(run, target: str, current_max: int, engine) -> int:
-    limit = current_max
-    for b in list(run.player.buffs):
-        impl = get_buff_impl(b.id, b.stacks, getattr(b, "stacks2", None))
-        if impl:
-            limit = impl.modify_heal_limit(run, target, limit, engine)
-    return limit
-
-def apply_modify_spell_cost_ba(run, card, cost_ba: int, engine) -> int:
-    cost = cost_ba
-    for b in list(run.player.buffs):
-        impl = get_buff_impl(b.id, b.stacks, getattr(b, "stacks2", None))
-        if impl:
-            cost = impl.modify_spell_cost_ba(run, card, cost, engine)
-    return cost
-
-def apply_modify_spell_damage(run, card, damage: int, engine) -> int:
-    dmg = damage
-    if getattr(run.player, "subclass", "") == "塑能法师" and getattr(card, "type", "") == "spell":
-        dmg = int(dmg * 1.15)
-    for b in list(run.player.buffs):
-        impl = get_buff_impl(b.id, b.stacks, getattr(b, "stacks2", None))
-        if impl:
-            dmg = impl.modify_spell_damage(run, card, dmg, engine)
-    return dmg
-
-def apply_on_card_played(run, card, target: str, engine) -> str:
-    res = ""
-    for b in list(run.player.buffs):
-        impl = get_buff_impl(b.id, b.stacks, getattr(b, "stacks2", None))
-        if impl:
-            extra = impl.on_card_played(run, card, target, engine)
-            if extra:
-                res += " " + extra
-    return res
-
-def apply_on_player_turn_start(run, engine):
-    for b in list(run.player.buffs):
-        impl = get_buff_impl(b.id, b.stacks, getattr(b, "stacks2", None))
-        if impl:
-            impl.on_player_turn_start(run, engine)
-
-def apply_on_player_turn_end(run, engine):
-    for b in list(run.player.buffs):
-        impl = get_buff_impl(b.id, b.stacks, getattr(b, "stacks2", None))
-        if impl:
-            impl.on_player_turn_end(run, b, engine)
-
-def apply_prevent_enemy_action(run, enemy, engine, logs: list) -> bool:
-    prevented = False
-    for b in list(enemy.buffs):
-        impl = get_buff_impl(b.id, b.stacks, getattr(b, "stacks2", None))
-        if impl:
-            if impl.prevent_enemy_action(run, enemy, b, engine, logs):
-                prevented = True
-    return prevented

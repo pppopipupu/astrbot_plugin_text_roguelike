@@ -313,6 +313,11 @@ class ShopCommand(CommandHandler, names=["商店", "shop"]):
             unlocked = getattr(stats, "unlocked_subclasses", [])
             gp = getattr(stats, "gp", 0)
             killed_icerainboww = getattr(stats, "killed_icerainboww", False)
+            if hasattr(router.save_manager, "load_admin_config"):
+                boss_cfg = router.save_manager.load_admin_config()
+            else:
+                boss_cfg = {}
+            icerainboww_enabled = boss_cfg.get("icerainboww_enabled", True)
             is_gatekey = False
             if target in ("1", "时序法师"):
                 subclass_name = "时序法师"
@@ -331,6 +336,9 @@ class ShopCommand(CommandHandler, names=["商店", "shop"]):
                 subclass_name = "神秘物品"
                 price = 66666
             elif target in ("6", "Icerainboww"):
+                if not icerainboww_enabled:
+                    yield "❌ 该商品已由管理员禁用，不可使用。"
+                    return
                 if killed_icerainboww:
                     yield "❌ 该商品已自动解锁，无需购买。"
                 else:

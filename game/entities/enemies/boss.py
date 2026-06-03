@@ -439,6 +439,25 @@ class BossThunderLordTemplate(EnemyTemplate):
             logs.append(f"【{enemy.name}】凝聚雷电防护，获得 {intent.val} 点护盾。")
 
 class BossYogSothothTemplate(EnemyTemplate):
+    def on_enemy_before_death(self, run, enemy, event, engine):
+        if enemy.name == "虚空之门·尤格-索托斯":
+            event.cancel()
+            enemy.name = "【觉醒】虚空之门·尤格-索托斯"
+            enemy.max_hp = 260
+            enemy.hp = 260
+            enemy.shield = 30
+            enemy.actions = 2
+            enemy.bonus_actions = 2
+            enemy.max_actions = 2
+            enemy.max_bonus_actions = 2
+            enemy.buffs.clear()
+            from ...models.state import BuffState
+            enemy.buffs.append(BuffState(id="end_gate_passive", name="终焉之门", stacks=1, desc="每回合开始时获得 15 点护盾，且清除自身所有负面效果，受到伤害时 30% 几率反弹 4 点真实伤害"))
+            run.node_data["yog_sothoth_phase"] = 2
+            run.node_data["yog_sothoth_turn"] = 0
+            enemy.intents.clear()
+            engine._log_event(run, "🌟 虚空之门·尤格-索托斯破裂了！狂暴的虚空能量从中倾泻而出，虚空之门在坍缩中重新觉醒！进入了觉醒形态！")
+
     def roll_intents(self, run, engine, enemy) -> List['EnemyIntentState']:
         from ...models.state import EnemyIntentState
         phase = run.node_data.get("yog_sothoth_phase", 1)

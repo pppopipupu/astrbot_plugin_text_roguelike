@@ -30,24 +30,13 @@ class EnemyTurnController:
             ):
                 enemy.intents = old_intents
 
-        has_stun = False
-        if getattr(enemy, "buffs", None):
-            for b in enemy.buffs:
-                if b.id == "stun" and b.stacks > 0:
-                    has_stun = True
-                    break
+        from ...models.events import EnemySyncIntentsEvent
+        evt = EnemySyncIntentsEvent(enemy)
+        self.engine.event_bus.dispatch(evt)
+
+        has_stun = any(b.id == "stun" and b.stacks > 0 for b in getattr(enemy, "buffs", []))
         if has_stun:
-            enemy.actions = 0
-            enemy.bonus_actions = 0
-            enemy.intents = [
-                EnemyIntentState(
-                    type="stun",
-                    val=0,
-                    desc="眩晕 (本回合无法行动)",
-                    cost_a=0,
-                    cost_ba=0
-                )
-            ]
+            pass
         else:
             temp_a = enemy.actions
             temp_ba = enemy.bonus_actions

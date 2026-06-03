@@ -102,6 +102,7 @@ class MyPlugin(Star):
                 "• 查看当前最终BOSS：/rogueadmin boss\n"
                 "• 设置随机轮换：/rogueadmin boss set random\n"
                 "• 固定最终BOSS：/rogueadmin boss set 腐化之心 或 Icerainboww\n"
+                "• 开启/关闭 Icerainboww：/rogueadmin icerainboww <on/off>\n"
                 "• 立即跳到某一层：/rogueadmin jump <层数> 或 /rogueadmin jump <玩家ID> <层数>"
             )
             return
@@ -126,6 +127,28 @@ class MyPlugin(Star):
                     yield event.plain_result("❌ 错误：无效的BOSS名称。可选值：random, 腐化之心, Icerainboww")
             else:
                 yield event.plain_result("❌ 错误：无效指令。请使用 /rogueadmin boss set <random/腐化之心/Icerainboww>")
+        elif cmd == "icerainboww":
+            if len(parts) == 1:
+                cfg = self.save_manager.load_admin_config()
+                status = cfg.get("icerainboww_enabled", True)
+                status_zh = "开启" if status else "关闭"
+                yield event.plain_result(f"⚙️ 当前 icerainboww 相关内容配置状态为：【{status_zh}】")
+                return
+            elif len(parts) >= 2:
+                target_status = parts[1].lower()
+                cfg = self.save_manager.load_admin_config()
+                if target_status in ("on", "开启", "enable", "true"):
+                    cfg["icerainboww_enabled"] = True
+                    self.save_manager.save_admin_config(cfg)
+                    yield event.plain_result("⚙️ icerainboww 相关内容已成功【开启】！")
+                elif target_status in ("off", "关闭", "disable", "false"):
+                    cfg["icerainboww_enabled"] = False
+                    self.save_manager.save_admin_config(cfg)
+                    yield event.plain_result("⚙️ icerainboww 相关内容已成功【关闭】！所有 icerainboww 卡牌与 BOSS 已被禁用。")
+                else:
+                    yield event.plain_result("❌ 错误：无效的参数。可选值：on, off, 开启, 关闭")
+            else:
+                yield event.plain_result("❌ 错误：无效指令。请使用 /rogueadmin icerainboww <on/off>")
         elif cmd == "jump":
             if len(parts) == 2:
                 target_user_id = event.get_sender_id()
