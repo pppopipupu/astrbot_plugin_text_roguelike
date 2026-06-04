@@ -150,6 +150,8 @@ class CardPlayer:
                     target = "p0"
                 else:
                     target = self.engine._get_first_alive_enemy(run)
+            if isinstance(target, str) and target.isdigit():
+                target = f"e{target}"
             if target == "0" or target == "e0":
                 target = "e1"
             elif target == "p":
@@ -353,10 +355,8 @@ class CardPlayer:
         if opp_idx < 0 or opp_idx >= len(run.enemies):
             return f"❌ 敌方格子 [{opp_grid}] 没有合法的敌人目标。"
         enemy = run.enemies[opp_idx]
-        calc_evt = DamageCalculateEvent(run, None, f"p{my_grid}", f"e{opp_idx+1}", "attack", m.atk, m.atk)
-        self.engine.event_bus.dispatch(calc_evt)
-        atk = calc_evt.modified_damage
-        self.engine._damage_target(run, opp_grid, atk, source=f"p{my_grid}", damage_type="attack")
+        opp_grid = f"e{opp_idx+1}"
+        self.engine._damage_target(run, opp_grid, m.atk, source=f"p{my_grid}", damage_type="attack")
         res = f"我方随从【{m.name}】攻击了敌人【{enemy.name}】。"
         self.engine.save_manager.save_save(run.user_id, run)
         has_damaged = False
@@ -405,6 +405,8 @@ class CardPlayer:
         if needs_target:
             if target is None:
                 target = self.engine._get_first_alive_enemy(run)
+            if isinstance(target, str) and target.isdigit():
+                target = f"e{target}"
             if target == "0" or target == "e0":
                 target = "e1"
             if target.startswith("e"):

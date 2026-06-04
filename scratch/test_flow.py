@@ -1836,5 +1836,36 @@ class TestRoguePlugin(unittest.TestCase):
 
         asyncio.run(go())
 
+    def test_minion_attack_digit_target(self):
+        class DummySaveManager:
+            def save_save(self, user_id, run):
+                pass
+            def delete_save(self, user_id):
+                pass
+        mgr = DummySaveManager()
+        engine = BattleEngine(mgr)
+        player = PlayerState(
+            hp=50,
+            max_hp=50,
+            shield=0,
+            gold=100,
+            stage=1,
+            deck=[],
+            hand=[],
+            minions={
+                "1": MinionState("mercenary", "雇佣兵", 10, 10, 4, 1, 0)
+            }
+        )
+        enemy = EnemyState("哥布林", 20, 20, 0)
+        run = GameRun(
+            user_id="test_user",
+            node_type="battle",
+            player=player,
+            enemies=[enemy]
+        )
+        res = engine.card_player.minion_attack(run, "1", "1")
+        self.assertEqual(enemy.hp, 16)
+        self.assertIn("造成 4 点物理伤害", res)
+
 if __name__ == "__main__":
     unittest.main()
