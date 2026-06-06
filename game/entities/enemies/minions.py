@@ -446,7 +446,7 @@ class LightningOrbTemplate(EnemyTemplate):
             engine._damage_target(run, "p0", val, source=f"enemy:{enemy.name}", damage_type="lightning")
             after_logs = run.node_data.get("battle_logs", [])
             dmg_msg = after_logs.pop() if len(after_logs) > before_len else ""
-            engine._add_buff_to(run.player, "shock", "电击", "受到的闪电和雷鸣伤害每层增加 3 点", 1)
+            engine._add_buff_to(run.player, "shock", "电击", "受到的闪电和雷鸣伤害每层增加 1 点", 1)
             logs.append(f"【{enemy.name}】释放闪电击。{dmg_msg}")
         elif intent.type == "charge":
             engine._add_buff_to(enemy, "strength", "力量", "造成的伤害增加", 1)

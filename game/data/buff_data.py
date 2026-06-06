@@ -164,7 +164,7 @@ BUFF_CONFIG = {
     },
     "shock": {
         "name": "电击",
-        "desc": "受到的闪电和雷鸣伤害每层增加 3 点",
+        "desc": "受到的闪电和雷鸣伤害每层增加 1 点",
         "is_debuff": True
     },
     "lightning_shield": {

@@ -398,7 +398,7 @@ class BossThunderLordTemplate(EnemyTemplate):
             engine._damage_target(run, "p0", val, source=f"enemy:{enemy.name}", damage_type="thunder")
             after_logs = run.node_data.get("battle_logs", [])
             dmg_msg = after_logs.pop() if len(after_logs) > before_len else ""
-            engine._add_buff_to(run.player, "shock", "电击", "受到的闪电和雷鸣伤害每层增加 3 点", 2)
+            engine._add_buff_to(run.player, "shock", "电击", "受到的闪电和雷鸣伤害每层增加 1 点", 2)
             logs.append(f"【{enemy.name}】施展雷鸣重击。{dmg_msg}")
         elif intent.type == "lightning_shield":
             enemy.shield += intent.val

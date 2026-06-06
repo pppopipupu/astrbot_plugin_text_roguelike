@@ -413,7 +413,7 @@ class ShockBuff(BuffImpl):
     def on_damage_calculate_defend(self, event, buff_state, entity):
         dtype_str = event.damage_type.value if hasattr(event.damage_type, "value") else str(event.damage_type)
         if dtype_str in ("lightning", "thunder"):
-            event.modified_damage += buff_state.stacks * 3
+            event.modified_damage += buff_state.stacks * 1
 
     def on_turn_end(self, event, buff_state, entity):
         if event.is_player == (entity == event.run.player):
@@ -428,7 +428,7 @@ class LightningShieldBuff(BuffImpl):
             run = event.run
             engine = event.engine
             engine._damage_target(run, "p0", 2 * buff_state.stacks, source=f"buff:{entity.name}", damage_type="lightning")
-            engine._add_buff_to(run.player, "shock", "电击", "受到的闪电和雷鸣伤害每层增加 3 点", 1)
+            engine._add_buff_to(run.player, "shock", "电击", "受到的闪电和雷鸣伤害每层增加 1 点", 1)
 
     def on_turn_start(self, event, buff_state, entity):
         if not event.is_player and entity in event.run.enemies:
