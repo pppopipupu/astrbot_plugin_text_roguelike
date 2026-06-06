@@ -11,6 +11,7 @@ def is_debuff(buff_id: str) -> bool:
     return cfg.get("is_debuff", False)
 
 class BuffImpl:
+    auto_register = True
     def __init__(self, stacks: int):
         self.stacks = stacks
         self.upgraded = False
@@ -338,6 +339,7 @@ class FuryBuff(BuffImpl):
             event.engine._log_event(event.run, f"🔥 【{entity.name}】的【愤怒】被玩家的【{event.card.name}】激怒，力量增加了 {buff_state.stacks} 点！")
 
 class MinorVulnerableBuff(BuffImpl):
+    auto_register = False
     def __init__(self, stacks: int, damage_type: str):
         super().__init__(stacks)
         self.damage_type = damage_type
@@ -354,6 +356,7 @@ class MinorVulnerableBuff(BuffImpl):
                 entity.buffs.remove(buff_state)
 
 class VulnerableBuff(BuffImpl):
+    auto_register = False
     def __init__(self, stacks: int, damage_type: str):
         super().__init__(stacks)
         self.damage_type = damage_type
@@ -433,6 +436,7 @@ class LightningShieldBuff(BuffImpl):
                 entity.buffs.remove(buff_state)
 
 class ResistBuff(BuffImpl):
+    auto_register = False
     def __init__(self, stacks: int, damage_type: str):
         super().__init__(stacks)
         self.damage_type = damage_type
@@ -450,6 +454,7 @@ class ResistBuff(BuffImpl):
                     entity.buffs.remove(buff_state)
 
 class ImmuneBuff(BuffImpl):
+    auto_register = False
     def __init__(self, stacks: int, damage_type: str):
         super().__init__(stacks)
         self.damage_type = damage_type
@@ -636,6 +641,8 @@ class AuroraEmperorBuff(BuffImpl):
 
 for name, obj in list(globals().items()):
     if isinstance(obj, type) and issubclass(obj, BuffImpl) and obj is not BuffImpl:
+        if not getattr(obj, "auto_register", True):
+            continue
         if obj not in BUFF_CLASS_REGISTRY.values():
             snake = re.sub(r'(?<!^)(?=[A-Z])', '_', name).lower()
             if snake.endswith('_buff'):

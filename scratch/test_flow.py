@@ -2160,5 +2160,37 @@ class TestRoguePlugin(unittest.TestCase):
                 break
         self.assertTrue(found_in_11)
 
+    def test_shockwave_with_echo_form(self):
+        class DummySaveManager:
+            def save_save(self, user_id, run):
+                pass
+            def delete_save(self, user_id):
+                pass
+        sm = DummySaveManager()
+        engine = BattleEngine(sm)
+        player = PlayerState(
+            hp=50,
+            max_hp=50,
+            shield=0,
+            gold=100,
+            stage=1,
+            deck=["shockwave"],
+            hand=["shockwave"],
+            actions=10,
+            bonus_actions=10,
+            buffs=[BuffState(id="echo_form", name="回响形态", stacks=1, desc="")]
+        )
+        run = GameRun(
+            user_id="test_user_shockwave",
+            node_type="battle",
+            player=player,
+            enemies=[EnemyState("测试敌人", 100, 100, 0)]
+        )
+        run.node_data["cards_played_this_turn"] = 0
+        res = engine.play_card(run, 1)
+        self.assertIn("震荡波", res)
+        self.assertTrue(any(b.id == "minor_vulnerable" for b in run.enemies[0].buffs))
+        self.assertTrue(any(b.id == "weak" for b in run.enemies[0].buffs))
+
 if __name__ == "__main__":
     unittest.main()
