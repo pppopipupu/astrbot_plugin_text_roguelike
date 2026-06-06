@@ -150,13 +150,15 @@ class CardPlayer:
             return "❌ 卡牌不存在。"
         if getattr(card, "unplayable", False):
             return "❌ 该卡牌不能被打出。"
-        if card.type == "spell":
-            if target is None:
+        if target is None:
+            if card.type == "spell":
                 p0_spells = {"first_aid", "get_ready", "adrenaline", "mana_potion", "mass_healing_word", "refresh_spirit", "shield", "misty_step", "arcane_intellect", "calculated_gamble", "time_warp", "time_stop", "archmage_wish"}
                 if card.id.replace("+", "") in p0_spells:
                     target = "p0"
                 else:
                     target = self.engine._get_first_alive_enemy(run)
+
+        if target is not None:
             if isinstance(target, str) and target.isdigit():
                 target = f"e{target}"
             if target == "0" or target == "e0":

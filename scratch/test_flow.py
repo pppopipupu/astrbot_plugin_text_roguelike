@@ -957,10 +957,8 @@ class TestRoguePlugin(unittest.TestCase):
         loaded_run = save_manager.load_save(user_id)
         state_stack = loaded_run.node_data.get("state_stack", [])
         self.assertNotIn("❌ 取消使用操作。", output_text)
-        self.assertTrue(len(state_stack) > 0)
-        top_state = state_stack[-1]
-        self.assertEqual(top_state.get("type"), "awaiting_target")
-        self.assertEqual(top_state.get("hand_idx"), 2)
+        self.assertEqual(len(state_stack), 0)
+        self.assertIn("使用", output_text)
         save_manager.delete_save(user_id)
 
     def test_battle_logs_persistence(self):

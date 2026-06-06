@@ -184,10 +184,10 @@ class SummonMinionCard(Card):
             battlecry_msg = ""
             target_name = "无"
             if self.id == "mercenary+":
-                first_enemy = engine._get_first_alive_enemy(run)
-                if first_enemy:
-                    engine._damage_target(run, first_enemy, self.minion_atk, source=f"p{grid}", damage_type="attack")
-                    tname = engine._get_target_name(run, first_enemy)
+                chosen_target = target if (target and target.startswith("e")) else engine._get_first_alive_enemy(run)
+                if chosen_target:
+                    engine._damage_target(run, chosen_target, self.minion_atk, source=f"p{grid}", damage_type="attack")
+                    tname = engine._get_target_name(run, chosen_target)
                     battlecry_msg = f"\n⚔️ [入场曲] 【雇佣兵+】立即攻击了【{tname}】，造成了 {self.minion_atk} 点伤害！"
             elif self.id == "shield_guard+":
                 engine._gain_shield(run, "p0", 8)
@@ -198,10 +198,10 @@ class SummonMinionCard(Card):
                     engine._add_buff_to(enemy, "minor_vulnerable_cold", "轻度寒冷易伤", "受到的寒冷伤害增加 50%", 1)
                 battlecry_msg = f"\n❄️ [入场曲] 获得了 8 点护盾，并使所有敌人受到 1 层轻度寒冷易伤！"
             elif self.id.startswith("gate_guard"):
-                first_enemy = engine._get_first_alive_enemy(run)
-                if first_enemy:
+                chosen_target = target if (target and target.startswith("e")) else engine._get_first_alive_enemy(run)
+                if chosen_target:
                     try:
-                        f_idx = int(first_enemy.replace("e", "")) - 1
+                        f_idx = int(chosen_target.replace("e", "")) - 1
                         if 0 <= f_idx < len(run.enemies):
                             target_name = run.enemies[f_idx].name
                             engine._add_buff_to(run.enemies[f_idx], "stun", "眩晕", "无法行动", 1)

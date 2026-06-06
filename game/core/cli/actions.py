@@ -11,30 +11,6 @@ class UseAction(ActionHandler, actions=["使用", "p"]):
         except ValueError:
             return "❌ 序号必须是数字。", False
         target = parts[2] if len(parts) > 2 else None
-        p = run.player
-        if 1 <= idx <= len(p.hand):
-            cid = p.hand[idx - 1]
-            card = ALL_CARDS.get(cid)
-            if card and card.type == "spell" and target is None:
-                is_ambiguous = False
-                prompt_msg = ""
-                if card.id in ("dagger_throw", "fire_bolt", "magic_missile", "quick_strike", "arcane_spark", "agile_strike", "fleeting_spark"):
-                    if len(run.enemies) > 1:
-                        is_ambiguous = True
-                        prompt_msg = f"🎯 请选择敌方目标。当前战场有多个敌方单位，请输入敌方格子序号（如：e1, e2 或 1, 2）或输入取消："
-                elif card.id == "first_aid":
-                    if len(p.minions) > 0:
-                        is_ambiguous = True
-                        prompt_msg = f"💚 请选择治疗目标。请输入目标格子序号（如：p0 治疗自己，p1-p6 治疗对应随从）或输入取消："
-                if is_ambiguous:
-                    state_stack = run.node_data.setdefault("state_stack", [])
-                    state_stack.append({
-                        "type": "awaiting_target",
-                        "action": "play_card",
-                        "hand_idx": idx
-                    })
-                    router.save_manager.save_save(user_id, run)
-                    return prompt_msg, False
         res = router.engine.play_card(run, idx, target)
         if run.player.hp <= 0:
             settle_msg = router.save_manager.settle_game_and_delete(user_id, run, is_victory=False)
@@ -89,26 +65,6 @@ class MinionAction(ActionHandler, actions=["随从", "m"]):
                             target = parts[4]
                     except ValueError:
                         target = parts[3]
-                p = run.player
-                m = p.minions[g]
-                needs_target = False
-                base_id = m.id.rstrip("+")
-                if base_id == "mercenary" and skill_idx == 1:
-                    needs_target = True
-                elif base_id == "shield_guard" and skill_idx == 2:
-                    needs_target = True
-                elif base_id == "water_elemental" and skill_idx == 2:
-                    needs_target = True
-                if needs_target and target is None and len(run.enemies) > 1:
-                    state_stack = run.node_data.setdefault("state_stack", [])
-                    state_stack.append({
-                        "type": "awaiting_target",
-                        "action": "minion_skill",
-                        "my_grid": g,
-                        "skill_idx": skill_idx
-                    })
-                    router.save_manager.save_save(user_id, run)
-                    return f"🎯 请选择敌方目标。当前战场有多个敌方单位，请输入敌方格子序号（如：e1, e2 或 1, 2）或输入取消：", False
                 res = router.engine.minion_skill(run, g, skill_idx, target)
                 results.append(res)
             else:

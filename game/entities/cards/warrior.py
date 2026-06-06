@@ -277,10 +277,10 @@ class OfficerRecruitVanguardCard(Card):
             rally = run.node_data.get("rally_count", 0)
             if rally >= 4:
                 dmg = 5 if self.upgraded else 3
-                first_enemy = engine._get_first_alive_enemy(run)
-                if first_enemy:
-                    engine._damage_target(run, first_enemy, dmg, damage_type="piercing")
-                    tname = engine._get_target_name(run, first_enemy)
+                chosen_target = target if (target and target.startswith("e")) else engine._get_first_alive_enemy(run)
+                if chosen_target:
+                    engine._damage_target(run, chosen_target, dmg, damage_type="piercing")
+                    tname = engine._get_target_name(run, chosen_target)
                     msg += f"\n⚔️ [入场曲] 协作达到了 {rally}！对【{tname}】造成了 {dmg} 点穿刺伤害，并抽了 1 张牌。"
                 else:
                     msg += f"\n⚔️ [入场曲] 协作达到了 {rally}！但场上没有活着的敌人，抽了 1 张牌。"
@@ -380,14 +380,14 @@ class OfficerSquadSkirmisherCard(Card):
         if grid:
             msg = f"在格子 [{grid}] 召唤了【{self.name}】。"
             rally = run.node_data.get("rally_count", 0)
-            first_enemy = engine._get_first_alive_enemy(run)
+            chosen_target = target if (target and target.startswith("e")) else engine._get_first_alive_enemy(run)
             if rally >= 8:
                 dmg = 9 if self.upgraded else 6
-                if first_enemy:
-                    engine._damage_target(run, first_enemy, dmg, damage_type="slashing")
-                    tname = engine._get_target_name(run, first_enemy)
+                if chosen_target:
+                    engine._damage_target(run, chosen_target, dmg, damage_type="slashing")
+                    tname = engine._get_target_name(run, chosen_target)
                     try:
-                        f_idx = int(first_enemy.replace("e", "")) - 1
+                        f_idx = int(chosen_target.replace("e", "")) - 1
                         if 0 <= f_idx < len(run.enemies):
                             engine._add_buff_to(run.enemies[f_idx], "stun", "眩晕", "下一回合无法行动", 1)
                     except ValueError:
@@ -397,9 +397,9 @@ class OfficerSquadSkirmisherCard(Card):
                     msg += f"\n⚡ [入场曲] 协作达到了 {rally}！但场上没有活着的敌人。"
             else:
                 dmg = 5 if self.upgraded else 3
-                if first_enemy:
-                    engine._damage_target(run, first_enemy, dmg, damage_type="slashing")
-                    tname = engine._get_target_name(run, first_enemy)
+                if chosen_target:
+                    engine._damage_target(run, chosen_target, dmg, damage_type="slashing")
+                    tname = engine._get_target_name(run, chosen_target)
                     msg += f"\n⚔️ [入场曲] 对【{tname}】造成了 {dmg} 点挥砍伤害。"
                 else:
                     msg += f"\n⚔️ [入场曲] 没有活着的敌人。"
