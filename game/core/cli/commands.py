@@ -7,11 +7,11 @@ class StartCommand(CommandHandler, names=["开启", "start"]):
     def execute(self, router, user_id: str, parts: list[str]) -> Generator[str, None, None]:
         run = router.save_manager.load_save(user_id)
         if run:
-            if len(parts) > 1 and parts[1] == "确认":
+            if len(parts) > 1 and parts[1] in ("确认", "confirm"):
                 new_run = router.engine.start_new_game(user_id)
                 yield "已重新开始新的一局游戏。\n" + GameRenderer.render_game(new_run)
             else:
-                yield "⚠️ 你当前已有一局正在进行中的游戏。若要强制重新开始并覆盖存档，请输入：\n/rogue 开启 确认（或 /rogue start 确认）"
+                yield "⚠️ 你当前已有一局正在进行中的游戏。若要强制重新开始并覆盖存档，请输入：\n/rogue 开启 确认（或 /rogue start confirm）"
         else:
             new_run = router.engine.start_new_game(user_id)
             yield GameRenderer.render_game(new_run)
@@ -242,7 +242,7 @@ class ClassCommand(CommandHandler, names=["职业", "class"]):
                 subclass_arg = parts[2]
             if action in ("购买", "buy"):
                 yield "💡 请使用商店命令前往局外商店进行商品购买：/rogue 商店"
-            elif action in ("选择", "c"):
+            elif action in ("选择", "c", "choose", "select"):
                 if subclass_arg in ("战士", "warrior", "war"):
                     stats.selected_class = "战士"
                     stats.selected_subclass = ""
@@ -257,11 +257,11 @@ class ClassCommand(CommandHandler, names=["职业", "class"]):
                 if selected_class == "战士":
                     yield "❌ 战士职业没有子职业，无法装备子职业。如需装备子职业，请先切换到法师职业。"
                     return
-                if subclass_arg in ("1", "时序法师"):
+                if subclass_arg in ("1", "时序法师", "chronomancer", "time"):
                     subclass_name = "时序法师"
-                elif subclass_arg in ("2", "塑能法师"):
+                elif subclass_arg in ("2", "塑能法师", "evoker", "elemental"):
                     subclass_name = "塑能法师"
-                elif subclass_arg in ("3", "秘钥学者"):
+                elif subclass_arg in ("3", "秘钥学者", "arcanist", "key"):
                     subclass_name = "秘钥学者"
                 elif subclass_arg in ("0", "无", "取消", "none"):
                     subclass_name = ""
@@ -324,20 +324,20 @@ class ShopCommand(CommandHandler, names=["商店", "shop"]):
                 boss_cfg = {}
             icerainboww_enabled = boss_cfg.get("icerainboww_enabled", True)
             is_gatekey = False
-            if target in ("1", "时序法师"):
+            if target in ("1", "时序法师", "chronomancer", "time"):
                 subclass_name = "时序法师"
                 price = 2888
-            elif target in ("2", "塑能法师"):
+            elif target in ("2", "塑能法师", "evoker", "elemental"):
                 subclass_name = "塑能法师"
                 price = 2888
-            elif target in ("3", "秘钥学者"):
+            elif target in ("3", "秘钥学者", "arcanist", "key"):
                 subclass_name = "秘钥学者"
                 price = 2888
-            elif target in ("4", "门之钥匙"):
+            elif target in ("4", "门之钥匙", "gatekey", "gate_key"):
                 subclass_name = "门之钥匙"
                 price = 3000
                 is_gatekey = True
-            elif target in ("5", "神秘物品"):
+            elif target in ("5", "神秘物品", "mystery", "mystery_item"):
                 subclass_name = "神秘物品"
                 price = 66666
             elif target in ("6", "Icerainboww"):

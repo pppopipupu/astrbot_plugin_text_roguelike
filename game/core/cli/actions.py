@@ -51,11 +51,11 @@ class MinionAction(ActionHandler, actions=["随从", "m"]):
                     return "\n".join(results) + f"\n🎉 恭喜你击败了腐化之心，通关成功！\n{settle_msg}", True
                 else:
                     return "\n".join(results) + "\n🎉 战斗胜利！你击败了敌方所有单位。", True
-            if action in ("攻击", "a"):
+            if action in ("攻击", "a", "attack"):
                 opp_grid = parts[3] if len(parts) > 3 else None
                 res = router.engine.minion_attack(run, g, opp_grid)
                 results.append(res)
-            elif action in ("技能", "s"):
+            elif action in ("技能", "s", "skill"):
                 skill_idx = 1
                 target = None
                 if len(parts) > 3:
