@@ -351,6 +351,37 @@ class TestRoguePlugin(unittest.TestCase):
                 relic_id = items[relic_idx - 1].get("relic_id")
                 self.assertIn(relic_id, run.player.relics)
                 
+            remove_idx = -1
+            for idx, item in enumerate(items):
+                if item.get("type") == "remove":
+                    remove_idx = idx + 1
+                    break
+            if remove_idx != -1:
+                run = plugin.save_manager.load_save(user_id)
+                run.player.gold = 500
+                run.node_type = "shop"
+                plugin.engine.map_engine.explore_engine._init_shop_node(run)
+                for it in run.node_data["items"]:
+                    if it.get("type") == "remove":
+                        it["sold"] = False
+                plugin.save_manager.save_save(user_id, run)
+                remove_trigger_res = await run_command(plugin, f".rogue 选择 {remove_idx}", sender_id=user_id)
+                self.assertIn("净化服务已启动", remove_trigger_res)
+                run = plugin.save_manager.load_save(user_id)
+                self.assertTrue(run.node_data.get("pending_remove"))
+                cancel_res = await run_command(plugin, ".rogue 选择 取消", sender_id=user_id)
+                self.assertIn("已取消卡牌移除操作", cancel_res)
+                run = plugin.save_manager.load_save(user_id)
+                self.assertFalse(run.node_data.get("pending_remove"))
+                await run_command(plugin, f".rogue 选择 {remove_idx}", sender_id=user_id)
+                run = plugin.save_manager.load_save(user_id)
+                deck_before = len(run.player.deck)
+                remove_card_res = await run_command(plugin, ".rogue 选择 1", sender_id=user_id)
+                self.assertIn("已成功从你的卡组中移除", remove_card_res)
+                run = plugin.save_manager.load_save(user_id)
+                self.assertEqual(len(run.player.deck), deck_before - 1)
+                self.assertFalse(run.node_data.get("pending_remove"))
+
             leave_idx = -1
             for idx, item in enumerate(items):
                 if item.get("type") == "leave":
@@ -2189,6 +2220,35 @@ class TestRoguePlugin(unittest.TestCase):
         self.assertIn("震荡波", res)
         self.assertTrue(any(b.id == "minor_vulnerable" for b in run.enemies[0].buffs))
         self.assertTrue(any(b.id == "weak" for b in run.enemies[0].buffs))
+
+    def test_deck_contains_all_class_cards(self):
+        player = PlayerState(
+            hp=80,
+            max_hp=80,
+            shield=0,
+            gold=20,
+            stage=1,
+            deck=["warrior_strike", "doomsday_judgment", "time_warp", "arcane_spark"],
+            draw_pile=[],
+            discard_pile=[],
+            hand=[],
+            actions=1,
+            bonus_actions=1,
+            selected_class="战士"
+        )
+        run = GameRun(
+            user_id="test_user_class_cards",
+            node_type="map_select",
+            player=player,
+            enemies=[],
+            node_data={}
+        )
+        from game.renderer import GameRenderer
+        output = GameRenderer.render_deck(run)
+        self.assertIn("奥术星火", output)
+        self.assertIn("末日审判", output)
+        self.assertIn("时光倒流", output)
+        self.assertIn("打击", output)
 
 if __name__ == "__main__":
     unittest.main()

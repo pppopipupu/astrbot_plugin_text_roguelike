@@ -205,6 +205,10 @@
 - 本地综合单元测试：在插件根目录下执行：
   `py scratch/test_flow.py`
   使用标准 `unittest` 框架，依次测试游戏核心业务及边界场景。
+- Windows 本地命令行测试运行异常提示：
+  在 Windows 环境下使用 PowerShell 或 CMD 直接运行测试脚本时，可能遇到以下两类环境问题：
+  1. 模块导入失败（ModuleNotFoundError）：若遇到无法导入 game 的错误，需在运行前显式指定 PYTHONPATH 环境变量（例如在 PowerShell 中执行：$env:PYTHONPATH="."）。
+  2. 控制台字符集编码错误（UnicodeEncodeError）：若在控制台打印带有各类圆形字符等 Unicode 符号时发生编码报错，需在执行前将 Python 的控制台编码指定为 utf-8（例如在 PowerShell 中执行：$env:PYTHONIOENCODING="utf-8"）。
 
 ### 3.2 提测与通过指标
 - 自动随机测试在 150 步内没有发生未捕获异常退出（即程序返回 exit code 0 且无 Python Traceback），方可判定为核心引擎通过测试。

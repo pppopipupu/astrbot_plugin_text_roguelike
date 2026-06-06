@@ -90,6 +90,15 @@ class ChooseAction(ActionHandler, actions=["选择", "c"]):
             idx = int(parts[1])
         except ValueError:
             arg = parts[1].lower()
+            if arg in ("取消", "cancel", "返回", "quit", "exit", "0"):
+                if run.node_data.get("pending_remove"):
+                    run.node_data["pending_remove"] = False
+                    router.save_manager.save_save(user_id, run)
+                    return "🧹 已取消卡牌移除操作。", False
+                if run.node_data.get("pending_upgrade"):
+                    run.node_data["pending_upgrade"] = False
+                    router.save_manager.save_save(user_id, run)
+                    return "🔨 已取消卡牌升级操作。", False
             if arg in ("wizard", "warrior", "wiz", "war", "法师", "战士", "选择", "时序法师", "塑能法师", "秘钥学者"):
                 return "❌ 切换职业请在局外使用 /rogue 职业 (或 /rogue class) 命令。\n💡 选择命令 c 仅用于局内选项选择，无法用于选择职业。", False
             return "❌ 序号必须是数字。", False

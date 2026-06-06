@@ -11,6 +11,70 @@ from . import warrior
 import copy
 
 class CardRegistryDict(dict):
+    def _lazy_load_card(self, key):
+        from ...data.card_data import CARD_CONFIG
+        if key in CARD_CONFIG:
+            cfg = CARD_CONFIG[key]
+            name = cfg["name"]
+            color = cfg["color"]
+            ctype = cfg["type"]
+            cost_a = cfg["cost_a"]
+            cost_ba = cfg["cost_ba"]
+            desc = cfg["desc"]
+            rarity = cfg.get("rarity", "common")
+            exhaust = cfg.get("exhaust", False)
+            fleeting = cfg.get("fleeting", False)
+            agile = cfg.get("agile", False)
+            retain = cfg.get("retain", False)
+
+            from ...models.state import Card
+            from .registry import CARD_CLASS_REGISTRY
+            import inspect
+            if key in CARD_CLASS_REGISTRY:
+                cls, decorator_kwargs = CARD_CLASS_REGISTRY[key]
+            else:
+                cls = Card
+                decorator_kwargs = {}
+
+            inst_kwargs = {
+                "id": key,
+                "name": name,
+                "color": color,
+                "type": ctype,
+                "cost_a": cost_a,
+                "cost_ba": cost_ba,
+                "desc": desc,
+            }
+            for prop in ("base_dmg", "heal_amount", "countdown", "amulet_desc", "minion_hp", "minion_atk", "exhaust", "damage_type"):
+                if prop in cfg:
+                    inst_kwargs[prop] = cfg[prop]
+            inst_kwargs.update(decorator_kwargs)
+            
+            sig = inspect.signature(cls.__init__)
+            has_kwargs = any(p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values())
+            if has_kwargs:
+                filtered = inst_kwargs
+            else:
+                filtered = {k: v for k, v in inst_kwargs.items() if k in sig.parameters}
+            
+            inst = cls(**filtered)
+            inst.rarity = rarity
+            inst.exhaust = exhaust
+            inst.fleeting = fleeting
+            inst.agile = agile
+            inst.retain = retain
+            inst.innate = cfg.get("innate", False)
+            inst.ethereal = cfg.get("ethereal", False)
+            inst.unplayable = cfg.get("unplayable", False)
+            inst.damage_type = cfg.get("damage_type", "effect")
+            inst.fragile = cfg.get("fragile", 0)
+            if inst.fragile > 0:
+                if " (易碎 " not in inst.name:
+                    inst.name = f"{inst.name} (易碎 {inst.fragile})"
+            self[key] = inst
+            return inst
+        return None
+
     def __getitem__(self, key):
         if isinstance(key, str) and ":replay:" in key:
             parts = key.rsplit(":replay:", 1)
@@ -51,6 +115,8 @@ class CardRegistryDict(dict):
         if isinstance(key, str) and key.endswith("+"):
             base_key = key[:-1]
             if base_key not in self:
+                self._lazy_load_card(base_key)
+            if base_key not in self:
                 raise KeyError(key)
             base_card = super().__getitem__(base_key)
             upgraded_card = copy.copy(base_card)
@@ -83,6 +149,9 @@ class CardRegistryDict(dict):
                 if prop in up_cfg:
                     setattr(upgraded_card, prop, up_cfg[prop])
             return upgraded_card
+        
+        if key not in self:
+            self._lazy_load_card(key)
         return super().__getitem__(key)
 
     def get(self, key, default=None):
@@ -93,8 +162,15 @@ class CardRegistryDict(dict):
 
     def __contains__(self, key):
         if isinstance(key, str) and key.endswith("+"):
-            return super().__contains__(key[:-1])
-        return super().__contains__(key)
+            base_key = key[:-1]
+            if super().__contains__(base_key):
+                return True
+            from ...data.card_data import CARD_CONFIG
+            return base_key in CARD_CONFIG
+        if super().__contains__(key):
+            return True
+        from ...data.card_data import CARD_CONFIG
+        return key in CARD_CONFIG
 
 ALL_CARDS = CardRegistryDict()
 
@@ -111,29 +187,34 @@ for cid, cfg in CARD_CONFIG.items():
     agile = cfg.get("agile", False)
     retain = cfg.get("retain", False)
 
+    from ...models.state import Card
     if cid in CARD_CLASS_REGISTRY:
         cls, decorator_kwargs = CARD_CLASS_REGISTRY[cid]
-        inst_kwargs = {
-            "id": cid,
-            "name": name,
-            "color": color,
-            "type": ctype,
-            "cost_a": cost_a,
-            "cost_ba": cost_ba,
-            "desc": desc,
-        }
-        for key in ("base_dmg", "heal_amount", "countdown", "amulet_desc", "minion_hp", "minion_atk", "exhaust", "damage_type"):
-            if key in cfg:
-                inst_kwargs[key] = cfg[key]
-        inst_kwargs.update(decorator_kwargs)
-        
-        sig = inspect.signature(cls.__init__)
-        has_kwargs = any(p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values())
-        if has_kwargs:
-            filtered = inst_kwargs
-        else:
-            filtered = {k: v for k, v in inst_kwargs.items() if k in sig.parameters}
-        ALL_CARDS[cid] = cls(**filtered)
+    else:
+        cls = Card
+        decorator_kwargs = {}
+
+    inst_kwargs = {
+        "id": cid,
+        "name": name,
+        "color": color,
+        "type": ctype,
+        "cost_a": cost_a,
+        "cost_ba": cost_ba,
+        "desc": desc,
+    }
+    for key in ("base_dmg", "heal_amount", "countdown", "amulet_desc", "minion_hp", "minion_atk", "exhaust", "damage_type"):
+        if key in cfg:
+            inst_kwargs[key] = cfg[key]
+    inst_kwargs.update(decorator_kwargs)
+    
+    sig = inspect.signature(cls.__init__)
+    has_kwargs = any(p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values())
+    if has_kwargs:
+        filtered = inst_kwargs
+    else:
+        filtered = {k: v for k, v in inst_kwargs.items() if k in sig.parameters}
+    ALL_CARDS[cid] = cls(**filtered)
 
     if cid in ALL_CARDS:
         ALL_CARDS[cid].rarity = rarity

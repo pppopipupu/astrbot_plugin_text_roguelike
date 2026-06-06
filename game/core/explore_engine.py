@@ -316,6 +316,7 @@ class ExploreEngine:
         for item in items:
             if item.get("type") == "remove":
                 item["sold"] = True
+        run.node_data["pending_remove"] = False
         self.save_manager.save_save(run.user_id, run)
         return f"已成功从你的卡组中移除了【{removed_name}】。"
 
