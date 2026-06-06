@@ -493,9 +493,10 @@ class CommanderAuroraEmperorCard(Card):
                 if mk != grid and mv.id.startswith("officer_"):
                     mv.actions += 2
                     mv.attack_actions = 1
+            buff_id = "commander_aurora_emperor+" if self.upgraded else "commander_aurora_emperor"
             buff_name = "极光圣域+" if self.upgraded else "极光圣域"
             buff_desc = "我方随从发起普攻时玩家获得 3 点护盾且抽 1 卡" if self.upgraded else "我方随从发起普攻时玩家获得 2 点护盾"
-            engine._add_buff_to(run.player, self.id, buff_name, buff_desc, 1)
+            engine._add_buff_to(run.player, buff_id, buff_name, buff_desc, 1)
             if self.upgraded:
                 engine._gain_shield(run, "p0", 12)
                 msg += f"\n🌟 [入场曲] 使在场所有士兵随从行动点 A 增加 2 且能够立刻发起一次攻击！挂载了【极光圣域+】并为玩家提供了 12 点护盾。"

@@ -158,10 +158,10 @@ class ArcaneSparkCard(Card):
 class EchoFormCard(Card):
     def execute(self, run, target, engine) -> str:
         from ...data.buff_data import BUFF_CONFIG
-        buff_info = BUFF_CONFIG.get(self.id.replace("+", ""), {})
-        buff_name = buff_info.get("name", self.name)
+        buff_info = BUFF_CONFIG.get("echo_form", {})
+        buff_name = buff_info.get("name", "回响形态")
         buff_desc = buff_info.get("desc", "")
-        engine._add_buff_to(run.player, self.id, buff_name, buff_desc)
+        engine._add_buff_to(run.player, "echo_form", buff_name, buff_desc)
         cfg = CARD_CONFIG.get(self.id.replace("+", ""), {})
         feedback_tmpl = cfg.get("feedback")
         if feedback_tmpl:
@@ -206,7 +206,7 @@ class OverchargeCard(Card):
 @register_card("magic_network")
 class MagicNetworkCard(Card):
     def execute(self, run, target, engine) -> str:
-        buff_id = self.id
+        buff_id = "magic_network+" if self.upgraded else "magic_network"
         buff_name = "魔网天成+" if self.upgraded else "魔网天成"
         buff_desc = "本回合内每使用一张法术牌，对所有敌人造成 5 点伤害，获得 5 点护盾。支持回响触发。" if self.upgraded else "本回合内每使用一张法术牌，对所有敌人造成 3 点伤害，获得 3 点护盾。"
         engine._add_buff_to(run.player, buff_id, buff_name, buff_desc)

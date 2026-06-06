@@ -2189,6 +2189,41 @@ class TestRoguePlugin(unittest.TestCase):
                 break
         self.assertTrue(found_in_11)
 
+        player.hand = ["echo_form:replay:3"]
+        player.actions = 10
+        player.bonus_actions = 10
+        player.buffs.clear()
+        engine.play_card(run, 1)
+        self.assertTrue(any(b.id == "echo_form" and b.name == "回响形态" for b in player.buffs))
+
+        player.hand = ["echo_form+:replay:4"]
+        player.actions = 10
+        player.bonus_actions = 10
+        player.buffs.clear()
+        engine.play_card(run, 1)
+        self.assertTrue(any(b.id == "echo_form" and b.name == "回响形态" for b in player.buffs))
+
+        player.hand = ["iron_will+:replay:3"]
+        player.actions = 10
+        player.bonus_actions = 10
+        player.buffs.clear()
+        engine.play_card(run, 1)
+        self.assertTrue(any(b.id == "iron_will+" and b.name == "钢铁意志+" for b in player.buffs))
+
+        player.hand = ["quicken:replay:3"]
+        player.actions = 10
+        player.bonus_actions = 10
+        player.buffs.clear()
+        engine.play_card(run, 1)
+        self.assertTrue(any(b.id == "quicken" and b.name == "超魔-瞬发" for b in player.buffs))
+
+        player.hand = ["magic_network+:replay:2"]
+        player.actions = 10
+        player.bonus_actions = 10
+        player.buffs.clear()
+        engine.play_card(run, 1)
+        self.assertTrue(any(b.id == "magic_network+" and b.name == "魔网天成+" for b in player.buffs))
+
     def test_shockwave_with_echo_form(self):
         class DummySaveManager:
             def save_save(self, user_id, run):

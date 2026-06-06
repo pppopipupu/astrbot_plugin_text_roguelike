@@ -219,10 +219,11 @@ class SummonMinionCard(Card):
 class AbilityCard(Card):
     def execute(self, run, target, engine) -> str:
         from ...data.buff_data import BUFF_CONFIG
-        buff_info = BUFF_CONFIG.get(self.id, {})
-        buff_name = buff_info.get("name", self.name)
+        base_id = self.id.split(":replay:")[0].split(":fragile:")[0].rstrip("+")
+        buff_info = BUFF_CONFIG.get(base_id, {})
+        buff_name = buff_info.get("name", self.name.split(" (重放 ")[0].split(" (易碎 ")[0])
         buff_desc = buff_info.get("desc", "")
-        engine._add_buff_to(run.player, self.id, buff_name, buff_desc)
+        engine._add_buff_to(run.player, base_id, buff_name, buff_desc)
         
         cfg = CARD_CONFIG.get(self.id, {})
         feedback_tmpl = cfg.get("feedback")
@@ -247,11 +248,10 @@ class TacticalFocusCard(Card):
 @register_card("iron_will")
 class IronWillCard(Card):
     def execute(self, run, target, engine) -> str:
-        from ...data.buff_data import BUFF_CONFIG
-        buff_info = BUFF_CONFIG.get(self.id.replace("+", ""), {})
+        buff_id = "iron_will+" if self.upgraded else "iron_will"
         buff_name = "钢铁意志+" if self.upgraded else "钢铁意志"
         buff_desc = "最大生命上限增加 15 并回复 15 生命，治疗翻倍" if self.upgraded else "最大生命上限增加 10 并回复 10 生命"
-        engine._add_buff_to(run.player, self.id, buff_name, buff_desc, 1, None)
+        engine._add_buff_to(run.player, buff_id, buff_name, buff_desc, 1, None)
         heal_val = 15 if self.upgraded else 10
         engine._heal_target(run, "p0", heal_val)
         if self.upgraded:
