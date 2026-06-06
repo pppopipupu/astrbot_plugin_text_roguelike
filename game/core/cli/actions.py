@@ -69,7 +69,12 @@ class MinionAction(ActionHandler, actions=["随从", "m"]):
             if run.player.hp <= 0:
                 return "\n".join(results) + "\n💀 你被击败了！当前进度已清空。", True
             if router.engine.is_battle_won(run):
-                return "\n".join(results) + "\n🎉 战斗胜利！", True
+                router.engine._handle_battle_win(run)
+                if run.node_type == "victory":
+                    settle_msg = router.save_manager.settle_game_and_delete(user_id, run, is_victory=True)
+                    return "\n".join(results) + f"\n🎉 恭喜你击败了腐化之心，通关成功！\n{settle_msg}", True
+                else:
+                    return "\n".join(results) + "\n🎉 战斗胜利！你击败了敌方所有单位。", True
             if action in ("攻击", "a"):
                 opp_grid = parts[3] if len(parts) > 3 else None
                 res = router.engine.minion_attack(run, g, opp_grid)
@@ -128,6 +133,9 @@ class ChooseAction(ActionHandler, actions=["选择", "c"]):
         try:
             idx = int(parts[1])
         except ValueError:
+            arg = parts[1].lower()
+            if arg in ("wizard", "warrior", "wiz", "war", "法师", "战士", "选择", "时序法师", "塑能法师", "秘钥学者"):
+                return "❌ 切换职业请在局外使用 /rogue 职业 (或 /rogue class) 命令。\n💡 选择命令 c 仅用于局内选项选择，无法用于选择职业。", False
             return "❌ 序号必须是数字。", False
         if run.node_data.get("pending_upgrade"):
             res = router.engine.upgrade_card_in_deck(run, idx)

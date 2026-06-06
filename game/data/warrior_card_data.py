@@ -205,8 +205,9 @@ WARRIOR_CARD_CONFIG = {
         "type": "ability",
         "cost_a": 2,
         "cost_ba": 0,
-        "desc": "获得 1 层缓冲。本场战斗中，玩家在回合开始时护盾不会流失一半。",
+        "desc": "获得 1 层缓冲。本场战斗中，玩家在回合开始时护盾不会流失一半。消耗。",
         "rarity": "epic",
+        "exhaust": True,
         "feedback": "激活了【壁垒】形态！获得了 1 层缓冲，且护盾在每回合开始时不再流失一半。"
     },
     "metallicize": {
@@ -251,6 +252,16 @@ WARRIOR_CARD_CONFIG = {
         "rarity": "legendary",
         "exhaust": True,
         "feedback": "使用了【岿然不动】，获得了 30 点护盾。"
+    },
+    "entrench": {
+        "name": "巩固",
+        "color": "warrior",
+        "type": "spell",
+        "cost_a": 0,
+        "cost_ba": 1,
+        "desc": "玩家当前的护盾翻倍。",
+        "rarity": "rare",
+        "feedback": "使用了【巩固】。"
     },
     "officer_recruit_vanguard": {
         "name": "新兵前锋",

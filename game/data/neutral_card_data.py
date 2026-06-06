@@ -439,5 +439,16 @@ NEUTRAL_CARD_CONFIG = {
         "desc": "不能被打出。无效果。",
         "rarity": "curse",
         "unplayable": True
+    },
+    "unmined_gem": {
+        "name": "未掘宝石",
+        "color": "neutral",
+        "type": "spell",
+        "cost_a": 0,
+        "cost_ba": 0,
+        "desc": "随机给予手牌中的一张卡牌重放 3。消耗。",
+        "rarity": "legendary",
+        "exhaust": True,
+        "feedback": "使用了【未掘宝石】。"
     }
 }

@@ -249,9 +249,21 @@ class DemonFormCard(Card):
 @register_card("impervious")
 class ImperviousCard(Card):
     def execute(self, run, target, engine) -> str:
-        shield = 40 if self.upgraded else 30
+        shield = 50 if self.upgraded else 30
         engine._gain_shield(run, "p0", shield)
         return f"使用了【岿然不动】，获得了 {shield} 点护盾。"
+
+
+@register_card("entrench")
+class EntrenchCard(Card):
+    def execute(self, run, target, engine) -> str:
+        multiplier = 3 if self.upgraded else 2
+        old_shield = run.player.shield
+        new_shield = old_shield * multiplier
+        gain = new_shield - old_shield
+        if gain > 0:
+            engine._gain_shield(run, "p0", gain)
+        return f"使用了【巩固】，获得了 {gain} 点护盾（当前护盾由 {old_shield} 点变为 {new_shield} 点）。"
 
 
 @register_card("officer_recruit_vanguard")

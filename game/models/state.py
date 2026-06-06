@@ -87,6 +87,7 @@ class Card:
     damage_type: str = "effect"
     upgraded: bool = False
     fragile: int = 0
+    replay: int = 0
 
     def execute(self, run: 'GameRun', target: Optional[str] = None, engine = None) -> str:
         return ""

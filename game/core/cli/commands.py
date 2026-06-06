@@ -145,6 +145,11 @@ class ChooseCommand(CommandHandler, names=["选择", "c"]):
     def execute(self, router, user_id: str, parts: list[str]) -> Generator[str, None, None]:
         run = router.save_manager.load_save(user_id)
         if not run:
+            if len(parts) > 1:
+                arg = parts[1].lower()
+                if arg in ("wizard", "warrior", "wiz", "war", "法师", "战士", "1", "2", "3", "0", "选择", "时序法师", "塑能法师", "秘钥学者"):
+                    yield "❌ 你当前没有正在进行的游戏。如需切换职业，请使用 /rogue 职业 (或 /rogue class) 命令。\n💡 选择命令 c 仅用于局内选项选择，无法用于选择职业。"
+                    return
             yield "❌ 你当前没有正在进行的游戏。"
             return
         res, term = router._execute_sub_action(user_id, run, parts)
@@ -216,12 +221,12 @@ class ClassCommand(CommandHandler, names=["职业", "class"]):
                 "   └─ 门扉共鸣。打出护符时回复 3 生命且获得 4 护盾。抓取卡牌时 35% 几率将普通法术替换为“秘钥共鸣”。",
                 "",
                 "【职业选择命令】",
-                "👉 /rogue 职业 法师 (或 c wizard) -- 切换到法师职业",
-                "👉 /rogue 职业 战士 (或 c warrior) -- 切换到战士职业",
-                "👉 /rogue 职业 选择 1 (或 c 1) -- 装备时序法师子职业",
-                "👉 /rogue 职业 选择 2 (或 c 2) -- 装备塑能法师子职业",
-                "👉 /rogue 职业 选择 3 (或 c 3) -- 装备秘钥学者子职业",
-                "👉 /rogue 职业 选择 0 (或 c 0) -- 取消装备子职业",
+                "👉 /rogue 职业 法师 (或 class wizard) -- 切换到法师职业",
+                "👉 /rogue 职业 战士 (或 class warrior) -- 切换到战士职业",
+                "👉 /rogue 职业 选择 1 (或 class 1) -- 装备时序法师子职业",
+                "👉 /rogue 职业 选择 2 (或 class 2) -- 装备塑能法师子职业",
+                "👉 /rogue 职业 选择 3 (或 class 3) -- 装备秘钥学者子职业",
+                "👉 /rogue 职业 选择 0 (或 class 0) -- 取消装备子职业",
                 "💡 如需购买子职业，请使用局外商店：/rogue 商店",
                 "━━━━━━━━━━━━━━━━━━━━"
             ]

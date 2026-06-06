@@ -95,7 +95,7 @@ class EchoFormBuff(BuffImpl):
         stacks = buff_state.stacks
         if event.card.id.startswith("echo_form"):
             stacks = max(0, stacks - 1)
-        num_echoes = min(8, max(0, stacks - 8 * played_count))
+        num_echoes = min(10, max(0, stacks - 10 * played_count))
         if num_echoes > 0:
             res = ""
             for _ in range(num_echoes):
@@ -103,6 +103,13 @@ class EchoFormBuff(BuffImpl):
                     break
                 extra_res = event.engine._execute_card_effect(event.run, event.card, event.target)
                 res += f" 🔁 [回响触发] {extra_res}"
+                replay_val = getattr(event.card, "replay", 0)
+                if replay_val > 0:
+                    for _ in range(replay_val):
+                        if event.engine.is_battle_won(event.run):
+                            break
+                        extra_res_rep = event.engine._execute_card_effect(event.run, event.card, event.target)
+                        res += f" 🔁 [重放触发] {extra_res_rep}"
             event.feedback += res
 
     def on_card_played_legacy(self, run, card, target: str, engine) -> str:
@@ -110,7 +117,7 @@ class EchoFormBuff(BuffImpl):
         stacks = self.stacks
         if card.id.startswith("echo_form"):
             stacks = max(0, stacks - 1)
-        num_echoes = min(8, max(0, stacks - 8 * played_count))
+        num_echoes = min(10, max(0, stacks - 10 * played_count))
         res = ""
         if num_echoes > 0:
             for _ in range(num_echoes):
@@ -118,6 +125,13 @@ class EchoFormBuff(BuffImpl):
                     break
                 extra_res = engine._execute_card_effect(run, card, target)
                 res += f" 🔁 [回响触发] {extra_res}"
+                replay_val = getattr(card, "replay", 0)
+                if replay_val > 0:
+                    for _ in range(replay_val):
+                        if engine.is_battle_won(run):
+                            break
+                        extra_res_rep = engine._execute_card_effect(run, card, target)
+                        res += f" 🔁 [重放触发] {extra_res_rep}"
         return res
 
 class IronWillBuff(BuffImpl):

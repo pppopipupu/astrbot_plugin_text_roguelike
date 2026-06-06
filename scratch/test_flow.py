@@ -256,9 +256,9 @@ class TestRoguePlugin(unittest.TestCase):
         res5 = run_echo_test(5, 3)
         self.assertEqual(res5, [5, 0, 0])
         res10 = run_echo_test(10, 3)
-        self.assertEqual(res10, [8, 2, 0])
+        self.assertEqual(res10, [10, 0, 0])
         res24 = run_echo_test(24, 4)
-        self.assertEqual(res24, [8, 8, 8, 0])
+        self.assertEqual(res24, [10, 10, 4, 0])
 
         player = PlayerState(
             hp=30,
@@ -787,6 +787,33 @@ class TestRoguePlugin(unittest.TestCase):
         self.assertEqual(mgr.stats.selected_subclass, "时序法师")
         list(router.handle_command("test_user", ["class", "无"]))
         self.assertEqual(mgr.stats.selected_subclass, "")
+
+        res_conflict_wiz = list(router.handle_command("test_user", ["c", "wizard"]))
+        self.assertIn("如需切换职业，请使用 /rogue 职业 (或 /rogue class)", res_conflict_wiz[0])
+        self.assertIn("选择命令 c 仅用于局内选项选择", res_conflict_wiz[0])
+
+        res_conflict_num = list(router.handle_command("test_user", ["c", "1"]))
+        self.assertIn("如需切换职业，请使用 /rogue 职业 (或 /rogue class)", res_conflict_num[0])
+
+        res_normal_c = list(router.handle_command("test_user", ["c"]))
+        self.assertEqual("❌ 你当前没有正在进行的游戏。", res_normal_c[0])
+
+        class DummySaveManagerWithSave:
+            def __init__(self):
+                self.stats = UserStats()
+                self.stats.unlocked_subclasses = ["时序法师", "塑能法师"]
+            def load_stats(self, user_id):
+                return self.stats
+            def save_stats(self, user_id, stats):
+                self.stats = stats
+                return True
+            def load_save(self, user_id):
+                player = PlayerState(hp=30, max_hp=30, shield=0, gold=100, stage=2, deck=[], hand=[], draw_pile=[], discard_pile=[], exhaust_pile=[], graveyard=[])
+                return GameRun(user_id=user_id, node_type="event", player=player, enemies=[], node_data={"event_id": "test_event"})
+        mgr_with_save = DummySaveManagerWithSave()
+        router_with_save = CLIRouter(mgr_with_save, None)
+        res_in_game = list(router_with_save.handle_command("test_user", ["c", "wizard"]))
+        self.assertIn("切换职业请在局外使用 /rogue 职业 (或 /rogue class)", res_in_game[0])
 
     def test_fragile_card_mechanism(self):
         player = PlayerState(
@@ -1866,6 +1893,272 @@ class TestRoguePlugin(unittest.TestCase):
         res = engine.card_player.minion_attack(run, "1", "1")
         self.assertEqual(enemy.hp, 16)
         self.assertIn("造成 4 点物理伤害", res)
+
+    def test_minion_defeat_non_summon_and_win(self):
+        class DummySaveManager:
+            def __init__(self):
+                self.saved_run = None
+                self.stats = UserStats()
+            def save_save(self, user_id, run):
+                self.saved_run = run
+            def delete_save(self, user_id):
+                pass
+            def load_stats(self, user_id):
+                return self.stats
+            def save_stats(self, user_id, stats):
+                self.stats = stats
+        mgr = DummySaveManager()
+        engine = BattleEngine(mgr)
+        router = CLIRouter(mgr, engine)
+        player = PlayerState(
+            hp=50,
+            max_hp=50,
+            shield=0,
+            gold=100,
+            stage=1,
+            deck=[],
+            hand=[],
+            minions={
+                "1": MinionState("mercenary", "雇佣兵", 10, 10, 4, 1, 0)
+            }
+        )
+        enemy_non_summon = EnemyState("Boss", 4, 4, 0, is_summon=False)
+        enemy_summon = EnemyState("爪牙", 10, 10, 0, is_summon=True)
+        run = GameRun(
+            user_id="test_user",
+            node_type="battle",
+            player=player,
+            enemies=[enemy_non_summon, enemy_summon]
+        )
+        res, term = router._execute_sub_action("test_user", run, ["随从", "1", "攻击", "e1"])
+        self.assertEqual(enemy_non_summon.hp, 0)
+        self.assertTrue(term)
+        self.assertEqual(run.node_type, "reward")
+        self.assertIn("战斗胜利！你击败了敌方所有单位。", res)
+
+    def test_impervious_card_upgrade_and_execution(self):
+        class DummySaveManager:
+            def save_save(self, user_id, run):
+                pass
+            def delete_save(self, user_id):
+                pass
+        sm = DummySaveManager()
+        engine = BattleEngine(sm)
+        player = PlayerState(
+            hp=50,
+            max_hp=50,
+            shield=0,
+            gold=100,
+            stage=1,
+            deck=["impervious", "impervious+"],
+            hand=["impervious", "impervious+"],
+            actions=10,
+            bonus_actions=10
+        )
+        run = GameRun(
+            user_id="test_user",
+            node_type="battle",
+            player=player,
+            enemies=[EnemyState("测试敌人", 20, 20, 0)]
+        )
+        card_normal = ALL_CARDS.get("impervious")
+        self.assertEqual(card_normal.cost_a, 2)
+        self.assertEqual(card_normal.cost_ba, 0)
+        res_normal = engine.play_card(run, 1)
+        self.assertEqual(player.shield, 30)
+        self.assertIn("获得了 30 点护盾", res_normal)
+
+        player.shield = 0
+        card_plus = ALL_CARDS.get("impervious+")
+        self.assertEqual(card_plus.cost_a, 2)
+        self.assertEqual(card_plus.cost_ba, 0)
+        self.assertIn("获得 50 点护盾", card_plus.desc)
+        res_plus = engine.play_card(run, 1)
+        self.assertEqual(player.shield, 50)
+        self.assertIn("获得了 50 点护盾", res_plus)
+
+    def test_entrench_card_upgrade_and_execution(self):
+        class DummySaveManager:
+            def save_save(self, user_id, run):
+                pass
+            def delete_save(self, user_id):
+                pass
+        sm = DummySaveManager()
+        engine = BattleEngine(sm)
+        player = PlayerState(
+            hp=50,
+            max_hp=50,
+            shield=10,
+            gold=100,
+            stage=1,
+            deck=["entrench", "entrench+"],
+            hand=["entrench", "entrench+"],
+            actions=10,
+            bonus_actions=10
+        )
+        run = GameRun(
+            user_id="test_user",
+            node_type="battle",
+            player=player,
+            enemies=[EnemyState("测试敌人", 20, 20, 0)]
+        )
+        card_normal = ALL_CARDS.get("entrench")
+        self.assertEqual(card_normal.cost_a, 0)
+        self.assertEqual(card_normal.cost_ba, 1)
+        res_normal = engine.play_card(run, 1)
+        self.assertEqual(player.shield, 20)
+        self.assertIn("获得了 10 点护盾", res_normal)
+        self.assertEqual(player.bonus_actions, 9)
+
+        player.shield = 10
+        player.bonus_actions = 10
+        card_plus = ALL_CARDS.get("entrench+")
+        self.assertEqual(card_plus.cost_a, 0)
+        self.assertEqual(card_plus.cost_ba, 1)
+        self.assertIn("翻三倍", card_plus.desc)
+        res_plus = engine.play_card(run, 1)
+        self.assertEqual(player.shield, 30)
+        self.assertIn("获得了 20 点护盾", res_plus)
+
+    def test_barricade_card_exhaust(self):
+        class DummySaveManager:
+            def save_save(self, user_id, run):
+                pass
+            def delete_save(self, user_id):
+                pass
+        sm = DummySaveManager()
+        engine = BattleEngine(sm)
+        player = PlayerState(
+            hp=50,
+            max_hp=50,
+            shield=0,
+            gold=100,
+            stage=1,
+            deck=["barricade", "barricade+"],
+            hand=["barricade", "barricade+"],
+            actions=10,
+            bonus_actions=10
+        )
+        run = GameRun(
+            user_id="test_user",
+            node_type="battle",
+            player=player,
+            enemies=[EnemyState("测试敌人", 20, 20, 0)]
+        )
+        card_normal = ALL_CARDS.get("barricade")
+        self.assertTrue(card_normal.exhaust)
+        self.assertIn("消耗。", card_normal.desc)
+
+        card_plus = ALL_CARDS.get("barricade+")
+        self.assertTrue(card_plus.exhaust)
+        self.assertIn("消耗。", card_plus.desc)
+
+        engine.play_card(run, 1)
+        self.assertIn("barricade", player.exhaust_pile)
+        self.assertEqual(len(player.hand), 1)
+
+    def test_unmined_gem_and_replay_logic(self):
+        card_normal = ALL_CARDS.get("unmined_gem")
+        self.assertIsNotNone(card_normal)
+        self.assertEqual(card_normal.cost_a, 0)
+        self.assertEqual(card_normal.cost_ba, 0)
+        self.assertTrue(card_normal.exhaust)
+        self.assertIn("重放 3", card_normal.desc)
+
+        card_plus = ALL_CARDS.get("unmined_gem+")
+        self.assertIsNotNone(card_plus)
+        self.assertEqual(card_plus.cost_a, 0)
+        self.assertEqual(card_plus.cost_ba, 0)
+        self.assertTrue(card_plus.exhaust)
+        self.assertIn("重放 4", card_plus.desc)
+
+        card_replay = ALL_CARDS.get("fire_bolt:replay:3")
+        self.assertIsNotNone(card_replay)
+        self.assertEqual(card_replay.replay, 3)
+        self.assertIn("重放 3", card_replay.name)
+        self.assertIn("重放 3", card_replay.desc)
+
+        class DummySaveManager:
+            def save_save(self, user_id, run):
+                pass
+            def delete_save(self, user_id):
+                pass
+            def load_stats(self, user_id):
+                class DummyStats:
+                    selected_class = "法师"
+                    killed_icerainboww = False
+                return DummyStats()
+            def record_stage_passed(self, user_id):
+                pass
+        sm = DummySaveManager()
+        engine = BattleEngine(sm)
+        player = PlayerState(
+            hp=50,
+            max_hp=50,
+            shield=0,
+            gold=100,
+            stage=1,
+            deck=["fire_bolt", "unmined_gem", "unmined_gem+"],
+            hand=["fire_bolt", "unmined_gem", "unmined_gem+"],
+            actions=10,
+            bonus_actions=10
+        )
+        run = GameRun(
+            user_id="test_user_replay",
+            node_type="battle",
+            player=player,
+            enemies=[EnemyState("测试敌人", 100, 100, 0)]
+        )
+
+        engine.play_card(run, 2)
+        self.assertTrue(any(":replay:3" in cid for cid in player.hand))
+        self.assertIn("unmined_gem", player.exhaust_pile)
+
+        engine.play_card(run, 2)
+        self.assertTrue(any(":replay:4" in cid for cid in player.hand))
+        self.assertTrue(any(cid.startswith("unmined_gem+") for cid in player.exhaust_pile))
+
+        self.assertEqual(len(player.hand), 1)
+        target_card_id = player.hand[0]
+        self.assertTrue(":replay:" in target_card_id)
+
+        hp_before = run.enemies[0].hp
+        engine.play_card(run, 1)
+        hp_after = run.enemies[0].hp
+        self.assertEqual(hp_before - hp_after, 15)
+
+        player.hand = ["fire_bolt:replay:3"]
+        player.buffs = [BuffState(id="echo_form", name="回响形态", stacks=1, desc="")]
+        run.node_data["cards_played_this_turn"] = 0
+        hp_before2 = run.enemies[0].hp
+        engine.play_card(run, 1)
+        hp_after2 = run.enemies[0].hp
+        self.assertEqual(hp_before2 - hp_after2, 24)
+
+        from game.core.map_engine import MapEngine
+        map_eng = MapEngine(sm, engine)
+        
+        found_in_1 = False
+        for _ in range(50):
+            player1 = PlayerState(hp=50, max_hp=50, shield=0, gold=100, stage=0)
+            run1 = GameRun(user_id="test_map_ancient", node_type="map_select", player=player1)
+            map_eng.enter_next_stage(run1)
+            options1 = run1.node_data.get("options", [])
+            if any(opt.get("card") == "unmined_gem" for opt in options1 if "card" in opt):
+                found_in_1 = True
+                break
+        self.assertTrue(found_in_1)
+
+        found_in_11 = False
+        for _ in range(50):
+            player11 = PlayerState(hp=50, max_hp=50, shield=0, gold=100, stage=10)
+            run11 = GameRun(user_id="test_map_ancient", node_type="map_select", player=player11)
+            map_eng.enter_next_stage(run11)
+            options11 = run11.node_data.get("options", [])
+            if any(opt.get("card") == "unmined_gem" for opt in options11 if "card" in opt):
+                found_in_11 = True
+                break
+        self.assertTrue(found_in_11)
 
 if __name__ == "__main__":
     unittest.main()

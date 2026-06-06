@@ -119,6 +119,13 @@ class CardPlayer:
                 if target == "0" or target == "e0":
                     target = "e1"
             res = self.engine._execute_card_effect(run, card, target)
+            replay_val = getattr(card, "replay", 0)
+            if replay_val > 0:
+                for _ in range(replay_val):
+                    if self.engine.is_battle_won(run):
+                        break
+                    extra_res = self.engine._execute_card_effect(run, card, target)
+                    res += f" 🔁 [重放触发] {extra_res}"
             played_evt = CardPlayedEvent(run, card, target, res)
             self.engine.event_bus.dispatch(played_evt)
             res = played_evt.feedback
@@ -207,6 +214,13 @@ class CardPlayer:
         run.node_data["current_playing_card_id"] = card.id
         try:
             res = self.engine._execute_card_effect(run, card, target)
+            replay_val = getattr(card, "replay", 0)
+            if replay_val > 0:
+                for _ in range(replay_val):
+                    if self.engine.is_battle_won(run):
+                        break
+                    extra_res = self.engine._execute_card_effect(run, card, target)
+                    res += f" 🔁 [重放触发] {extra_res}"
         finally:
             run.node_data["current_playing_card_id"] = ""
         played_count = run.node_data.get("cards_played_this_turn", 0)

@@ -52,6 +52,7 @@ class MapEngine:
                     {"type": "contract", "relic": "tax_contract", "card": "impervious"}
                 ]
                 cards_pool.append({"type": "contract", "relic": "blind_spot", "card": "break_limits"})
+                cards_pool.append({"type": "contract", "relic": "blind_spot", "card": "unmined_gem"})
                 if getattr(stats, "killed_icerainboww", False) and icerainboww_enabled:
                     cards_pool.append({"type": "contract", "relic": "wither_seed", "card": "minion_icerainboww"})
             else:
@@ -72,6 +73,7 @@ class MapEngine:
                         {"type": "contract", "relic": "tax_contract", "card": "archmage_wish"}
                     ]
                     cards_pool.append({"type": "contract", "relic": "blind_spot", "card": "break_limits"})
+                    cards_pool.append({"type": "contract", "relic": "blind_spot", "card": "unmined_gem"})
                     if getattr(stats, "killed_icerainboww", False) and icerainboww_enabled:
                         cards_pool.append({"type": "contract", "relic": "wither_seed", "card": "minion_icerainboww"})
                 elif style == "abyss":
@@ -88,6 +90,7 @@ class MapEngine:
                         {"type": "contract", "relic": "shadow_curse", "card": "abyss_altar"}
                     ]
                     cards_pool.append({"type": "contract", "relic": "shadow_curse", "card": "break_limits"})
+                    cards_pool.append({"type": "contract", "relic": "shadow_curse", "card": "unmined_gem"})
                     if getattr(stats, "killed_icerainboww", False) and icerainboww_enabled:
                         cards_pool.append({"type": "contract", "relic": "shadow_curse", "card": "minion_icerainboww"})
                 else:
@@ -103,6 +106,7 @@ class MapEngine:
                         {"type": "contract", "relic": "glacier_chill", "card": "glacier_tempest"}
                     ]
                     cards_pool.append({"type": "contract", "relic": "glacier_chill", "card": "break_limits"})
+                    cards_pool.append({"type": "contract", "relic": "glacier_chill", "card": "unmined_gem"})
                     if getattr(stats, "killed_icerainboww", False) and icerainboww_enabled:
                         cards_pool.append({"type": "contract", "relic": "glacier_chill", "card": "minion_icerainboww"})
             
@@ -136,6 +140,7 @@ class MapEngine:
                     relics_pool = ["frost_blade", "energy_core", "heavy_armor", "glacier_core"]
             
             legends_pool.append("break_limits")
+            legends_pool.append("unmined_gem")
             if getattr(stats, "killed_icerainboww", False) and icerainboww_enabled:
                 legends_pool.append("minion_icerainboww")
                 

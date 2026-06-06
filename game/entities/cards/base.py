@@ -12,6 +12,26 @@ import copy
 
 class CardRegistryDict(dict):
     def __getitem__(self, key):
+        if isinstance(key, str) and ":replay:" in key:
+            parts = key.rsplit(":replay:", 1)
+            base_key = parts[0]
+            replay_val = int(parts[1])
+            base_card = self[base_key]
+            replay_card = copy.copy(base_card)
+            replay_card.id = key
+            replay_card.replay = replay_val
+            clean_name = base_card.name
+            if " (重放 " in clean_name:
+                clean_name = clean_name.split(" (重放 ")[0]
+            replay_card.name = f"{clean_name} (重放 {replay_val})"
+            import re
+            clean_desc = re.sub(r"重放 \d+。", "", base_card.desc)
+            if clean_desc.endswith("。") or clean_desc.endswith("！"):
+                replay_card.desc = clean_desc + f"重放 {replay_val}。"
+            else:
+                replay_card.desc = clean_desc + f"。重放 {replay_val}。"
+            return replay_card
+
         if isinstance(key, str) and ":fragile:" in key:
             parts = key.split(":fragile:")
             base_key = parts[0]

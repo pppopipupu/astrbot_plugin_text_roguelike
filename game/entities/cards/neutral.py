@@ -454,3 +454,23 @@ class AncientWisdomCard(Card):
             return feedback_tmpl.format(shield=shield_val, stacks=X)
         return f"获得了 {shield_val} 点护盾与 {X} 层古老智慧形态。"
 
+@register_card("unmined_gem")
+class UnminedGemCard(Card):
+    def execute(self, run, target, engine) -> str:
+        import random
+        from .base import ALL_CARDS
+        if run.player.hand:
+            idx = random.randint(0, len(run.player.hand) - 1)
+            target_cid = run.player.hand[idx]
+            val = 4 if self.upgraded else 3
+            import re
+            if ":replay:" in target_cid:
+                new_cid = re.sub(r":replay:\d+", f":replay:{val}", target_cid)
+            else:
+                new_cid = f"{target_cid}:replay:{val}"
+            run.player.hand[idx] = new_cid
+            card_name = ALL_CARDS.get(new_cid).name
+            return f"使用了【{self.name}】。随机使手牌中的【{ALL_CARDS.get(target_cid).name}】获得了重放 {val} 效果，变更为【{card_name}】。"
+        else:
+            return f"使用了【{self.name}】，但手牌为空，未触发重放赋予效果。"
+
