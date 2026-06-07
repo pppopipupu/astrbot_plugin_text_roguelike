@@ -19,7 +19,12 @@ class UseAction(ActionHandler, actions=["使用", "p"]):
             router.engine._handle_battle_win(run)
             if run.node_type == "victory":
                 settle_msg = router.save_manager.settle_game_and_delete(user_id, run, is_victory=True)
-                return f"{res}\n🎉 恭喜你击败了腐化之心，通关成功！\n{settle_msg}", True
+                boss_name = run.node_data.get("boss_name")
+                if not boss_name and run.enemies:
+                    boss_name = run.enemies[0].name
+                if not boss_name:
+                    boss_name = "最终BOSS"
+                return f"{res}\n🎉 恭喜你击败了{boss_name}，通关成功！\n{settle_msg}", True
             else:
                 return f"{res}\n🎉 战斗胜利！你击败了敌方所有单位。", True
         return res, False
@@ -48,7 +53,12 @@ class MinionAction(ActionHandler, actions=["随从", "m"]):
                 router.engine._handle_battle_win(run)
                 if run.node_type == "victory":
                     settle_msg = router.save_manager.settle_game_and_delete(user_id, run, is_victory=True)
-                    return "\n".join(results) + f"\n🎉 恭喜你击败了腐化之心，通关成功！\n{settle_msg}", True
+                    boss_name = run.node_data.get("boss_name")
+                    if not boss_name and run.enemies:
+                        boss_name = run.enemies[0].name
+                    if not boss_name:
+                        boss_name = "最终BOSS"
+                    return "\n".join(results) + f"\n🎉 恭喜你击败了{boss_name}，通关成功！\n{settle_msg}", True
                 else:
                     return "\n".join(results) + "\n🎉 战斗胜利！你击败了敌方所有单位。", True
             if action in ("攻击", "a", "attack"):
@@ -77,7 +87,12 @@ class MinionAction(ActionHandler, actions=["随从", "m"]):
             router.engine._handle_battle_win(run)
             if run.node_type == "victory":
                 settle_msg = router.save_manager.settle_game_and_delete(user_id, run, is_victory=True)
-                return f"{res_combined}\n🎉 恭喜你击败了腐化之心，通关成功！\n{settle_msg}", True
+                boss_name = run.node_data.get("boss_name")
+                if not boss_name and run.enemies:
+                    boss_name = run.enemies[0].name
+                if not boss_name:
+                    boss_name = "最终BOSS"
+                return f"{res_combined}\n🎉 恭喜你击败了{boss_name}，通关成功！\n{settle_msg}", True
             else:
                 return f"{res_combined}\n🎉 战斗胜利！你击败了敌方所有单位。", True
         return res_combined, False

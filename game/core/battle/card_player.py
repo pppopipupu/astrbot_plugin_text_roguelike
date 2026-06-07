@@ -118,6 +118,7 @@ class CardPlayer:
                     target = self.engine._get_first_alive_enemy(run)
                 if target == "0" or target == "e0":
                     target = "e1"
+            run.node_data["extra_play_msgs"] = []
             res = self.engine._execute_card_effect(run, card, target)
             replay_val = getattr(card, "replay", 0)
             if replay_val > 0:
@@ -125,10 +126,15 @@ class CardPlayer:
                     if self.engine.is_battle_won(run):
                         break
                     extra_res = self.engine._execute_card_effect(run, card, target)
-                    res += f" 🔁 [重放触发] {extra_res}"
+                    run.node_data.setdefault("extra_play_msgs", []).append(f" 🔁 [重放触发] {extra_res}")
             played_evt = CardPlayedEvent(run, card, target, res)
             self.engine.event_bus.dispatch(played_evt)
             res = played_evt.feedback
+            extra_msgs = run.node_data.pop("extra_play_msgs", [])
+            if len(extra_msgs) > 10:
+                res += f"..... x {len(extra_msgs)}"
+            else:
+                res += "".join(extra_msgs)
             self._handle_card_post_play(run, card, cid, source="agile")
             self._reindex_minions(p)
             return self.engine._append_logs_to_res(run, f"✨ 触发[灵巧]：丢弃【{card.name}】时自动打出！效果：{res}")
@@ -214,6 +220,7 @@ class CardPlayer:
         p.hand.pop(hand_idx - 1)
         self._handle_card_post_play(run, card, cid, source="played")
         run.node_data["current_playing_card_id"] = card.id
+        run.node_data["extra_play_msgs"] = []
         try:
             res = self.engine._execute_card_effect(run, card, target)
             replay_val = getattr(card, "replay", 0)
@@ -222,13 +229,18 @@ class CardPlayer:
                     if self.engine.is_battle_won(run):
                         break
                     extra_res = self.engine._execute_card_effect(run, card, target)
-                    res += f" 🔁 [重放触发] {extra_res}"
+                    run.node_data.setdefault("extra_play_msgs", []).append(f" 🔁 [重放触发] {extra_res}")
         finally:
             run.node_data["current_playing_card_id"] = ""
         played_count = run.node_data.get("cards_played_this_turn", 0)
         played_evt = CardPlayedEvent(run, card, target, res)
         self.engine.event_bus.dispatch(played_evt)
         res = played_evt.feedback
+        extra_msgs = run.node_data.pop("extra_play_msgs", [])
+        if len(extra_msgs) > 10:
+            res += f"..... x {len(extra_msgs)}"
+        else:
+            res += "".join(extra_msgs)
         run.node_data["cards_played_this_turn"] = played_count + 1
         self.engine.save_manager.save_save(run.user_id, run)
         has_damaged = False

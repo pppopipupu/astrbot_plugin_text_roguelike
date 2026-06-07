@@ -98,20 +98,18 @@ class EchoFormBuff(BuffImpl):
             stacks = max(0, stacks - 1)
         num_echoes = min(10, max(0, stacks - 10 * played_count))
         if num_echoes > 0:
-            res = ""
             for _ in range(num_echoes):
                 if event.engine.is_battle_won(event.run):
                     break
                 extra_res = event.engine._execute_card_effect(event.run, event.card, event.target)
-                res += f" 🔁 [回响触发] {extra_res}"
+                event.run.node_data.setdefault("extra_play_msgs", []).append(f" 🔁 [回响触发] {extra_res}")
                 replay_val = getattr(event.card, "replay", 0)
                 if replay_val > 0:
                     for _ in range(replay_val):
                         if event.engine.is_battle_won(event.run):
                             break
                         extra_res_rep = event.engine._execute_card_effect(event.run, event.card, event.target)
-                        res += f" 🔁 [重放触发] {extra_res_rep}"
-            event.feedback += res
+                        event.run.node_data.setdefault("extra_play_msgs", []).append(f" 🔁 [重放触发] {extra_res_rep}")
 
     def on_card_played_legacy(self, run, card, target: str, engine) -> str:
         played_count = run.node_data.get("cards_played_this_turn", 0)
@@ -125,15 +123,15 @@ class EchoFormBuff(BuffImpl):
                 if engine.is_battle_won(run):
                     break
                 extra_res = engine._execute_card_effect(run, card, target)
-                res += f" 🔁 [回响触发] {extra_res}"
+                run.node_data.setdefault("extra_play_msgs", []).append(f" 🔁 [回响触发] {extra_res}")
                 replay_val = getattr(card, "replay", 0)
                 if replay_val > 0:
                     for _ in range(replay_val):
                         if engine.is_battle_won(run):
                             break
                         extra_res_rep = engine._execute_card_effect(run, card, target)
-                        res += f" 🔁 [重放触发] {extra_res_rep}"
-        return res
+                        run.node_data.setdefault("extra_play_msgs", []).append(f" 🔁 [重放触发] {extra_res_rep}")
+        return ""
 
 class IronWillBuff(BuffImpl):
     def on_heal(self, event, buff_state, entity):
@@ -317,13 +315,11 @@ class DoubleTapBuff(BuffImpl):
             dtype = getattr(event.card, "damage_type", "spell")
             if dtype in ("slashing", "bludgeoning", "piercing"):
                 stacks = buff_state.stacks
-                res = ""
                 for _ in range(stacks):
                     if event.engine.is_battle_won(event.run):
                         break
                     extra_res = event.engine._execute_card_effect(event.run, event.card, event.target)
-                    res += f" 🔁 [双发触发] {extra_res}"
-                event.feedback += res
+                    event.run.node_data.setdefault("extra_play_msgs", []).append(f" 🔁 [双发触发] {extra_res}")
                 if buff_state in event.run.player.buffs:
                     event.run.player.buffs.remove(buff_state)
 
@@ -572,13 +568,11 @@ class DemonContractBuff(BuffImpl):
     def on_card_played(self, event, buff_state, entity):
         if entity == event.run.player and event.card.type == "spell" and not event.card.id.startswith("demon_contract"):
             stacks = buff_state.stacks
-            res = ""
             for _ in range(stacks):
                 if event.engine.is_battle_won(event.run):
                     break
                 extra_res = event.engine._execute_card_effect(event.run, event.card, event.target)
-                res += f" 🔁 [契约回响] {extra_res}"
-            event.feedback += res
+                event.run.node_data.setdefault("extra_play_msgs", []).append(f" 🔁 [契约回响] {extra_res}")
             if buff_state in event.run.player.buffs:
                 event.run.player.buffs.remove(buff_state)
 

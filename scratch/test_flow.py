@@ -1963,6 +1963,85 @@ class TestRoguePlugin(unittest.TestCase):
 
         asyncio.run(go())
 
+    def test_dynamic_boss_victory_message(self):
+        class DummySaveManager:
+            def __init__(self):
+                self.stats = UserStats()
+            def save_save(self, user_id, run):
+                pass
+            def delete_save(self, user_id):
+                pass
+            def load_stats(self, user_id):
+                return self.stats
+            def save_stats(self, user_id, stats):
+                self.stats = stats
+                return True
+            def settle_game_and_delete(self, user_id, run, is_victory=True):
+                return "游戏已成功结算并清理。"
+        sm = DummySaveManager()
+        engine = BattleEngine(sm)
+        router = CLIRouter(sm, engine)
+        player = PlayerState(
+            hp=50,
+            max_hp=50,
+            shield=0,
+            gold=100,
+            stage=20,
+            deck=["fire_bolt"],
+            hand=["fire_bolt"],
+            actions=2,
+            bonus_actions=1
+        )
+        enemy = EnemyState("Icerainboww", 1, 160, 0)
+        run = GameRun(
+            user_id="test_victory_user",
+            node_type="battle",
+            player=player,
+            enemies=[enemy],
+            node_data={"boss_name": "Icerainboww"}
+        )
+        res, term = router._execute_sub_action("test_victory_user", run, ["使用", "1", "e1"])
+        self.assertTrue(term)
+        self.assertIn("恭喜你击败了Icerainboww，通关成功！", res)
+        self.assertNotIn("腐化之心", res)
+
+    def test_echo_replay_message_compression(self):
+        class DummySaveManager:
+            def save_save(self, user_id, run):
+                pass
+            def delete_save(self, user_id):
+                pass
+        sm = DummySaveManager()
+        engine = BattleEngine(sm)
+        player = PlayerState(
+            hp=50,
+            max_hp=50,
+            shield=0,
+            gold=100,
+            stage=2,
+            deck=["fire_bolt"],
+            hand=["fire_bolt"],
+            actions=2,
+            bonus_actions=1
+        )
+        enemy = EnemyState("测试敌人", 500, 500, 0)
+        run = GameRun(
+            user_id="test_compression_user",
+            node_type="battle",
+            player=player,
+            enemies=[enemy]
+        )
+        card = ALL_CARDS["fire_bolt"]
+        old_replay = getattr(card, "replay", 0)
+        card.replay = 12
+        try:
+            res = engine.play_card(run, 1)
+            self.assertIn("..... x 12", res)
+            self.assertNotIn("[重放触发]", res)
+            self.assertEqual(enemy.hp, 500 - 3 * 13)
+        finally:
+            card.replay = old_replay
+
     def test_minion_attack_digit_target(self):
         class DummySaveManager:
             def save_save(self, user_id, run):
