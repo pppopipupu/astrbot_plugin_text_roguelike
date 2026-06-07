@@ -114,7 +114,15 @@ class MyPlugin(Star):
         if is_matrix:
             if "\n" in res:
                 if "━━━━━━━━━━━━━━━━━━━━" in res or res.count("\n") > 4:
-                    return f"```\n{res}\n```"
+                    lines = res.split("\n")
+                    formatted_lines = []
+                    for line in lines:
+                        clean_line = line.replace("`", "")
+                        if clean_line:
+                            formatted_lines.append(f"`{clean_line}`  ")
+                        else:
+                            formatted_lines.append("  ")
+                    return "\n".join(formatted_lines)
                 else:
                     return res.replace("\n", "  \n")
         return res
