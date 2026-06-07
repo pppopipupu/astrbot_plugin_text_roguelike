@@ -48,6 +48,37 @@ try:
 except ImportError:
     from game.models.state import set_user_id
 
+def resolve_card_id(card_input: str) -> str | None:
+    card_input = card_input.strip()
+    if not card_input:
+        return None
+    try:
+        from .game.cards import ALL_CARDS
+    except ImportError:
+        from game.cards import ALL_CARDS
+    if card_input in ALL_CARDS:
+        return card_input
+    card_input_lower = card_input.lower()
+    for cid in list(ALL_CARDS.keys()):
+        if cid.lower() == card_input_lower:
+            return cid
+    try:
+        from .game.data.card_data import CARD_CONFIG
+    except ImportError:
+        from game.data.card_data import CARD_CONFIG
+    for cid, cfg in CARD_CONFIG.items():
+        name = cfg.get("name", "")
+        if card_input == name or card_input_lower == name.lower():
+            return cid
+        if card_input == name + "+" or card_input_lower == (name + "+").lower():
+            return cid + "+"
+    if card_input.endswith("+"):
+        base_input = card_input[:-1]
+        base_id = resolve_card_id(base_input)
+        if base_id:
+            return base_id + "+"
+    return None
+
 @register("helloworld", "YourName", "一个简单的 Hello World 插件", "1.0.0")
 class MyPlugin(Star):
     def __init__(self, context: Context, config: dict | None = None):
@@ -103,7 +134,8 @@ class MyPlugin(Star):
                 "• 设置随机轮换：/rogueadmin boss set random\n"
                 "• 固定最终BOSS：/rogueadmin boss set 腐化之心 或 Icerainboww\n"
                 "• 开启/关闭 Icerainboww：/rogueadmin icerainboww <on/off>\n"
-                "• 立即跳到某一层：/rogueadmin jump <层数> 或 /rogueadmin jump <玩家ID> <层数>"
+                "• 立即跳到某一层：/rogueadmin jump <层数> 或 /rogueadmin jump <玩家ID> <层数>\n"
+                "• 向玩家牌组添加卡牌：/rogueadmin add_card <卡牌名称/ID> [玩家ID]"
             )
             return
 
@@ -172,6 +204,54 @@ class MyPlugin(Star):
                 yield event.plain_result("❌ 错误：未找到该玩家的活跃游戏存档。")
                 return
             msg = self.engine.jump_to_stage(run, target_stage)
+            yield event.plain_result(f"⚙️ {msg}\n\n{GameRenderer.render_game(run)}")
+        elif cmd == "add_card":
+            if len(parts) == 2:
+                card_input = parts[1]
+                target_user_id = event.get_sender_id()
+            elif len(parts) >= 3:
+                card_input = parts[1]
+                target_user_id = parts[2]
+                resolved = resolve_card_id(card_input)
+                if not resolved:
+                    resolved_alt = resolve_card_id(parts[2])
+                    if resolved_alt:
+                        card_input = parts[2]
+                        target_user_id = parts[1]
+            else:
+                yield event.plain_result("❌ 错误：无效指令。请使用 /rogueadmin add_card <卡牌名称/ID> [玩家ID]")
+                return
+            
+            card_id = resolve_card_id(card_input)
+            if not card_id:
+                yield event.plain_result(f"❌ 错误：未找到卡牌【{card_input}】")
+                return
+            
+            run = self.save_manager.load_save(target_user_id)
+            if not run:
+                yield event.plain_result("❌ 错误：未找到该玩家的活跃游戏存档。")
+                return
+            
+            try:
+                from .game.cards import ALL_CARDS
+            except ImportError:
+                from game.cards import ALL_CARDS
+            
+            card_obj = ALL_CARDS.get(card_id)
+            card_name = card_obj.name if card_obj else card_id
+            
+            run.player.deck.append(card_id)
+            in_battle = (run.node_type == "battle")
+            if in_battle:
+                run.player.hand.append(card_id)
+                
+            self.save_manager.save_save(target_user_id, run)
+            
+            if in_battle:
+                msg = f"已成功将卡牌【{card_name}】添加到玩家【{target_user_id}】的牌组，且由于处于战斗中，该牌已直接加入手牌！"
+            else:
+                msg = f"已成功将卡牌【{card_name}】添加到玩家【{target_user_id}】的牌组！"
+                
             yield event.plain_result(f"⚙️ {msg}\n\n{GameRenderer.render_game(run)}")
         else:
             yield event.plain_result("❌ 错误：未知管理命令，请输入 /rogueadmin 查看帮助。")

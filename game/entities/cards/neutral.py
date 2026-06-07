@@ -465,12 +465,23 @@ class UnminedGemCard(Card):
             val = 4 if self.upgraded else 3
             import re
             if ":replay:" in target_cid:
-                new_cid = re.sub(r":replay:\d+", f":replay:{val}", target_cid)
+                match = re.search(r":replay:(\d+)", target_cid)
+                if match:
+                    old_val = int(match.group(1))
+                    new_val = old_val + val
+                    new_cid = re.sub(r":replay:\d+", f":replay:{new_val}", target_cid)
+                else:
+                    new_cid = f"{target_cid}:replay:{val}"
+                    new_val = val
             else:
                 new_cid = f"{target_cid}:replay:{val}"
+                new_val = val
             run.player.hand[idx] = new_cid
             card_name = ALL_CARDS.get(new_cid).name
-            return f"使用了【{self.name}】。随机使手牌中的【{ALL_CARDS.get(target_cid).name}】获得了重放 {val} 效果，变更为【{card_name}】。"
+            if ":replay:" in target_cid:
+                return f"使用了【{self.name}】。随机使手牌中的【{card_name}】获得了重放 {val} 效果（累计重放 {new_val}）。"
+            else:
+                return f"使用了【{self.name}】。随机使手牌中的【{card_name}】获得了重放 {val} 效果。"
         else:
             return f"使用了【{self.name}】，但手牌为空，未触发重放赋予效果。"
 

@@ -84,10 +84,7 @@ class CardRegistryDict(dict):
             replay_card = copy.copy(base_card)
             replay_card.id = key
             replay_card.replay = replay_val
-            clean_name = base_card.name
-            if " (重放 " in clean_name:
-                clean_name = clean_name.split(" (重放 ")[0]
-            replay_card.name = f"{clean_name} (重放 {replay_val})"
+            replay_card.name = base_card.name
             import re
             clean_desc = re.sub(r"重放 \d+。", "", base_card.desc)
             if clean_desc.endswith("。") or clean_desc.endswith("！"):
