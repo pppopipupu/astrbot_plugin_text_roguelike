@@ -132,7 +132,7 @@ class CardPlayer:
             res = played_evt.feedback
             extra_msgs = run.node_data.pop("extra_play_msgs", [])
             if len(extra_msgs) > 10:
-                res += f"..... x {len(extra_msgs)}"
+                res += f"x {len(extra_msgs)}次"
             else:
                 res += "".join(extra_msgs)
             self._handle_card_post_play(run, card, cid, source="agile")
@@ -238,7 +238,7 @@ class CardPlayer:
         res = played_evt.feedback
         extra_msgs = run.node_data.pop("extra_play_msgs", [])
         if len(extra_msgs) > 10:
-            res += f"..... x {len(extra_msgs)}"
+            res += f"x {len(extra_msgs)}次"
         else:
             res += "".join(extra_msgs)
         run.node_data["cards_played_this_turn"] = played_count + 1

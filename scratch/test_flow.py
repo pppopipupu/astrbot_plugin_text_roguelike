@@ -2036,7 +2036,7 @@ class TestRoguePlugin(unittest.TestCase):
         card.replay = 12
         try:
             res = engine.play_card(run, 1)
-            self.assertIn("..... x 12", res)
+            self.assertIn("x 12次", res)
             self.assertNotIn("[重放触发]", res)
             self.assertEqual(enemy.hp, 500 - 3 * 13)
         finally:
