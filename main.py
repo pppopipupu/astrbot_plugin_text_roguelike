@@ -93,6 +93,32 @@ class MyPlugin(Star):
         self.engine = GameEngine(self.save_manager)
         self.cli_router = CLIRouter(self.save_manager, self.engine)
 
+    def format_res(self, res: str, event: AstrMessageEvent) -> str:
+        if not res:
+            return res
+        is_matrix = False
+        try:
+            platform_id = str(event.get_platform_id()).lower()
+            if "matrix" in platform_id:
+                is_matrix = True
+        except Exception:
+            pass
+        try:
+            if not is_matrix and hasattr(event, "message_obj") and event.message_obj:
+                client_type = str(getattr(event.message_obj, "client_type", "")).lower()
+                if "matrix" in client_type:
+                    is_matrix = True
+        except Exception:
+            pass
+            
+        if is_matrix:
+            if "\n" in res:
+                if "━━━━━━━━━━━━━━━━━━━━" in res or res.count("\n") > 4:
+                    return f"```\n{res}\n```"
+                else:
+                    return res.replace("\n", "  \n")
+        return res
+
     def _execute_sub_action(self, user_id: str, run, parts: list[str]):
         return self.cli_router._execute_sub_action(user_id, run, parts)
 
@@ -104,6 +130,11 @@ class MyPlugin(Star):
 
     @filter.command("rogue")
     async def rogue(self, event: AstrMessageEvent):
+        original_plain_result = event.plain_result
+        def patched_plain_result(res: str, *args, **kwargs):
+            return original_plain_result(self.format_res(res, event), *args, **kwargs)
+        event.plain_result = patched_plain_result
+
         user_id = event.get_sender_id()
         message_str = event.message_str.strip()
         parts = message_str.split()
@@ -122,6 +153,11 @@ class MyPlugin(Star):
     @filter.command("rogueadmin")
     @filter.permission_type(filter.PermissionType.ADMIN)
     async def rogueadmin(self, event: AstrMessageEvent):
+        original_plain_result = event.plain_result
+        def patched_plain_result(res: str, *args, **kwargs):
+            return original_plain_result(self.format_res(res, event), *args, **kwargs)
+        event.plain_result = patched_plain_result
+
         message_str = event.message_str.strip()
         parts = message_str.split()
         if len(parts) > 0 and parts[0].lower() in ("rogueadmin", "/rogueadmin"):
@@ -261,6 +297,11 @@ class MyPlugin(Star):
         enable = self.config.get("enable_shortcut", True)
         if not enable:
             return
+        
+        original_plain_result = event.plain_result
+        def patched_plain_result(res: str, *args, **kwargs):
+            return original_plain_result(self.format_res(res, event), *args, **kwargs)
+        event.plain_result = patched_plain_result
         
         user_id = event.get_sender_id()
         stats = self.save_manager.load_stats(user_id)
