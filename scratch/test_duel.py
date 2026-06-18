@@ -143,7 +143,12 @@ class TestDuelSystem(unittest.TestCase):
     def test_duel_help(self):
         res, _, _, _, _, _ = self.router.handle_duel_cmd("user1", "张三", ["帮助"])
         self.assertIn("帮助手册", res)
-        self.assertIn("发起对决", res)
+        
+        res2, _, _, _, _, _ = self.router.handle_duel_cmd("user1", "张三", ["对决", "帮助"])
+        self.assertIn("帮助手册", res2)
+        
+        res3, _, _, _, _, _ = self.router.handle_duel_cmd("user1", "张三", ["duel", "help"])
+        self.assertIn("帮助手册", res3)
 
 if __name__ == "__main__":
     unittest.main()

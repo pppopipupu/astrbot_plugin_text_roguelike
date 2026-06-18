@@ -218,6 +218,11 @@ class DuelRouter:
         if not args:
             return "❌ 请提供对决子指令或 At 目标进行对决邀请。", False, None, None, None, None
             
+        if args[0].lower() in ("对决", "duel"):
+            args = args[1:]
+            if not args:
+                return "❌ 请提供对决子指令或 At 目标进行对决邀请。", False, None, None, None, None
+                
         sub = args[0]
         
         if sub in ("帮助", "help", "hp"):
