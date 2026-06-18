@@ -4,7 +4,10 @@ from .registry import register_card
 
 class DuelGenericCard(Card):
     def execute(self, run, target, engine) -> str:
-        from game.data.card_data import CARD_CONFIG
+        try:
+            from ...data.card_data import CARD_CONFIG
+        except ImportError:
+            from game.data.card_data import CARD_CONFIG
         cfg = CARD_CONFIG.get(self.id, {})
         face_target = cfg.get("face_target", True)
         is_damage = ("base_dmg" in cfg or "damage" in cfg or "damage_type" in cfg)
@@ -95,7 +98,10 @@ class DuelRewardSuperFireball(Card):
 @register_card("duel_reward_ancient_resonance")
 class DuelRewardAncientResonance(Card):
     def execute(self, run, target, engine) -> str:
-        from game.data.amulet_data import AMULET_CONFIG
+        try:
+            from ...data.amulet_data import AMULET_CONFIG
+        except ImportError:
+            from game.data.amulet_data import AMULET_CONFIG
         p = run.player
         triggered = []
         for ak, av in list(p.amulets.items()):

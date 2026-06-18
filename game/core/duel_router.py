@@ -32,7 +32,10 @@ class DuelRouter:
             base_id = cid.rstrip("+")
             counts[base_id] = counts.get(base_id, 0) + 1
             if counts[base_id] > 4:
-                from game.data.duel_card_data import DUEL_CARD_CONFIG
+                try:
+                    from ..data.duel_card_data import DUEL_CARD_CONFIG
+                except ImportError:
+                    from game.data.duel_card_data import DUEL_CARD_CONFIG
                 cfg = DUEL_CARD_CONFIG.get(base_id, {})
                 name = cfg.get("name", base_id).replace("对决·", "")
                 return False, f"单卡超限：【{name}】超过了 4 张限制。"
@@ -139,7 +142,10 @@ class DuelRouter:
                 if count < 1 or count > 4:
                     count = 1
                     
-            from game.data.duel_card_data import DUEL_CARD_CONFIG
+            try:
+                from ..data.duel_card_data import DUEL_CARD_CONFIG
+            except ImportError:
+                from game.data.duel_card_data import DUEL_CARD_CONFIG
             matched = []
             q_clean = query.lower()
             for cid, val in DUEL_CARD_CONFIG.items():
@@ -406,7 +412,10 @@ class DuelRouter:
             if not card:
                 return "❌ 未找到对应卡牌实体。", False, None, None, None, None
                 
-            from game.data.duel_card_data import DUEL_CARD_CONFIG
+            try:
+                from ..data.duel_card_data import DUEL_CARD_CONFIG
+            except ImportError:
+                from game.data.duel_card_data import DUEL_CARD_CONFIG
             cfg = DUEL_CARD_CONFIG.get(card.id, {})
             cost_a = card.cost_a
             cost_ba = card.cost_ba

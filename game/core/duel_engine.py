@@ -39,7 +39,10 @@ class DuelEngine(BaseBattleEngine):
     def on_card_played_quests_and_double_tap(self, event):
         p = event.run.player
         card = event.card
-        from game.data.duel_card_data import DUEL_CARD_CONFIG
+        try:
+            from ..data.duel_card_data import DUEL_CARD_CONFIG
+        except ImportError:
+            from game.data.duel_card_data import DUEL_CARD_CONFIG
         cfg = DUEL_CARD_CONFIG.get(card.id, {})
         dtype = cfg.get("damage_type", "")
         is_spell = (card.type == "spell" and dtype not in ("slashing", "bludgeoning", "piercing", "attack"))
@@ -307,7 +310,10 @@ class DuelEngine(BaseBattleEngine):
         grid = self.combat_resolver.summon_minion(run, minion_id, name, hp, atk, ba)
         if grid:
             m = run.player.minions[grid]
-            from game.data.duel_card_data import RUSH_MINIONS, CHARGE_MINIONS
+            try:
+                from ..data.duel_card_data import RUSH_MINIONS, CHARGE_MINIONS
+            except ImportError:
+                from game.data.duel_card_data import RUSH_MINIONS, CHARGE_MINIONS
             if minion_id in RUSH_MINIONS:
                 m.attack_actions = 1
                 self._add_buff_to(m, "rush_buff", "突进", "本回合可立即攻击敌方随从。")
@@ -473,7 +479,10 @@ class DuelEngine(BaseBattleEngine):
         self.event_bus.dispatch(TurnStartEvent(run, is_player=True))
 
     def _trigger_amulet_last_words(self, run: GameRun, amulet_id: str):
-        from game.data.amulet_data import AMULET_CONFIG
+        try:
+            from ..data.amulet_data import AMULET_CONFIG
+        except ImportError:
+            from game.data.amulet_data import AMULET_CONFIG
         base_id = amulet_id[:-1] if amulet_id.endswith("+") else amulet_id
         cfg = AMULET_CONFIG.get(base_id)
         if not cfg:
