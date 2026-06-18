@@ -1,6 +1,7 @@
 import os
 import json
 from dataclasses import asdict
+from typing import Optional, Tuple, Dict, List
 from .state import GameRun, PlayerState, EnemyState, MinionState, AmuletState, BuffState, UserStats, current_user_id, register_stat_recorder, get_user_id
 
 class SaveManager:
