@@ -393,6 +393,15 @@ class DuelRouter:
             res_text = f"🏳️ 玩家【{my_name}】直接认输了！对决结束，玩家【{opp_name}】获得了最终胜利！"
             return res_text, True, opp_id, res_text, user_id, "🏳️ 你已认输，本局对战结束。"
             
+        elif sub_lower in ("模式", "mode"):
+            stats = self.save_manager.load_stats(user_id)
+            stats.duel_mode = not stats.duel_mode
+            if stats.duel_mode:
+                stats.rogue_mode = False
+            self.save_manager.save_stats(user_id, stats)
+            status_str = "开启" if stats.duel_mode else "关闭"
+            return f"✨ 免前缀对决模式已{status_str}！此设置仅对你个人生效。", False, None, None, None, None
+            
         elif sub_lower in ("邀请", "invite", "iv"):
             if len(args) < 2:
                 return "❌ 请指定要邀请的对方用户 ID，例如：/rogue 对决 邀请 @玩家", False, None, None, None, None
@@ -418,7 +427,10 @@ class DuelRouter:
                 sub_cmd = args[1].lower()
                 if sub_cmd in ("放弃", "abandon", "confirm", "帮助", "help", "hp", "牌组", "deck", "dk"):
                     return self.handle_duel_cmd(user_id, sender_name, args[1:])
-            return "❌ 对战进行中，只能使用局内对决指令（如：使用、随从、进化、结束、幸运币）或输入帮助指令查看指南。", False, None, None, None, None
+                args = args[1:]
+                cmd = args[0].lower()
+            else:
+                return "❌ 对战进行中，只能使用局内对决指令（如：使用、随从、进化、结束、幸运币）或输入帮助指令查看指南。", False, None, None, None, None
             
         if cmd in ("放弃", "abandon"):
             return self.handle_duel_cmd(user_id, sender_name, ["放弃"])
@@ -531,6 +543,9 @@ class DuelRouter:
             dm1 = self.engine._append_logs_to_res(run, dm1)
             dm2 = self.engine._append_logs_to_res(run, dm2)
             
+            use_tip = f"📢 玩家【{sender_name}】打出了卡牌【{card.name.replace('对决·', '')}】！"
+            public_text = use_tip + "\n" + public_text
+            
             return public_text, False, user_id, dm1, opp_id, dm2
             
         elif cmd in ("随从", "minion", "m", "attack", "atk", "sk", "skill"):
@@ -595,6 +610,7 @@ class DuelRouter:
             else:
                 return "❌ 攻击目标非法，随从只能攻击 e1-e7。", False, None, None, None, None
                 
+            m_name = m.name
             m.attack_actions -= 1
             m.actions -= 1
             
@@ -623,6 +639,9 @@ class DuelRouter:
             dm1 = self.engine._append_logs_to_res(run, dm1)
             dm2 = self.engine._append_logs_to_res(run, dm2)
             
+            atk_tip = f"📢 玩家【{sender_name}】指挥随从【{m_name.replace('+', '')}】攻击了【{target_name.replace('+', '')}】！"
+            public_text = atk_tip + "\n" + public_text
+            
             return public_text, False, user_id, dm1, opp_id, dm2
             
         elif cmd in ("幸运币", "coin", "cn"):
@@ -646,6 +665,9 @@ class DuelRouter:
             dm1 = self.engine._append_logs_to_res(run, dm1)
             dm2 = self.engine._append_logs_to_res(run, dm2)
             
+            coin_tip = f"📢 玩家【{sender_name}】使用了幸运币，获得了 1 点动作点！"
+            public_text = coin_tip + "\n" + public_text
+            
             return public_text, False, user_id, dm1, opp_id, dm2
             
         elif cmd in ("进化", "evolve", "ev"):
@@ -655,6 +677,23 @@ class DuelRouter:
                 return "❌ 请输入进化目标手牌序号或格子，例如：/rogue 进化 1 或 /rogue 进化 p1", False, None, None, None, None
                 
             target = args[1]
+            evolve_target_name = "未知"
+            p = run.player
+            if target.isdigit():
+                idx = int(target) - 1
+                if 0 <= idx < len(p.hand):
+                    from ..entities.cards.base import ALL_CARDS
+                    cid = p.hand[idx]
+                    card = ALL_CARDS.get(cid)
+                    if card:
+                        evolve_target_name = f"手牌【{card.name.replace('对决·', '')}】"
+            elif target.startswith("p") and len(target) > 1:
+                grid = target[1:]
+                if grid in p.minions:
+                    evolve_target_name = f"随从【{p.minions[grid].name}】"
+                elif grid in p.amulets:
+                    evolve_target_name = f"护符【{p.amulets[grid].name}】"
+                    
             res = self.engine.evolve_card(run, user_id, target)
             if res.startswith("❌"):
                 return res, False, None, None, None, None
@@ -675,15 +714,38 @@ class DuelRouter:
             dm1 = self.engine._append_logs_to_res(run, dm1)
             dm2 = self.engine._append_logs_to_res(run, dm2)
             
+            evolve_tip = f"📢 玩家【{sender_name}】将{evolve_target_name.replace('+', '')}进化了！"
+            public_text = evolve_tip + "\n" + public_text
+            
             return public_text, False, user_id, dm1, opp_id, dm2
             
-        elif cmd in ("结束", "end", "endturn", "结束回合"):
+        elif cmd in ("结束", "end", "endturn", "结束回合", "e"):
             if user_id != current_turn_id:
                 return "❌ 现在不是你的回合，无法结束回合。", False, None, None, None, None
                 
             self.engine.end_turn(run)
             self.save_manager.save_save(user_id, run)
             
+            public_text = render_duel_battle_public(run)
+            dm1 = render_duel_battle_private(run)
+            
+            run.player, run.player2 = run.player2, run.player
+            run.user_id = opp_id
+            dm2 = render_duel_battle_private(run)
+            
+            run.player, run.player2 = run.player2, run.player
+            run.user_id = user_id
+            
+            public_text = self.engine._append_logs_to_res(run, public_text)
+            dm1 = self.engine._append_logs_to_res(run, dm1)
+            dm2 = self.engine._append_logs_to_res(run, dm2)
+            
+            end_tip = f"📢 玩家【{sender_name}】结束了回合！"
+            public_text = end_tip + "\n" + public_text
+            
+            return public_text, False, user_id, dm1, opp_id, dm2
+            
+        elif cmd in ("状态", "status", "s", "查看", "overview"):
             public_text = render_duel_battle_public(run)
             dm1 = render_duel_battle_private(run)
             

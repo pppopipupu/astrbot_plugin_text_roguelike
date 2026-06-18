@@ -176,16 +176,15 @@ class MyPlugin(Star):
         except:
             pass
 
-    async def process_duel_cmd(self, event, user_id: str, parts: list[str], message_str: str):
+    async def process_duel_cmd(self, event, user_id: str, parts: list[str], message_str: str, force_duel: bool = False):
         if not parts:
             return False, None, None, None, None, None
         parts_lower = [p.lower() for p in parts]
-        if parts_lower and parts_lower[0] in ("帮助", "help", "hp"):
+        if parts_lower and parts_lower[0] in ("帮助", "help", "hp") and not force_duel:
             return False, None, None, None, None, None
         game_id = self.save_manager.get_duel_game_id(user_id)
         is_duel_related = False
-        parts_lower = [p.lower() for p in parts]
-        if game_id:
+        if force_duel or game_id:
             is_duel_related = True
         elif parts_lower and parts_lower[0] in ("对决", "duel"):
             is_duel_related = True
@@ -241,6 +240,31 @@ class MyPlugin(Star):
 
     async def terminate(self):
         pass
+
+    @filter.command("duel")
+    async def duel_cmd(self, event: AstrMessageEvent):
+        original_plain_result = event.plain_result
+        def patched_plain_result(res: str, *args, **kwargs):
+            return original_plain_result(self.format_res(res, event), *args, **kwargs)
+        event.plain_result = patched_plain_result
+
+        user_id = event.get_sender_id()
+        message_str = event.message_str.strip()
+        parts = message_str.split()
+        if not parts:
+            help_text, _, _, _, _, _ = self.duel_router.handle_duel_cmd(user_id, "玩家", ["帮助"])
+            yield event.plain_result(help_text)
+            return
+            
+        first = parts[0].lower()
+        if "duel" in first or "对决" in first:
+            parts = parts[1:]
+
+        is_duel, res_pub, p1, dm1, p2, dm2 = await self.process_duel_cmd(event, user_id, parts, message_str, force_duel=True)
+        if is_duel:
+            if res_pub:
+                yield event.plain_result(res_pub)
+            return
 
     @filter.command("rogue")
     async def rogue(self, event: AstrMessageEvent):
@@ -417,7 +441,7 @@ class MyPlugin(Star):
         enable = self.config.get("enable_shortcut", True)
         if not enable:
             return
-        
+            
         original_plain_result = event.plain_result
         def patched_plain_result(res: str, *args, **kwargs):
             return original_plain_result(self.format_res(res, event), *args, **kwargs)
@@ -426,6 +450,7 @@ class MyPlugin(Star):
         user_id = event.get_sender_id()
         stats = self.save_manager.load_stats(user_id)
         rogue_mode = stats.rogue_mode if stats else False
+        duel_mode = stats.duel_mode if stats else False
         
         prefix_config = self.config.get("shortcut_prefix", ".rogue")
         if isinstance(prefix_config, list):
@@ -468,7 +493,33 @@ class MyPlugin(Star):
                 return event.plain_result("\n".join(res_list))
             return
             
-        if rogue_mode:
+        if duel_mode:
+            parts = message_str.split()
+            if parts:
+                first_word = parts[0].lower()
+                is_duel_cmd = False
+                valid_duel_cmds = {
+                    "帮助", "help", "hp", "牌组", "deck", "dk", "接受", "accept",
+                    "放弃", "abandon", "confirm", "邀请", "invite", "iv", "模式", "mode",
+                    "使用", "use", "u", "play", "p", "随从", "minion", "atk", "m", "结束", "end",
+                    "进化", "evolve", "ev", "幸运币", "coin", "cn", "状态", "status", "s", "e", "查看", "overview"
+                }
+                if first_word in valid_duel_cmds:
+                    is_duel_cmd = True
+                elif first_word.isdigit():
+                    game_id = self.save_manager.get_duel_game_id(user_id)
+                    if game_id is not None:
+                        is_duel_cmd = True
+                
+                if is_duel_cmd:
+                    event.stop_event()
+                    is_duel, res_pub, p1, dm1, p2, dm2 = await self.process_duel_cmd(event, user_id, parts, message_str, force_duel=True)
+                    if is_duel:
+                        if res_pub:
+                            return event.plain_result(res_pub)
+                        return
+                    return
+        elif rogue_mode:
             parts = message_str.split()
             if parts:
                 first_word = parts[0].lower()
@@ -478,22 +529,17 @@ class MyPlugin(Star):
                     "帮助", "help", "使用", "p", "随从", "m", "选择", "c", "特殊", "sa", 
                     "结束", "e", "折叠", "f", "fold", "队列", "q", "queue", "统计", "stat", 
                     "stats", "查询", "query", "info", "i", "放弃", "abandon", "mode", "模式",
-                    "职业", "class", "商店", "shop", "教程", "tutorial", "对决", "duel", "接受", "accept"
+                    "职业", "class", "商店", "shop", "教程", "tutorial"
                 }
                 if first_word in valid_cmds:
                     is_game_cmd = True
                 elif first_word.isdigit():
                     run = self.save_manager.load_save(user_id)
-                    if run is not None:
+                    if run is not None and getattr(run, "node_type", "") != "duel":
                         is_game_cmd = True
 
                 if is_game_cmd:
                     event.stop_event()
-                    is_duel, res_pub, p1, dm1, p2, dm2 = await self.process_duel_cmd(event, user_id, parts, message_str)
-                    if is_duel:
-                        if res_pub:
-                            return event.plain_result(res_pub)
-                        return
                     res_list = list(self.cli_router.handle_command(user_id, parts))
                     if res_list:
                         return event.plain_result("\n".join(res_list))

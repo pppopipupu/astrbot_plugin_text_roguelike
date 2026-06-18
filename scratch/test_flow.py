@@ -669,6 +669,49 @@ class TestRoguePlugin(unittest.TestCase):
             
         asyncio.run(go())
 
+    def test_duel_mode_and_exclusivity(self):
+        plugin = MyPlugin(DummyContext())
+        plugin.save_manager.delete_save("test_user_excl")
+        stats_path = plugin.save_manager.get_stats_path("test_user_excl")
+        if os.path.exists(stats_path):
+            os.remove(stats_path)
+            
+        async def go():
+            event_help = DummyEvent(".duel 帮助", sender_id="test_user_excl")
+            async for res in plugin.duel_cmd(event_help):
+                event_help.results.append(res)
+            self.assertTrue(any("对决模式" in r for r in event_help.results))
+            
+            stats = plugin.save_manager.load_stats("test_user_excl")
+            stats.rogue_mode = True
+            plugin.save_manager.save_stats("test_user_excl", stats)
+            
+            event_toggle_duel = DummyEvent(".duel 模式", sender_id="test_user_excl")
+            async for res in plugin.duel_cmd(event_toggle_duel):
+                event_toggle_duel.results.append(res)
+            self.assertTrue(any("免前缀对决模式已开启" in r for r in event_toggle_duel.results))
+            
+            stats = plugin.save_manager.load_stats("test_user_excl")
+            self.assertTrue(stats.duel_mode)
+            self.assertFalse(stats.rogue_mode)
+            
+            event_duel_help = DummyEvent("帮助", sender_id="test_user_excl")
+            await plugin.shortcut_rogue(event_duel_help)
+            self.assertTrue(event_duel_help.stopped)
+            
+            event_rogue_start = DummyEvent("开启", sender_id="test_user_excl")
+            await plugin.shortcut_rogue(event_rogue_start)
+            self.assertFalse(event_rogue_start.stopped)
+            
+            event_toggle_rogue = DummyEvent(".rogue 模式", sender_id="test_user_excl")
+            await plugin.shortcut_rogue(event_toggle_rogue)
+            
+            stats = plugin.save_manager.load_stats("test_user_excl")
+            self.assertTrue(stats.rogue_mode)
+            self.assertFalse(stats.duel_mode)
+            
+        asyncio.run(go())
+
     def test_shield_decay_mechanism(self):
         class DummySaveManager:
             def save_save(self, user_id, run):

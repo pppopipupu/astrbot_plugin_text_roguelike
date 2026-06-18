@@ -190,5 +190,68 @@ class TestDuelSystem(unittest.TestCase):
         self.assertIn("发起了 TCG 卡牌对决", pub)
         self.assertEqual(p1, "12345")
 
+    def test_duel_aliases_and_play_tips(self):
+        u1 = "user1"
+        u2 = "user2"
+        res, _ = self.router.handle_deck_cmd(u1, ["创建", "p1deck"])
+        cards = ["duel_warrior_strike", "duel_warrior_defend", "duel_warrior_bash", "duel_iron_wave", "duel_warrior_anger", "duel_body_slam"]
+        for c in cards:
+            self.router.handle_deck_cmd(u1, ["添加", c, "4"])
+        self.router.handle_deck_cmd(u1, ["添加", "duel_double_tap", "1"])
+        res, _ = self.router.handle_deck_cmd(u2, ["创建", "p2deck"])
+        for c in cards:
+            self.router.handle_deck_cmd(u2, ["添加", c, "4"])
+        self.router.handle_deck_cmd(u2, ["添加", "duel_double_tap", "1"])
+        pub, term, p1, dm1, p2, dm2 = self.router.handle_duel_cmd(u1, "张三", ["@user2"])
+        pub, term, p1, dm1, p2, dm2 = self.router.handle_duel_cmd(u2, "李四", ["接受"])
+        
+        run = self.save_manager.load_save(u1)
+        pub_s, _, _, dm1_s, _, _ = self.router.route_in_game_action(run, u1, "张三", ["s"])
+        self.assertIn("公开战局简报", pub_s)
+        self.assertIn("能量 1A 1BA", pub_s)
+        self.assertIn("幸运币: 0 个", pub_s)
+        self.assertIn("你的回合", dm1_s)
+        
+        run = self.save_manager.load_save(u1)
+        run.player.hand[0] = "duel_warrior_defend"
+        self.save_manager.save_save(u1, run)
+        pub_play, _, _, _, _, _ = self.router.route_in_game_action(run, u1, "张三", ["p", "1"])
+        self.assertIn("📢 玩家【张三】打出了卡牌【防御】！", pub_play)
+        
+        run = self.save_manager.load_save(u1)
+        run.node_data["p1_coins"] = 1
+        self.save_manager.save_save(u1, run)
+        pub_coin, _, _, _, _, _ = self.router.route_in_game_action(run, u1, "张三", ["cn"])
+        self.assertIn("📢 玩家【张三】使用了幸运币，获得了 1 点动作点！", pub_coin)
+        
+        run = self.save_manager.load_save(u1)
+        run.player.hand.append("duel_officer_recruit_vanguard")
+        run.player.actions = 5
+        self.save_manager.save_save(u1, run)
+        pub_summon, _, _, _, _, _ = self.router.route_in_game_action(run, u1, "张三", ["p", str(len(run.player.hand))])
+        
+        run = self.save_manager.load_save(u1)
+        self.assertIn("1", run.player.minions)
+        
+        run.node_data["turn_count"] = 3
+        run.node_data["p1_evolve_points"] = 4
+        run.node_data["p1_evolved_this_turn"] = False
+        self.save_manager.save_save(u1, run)
+        pub_evolve, _, _, _, _, _ = self.router.route_in_game_action(run, u1, "张三", ["ev", "p1"])
+        self.assertIn("📢 玩家【张三】将随从【新兵前锋】进化了！", pub_evolve)
+        
+        run = self.save_manager.load_save(u1)
+        m = run.player.minions["1"]
+        m.attack_actions = 1
+        m.buffs.clear()
+        self.save_manager.save_save(u1, run)
+        pub_atk, _, _, _, _, _ = self.router.route_in_game_action(run, u1, "张三", ["m", "1", "e1"])
+        self.assertIn("📢 玩家【张三】指挥随从【新兵前锋】攻击了【李四】！", pub_atk)
+        
+        run = self.save_manager.load_save(u1)
+        pub_e, _, _, _, _, _ = self.router.route_in_game_action(run, u1, "张三", ["e"])
+        self.assertIn("📢 玩家【张三】结束了回合！", pub_e)
+        self.assertIn("李四 的回合", pub_e)
+
 if __name__ == "__main__":
     unittest.main()

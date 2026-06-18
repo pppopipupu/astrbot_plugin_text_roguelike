@@ -40,6 +40,7 @@ class SaveManager:
                 total_kills=d.get("total_kills", 0),
                 total_stages=d.get("total_stages", 0),
                 rogue_mode=d.get("rogue_mode", False),
+                duel_mode=d.get("duel_mode", False),
                 gp=d.get("gp", 0),
                 unlocked_subclasses=d.get("unlocked_subclasses", []),
                 selected_class=d.get("selected_class", "法师"),

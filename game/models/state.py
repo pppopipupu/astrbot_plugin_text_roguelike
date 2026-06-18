@@ -43,6 +43,7 @@ class UserStats:
     total_kills: int = 0
     total_stages: int = 0
     rogue_mode: bool = False
+    duel_mode: bool = False
     gp: int = 0
     unlocked_subclasses: List[str] = field(default_factory=list)
     selected_class: str = "法师"
