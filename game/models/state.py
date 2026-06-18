@@ -252,6 +252,7 @@ class GameRun:
     enemies: List[EnemyState] = field(default_factory=list)
     node_data: Dict = field(default_factory=dict)
     map_data: Dict = field(default_factory=dict)
+    player2: Optional[PlayerState] = None
 
 def check_and_replace_fireball(run: 'GameRun', card_id: str) -> str:
     import random

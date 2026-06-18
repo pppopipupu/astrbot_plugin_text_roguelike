@@ -48,6 +48,11 @@ try:
 except ImportError:
     from game.models.state import set_user_id
 
+try:
+    from .game.core.duel_router import DuelRouter
+except ImportError:
+    from game.core.duel_router import DuelRouter
+
 def resolve_card_id(card_input: str) -> str | None:
     card_input = card_input.strip()
     if not card_input:
@@ -92,6 +97,7 @@ class MyPlugin(Star):
         self.save_manager = SaveManager(data_dir)
         self.engine = GameEngine(self.save_manager)
         self.cli_router = CLIRouter(self.save_manager, self.engine)
+        self.duel_router = DuelRouter(self.save_manager)
 
     def format_res(self, res: str, event: AstrMessageEvent) -> str:
         if not res:
@@ -113,7 +119,9 @@ class MyPlugin(Star):
             
         if is_matrix:
             if "\n" in res:
-                if "━━━━━━━━━━━━━━━━━━━━" in res or res.count("\n") > 4:
+                if "━━━━━━━━━━━━━━━━━━━━" in res:
+                    return f"```\n{res}\n```"
+                elif res.count("\n") > 4:
                     lines = res.split("\n")
                     formatted_lines = []
                     for line in lines:
@@ -129,6 +137,76 @@ class MyPlugin(Star):
 
     def _execute_sub_action(self, user_id: str, run, parts: list[str]):
         return self.cli_router._execute_sub_action(user_id, run, parts)
+
+    async def send_dm(self, event, target_id: str, text: str):
+        if not target_id or not text:
+            return
+        text = self.format_res(text, event)
+        try:
+            bot = getattr(event, "bot", None)
+            if bot:
+                if hasattr(bot, "call_api"):
+                    try:
+                        await bot.call_api("send_private_msg", user_id=int(target_id), message=text)
+                    except:
+                        try:
+                            await bot.send_private_msg(user_id=int(target_id), message=text)
+                        except:
+                            pass
+        except:
+            pass
+
+    async def process_duel_cmd(self, event, user_id: str, parts: list[str], message_str: str):
+        if not parts:
+            return False, None, None, None, None, None
+        game_id = self.save_manager.get_duel_game_id(user_id)
+        is_duel_related = False
+        parts_lower = [p.lower() for p in parts]
+        if game_id:
+            is_duel_related = True
+        elif parts_lower and parts_lower[0] in ("对决", "duel"):
+            is_duel_related = True
+        if not is_duel_related:
+            return False, None, None, None, None, None
+        event.stop_event()
+        sender_name = "玩家"
+        try:
+            if event and hasattr(event, "message_obj") and event.message_obj:
+                sender_name = getattr(event.message_obj, "sender", {}).get("nickname", "玩家")
+        except:
+            pass
+        opp_qq = None
+        import re
+        m = re.search(r"qq=(\d+)", message_str)
+        if m:
+            opp_qq = m.group(1)
+        else:
+            m = re.search(r"@(\d+)", message_str)
+            if m:
+                opp_qq = m.group(1)
+            else:
+                try:
+                    if event and hasattr(event, "message_obj") and event.message_obj:
+                        for seg in getattr(event.message_obj, "message", []):
+                            if seg.get("type") == "at":
+                                opp_qq = str(seg.get("data", {}).get("qq"))
+                                break
+                except:
+                    pass
+        if opp_qq and len(parts) >= 2:
+            parts[1] = f"[At:qq={opp_qq}]"
+        if game_id:
+            run = self.save_manager.load_save(user_id)
+            if not run:
+                return True, "❌ 未找到你的活跃对局存档。", None, None, None, None
+            res_pub, _, p1, dm1, p2, dm2 = self.duel_router.route_in_game_action(run, user_id, sender_name, parts)
+        else:
+            res_pub, _, p1, dm1, p2, dm2 = self.duel_router.handle_duel_cmd(user_id, sender_name, parts)
+        if p1 and dm1:
+            await self.send_dm(event, p1, dm1)
+        if p2 and dm2:
+            await self.send_dm(event, p2, dm2)
+        return True, res_pub, p1, dm1, p2, dm2
 
     async def initialize(self):
         pass
@@ -154,6 +232,12 @@ class MyPlugin(Star):
         first = parts[0].lower()
         if first in ("rogue", "/rogue"):
             parts = parts[1:]
+
+        is_duel, res_pub, p1, dm1, p2, dm2 = await self.process_duel_cmd(event, user_id, parts, message_str)
+        if is_duel:
+            if res_pub:
+                yield event.plain_result(res_pub)
+            return
             
         for res in self.cli_router.handle_command(user_id, parts):
             yield event.plain_result(res)
@@ -346,6 +430,11 @@ class MyPlugin(Star):
             parts[0] = parts[0][len(matched_prefix):]
             if not parts[0]:
                 parts = parts[1:]
+            is_duel, res_pub, p1, dm1, p2, dm2 = await self.process_duel_cmd(event, user_id, parts, message_str)
+            if is_duel:
+                if res_pub:
+                    return event.plain_result(res_pub)
+                return
             res_list = list(self.cli_router.handle_command(user_id, parts))
             if res_list:
                 return event.plain_result("\n".join(res_list))
@@ -361,7 +450,7 @@ class MyPlugin(Star):
                     "帮助", "help", "使用", "p", "随从", "m", "选择", "c", "特殊", "sa", 
                     "结束", "e", "折叠", "f", "fold", "队列", "q", "queue", "统计", "stat", 
                     "stats", "查询", "query", "info", "i", "放弃", "abandon", "mode", "模式",
-                    "职业", "class", "商店", "shop", "教程", "tutorial"
+                    "职业", "class", "商店", "shop", "教程", "tutorial", "对决", "duel", "接受", "accept"
                 }
                 if first_word in valid_cmds:
                     is_game_cmd = True
@@ -372,6 +461,11 @@ class MyPlugin(Star):
 
                 if is_game_cmd:
                     event.stop_event()
+                    is_duel, res_pub, p1, dm1, p2, dm2 = await self.process_duel_cmd(event, user_id, parts, message_str)
+                    if is_duel:
+                        if res_pub:
+                            return event.plain_result(res_pub)
+                        return
                     res_list = list(self.cli_router.handle_command(user_id, parts))
                     if res_list:
                         return event.plain_result("\n".join(res_list))

@@ -81,29 +81,119 @@ class SaveManager:
         stats.total_stages += 1
         self.save_stats(user_id, stats)
 
+    def get_duel_registry_path(self) -> str:
+        return os.path.join(self.data_dir, "duel_registry.json")
+
+    def get_duel_registry(self) -> dict:
+        path = self.get_duel_registry_path()
+        if not os.path.exists(path):
+            return {}
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except:
+            return {}
+
+    def save_duel_registry(self, reg: dict) -> bool:
+        path = self.get_duel_registry_path()
+        try:
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(reg, f, ensure_ascii=False, indent=2)
+            return True
+        except:
+            return False
+
+    def get_duel_game_id(self, user_id: str) -> Optional[str]:
+        return self.get_duel_registry().get(user_id)
+
+    def bind_duel_game(self, user_id1: str, user_id2: str, game_id: str):
+        reg = self.get_duel_registry()
+        reg[user_id1] = game_id
+        reg[user_id2] = game_id
+        self.save_duel_registry(reg)
+
+    def unbind_duel_game(self, game_id: str):
+        reg = self.get_duel_registry()
+        keys_to_del = [k for k, v in reg.items() if v == game_id]
+        for k in keys_to_del:
+            del reg[k]
+        self.save_duel_registry(reg)
+
+    def get_duel_deck_path(self, user_id: str) -> str:
+        safe_id = "".join([c for c in user_id if c.isalnum() or c in ("-", "_")])
+        return os.path.join(self.data_dir, f"duel_decks_{safe_id}.json")
+
+    def load_duel_decks(self, user_id: str) -> dict:
+        path = self.get_duel_deck_path(user_id)
+        if not os.path.exists(path):
+            return {}
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except:
+            return {}
+
+    def save_duel_decks(self, user_id: str, decks: dict) -> bool:
+        path = self.get_duel_deck_path(user_id)
+        try:
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(decks, f, ensure_ascii=False, indent=2)
+            return True
+        except:
+            return False
+
     def load_save(self, user_id: str) -> GameRun:
-        path = self.get_save_path(user_id)
+        game_id = self.get_duel_game_id(user_id)
+        if game_id:
+            path = os.path.join(self.data_dir, f"duel_{game_id}.json")
+        else:
+            path = self.get_save_path(user_id)
         if not os.path.exists(path):
             return None
         try:
             with open(path, "r", encoding="utf-8") as f:
                 d = json.load(f)
-            return self.from_dict(d)
+            run = self.from_dict(d)
+            if run and game_id:
+                p2_id = run.node_data.get("player2_id")
+                if p2_id == user_id:
+                    run.player, run.player2 = run.player2, run.player
+                    run.user_id = user_id
+            return run
         except:
             return None
 
     def save_save(self, user_id: str, run: GameRun) -> bool:
-        path = self.get_save_path(user_id)
+        game_id = self.get_duel_game_id(user_id)
+        if game_id:
+            path = os.path.join(self.data_dir, f"duel_{game_id}.json")
+            p2_id = run.node_data.get("player2_id")
+            if p2_id == user_id:
+                run.player, run.player2 = run.player2, run.player
+                run.user_id = run.node_data.get("player1_id", run.user_id)
+        else:
+            path = self.get_save_path(user_id)
         try:
             d = self.to_dict(run)
+            if game_id and p2_id == user_id:
+                run.player, run.player2 = run.player2, run.player
+                run.user_id = user_id
             with open(path, "w", encoding="utf-8") as f:
                 json.dump(d, f, ensure_ascii=False, indent=2)
             return True
         except:
+            if game_id and p2_id == user_id:
+                run.player, run.player2 = run.player2, run.player
+                run.user_id = user_id
             return False
 
     def delete_save(self, user_id: str) -> bool:
-        path = self.get_save_path(user_id)
+        game_id = self.get_duel_game_id(user_id)
+        if game_id:
+            path = os.path.join(self.data_dir, f"duel_{game_id}.json")
+            self.unbind_duel_game(game_id)
+        else:
+            path = self.get_save_path(user_id)
         if os.path.exists(path):
             try:
                 os.remove(path)
@@ -125,11 +215,9 @@ class SaveManager:
                 run.node_data["battle_logs"] = logs
         return res
 
-    def from_dict(self, d: dict) -> GameRun:
-        if not d:
+    def _parse_player_state(self, p_data: dict) -> PlayerState:
+        if not p_data:
             return None
-        
-        p_data = d["player"]
         p_minions = {}
         for k, v in p_data.get("minions", {}).items():
             m_buffs = []
@@ -172,7 +260,7 @@ class SaveManager:
                     enemy_gy.append(item[len("enemy:"):])
                 else:
                     enemy_gy.append(item)
-        player = PlayerState(
+        return PlayerState(
             hp=p_data["hp"],
             max_hp=p_data["max_hp"],
             shield=p_data["shield"],
@@ -197,7 +285,12 @@ class SaveManager:
             subclass=p_data.get("subclass", ""),
             selected_class=p_data.get("selected_class", "法师")
         )
-        
+
+    def from_dict(self, d: dict) -> GameRun:
+        if not d:
+            return None
+        player = self._parse_player_state(d["player"])
+        player2 = self._parse_player_state(d.get("player2"))
         enemies = []
         if "enemies" in d:
             from .state import EnemyIntentState
@@ -251,14 +344,14 @@ class SaveManager:
                     intent_ba2_val=ed.get("intent_ba2_val", 0),
                     intent_ba2_desc=ed.get("intent_ba2_desc", "")
                 ))
-            
         return GameRun(
             user_id=d["user_id"],
             node_type=d["node_type"],
             player=player,
             enemies=enemies,
             node_data=d.get("node_data", {}),
-            map_data=d.get("map_data", {})
+            map_data=d.get("map_data", {}),
+            player2=player2
         )
 
     def settle_game_and_delete(self, user_id: str, run: GameRun, is_victory: bool = False) -> str:
