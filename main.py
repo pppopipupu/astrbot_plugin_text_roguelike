@@ -144,6 +144,8 @@ class MyPlugin(Star):
         text = self.format_res(text, event)
         try:
             platform_id = event.unified_msg_origin.split(":")[0]
+            if platform_id == "matrix" and not target_id.startswith("@") and not target_id.startswith("!"):
+                target_id = "@" + target_id
             target_umo = f"{platform_id}:FriendMessage:{target_id}"
             try:
                 from astrbot.api.event import MessageChain
@@ -198,11 +200,11 @@ class MyPlugin(Star):
             pass
         opp_qq = None
         import re
-        m = re.search(r"qq=(\d+)", message_str)
+        m = re.search(r"qq=([^\s\]]+)", message_str)
         if m:
             opp_qq = m.group(1)
         else:
-            m = re.search(r"@(\d+)", message_str)
+            m = re.search(r"@([^\s]+)", message_str)
             if m:
                 opp_qq = m.group(1)
             else:
@@ -210,12 +212,17 @@ class MyPlugin(Star):
                     if event and hasattr(event, "message_obj") and event.message_obj:
                         for seg in getattr(event.message_obj, "message", []):
                             if seg.get("type") == "at":
-                                opp_qq = str(seg.get("data", {}).get("qq"))
-                                break
+                                data = seg.get("data", {})
+                                opp_qq = str(data.get("qq") or data.get("user_id") or data.get("id") or data.get("mxid") or data.get("target") or "")
+                                if opp_qq:
+                                    break
                 except:
                     pass
-        if opp_qq and len(parts) >= 2:
-            parts[1] = f"[At:qq={opp_qq}]"
+        if opp_qq:
+            for idx in range(len(parts)):
+                if parts[idx].startswith("@") or parts[idx].startswith("[At:"):
+                    parts[idx] = f"[At:qq={opp_qq}]"
+                    break
         if game_id:
             run = self.save_manager.load_save(user_id)
             if not run:

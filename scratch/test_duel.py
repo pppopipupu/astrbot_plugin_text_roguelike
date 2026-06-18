@@ -150,5 +150,45 @@ class TestDuelSystem(unittest.TestCase):
         res3, _, _, _, _, _ = self.router.handle_duel_cmd("user1", "张三", ["duel", "help"])
         self.assertIn("帮助手册", res3)
 
+    def test_matrix_user_duel_flow(self):
+        u1 = "@alice:matrix.org"
+        u2 = "@bob:matrix.org"
+        res, _ = self.router.handle_deck_cmd(u1, ["创建", "p1deck"])
+        cards = ["duel_warrior_strike", "duel_warrior_defend", "duel_warrior_bash", "duel_iron_wave", "duel_warrior_anger", "duel_body_slam"]
+        for c in cards:
+            self.router.handle_deck_cmd(u1, ["添加", c, "4"])
+        self.router.handle_deck_cmd(u1, ["添加", "duel_double_tap", "1"])
+        res, _ = self.router.handle_deck_cmd(u2, ["创建", "p2deck"])
+        for c in cards:
+            self.router.handle_deck_cmd(u2, ["添加", c, "4"])
+        self.router.handle_deck_cmd(u2, ["添加", "duel_double_tap", "1"])
+        pub, term, p1, dm1, p2, dm2 = self.router.handle_duel_cmd(u1, "Alice", ["@bob:matrix.org"])
+        self.assertIn("对决", pub)
+        self.assertEqual(p1, "bob:matrix.org")
+        pub, term, p1, dm1, p2, dm2 = self.router.handle_duel_cmd(u2, "Bob", ["接受"])
+        self.assertIn("公开战局简报", pub)
+        self.assertEqual(p1, "@alice:matrix.org")
+
+    def test_duel_invite_subcommand(self):
+        u1 = "user1"
+        u2 = "user2"
+        res, _ = self.router.handle_deck_cmd(u1, ["创建", "p1deck"])
+        cards = ["duel_warrior_strike", "duel_warrior_defend", "duel_warrior_bash", "duel_iron_wave", "duel_warrior_anger", "duel_body_slam"]
+        for c in cards:
+            self.router.handle_deck_cmd(u1, ["添加", c, "4"])
+        self.router.handle_deck_cmd(u1, ["添加", "duel_double_tap", "1"])
+        
+        pub, term, p1, dm1, p2, dm2 = self.router.handle_duel_cmd(u1, "张三", ["邀请", "user2"])
+        self.assertIn("发起了 TCG 卡牌对决", pub)
+        self.assertEqual(p1, "user2")
+        
+        pub, term, p1, dm1, p2, dm2 = self.router.handle_duel_cmd(u1, "张三", ["invite", "@user2"])
+        self.assertIn("发起了 TCG 卡牌对决", pub)
+        self.assertEqual(p1, "user2")
+        
+        pub, term, p1, dm1, p2, dm2 = self.router.handle_duel_cmd(u1, "张三", ["iv", "[At:qq=12345]"])
+        self.assertIn("发起了 TCG 卡牌对决", pub)
+        self.assertEqual(p1, "12345")
+
 if __name__ == "__main__":
     unittest.main()

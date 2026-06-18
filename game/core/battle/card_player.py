@@ -624,7 +624,7 @@ class CardPlayer:
             card_pool = list(ALL_CARDS.keys())
             p_class = getattr(stats, "selected_class", "法师")
             target_color = "warrior" if p_class == "战士" else "wizard"
-            normal_cards = [cid for cid in card_pool if ALL_CARDS[cid].rarity not in ("legendary", "mythic", "artifact") and not cid.startswith("curse_") and ALL_CARDS[cid].color in (target_color, "neutral")]
+            normal_cards = [cid for cid in card_pool if ALL_CARDS[cid].rarity not in ("legendary", "mythic", "artifact") and not cid.startswith("curse_") and not cid.startswith("duel_") and ALL_CARDS[cid].color in (target_color, "neutral")]
             reward_cards = random.sample(normal_cards, 3)
             final_reward_cards = []
             for cid in reward_cards:

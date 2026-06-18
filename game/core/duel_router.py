@@ -7,6 +7,14 @@ from ..models.state import GameRun, PlayerState, MinionState, AmuletState, BuffS
 from .duel_engine import DuelEngine
 from ..renderer.duel_renderer import render_duel_battle_public, render_duel_battle_private
 
+def clean_user_id(uid) -> str:
+    if uid is None:
+        return ""
+    uid_str = str(uid).strip().lower()
+    if uid_str.startswith("@"):
+        uid_str = uid_str[1:]
+    return uid_str
+
 class DuelRouter:
     def __init__(self, save_manager):
         self.save_manager = save_manager
@@ -220,6 +228,35 @@ class DuelRouter:
             
         return "❌ 未知牌组管理子指令，请输入帮助指令获取教程。", False
 
+    def perform_invite(self, user_id: str, sender_name: str, target: str) -> Tuple[str, bool, Optional[str], Optional[str], Optional[str], Optional[str]]:
+        import re
+        opp_id = target.strip()
+        opp_id_match = re.search(r"qq=([^\s\]]+)", opp_id)
+        if opp_id_match:
+            opp_id = opp_id_match.group(1)
+        if opp_id.startswith("@"):
+            opp_id = opp_id[1:]
+            
+        if not opp_id:
+            return "❌ 未匹配到被邀请的对方用户 ID。", False, None, None, None, None
+            
+        opp_id_clean = clean_user_id(opp_id)
+        user_id_clean = clean_user_id(user_id)
+        if opp_id_clean == user_id_clean or opp_id_clean.split(":")[0] == user_id_clean.split(":")[0]:
+            return "❌ 不能与自己进行对决。", False, None, None, None, None
+            
+        _, my_deck = self.get_user_active_deck(user_id)
+        my_valid, my_err = self.check_deck_validity(my_deck)
+        if not my_valid:
+            return f"❌ 无法发起邀请：你的活动牌组不合法（{my_err}）。请先进行构筑并保证 25~50 张牌。", False, None, None, None, None
+            
+        self.pending_invites[user_id_clean] = opp_id_clean
+        self.pending_invites[user_id_clean + "_name"] = sender_name
+        self.pending_invites[user_id_clean + "_raw_target"] = opp_id
+        self.pending_invites[user_id_clean + "_raw_sender"] = user_id
+        
+        return f"⚔️ 玩家【{sender_name}】向你发起了 TCG 卡牌对决！请输入 /rogue 对决 接受 (或 accept) 以开始对战！", False, opp_id, f"⚔️ 【{sender_name}】向你发起了 TCG 卡牌对决！输入 /rogue 对决 接受 开始对局！", None, None
+
     def handle_duel_cmd(self, user_id: str, sender_name: str, args: list) -> Tuple[str, bool, Optional[str], Optional[str], Optional[str], Optional[str]]:
         if not args:
             return "❌ 请提供对决子指令或 At 目标进行对决邀请。", False, None, None, None, None
@@ -230,14 +267,15 @@ class DuelRouter:
                 return "❌ 请提供对决子指令或 At 目标进行对决邀请。", False, None, None, None, None
                 
         sub = args[0]
+        sub_lower = sub.lower()
         
-        if sub in ("帮助", "help", "hp"):
+        if sub_lower in ("帮助", "help", "hp"):
             help_text = (
                 "━━━━━━━━━━━━━━━━━━━━\n"
                 "⚔️ 【对决模式 (Duel) 指令帮助手册】\n"
                 "对决模式是完全独立于肉鸽模式的双人 TCG 卡牌对决系统。\n\n"
                 "💡 [局外/系统指令]：\n"
-                "• 发起对决：/rogue 对决 @对方\n"
+                "• 发起对决：/rogue 对决 @对方 或者是 /rogue 对决 邀请 <目标ID/At>\n"
                 "• 接受对决：/rogue 对决 接受 (或 accept)\n"
                 "• 直接认输：/rogue 对决 放弃 (或 abandon)\n"
                 "• 牌组管理：/rogue 对决 牌组 (或 deck/dk) <子指令>\n"
@@ -260,24 +298,35 @@ class DuelRouter:
             )
             return help_text, False, None, None, None, None
             
-        elif sub in ("牌组", "deck", "dk"):
+        elif sub_lower in ("牌组", "deck", "dk"):
             res, term = self.handle_deck_cmd(user_id, args[1:])
             return res, term, None, None, None, None
             
-        elif sub in ("接受", "accept"):
-            invite_info = None
-            for sender, target in list(self.pending_invites.items()):
-                if target == user_id:
-                    invite_info = sender
+        elif sub_lower in ("接受", "accept"):
+            invite_sender_clean = None
+            cur_user_clean = clean_user_id(user_id)
+            for sender_clean, target_clean in list(self.pending_invites.items()):
+                if sender_clean.endswith("_name") or sender_clean.endswith("_raw_target") or sender_clean.endswith("_raw_sender"):
+                    continue
+                tc_part = target_clean.split(":")[0]
+                cc_part = cur_user_clean.split(":")[0]
+                if target_clean == cur_user_clean or tc_part == cc_part:
+                    invite_sender_clean = sender_clean
                     break
-            if not invite_info:
+            if not invite_sender_clean:
                 return "❌ 你当前没有收到任何未处理的对决邀请。", False, None, None, None, None
                 
-            opp_id = invite_info
-            del self.pending_invites[opp_id]
+            opp_id = self.pending_invites[invite_sender_clean + "_raw_sender"]
+            raw_target_id = self.pending_invites[invite_sender_clean + "_raw_target"]
+            p1_name = self.pending_invites.get(invite_sender_clean + "_name", "玩家一")
+            
+            del self.pending_invites[invite_sender_clean]
+            del self.pending_invites[invite_sender_clean + "_name"]
+            del self.pending_invites[invite_sender_clean + "_raw_sender"]
+            del self.pending_invites[invite_sender_clean + "_raw_target"]
             
             p1_active, p1_deck = self.get_user_active_deck(opp_id)
-            p2_active, p2_deck = self.get_user_active_deck(user_id)
+            p2_active, p2_deck = self.get_user_active_deck(raw_target_id)
             
             p1_valid, p1_err = self.check_deck_validity(p1_deck)
             p2_valid, p2_err = self.check_deck_validity(p2_deck)
@@ -299,30 +348,29 @@ class DuelRouter:
                 player2=p2_state,
                 node_data={
                     "player1_id": opp_id,
-                    "player2_id": user_id,
-                    "player1_name": self.pending_invites.get(opp_id + "_name", "玩家一"),
+                    "player2_id": raw_target_id,
+                    "player1_name": p1_name,
                     "player2_name": sender_name
                 }
             )
             
             self.engine.init_duel(run)
-            self.save_manager.bind_duel_game(opp_id, user_id, game_id)
+            self.save_manager.bind_duel_game(opp_id, raw_target_id, game_id)
             self.save_manager.save_save(opp_id, run)
             
             public_text = render_duel_battle_public(run)
-            
             dm1 = render_duel_battle_private(run)
             
             run.player, run.player2 = run.player2, run.player
-            run.user_id = user_id
+            run.user_id = raw_target_id
             dm2 = render_duel_battle_private(run)
             
             run.player, run.player2 = run.player2, run.player
             run.user_id = opp_id
             
-            return public_text, False, opp_id, dm1, user_id, dm2
+            return public_text, False, opp_id, dm1, raw_target_id, dm2
             
-        elif sub in ("放弃", "abandon", "confirm"):
+        elif sub_lower in ("放弃", "abandon", "confirm"):
             game_id = self.save_manager.get_duel_game_id(user_id)
             if not game_id:
                 return "❌ 你当前不在任何对局中。", False, None, None, None, None
@@ -345,31 +393,15 @@ class DuelRouter:
             res_text = f"🏳️ 玩家【{my_name}】直接认输了！对决结束，玩家【{opp_name}】获得了最终胜利！"
             return res_text, True, opp_id, res_text, user_id, "🏳️ 你已认输，本局对战结束。"
             
+        elif sub_lower in ("邀请", "invite", "iv"):
+            if len(args) < 2:
+                return "❌ 请指定要邀请的对方用户 ID，例如：/rogue 对决 邀请 @玩家", False, None, None, None, None
+            target = args[1]
+            return self.perform_invite(user_id, sender_name, target)
+            
         else:
             if sub.startswith("[At:") or sub.startswith("@"):
-                import re
-                opp_id_match = re.search(r"qq=(\d+)", sub)
-                if opp_id_match:
-                    opp_id = opp_id_match.group(1)
-                else:
-                    opp_id = sub.replace("@", "").strip()
-                    
-                if not opp_id:
-                    return "❌ 未匹配到被邀请的对方用户 ID。", False, None, None, None, None
-                    
-                if opp_id == user_id:
-                    return "❌ 不能与自己进行对决。", False, None, None, None, None
-                    
-                _, my_deck = self.get_user_active_deck(user_id)
-                my_valid, my_err = self.check_deck_validity(my_deck)
-                if not my_valid:
-                    return f"❌ 无法发起邀请：你的活动牌组不合法（{my_err}）。请先进行构筑并保证 25~50 张牌。", False, None, None, None, None
-                    
-                self.pending_invites[user_id] = opp_id
-                self.pending_invites[user_id + "_name"] = sender_name
-                
-                return f"⚔️ 玩家【{sender_name}】向你发起了 TCG 卡牌对决！请输入 /rogue 对决 接受 (或 accept) 以开始对战！", False, opp_id, f"⚔️ 【{sender_name}】向你发起了 TCG 卡牌对决！输入 /rogue 对决 接受 开始对局！", None, None
-                
+                return self.perform_invite(user_id, sender_name, sub)
             return "❌ 未知的对决指令，请输入帮助指令获取教程。", False, None, None, None, None
 
     def route_in_game_action(self, run: GameRun, user_id: str, sender_name: str, args: list) -> Tuple[str, bool, Optional[str], Optional[str], Optional[str], Optional[str]]:
