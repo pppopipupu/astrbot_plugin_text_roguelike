@@ -220,7 +220,36 @@ class DuelRouter:
             
         sub = args[0]
         
-        if sub in ("牌组", "deck", "dk"):
+        if sub in ("帮助", "help", "hp"):
+            help_text = (
+                "━━━━━━━━━━━━━━━━━━━━\n"
+                "⚔️ 【对决模式 (Duel) 指令帮助手册】\n"
+                "对决模式是完全独立于肉鸽模式的双人 TCG 卡牌对决系统。\n\n"
+                "💡 [局外/系统指令]：\n"
+                "• 发起对决：/rogue 对决 @对方\n"
+                "• 接受对决：/rogue 对决 接受 (或 accept)\n"
+                "• 直接认输：/rogue 对决 放弃 (或 abandon)\n"
+                "• 牌组管理：/rogue 对决 牌组 (或 deck/dk) <子指令>\n"
+                "  - 创建牌组：创建 <名称> (或 create)\n"
+                "  - 选择牌组：选择 <序号/名称> (或 select)\n"
+                "  - 牌组详情：详情 (或 info)\n"
+                "  - 添加卡牌：添加 <卡牌名> [数量] (或 add)\n"
+                "  - 移除卡牌：移除 <详情序号> [数量] (或 remove)\n\n"
+                "⚔️ [局内对局动作] (仅在你的回合生效)：\n"
+                "• 使用卡牌：/rogue 使用 <手牌序号> [目标格子] (或 play/use/p)\n"
+                "  (注：物理或法术伤害牌默认只能以敌方随从格子 e2-e7 为目标，有 face_target 词条 of 直伤卡方可打领主 e1)\n"
+                "• 随从攻击：/rogue 随从 <我方格子> [攻击] [敌方格子] (或 minion/atk/m)\n"
+                "  (注：进场首回合随从召唤失调，突进/冲锋词条除外，未指定目标默认打敌方第一个存活随从/领主)\n"
+                "• 进化卡牌：/rogue 进化 <我方格子/手牌序号> (或 evolve/ev)\n"
+                "  (注：第 3 回合起解禁，每回合可进化一次，随从生命补满且攻血+2，护符进化不减吟唱)\n"
+                "• 使用幸运币：/rogue 幸运币 (或 coin/cn)\n"
+                "  (注：仅后手机会获得 2 个幸运币，使用不占手牌，本回合动作点 A+1)\n"
+                "• 结束回合：/rogue 结束 (或 end/结束回合)\n"
+                "━━━━━━━━━━━━━━━━━━━━"
+            )
+            return help_text, False, None, None, None, None
+            
+        elif sub in ("牌组", "deck", "dk"):
             res, term = self.handle_deck_cmd(user_id, args[1:])
             return res, term, None, None, None, None
             
@@ -341,6 +370,16 @@ class DuelRouter:
         
         cmd = args[0].lower()
         
+        if cmd in ("对决", "duel"):
+            if len(args) >= 2:
+                sub_cmd = args[1].lower()
+                if sub_cmd in ("放弃", "abandon", "confirm", "帮助", "help", "hp", "牌组", "deck", "dk"):
+                    return self.handle_duel_cmd(user_id, sender_name, args[1:])
+            return "❌ 对战进行中，只能使用局内对决指令（如：使用、随从、进化、结束、幸运币）或输入帮助指令查看指南。", False, None, None, None, None
+            
+        if cmd in ("放弃", "abandon"):
+            return self.handle_duel_cmd(user_id, sender_name, ["放弃"])
+            
         if cmd in ("使用", "use", "u", "play", "p"):
             if user_id != current_turn_id:
                 return "❌ 当前是对方的回合，请耐心等待。", False, None, None, None, None

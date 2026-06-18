@@ -159,6 +159,9 @@ class MyPlugin(Star):
     async def process_duel_cmd(self, event, user_id: str, parts: list[str], message_str: str):
         if not parts:
             return False, None, None, None, None, None
+        parts_lower = [p.lower() for p in parts]
+        if parts_lower and parts_lower[0] in ("帮助", "help", "hp"):
+            return False, None, None, None, None, None
         game_id = self.save_manager.get_duel_game_id(user_id)
         is_duel_related = False
         parts_lower = [p.lower() for p in parts]

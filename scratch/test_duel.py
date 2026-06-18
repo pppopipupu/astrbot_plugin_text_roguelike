@@ -140,5 +140,10 @@ class TestDuelSystem(unittest.TestCase):
         
         self.assertIsNone(self.save_manager.load_save(u1))
 
+    def test_duel_help(self):
+        res, _, _, _, _, _ = self.router.handle_duel_cmd("user1", "张三", ["帮助"])
+        self.assertIn("帮助手册", res)
+        self.assertIn("发起对决", res)
+
 if __name__ == "__main__":
     unittest.main()
