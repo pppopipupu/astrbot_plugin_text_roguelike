@@ -143,6 +143,24 @@ class MyPlugin(Star):
             return
         text = self.format_res(text, event)
         try:
+            platform_id = event.unified_msg_origin.split(":")[0]
+            target_umo = f"{platform_id}:FriendMessage:{target_id}"
+            try:
+                from astrbot.api.event import MessageChain
+            except ImportError:
+                class MessageChain:
+                    def __init__(self):
+                        self.chain = []
+                    def message(self, t):
+                        self.chain.append(t)
+                        return self
+            chain = MessageChain().message(text)
+            sent = await self.context.send_message(target_umo, chain)
+            if sent:
+                return
+        except Exception:
+            pass
+        try:
             bot = getattr(event, "bot", None)
             if bot:
                 if hasattr(bot, "call_api"):
