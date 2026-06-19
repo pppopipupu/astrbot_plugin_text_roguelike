@@ -20,7 +20,8 @@ DUEL_CARD_CONFIG = {}
 FACE_DAMAGE_CARDS = {
     "strike", "heavy_strike", "execut", "counterstrike",
     "fireball", "sunburst",
-    "warrior_strike", "heavy_blade", "bludgeon"
+    "warrior_strike", "heavy_blade", "bludgeon",
+    "arcane_torrent"
 }
 
 RUSH_MINIONS = {

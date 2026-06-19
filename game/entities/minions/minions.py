@@ -68,15 +68,30 @@ class WaterTouch(BaseMinionSkill):
         m = run.player.minions[my_grid]
         cfg = MINION_CONFIG[m.id]["skills"][0]
         t = target or "e1"
-        if t.startswith("e"):
-            try:
-                grid_idx = int(t[1:]) - 1
-            except ValueError:
-                grid_idx = 0
-            if 0 <= grid_idx < len(run.enemies):
-                enemy = run.enemies[grid_idx]
-                enemy.bonus_actions = max(0, enemy.bonus_actions - 1)
-                return cfg["feedback"].format(target=enemy.name)
+        if run.node_type == "duel":
+            if t == "e1" or t == "e":
+                enemy = run.player2
+            elif t.startswith("e") and len(t) > 1:
+                try:
+                    grid_idx = str(int(t[1:]) - 1)
+                    enemy = run.player2.minions.get(grid_idx)
+                except ValueError:
+                    enemy = None
+            else:
+                enemy = None
+        else:
+            enemy = None
+            if t.startswith("e"):
+                try:
+                    grid_idx = int(t[1:]) - 1
+                except ValueError:
+                    grid_idx = 0
+                if 0 <= grid_idx < len(run.enemies):
+                    enemy = run.enemies[grid_idx]
+        if enemy:
+            enemy.bonus_actions = max(0, enemy.bonus_actions - 1)
+            tname = engine._get_target_name(run, t)
+            return cfg["feedback"].format(target=tname)
         return "未找到敌方目标。"
 
 class WaterLance(BaseMinionSkill):
@@ -87,20 +102,35 @@ class WaterLance(BaseMinionSkill):
         t = target or "e1"
         tname = engine._get_target_name(run, t)
         engine._damage_target(run, t, damage)
-        if t.startswith("e"):
-            try:
-                grid_idx = int(t[1:]) - 1
-            except ValueError:
-                grid_idx = 0
-            if 0 <= grid_idx < len(run.enemies):
-                enemy = run.enemies[grid_idx]
-                enemy.actions = max(0, enemy.actions - 1)
-                if cfg.get("stun"):
-                    engine._add_buff_to(enemy, "stun", "眩晕", "下一回合无法行动", cfg["stun"])
-                feedback_boss = cfg.get("feedback_boss")
-                if feedback_boss:
-                    return feedback_boss.format(target=tname, damage=damage)
-        return cfg["feedback"].format(target=tname, damage=damage)
+        if run.node_type == "duel":
+            if t == "e1" or t == "e":
+                enemy = run.player2
+            elif t.startswith("e") and len(t) > 1:
+                try:
+                    grid_idx = str(int(t[1:]) - 1)
+                    enemy = run.player2.minions.get(grid_idx)
+                except ValueError:
+                    enemy = None
+            else:
+                enemy = None
+        else:
+            enemy = None
+            if t.startswith("e"):
+                try:
+                    grid_idx = int(t[1:]) - 1
+                except ValueError:
+                    grid_idx = 0
+                if 0 <= grid_idx < len(run.enemies):
+                    enemy = run.enemies[grid_idx]
+        if enemy:
+            enemy.actions = max(0, enemy.actions - 1)
+            if cfg.get("stun"):
+                engine._add_buff_to(enemy, "stun", "眩晕", "下一回合无法行动", cfg["stun"])
+            feedback_boss = cfg.get("feedback_boss")
+            if feedback_boss and (t == "e1" or t == "e" or run.node_type == "duel"):
+                return feedback_boss.format(target=tname, damage=damage)
+            return cfg["feedback"].format(target=tname, damage=damage)
+        return "未找到敌方目标。"
 
 class GolemOverload(BaseMinionSkill):
     def execute(self, run, my_grid, target, engine) -> str:

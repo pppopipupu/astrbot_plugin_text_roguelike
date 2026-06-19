@@ -17,24 +17,17 @@ class DuelEngine(BaseBattleEngine):
         self.buff_handler = BuffTriggerHandler(self.event_bus, self)
         self.amulet_handler = AmuletTriggerHandler(self.event_bus, self)
         self.minion_handler = MinionTriggerHandler(self.event_bus, self)
-        self.event_bus.subscribe(DamageCalculateEvent, self.on_damage_calculate_physics)
         self.event_bus.subscribe(CardPlayedEvent, self.on_card_played_quests_and_double_tap)
         self.event_bus.subscribe(DamageTakeEvent, self.on_damage_take_quests)
         self.event_bus.subscribe(ShieldGainEvent, self.on_shield_gain_quests)
 
-    def on_damage_calculate_physics(self, event):
-        if event.source == "p0" and event.damage_type in ("slashing", "bludgeoning", "piercing", "attack"):
-            strength = 0
-            for b in event.run.player.buffs:
-                if b.id == "strength":
-                    strength += b.stacks
-            if strength > 0:
-                card_id = event.card.id if event.card else ""
-                if "heavy_blade" in card_id:
-                    mult = 5 if card_id.endswith("+") else 3
-                    event.modified_damage += strength * mult
-                else:
-                    event.modified_damage += strength
+    def is_battle_won(self, run: GameRun) -> bool:
+        return run.player.hp <= 0 or run.player2.hp <= 0
+
+    def _execute_card_effect(self, run: GameRun, card: Card, target: Optional[str] = None) -> str:
+        return card.execute(run, target, self)
+
+
 
     def on_card_played_quests_and_double_tap(self, event):
         p = event.run.player
@@ -156,6 +149,11 @@ class DuelEngine(BaseBattleEngine):
 
     def _damage_target(self, run: GameRun, target: str, dmg: int, source: str = "effect", damage_type: str = "effect", card: Optional[Card] = None):
         self._sync_forward(run)
+        if source == "effect":
+            if run.node_data.get("current_acting_minion_grid"):
+                source = f"p{run.node_data['current_acting_minion_grid']}"
+            else:
+                source = "p0"
         from ..models.events import DamageCalculateEvent, DamageTakeEvent
         calc_evt = DamageCalculateEvent(run, card, source, target, damage_type, dmg, dmg)
         self.event_bus.dispatch(calc_evt)
@@ -306,6 +304,29 @@ class DuelEngine(BaseBattleEngine):
         self._log_event(run, f"【{target_name}】获得了 {final_amount} 点护盾。")
         self._sync_forward(run)
 
+    def _get_target_name(self, run: GameRun, target: Optional[str]) -> str:
+        if not target:
+            return "未知"
+        target = target.lower()
+        if target == "p0" or target == "p":
+            p1_id = run.node_data["player1_id"]
+            return run.node_data.get("player1_name" if run.user_id == p1_id else "player2_name", "玩家")
+        if target == "e1" or target == "e":
+            p1_id = run.node_data["player1_id"]
+            return run.node_data.get("player2_name" if run.user_id == p1_id else "player1_name", "对手")
+        if target.startswith("p") and len(target) > 1:
+            grid = target[1:]
+            if grid in run.player.minions:
+                return run.player.minions[grid].name
+        if target.startswith("e") and len(target) > 1:
+            try:
+                grid = str(int(target[1:]) - 1)
+                if grid in run.player2.minions:
+                    return run.player2.minions[grid].name
+            except ValueError:
+                pass
+        return "未知"
+
     def _summon_minion(self, run: GameRun, minion_id: str, name: str, hp: int, atk: int, ba: int) -> Optional[str]:
         grid = self.combat_resolver.summon_minion(run, minion_id, name, hp, atk, ba)
         if grid:
@@ -321,7 +342,6 @@ class DuelEngine(BaseBattleEngine):
                 m.attack_actions = 1
             else:
                 m.attack_actions = 0
-                self._add_buff_to(m, "summon_sickness", "召唤失调", "本回合无法攻击。")
         return grid
 
     def _draw_cards(self, p: PlayerState, count: int, run: Optional[GameRun] = None, ignore_focus: bool = False):
@@ -468,13 +488,7 @@ class DuelEngine(BaseBattleEngine):
                 if b.stacks <= 0:
                     p.buffs.remove(b)
                     
-        for ak, av in list(p.amulets.items()):
-            av.countdown -= 1
-            if av.countdown <= 0:
-                del p.amulets[ak]
-                p.minion_graveyard.append(av.id)
-                self._trigger_amulet_last_words(run, av.id)
-                
+        
         from ..models.events import TurnStartEvent
         self.event_bus.dispatch(TurnStartEvent(run, is_player=True))
 
@@ -613,3 +627,115 @@ class DuelEngine(BaseBattleEngine):
                 return "❌ 我方格子中不存在可进化的实体。"
                 
         return "❌ 进化的目标不合法（请提供手牌序号或我方格子，如 1 或 p1）。"
+
+    def minion_attack(self, run: GameRun, my_grid: str, opp_grid: Optional[str] = None) -> str:
+        p = run.player
+        if my_grid not in p.minions:
+            return f"❌ 我方格子 [{my_grid}] 没有随随从。"
+        m = p.minions[my_grid]
+        if m.attack_actions < 1:
+            return "❌ 该随从本回合已经没有可用的攻击动作（AA）点。"
+            
+        has_rush = any(b.id == "rush_buff" for b in m.buffs)
+        
+        if opp_grid is None:
+            for i in range(1, 7):
+                if str(i) in run.player2.minions:
+                    opp_grid = f"e{i+1}"
+                    break
+            if not opp_grid:
+                opp_grid = "e1"
+                
+        if opp_grid == "e1" and has_rush:
+            return f"❌ 随从【{m.name}】本回合处于突进状态，只能攻击敌方随从，无法直接攻击领主。"
+            
+        m.attack_actions -= 1
+        m.actions -= 1
+        
+        target_name = "未知"
+        if opp_grid == "e1":
+            p1_id = run.node_data["player1_id"]
+            target_name = run.node_data.get("player2_name" if run.user_id == p1_id else "player1_name", "对手")
+            self._damage_target(run, "e1", m.atk, source=f"p{my_grid}", damage_type="attack")
+            res = f"我方随从【{m.name}】攻击了敌方领主【{target_name}】。"
+        elif opp_grid.startswith("e") and len(opp_grid) > 1:
+            try:
+                opp_idx = int(opp_grid[1:]) - 1
+            except ValueError:
+                opp_idx = 0
+            opp_grid_clean = str(opp_idx)
+            p2 = run.player2
+            if opp_grid_clean not in p2.minions:
+                return f"❌ 敌方战场对应格子 [{opp_grid_clean}] 没有随从存在。"
+            enemy_m = p2.minions[opp_grid_clean]
+            target_name = enemy_m.name
+            
+            res = f"我方随从【{m.name}】攻击了敌方随从【{target_name}】。"
+            
+            self._damage_target(run, opp_grid, m.atk, source=f"p{my_grid}", damage_type="attack")
+            if opp_grid_clean in p2.minions:
+                self._damage_target(run, f"p{my_grid}", enemy_m.atk, source=opp_grid, damage_type="attack")
+        else:
+            return "❌ 攻击目标非法，随从只能攻击 e1-e7。"
+            
+        return res
+
+    def minion_skill(self, run: GameRun, my_grid: str, skill_idx: int = 1, target: Optional[str] = None) -> str:
+        p = run.player
+        if my_grid not in p.minions:
+            return f"❌ 我方格子 [{my_grid}] 没有随从。"
+        m = p.minions[my_grid]
+        try:
+            from ..entities.minions.minions import ALL_MINIONS
+        except ImportError:
+            from game.entities.minions.minions import ALL_MINIONS
+        if m.id not in ALL_MINIONS:
+            return f"❌ 随从【{m.name}】没有任何可用技能。"
+        template = ALL_MINIONS[m.id]
+        skills_list = template.skills
+        if skill_idx < 1 or skill_idx > len(skills_list):
+            skills_desc = "\n".join([f" [{idx}] {s.name}: {s.desc}" for idx, s in enumerate(skills_list, 1)])
+            return f"❌ 无效的技能序号。随从【{m.name}】的可用技能有：\n{skills_desc}"
+        skill = skills_list[skill_idx - 1]
+        cost_a = skill.cost_a
+        cost_ba = skill.cost_ba
+        if m.actions < cost_a or m.bonus_actions < cost_ba:
+            return f"❌ 随从资源不足（需要 {cost_a}A {cost_ba}BA，当前 {m.actions}A {m.bonus_actions}BA）。"
+        needs_target = False
+        base_id = m.id.rstrip("+")
+        if base_id == "mercenary" and skill_idx == 1:
+            needs_target = True
+        elif base_id == "shield_guard" and skill_idx == 2:
+            needs_target = True
+        elif base_id == "water_elemental" and skill_idx == 2:
+            needs_target = True
+        if needs_target:
+            if target is None:
+                for i in range(1, 7):
+                    if str(i) in run.player2.minions:
+                        target = f"e{i+1}"
+                        break
+                if not target:
+                    target = "e1"
+            if isinstance(target, str) and target.isdigit():
+                target = f"e{target}"
+            if target == "0" or target == "e0":
+                target = "e1"
+            if target.startswith("e"):
+                if target == "e1":
+                    pass
+                else:
+                    try:
+                        opp_grid = str(int(target[1:]) - 1)
+                    except ValueError:
+                        opp_grid = "0"
+                    if opp_grid not in run.player2.minions:
+                        return f"❌ 敌方目标 [{target}] 不存在。"
+            else:
+                return "❌ 无效的目标。该技能只能对敌方目标释放。"
+        m.actions -= cost_a
+        m.bonus_actions -= cost_ba
+        msg = f"随从【{m.name}】发动了技能【{skill.name}】！"
+        effect_msg = skill.execute(run, my_grid, target, self)
+        msg += effect_msg
+        return msg

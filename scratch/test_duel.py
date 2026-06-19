@@ -299,5 +299,198 @@ class TestDuelSystem(unittest.TestCase):
         res, term, p1, dm1, p2, dm2 = self.router.route_in_game_action(run, u1, "张三", ["iv", "99999"])
         self.assertIn("向你发起了 TCG 卡牌对决", res)
 
+    def test_duel_advanced_mechanics(self):
+        u1 = "user_adv_1"
+        u2 = "user_adv_2"
+        self.router.handle_deck_cmd(u1, ["创建", "p1deck"])
+        cards = ["duel_warrior_strike", "duel_warrior_defend", "duel_warrior_bash", "duel_iron_wave", "duel_warrior_anger", "duel_body_slam"]
+        for c in cards:
+            self.router.handle_deck_cmd(u1, ["添加", c, "4"])
+        self.router.handle_deck_cmd(u1, ["添加", "duel_double_tap", "1"])
+        self.router.handle_deck_cmd(u2, ["创建", "p2deck"])
+        for c in cards:
+            self.router.handle_deck_cmd(u2, ["添加", c, "4"])
+        self.router.handle_deck_cmd(u2, ["添加", "duel_double_tap", "1"])
+        
+        self.router.handle_duel_cmd(u1, "张三", [f"@{u2}"])
+        self.router.handle_duel_cmd(u2, "李四", ["接受"])
+        
+        run = self.save_manager.load_duel_save(u1)
+        self.assertIsNotNone(run)
+        
+        run.player.minions["1"] = MinionState(
+            id="water_elemental",
+            name="寒冰元素",
+            hp=15,
+            max_hp=15,
+            atk=3,
+            actions=3,
+            bonus_actions=0,
+            attack_actions=1
+        )
+        self.save_manager.save_duel_save(u1, run)
+        
+        res, term, p1, dm1, p2, dm2 = self.router.route_in_game_action(run, u1, "张三", ["m", "1", "sk", "1"])
+        self.assertIn("寒冰触碰", res)
+        run = self.save_manager.load_duel_save(u1)
+        self.assertEqual(run.player.minions["1"].actions, 1)
+        self.assertEqual(run.player2.bonus_actions, 0)
+        
+        run.player.hand.append("duel_warrior_strike")
+        run.player.actions = 2
+        run.player.buffs.append(BuffState(id="strength", name="力量", stacks=3))
+        self.save_manager.save_duel_save(u1, run)
+        
+        initial_opp_hp = run.player2.hp
+        res, term, p1, dm1, p2, dm2 = self.router.route_in_game_action(run, u1, "张三", ["使用", str(len(run.player.hand)), "e1"])
+        self.assertIn("打出了卡牌【打击】", res)
+        run = self.save_manager.load_duel_save(u1)
+        self.assertEqual(run.player2.hp, initial_opp_hp - 7)
+        
+        run.player.hand.append("duel_warrior_strike")
+        run.player.actions = 2
+        run.player.buffs = [BuffState(id="echo_form", name="回响形态", stacks=2)]
+        run.node_data["cards_played_this_turn"] = 0
+        self.save_manager.save_duel_save(u1, run)
+        
+        initial_opp_hp = run.player2.hp
+        res, term, p1, dm1, p2, dm2 = self.router.route_in_game_action(run, u1, "张三", ["使用", str(len(run.player.hand)), "e1"])
+        self.assertIn("打出了卡牌【打击】", res)
+        run = self.save_manager.load_duel_save(u1)
+        self.assertEqual(run.player2.hp, initial_opp_hp - 12)
+        
+        run.player.hand.append("duel_double_tap")
+        run.player.actions = 2
+        self.save_manager.save_duel_save(u1, run)
+        res, term, p1, dm1, p2, dm2 = self.router.route_in_game_action(run, u1, "张三", ["使用", str(len(run.player.hand)), "p0"])
+        run = self.save_manager.load_duel_save(u1)
+        self.assertTrue(any(b.id == "double_tap_buff" for b in run.player.buffs))
+        
+        run.player.hand.append("duel_warrior_strike")
+        run.player.actions = 2
+        self.save_manager.save_duel_save(u1, run)
+        initial_opp_hp = run.player2.hp
+        res, term, p1, dm1, p2, dm2 = self.router.route_in_game_action(run, u1, "张三", ["使用", str(len(run.player.hand)), "e1"])
+        run = self.save_manager.load_duel_save(u1)
+        self.assertEqual(run.player2.hp, initial_opp_hp - 8)
+        self.assertFalse(any(b.id == "double_tap_buff" for b in run.player.buffs))
+        
+        run.player.hand.append("duel_arcane_torrent")
+        run.player.actions = 3
+        run.player2.shield = 20
+        self.save_manager.save_duel_save(u1, run)
+        initial_opp_hp = run.player2.hp
+        initial_opp_shield = run.player2.shield
+        res, term, p1, dm1, p2, dm2 = self.router.route_in_game_action(run, u1, "张三", ["使用", str(len(run.player.hand)), "e1"])
+        run = self.save_manager.load_duel_save(u1)
+        self.assertEqual(run.node_data["last_x_cost_a"], 3)
+        self.assertEqual(run.player.actions, 0)
+        self.assertEqual(run.player2.shield, initial_opp_shield)
+        self.assertEqual(run.player2.hp, initial_opp_hp - 36)
+        
+        run.player.hand.append("duel_mage_ward")
+        run.player.actions = 2
+        self.save_manager.save_duel_save(u1, run)
+        hand_len = len(run.player.hand)
+        res, term, p1, dm1, p2, dm2 = self.router.route_in_game_action(run, u1, "张三", ["使用", str(hand_len), "p0"])
+        run = self.save_manager.load_duel_save(u1)
+        self.assertNotIn("duel_mage_ward", run.player.hand)
+        self.assertNotIn("duel_mage_ward", run.player.discard_pile)
+        self.assertNotIn("duel_mage_ward", run.player.exhaust_pile)
+        self.assertEqual(len(run.player.amulets), 1)
+        
+        amulet_key = list(run.player.amulets.keys())[0]
+        run.player.amulets[amulet_key].countdown = 1
+        self.save_manager.save_duel_save(u1, run)
+        res, term, p1, dm1, p2, dm2 = self.router.route_in_game_action(run, u1, "张三", ["结束"])
+        run = self.save_manager.load_duel_save(u2)
+        res, term, p1, dm1, p2, dm2 = self.router.route_in_game_action(run, u2, "李四", ["结束"])
+        run = self.save_manager.load_duel_save(u1)
+        self.assertIn("duel_mage_ward", run.player.minion_graveyard)
+        self.assertEqual(len(run.player.amulets), 0)
+        self.assertEqual(run.player.shield, 4)
+        
+        run.player.buffs.append(BuffState(id="tactical_focus", name="无法抽牌", stacks=2))
+        run.player.draw_pile = ["duel_warrior_strike"]
+        run.player.hand = []
+        self.save_manager.save_duel_save(u1, run)
+        self.router.engine._draw_cards(run.player, 2, run)
+        self.assertEqual(len(run.player.hand), 0)
+
+    def test_duel_advanced_cascading_and_skills(self):
+        u1 = "user_casc_1"
+        u2 = "user_casc_2"
+        self.router.handle_deck_cmd(u1, ["创建", "p1deck"])
+        cards = ["duel_warrior_strike", "duel_warrior_defend", "duel_warrior_bash", "duel_iron_wave", "duel_warrior_anger", "duel_body_slam", "duel_double_tap"]
+        for c in cards:
+            self.router.handle_deck_cmd(u1, ["添加", c, "4"])
+        self.router.handle_deck_cmd(u2, ["创建", "p2deck"])
+        for c in cards:
+            self.router.handle_deck_cmd(u2, ["添加", c, "4"])
+        
+        self.router.handle_duel_cmd(u1, "张三", [f"@{u2}"])
+        self.router.handle_duel_cmd(u2, "李四", ["接受"])
+        
+        run = self.save_manager.load_duel_save(u1)
+        self.assertIsNotNone(run)
+        
+        run.player.hand = ["duel_warrior_strike", "duel_warrior_strike", "duel_warrior_strike"]
+        run.player.actions = 6
+        run.player.buffs = [BuffState(id="echo_form", name="回响形态", stacks=12)]
+        run.node_data["cards_played_this_turn"] = 0
+        self.save_manager.save_duel_save(u1, run)
+        
+        initial_opp_hp = run.player2.hp
+        res, term, p1, dm1, p2, dm2 = self.router.route_in_game_action(run, u1, "张三", ["使用", "1", "e1"])
+        self.assertIn("打出了卡牌【打击】", res)
+        run = self.save_manager.load_duel_save(u1)
+        self.assertEqual(run.player2.hp, initial_opp_hp - 44)
+        
+        initial_opp_hp = run.player2.hp
+        res, term, p1, dm1, p2, dm2 = self.router.route_in_game_action(run, u1, "张三", ["使用", "1", "e1"])
+        self.assertIn("打出了卡牌【打击】", res)
+        run = self.save_manager.load_duel_save(u1)
+        self.assertEqual(run.player2.hp, initial_opp_hp - 12)
+        
+        initial_opp_hp = run.player2.hp
+        res, term, p1, dm1, p2, dm2 = self.router.route_in_game_action(run, u1, "张三", ["使用", "1", "e1"])
+        self.assertIn("打出了卡牌【打击】", res)
+        run = self.save_manager.load_duel_save(u1)
+        self.assertEqual(run.player2.hp, initial_opp_hp - 4)
+        
+        run.player.minions["1"] = MinionState(
+            id="commander_patrol_captain",
+            name="巡逻队长",
+            hp=10,
+            max_hp=20,
+            atk=4,
+            actions=3,
+            bonus_actions=1,
+            attack_actions=1
+        )
+        run.player.minions["2"] = MinionState(
+            id="officer_banner_bearer",
+            name="军旗手",
+            hp=10,
+            max_hp=15,
+            atk=2,
+            actions=3,
+            bonus_actions=1,
+            attack_actions=1
+        )
+        self.save_manager.save_duel_save(u1, run)
+        
+        res, term, p1, dm1, p2, dm2 = self.router.route_in_game_action(run, u1, "张三", ["m", "1", "sk", "1"])
+        self.assertIn("恢复了", res)
+        run = self.save_manager.load_duel_save(u1)
+        self.assertEqual(run.player.minions["1"].hp, 13)
+        self.assertEqual(run.player.minions["2"].hp, 13)
+        self.assertEqual(run.player.shield, 3)
+        
+        res, term, p1, dm1, p2, dm2 = self.router.route_in_game_action(run, u1, "张三", ["m", "2", "sk", "1"])
+        self.assertIn("激励了", res)
+        run = self.save_manager.load_duel_save(u1)
+        self.assertEqual(run.player.minions["1"].atk, 6)
+
 if __name__ == "__main__":
     unittest.main()

@@ -423,11 +423,9 @@ class DuelRouter:
         current_turn_id = run.node_data.get("current_turn_id")
         p1_id = run.node_data["player1_id"]
         p2_id = run.node_data["player2_id"]
-        
         opp_id = p2_id if user_id == p1_id else p1_id
         
         cmd = args[0].lower()
-        
         if cmd in ("帮助", "help", "hp", "放弃", "abandon", "confirm", "牌组", "deck", "dk", "模式", "mode", "接受", "accept", "邀请", "invite", "iv") or cmd.startswith("[at:") or cmd.startswith("@"):
             return self.handle_duel_cmd(user_id, sender_name, args)
             
@@ -443,7 +441,57 @@ class DuelRouter:
             
         if cmd in ("放弃", "abandon"):
             return self.handle_duel_cmd(user_id, sender_name, ["放弃"])
+
+        raw_cmd = " ".join(args).strip()
+        if "," in raw_cmd or "，" in raw_cmd:
+            from .cli.base import split_by_comma_with_brackets
+            items = split_by_comma_with_brackets(raw_cmd)
+            results = []
+            term = False
+            for item in items:
+                if not item:
+                    continue
+                parts_sub = item.split()
+                if not parts_sub:
+                    continue
+                res_pub, should_term, _, _, _, _ = self._route_single_action(run, user_id, sender_name, parts_sub)
+                results.append(res_pub)
+                if should_term:
+                    term = True
+                    break
             
+            self.save_manager.save_duel_save(run.user_id, run)
+            
+            public_text = render_duel_battle_public(run)
+            dm2 = render_duel_battle_private(run)
+            
+            run.player, run.player2 = run.player2, run.player
+            run.user_id = user_id
+            dm1 = render_duel_battle_private(run)
+            
+            run.player, run.player2 = run.player2, run.player
+            run.user_id = opp_id
+            
+            public_text = self.engine._append_logs_to_res(run, public_text)
+            dm1 = self.engine._append_logs_to_res(run, dm1)
+            dm2 = self.engine._append_logs_to_res(run, dm2)
+            
+            summary_pub = "\n".join(results) + "\n" + public_text
+            return summary_pub, term, user_id, dm1, opp_id, dm2
+            
+        return self._route_single_action(run, user_id, sender_name, args)
+
+    def _route_single_action(self, run: GameRun, user_id: str, sender_name: str, args: list) -> Tuple[str, bool, Optional[str], Optional[str], Optional[str], Optional[str]]:
+        current_turn_id = run.node_data.get("current_turn_id")
+        p1_id = run.node_data["player1_id"]
+        p2_id = run.node_data["player2_id"]
+        opp_id = p2_id if user_id == p1_id else p1_id
+        
+        if args[0].isdigit():
+            args = ["使用"] + args
+            
+        cmd = args[0].lower()
+        
         if cmd in ("使用", "use", "u", "play", "p"):
             if user_id != current_turn_id:
                 return "❌ 当前是对方的回合，请耐心等待。", False, None, None, None, None
@@ -502,6 +550,14 @@ class DuelRouter:
                         else:
                             return "❌ 敌方无随从，且该卡牌无法以领主为目标！", False, None, None, None, None
                             
+            if target:
+                if target == "0" or target == "e0":
+                    target = "e1"
+                elif target == "p":
+                    target = "p0"
+                elif target.isdigit():
+                    target = f"e{target}"
+                    
             if target and target.startswith("e"):
                 is_damage = ("base_dmg" in cfg or "damage" in cfg or "damage_type" in cfg)
                 if is_damage and not cfg.get("face_target", True) and target == "e1":
@@ -514,8 +570,11 @@ class DuelRouter:
                 
             p.actions -= cost_a
             p.bonus_actions -= cost_ba
-            
             p.hand.pop(idx)
+            
+            from ..models.events import CardPlayEvent
+            play_evt = CardPlayEvent(run, card, target, cost_a, cost_ba)
+            self.engine.event_bus.dispatch(play_evt)
             
             err_msg = card.execute(run, target, self.engine)
             if err_msg:
@@ -528,8 +587,10 @@ class DuelRouter:
                 if card.type not in ("minion", "amulet"):
                     p.discard_pile.append(cid)
             
+            played_count = run.node_data.get("cards_played_this_turn", 0)
             from ..models.events import CardPlayedEvent
-            self.engine.event_bus.dispatch(CardPlayedEvent(run, card, "p0", target))
+            self.engine.event_bus.dispatch(CardPlayedEvent(run, card, target, ""))
+            run.node_data["cards_played_this_turn"] = played_count + 1
             
             if run.player2.hp <= 0:
                 self.save_manager.delete_duel_save(user_id)
@@ -559,72 +620,90 @@ class DuelRouter:
             public_text = use_tip + "\n" + public_text
             
             return public_text, False, user_id, dm1, opp_id, dm2
-            
+
         elif cmd in ("随从", "minion", "m", "attack", "atk", "sk", "skill"):
             if user_id != current_turn_id:
                 return "❌ 当前是对方的回合，请耐心等待。", False, None, None, None, None
             if len(args) < 2:
                 return "❌ 请输入我方随从格子序号，例如：/rogue 随从 1 攻击 e1", False, None, None, None, None
                 
-            grid = args[1]
+            my_grid_raw = args[1]
             p = run.player
-            if grid not in p.minions:
-                return f"❌ 你的战场格子 [{grid}] 没有部署随从。", False, None, None, None, None
-                
-            m = p.minions[grid]
             
-            stunned = any(b.id == "stun" for b in m.buffs)
-            sickness = any(b.id == "summon_sickness" for b in m.buffs)
-            
-            if stunned:
-                return f"❌ 随从【{m.name}】处于眩晕状态，无法行动。", False, None, None, None, None
-            if sickness:
-                return f"❌ 随从【{m.name}】处于召唤失调状态，本回合无法攻击。", False, None, None, None, None
-            if m.attack_actions < 1:
-                return f"❌ 随从【{m.name}】本回合攻击次数已用尽。", False, None, None, None, None
-                
-            target = None
-            if len(args) >= 4:
-                target = args[3].lower()
-            elif len(args) >= 3 and args[2].lower() not in ("攻击", "attack", "atk", "a"):
-                target = args[2].lower()
-                
-            if not target:
-                for i in range(1, 7):
-                    if str(i) in run.player2.minions:
-                        target = f"e{i+1}"
-                        break
-                if not target:
-                    target = "e1"
-                    
-            if target == "e1":
-                has_rush = any(b.id == "rush_buff" for b in m.buffs)
-                if has_rush:
-                    return f"❌ 随从【{m.name}】本回合处于突进状态，只能攻击敌方随从，无法直接攻击领主。", False, None, None, None, None
-                    
-            p2 = run.player2
-            target_name = "未知"
-            if target == "e1":
-                target_name = run.node_data.get("player2_name" if run.user_id == p1_id else "player1_name", "对手")
-                self.engine._damage_target(run, "e1", m.atk, source=f"p{grid}", damage_type="attack")
-            elif target.startswith("e") and len(target) > 1:
-                opp_grid = str(int(target[1:]) - 1)
-                if opp_grid not in p2.minions:
-                    return f"❌ 敌方战场对应格子 [{opp_grid}] 没有随从存在。", False, None, None, None, None
-                enemy_m = p2.minions[opp_grid]
-                target_name = enemy_m.name
-                
-                self.engine._damage_target(run, target, m.atk, source=f"p{grid}", damage_type="attack")
-                
-                if opp_grid in p2.minions:
-                    enemy_m = p2.minions[opp_grid]
-                    self.engine._damage_target(run, f"p{grid}", enemy_m.atk, source=target, damage_type="attack")
+            if my_grid_raw in ("all", "所有", "*"):
+                grids = sorted(list(p.minions.keys()))
             else:
-                return "❌ 攻击目标非法，随从只能攻击 e1-e7。", False, None, None, None, None
+                grids = []
+                for p_g in my_grid_raw.split(','):
+                    g = p_g.strip().replace("p", "")
+                    if g in p.minions:
+                        grids.append(g)
+            
+            if not grids:
+                return f"❌ 找不到我方随从格子 [{my_grid_raw}]。", False, None, None, None, None
                 
-            m_name = m.name
-            m.attack_actions -= 1
-            m.actions -= 1
+            action = "攻击"
+            opp_grid = None
+            if len(args) > 2:
+                if args[2].lower() in ("攻击", "a", "attack"):
+                    action = "攻击"
+                    if len(args) > 3:
+                        opp_grid = args[3].lower()
+                elif args[2].lower() in ("技能", "s", "skill", "sk"):
+                    action = "技能"
+                else:
+                    action = "攻击"
+                    opp_grid = args[2].lower()
+            
+            results = []
+            for g in grids:
+                if run.player2.hp <= 0:
+                    break
+                
+                m = p.minions[g]
+                stunned = any(b.id == "stun" for b in m.buffs)
+                if stunned:
+                    results.append(f"❌ 随从【{m.name}】处于眩晕状态，无法行动。")
+                    continue
+                    
+                if action == "攻击":
+                    res = self.engine.minion_attack(run, g, opp_grid)
+                    if not res.startswith("❌"):
+                        target_name = "未知"
+                        if opp_grid == "e1" or opp_grid is None:
+                            p1_id = run.node_data["player1_id"]
+                            target_name = run.node_data.get("player2_name" if run.user_id == p1_id else "player1_name", "对手")
+                        elif opp_grid.startswith("e") and len(opp_grid) > 1:
+                            try:
+                                opp_idx = int(opp_grid[1:]) - 1
+                                opp_grid_clean = str(opp_idx)
+                                if opp_grid_clean in run.player2.minions:
+                                    target_name = run.player2.minions[opp_grid_clean].name
+                            except ValueError:
+                                pass
+                        atk_tip = f"📢 玩家【{sender_name}】指挥随从【{m.name.replace('+', '')}】攻击了【{target_name.replace('+', '')}】！"
+                        res = atk_tip + "\n" + res
+                    results.append(res)
+                elif action == "技能":
+                    skill_idx = 1
+                    target = None
+                    if len(args) > 3:
+                        try:
+                            if args[2].lower() in ("技能", "s", "skill", "sk"):
+                                skill_idx = int(args[3])
+                                if len(args) > 4:
+                                    target = args[4].lower()
+                            else:
+                                skill_idx = int(args[2])
+                                if len(args) > 3:
+                                    target = args[3].lower()
+                        except ValueError:
+                            if args[2].lower() in ("技能", "s", "skill", "sk"):
+                                target = args[3].lower()
+                            else:
+                                target = args[2].lower()
+                    res = self.engine.minion_skill(run, g, skill_idx, target)
+                    results.append(res)
             
             if run.player2.hp <= 0:
                 self.save_manager.delete_duel_save(user_id)
@@ -632,13 +711,6 @@ class DuelRouter:
                 my_stats.gp += 2000
                 self.save_manager.save_stats(user_id, my_stats)
                 win_text = f"🏆 恭喜玩家【{sender_name}】获得了最终胜利！对方领主生命值已归零！获得 2000 GP！"
-                return win_text, True, opp_id, win_text, user_id, "☠️ 你的生命值已归零，你输了。"
-            if run.player.hp <= 0:
-                self.save_manager.delete_duel_save(user_id)
-                opp_stats = self.save_manager.load_stats(opp_id)
-                opp_stats.gp += 2000
-                self.save_manager.save_stats(opp_id, opp_stats)
-                win_text = f"🏆 恭喜玩家【{run.node_data['player2_name' if run.user_id == p1_id else 'player1_name']}】获得了最终胜利！对方领主生命值已归零！获得 2000 GP！"
                 return win_text, True, opp_id, win_text, user_id, "☠️ 你的生命值已归零，你输了。"
                 
             self.save_manager.save_duel_save(user_id, run)
@@ -657,11 +729,11 @@ class DuelRouter:
             dm1 = self.engine._append_logs_to_res(run, dm1)
             dm2 = self.engine._append_logs_to_res(run, dm2)
             
-            atk_tip = f"📢 玩家【{sender_name}】指挥随从【{m_name.replace('+', '')}】攻击了【{target_name.replace('+', '')}】！"
-            public_text = atk_tip + "\n" + public_text
+            res_combined = "\n".join(results)
+            public_text = res_combined + "\n" + public_text
             
             return public_text, False, user_id, dm1, opp_id, dm2
-            
+
         elif cmd in ("幸运币", "coin", "cn"):
             res = self.engine.use_coin(run, user_id)
             if res.startswith("❌"):
@@ -687,7 +759,7 @@ class DuelRouter:
             public_text = coin_tip + "\n" + public_text
             
             return public_text, False, user_id, dm1, opp_id, dm2
-            
+
         elif cmd in ("进化", "evolve", "ev"):
             if user_id != current_turn_id:
                 return "❌ 当前是对方的回合，请耐心等待。", False, None, None, None, None
@@ -736,7 +808,7 @@ class DuelRouter:
             public_text = evolve_tip + "\n" + public_text
             
             return public_text, False, user_id, dm1, opp_id, dm2
-            
+
         elif cmd in ("结束", "end", "endturn", "结束回合", "e"):
             if user_id != current_turn_id:
                 return "❌ 现在不是你的回合，无法结束回合。", False, None, None, None, None
@@ -776,7 +848,7 @@ class DuelRouter:
             public_text = end_tip + "\n" + public_text
             
             return public_text, False, user_id, dm1, opp_id, dm2
-            
+
         elif cmd in ("状态", "status", "s", "查看", "overview"):
             public_text = render_duel_battle_public(run)
             dm1 = render_duel_battle_private(run)

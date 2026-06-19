@@ -1,5 +1,5 @@
 from typing import Optional
-from ...models.state import Card, BuffState
+from ...models.state import Card, BuffState, AmuletState
 from .duel_registry import register_duel_card
 
 class DuelGenericCard(Card):
@@ -39,6 +39,35 @@ class DuelGenericCard(Card):
             minion_id = self.id.replace("duel_", "")
             engine._summon_minion(run, minion_id, self.name.replace("对决·", ""), minion_hp, minion_atk, 0)
             
+        if self.type == "amulet":
+            grid = engine._get_free_grid(run.player)
+            if grid:
+                cd = cfg.get("countdown", self.countdown)
+                run.player.amulets[grid] = AmuletState(self.id, self.name, cd, cfg.get("amulet_desc", self.desc))
+            
+        return ""
+
+@register_duel_card("duel_double_tap")
+class DuelDoubleTap(Card):
+    def execute(self, run, target, engine) -> str:
+        stacks = 2 if self.upgraded else 1
+        engine._add_buff_to(run.player, "double_tap_buff", "双发", "下一次物理伤害卡将触发额外打出", stacks)
+        return ""
+
+@register_duel_card("duel_arcane_torrent")
+class DuelArcaneTorrent(Card):
+    def execute(self, run, target, engine) -> str:
+        X = run.node_data.get("last_x_cost_a", 0)
+        single_dmg = 4 if self.upgraded else 3
+        if X <= 2:
+            count = X * 2
+        else:
+            count = X * 4
+        for idx in range(len(run.enemies)):
+            enemy = run.enemies[idx]
+            if enemy.hp > 0:
+                for _ in range(count):
+                    engine._damage_target(run, f"e{idx+1}", single_dmg, damage_type="true", card=self)
         return ""
 
 @register_duel_card("duel_quest_temporal_mystery")
@@ -108,6 +137,8 @@ class DuelRewardAncientResonance(Card):
             del p.amulets[ak]
             p.minion_graveyard.append(av.id)
             base_id = av.id[:-1] if av.id.endswith("+") else av.id
+            if base_id.startswith("duel_"):
+                base_id = base_id[5:]
             cfg = AMULET_CONFIG.get(base_id)
             if cfg:
                 lw_msg = ""

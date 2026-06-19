@@ -1,5 +1,10 @@
 from typing import Optional
 from .duel_registry import DUEL_BUFF_CLASS_REGISTRY
+from .registry import BUFF_CLASS_REGISTRY
+from . import buffs
+
+DUEL_BUFF_CLASS_REGISTRY.update(BUFF_CLASS_REGISTRY)
+
 
 class DuelBuffImpl:
     def __init__(self, stacks: int):
