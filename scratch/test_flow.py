@@ -682,6 +682,11 @@ class TestRoguePlugin(unittest.TestCase):
                 event_help.results.append(res)
             self.assertTrue(any("对决模式" in r for r in event_help.results))
             
+            event_shortcut_duel = DummyEvent(".duel 帮助", sender_id="test_user_excl")
+            await plugin.shortcut_rogue(event_shortcut_duel)
+            self.assertTrue(event_shortcut_duel.stopped)
+            self.assertTrue(any("对决模式" in r for r in event_shortcut_duel.results))
+            
             stats = plugin.save_manager.load_stats("test_user_excl")
             stats.rogue_mode = True
             plugin.save_manager.save_stats("test_user_excl", stats)
@@ -710,7 +715,66 @@ class TestRoguePlugin(unittest.TestCase):
             self.assertTrue(stats.rogue_mode)
             self.assertFalse(stats.duel_mode)
             
+            event_rogue_duel = DummyEvent(".rogue 对决 帮助", sender_id="test_user_excl")
+            await plugin.shortcut_rogue(event_rogue_duel)
+            self.assertTrue(any("未知子命令" in r for r in event_rogue_duel.results))
+            
         asyncio.run(go())
+
+        sm = plugin.save_manager
+        sm.delete_save("test_user_excl")
+        sm.delete_duel_save("test_user_excl")
+        
+        run_rogue = GameRun(
+            user_id="test_user_excl",
+            node_type="battle",
+            player=PlayerState(hp=50, max_hp=50, shield=0, gold=10, stage=1),
+            enemies=[]
+        )
+        sm.save_save("test_user_excl", run_rogue)
+        
+        sm.bind_duel_game("test_user_excl", "another_user_excl", "game_excl_123")
+        run_duel = GameRun(
+            user_id="test_user_excl",
+            node_type="duel_battle",
+            player=PlayerState(hp=200, max_hp=200, shield=0, gold=0, stage=1),
+            enemies=[],
+            player2=PlayerState(hp=200, max_hp=200, shield=0, gold=0, stage=1),
+            node_data={"player1_id": "test_user_excl", "player2_id": "another_user_excl"}
+        )
+        sm.save_duel_save("test_user_excl", run_duel)
+        
+        loaded_rogue = sm.load_save("test_user_excl")
+        self.assertIsNotNone(loaded_rogue)
+        self.assertEqual(loaded_rogue.node_type, "battle")
+        self.assertEqual(loaded_rogue.player.hp, 50)
+        
+        loaded_duel = sm.load_duel_save("test_user_excl")
+        self.assertIsNotNone(loaded_duel)
+        self.assertEqual(loaded_duel.node_type, "duel_battle")
+        self.assertEqual(loaded_duel.player.hp, 200)
+        
+        loaded_rogue.player.hp = 35
+        sm.save_save("test_user_excl", loaded_rogue)
+        
+        loaded_duel_check = sm.load_duel_save("test_user_excl")
+        self.assertEqual(loaded_duel_check.player.hp, 200)
+        
+        loaded_duel.player.hp = 180
+        sm.save_duel_save("test_user_excl", loaded_duel)
+        
+        loaded_rogue_check = sm.load_save("test_user_excl")
+        self.assertEqual(loaded_rogue_check.player.hp, 35)
+        
+        sm.delete_save("test_user_excl")
+        self.assertIsNone(sm.load_save("test_user_excl"))
+        
+        loaded_duel_after_rogue_del = sm.load_duel_save("test_user_excl")
+        self.assertIsNotNone(loaded_duel_after_rogue_del)
+        self.assertEqual(loaded_duel_after_rogue_del.player.hp, 180)
+        
+        sm.delete_duel_save("test_user_excl")
+        self.assertIsNone(sm.load_duel_save("test_user_excl"))
 
     def test_shield_decay_mechanism(self):
         class DummySaveManager:

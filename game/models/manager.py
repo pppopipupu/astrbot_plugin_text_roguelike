@@ -145,18 +145,48 @@ class SaveManager:
             return False
 
     def load_save(self, user_id: str) -> GameRun:
+        path = self.get_save_path(user_id)
+        if not os.path.exists(path):
+            return None
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                d = json.load(f)
+            return self.from_dict(d)
+        except:
+            return None
+
+    def save_save(self, user_id: str, run: GameRun) -> bool:
+        path = self.get_save_path(user_id)
+        try:
+            d = self.to_dict(run)
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(d, f, ensure_ascii=False, indent=2)
+            return True
+        except:
+            return False
+
+    def delete_save(self, user_id: str) -> bool:
+        path = self.get_save_path(user_id)
+        if os.path.exists(path):
+            try:
+                os.remove(path)
+                return True
+            except:
+                return False
+        return False
+
+    def load_duel_save(self, user_id: str) -> GameRun:
         game_id = self.get_duel_game_id(user_id)
-        if game_id:
-            path = os.path.join(self.data_dir, f"duel_{game_id}.json")
-        else:
-            path = self.get_save_path(user_id)
+        if not game_id:
+            return None
+        path = os.path.join(self.data_dir, f"duel_{game_id}.json")
         if not os.path.exists(path):
             return None
         try:
             with open(path, "r", encoding="utf-8") as f:
                 d = json.load(f)
             run = self.from_dict(d)
-            if run and game_id:
+            if run:
                 p2_id = run.node_data.get("player2_id")
                 if p2_id == user_id:
                     run.player, run.player2 = run.player2, run.player
@@ -165,37 +195,35 @@ class SaveManager:
         except:
             return None
 
-    def save_save(self, user_id: str, run: GameRun) -> bool:
+    def save_duel_save(self, user_id: str, run: GameRun) -> bool:
         game_id = self.get_duel_game_id(user_id)
-        if game_id:
-            path = os.path.join(self.data_dir, f"duel_{game_id}.json")
-            p2_id = run.node_data.get("player2_id")
-            if p2_id == user_id:
-                run.player, run.player2 = run.player2, run.player
-                run.user_id = run.node_data.get("player1_id", run.user_id)
-        else:
-            path = self.get_save_path(user_id)
+        if not game_id:
+            return False
+        path = os.path.join(self.data_dir, f"duel_{game_id}.json")
+        p2_id = run.node_data.get("player2_id")
+        if p2_id == user_id:
+            run.player, run.player2 = run.player2, run.player
+            run.user_id = run.node_data.get("player1_id", run.user_id)
         try:
             d = self.to_dict(run)
-            if game_id and p2_id == user_id:
+            if p2_id == user_id:
                 run.player, run.player2 = run.player2, run.player
                 run.user_id = user_id
             with open(path, "w", encoding="utf-8") as f:
                 json.dump(d, f, ensure_ascii=False, indent=2)
             return True
         except:
-            if game_id and p2_id == user_id:
+            if p2_id == user_id:
                 run.player, run.player2 = run.player2, run.player
                 run.user_id = user_id
             return False
 
-    def delete_save(self, user_id: str) -> bool:
+    def delete_duel_save(self, user_id: str) -> bool:
         game_id = self.get_duel_game_id(user_id)
-        if game_id:
-            path = os.path.join(self.data_dir, f"duel_{game_id}.json")
-            self.unbind_duel_game(game_id)
-        else:
-            path = self.get_save_path(user_id)
+        if not game_id:
+            return False
+        path = os.path.join(self.data_dir, f"duel_{game_id}.json")
+        self.unbind_duel_game(game_id)
         if os.path.exists(path):
             try:
                 os.remove(path)

@@ -274,26 +274,28 @@ class DuelRouter:
                 "━━━━━━━━━━━━━━━━━━━━\n"
                 "⚔️ 【对决模式 (Duel) 指令帮助手册】\n"
                 "对决模式是完全独立于肉鸽模式的双人 TCG 卡牌对决系统。\n\n"
-                "💡 [局外/系统指令]：\n"
-                "• 发起对决：/rogue 对决 @对方 或者是 /rogue 对决 邀请 <目标ID/At>\n"
-                "• 接受对决：/rogue 对决 接受 (或 accept)\n"
-                "• 直接认输：/rogue 对决 放弃 (或 abandon)\n"
-                "• 牌组管理：/rogue 对决 牌组 (或 deck/dk) <子指令>\n"
+                "💡 [局外/系统指令] (前缀支持 .duel 或 /duel)：\n"
+                "• 发起对决：.duel @对方 或者是 .duel 邀请 <目标ID/At> (或 invite/iv)\n"
+                "• 接受对决：.duel 接受 (或 accept)\n"
+                "• 开启/关闭个人免前缀对决模式：.duel 模式 (或 mode)\n"
+                "• 直接认输：.duel 放弃 (或 abandon)\n"
+                "• 牌组管理：.duel 牌组 (或 deck/dk) <子指令>\n"
                 "  - 创建牌组：创建 <名称> (或 create)\n"
                 "  - 选择牌组：选择 <序号/名称> (或 select)\n"
                 "  - 牌组详情：详情 (或 info)\n"
                 "  - 添加卡牌：添加 <卡牌名> [数量] (或 add)\n"
                 "  - 移除卡牌：移除 <详情序号> [数量] (或 remove)\n\n"
-                "⚔️ [局内对局动作] (仅在你的回合生效)：\n"
-                "• 使用卡牌：/rogue 使用 <手牌序号> [目标格子] (或 play/use/p)\n"
+                "⚔️ [局内对局动作] (仅在你的回合生效，可用简写)：\n"
+                "• 查看状态：.duel 状态 (或 status/s/查看/overview)\n"
+                "• 使用卡牌：.duel 使用 <手牌序号> [目标格子] (或 play/use/p)\n"
                 "  (注：物理或法术伤害牌默认只能以敌方随从格子 e2-e7 为目标，有 face_target 词条 of 直伤卡方可打领主 e1)\n"
-                "• 随从攻击：/rogue 随从 <我方格子> [攻击] [敌方格子] (或 minion/atk/m)\n"
+                "• 随从攻击：.duel 随从 <我方格子> [攻击] [敌方格子] (或 minion/atk/m)\n"
                 "  (注：进场首回合随从召唤失调，突进/冲锋词条除外，未指定目标默认打敌方第一个存活随从/领主)\n"
-                "• 进化卡牌：/rogue 进化 <我方格子/手牌序号> (或 evolve/ev)\n"
+                "• 进化卡牌：.duel 进化 <我方格子/手牌序号> (或 evolve/ev)\n"
                 "  (注：第 3 回合起解禁，每回合可进化一次，随从生命补满且攻血+2，护符进化不减吟唱)\n"
-                "• 使用幸运币：/rogue 幸运币 (或 coin/cn)\n"
+                "• 使用幸运币：.duel 幸运币 (或 coin/cn)\n"
                 "  (注：仅后手机会获得 2 个幸运币，使用不占手牌，本回合动作点 A+1)\n"
-                "• 结束回合：/rogue 结束 (或 end/结束回合)\n"
+                "• 结束回合：.duel 结束 (或 end/结束回合/e)\n"
                 "━━━━━━━━━━━━━━━━━━━━"
             )
             return help_text, False, None, None, None, None
@@ -356,7 +358,7 @@ class DuelRouter:
             
             self.engine.init_duel(run)
             self.save_manager.bind_duel_game(opp_id, raw_target_id, game_id)
-            self.save_manager.save_save(opp_id, run)
+            self.save_manager.save_duel_save(opp_id, run)
             
             public_text = render_duel_battle_public(run)
             dm1 = render_duel_battle_private(run)
@@ -375,7 +377,7 @@ class DuelRouter:
             if not game_id:
                 return "❌ 你当前不在任何对局中。", False, None, None, None, None
                 
-            run = self.save_manager.load_save(user_id)
+            run = self.save_manager.load_duel_save(user_id)
             if not run:
                 return "❌ 未找到对应对战存档。", False, None, None, None, None
                 
@@ -388,9 +390,13 @@ class DuelRouter:
             opp_name = p2_name if user_id == p1_id else p1_name
             my_name = p1_name if user_id == p1_id else p2_name
             
-            self.save_manager.delete_save(user_id)
+            self.save_manager.delete_duel_save(user_id)
             
-            res_text = f"🏳️ 玩家【{my_name}】直接认输了！对决结束，玩家【{opp_name}】获得了最终胜利！"
+            opp_stats = self.save_manager.load_stats(opp_id)
+            opp_stats.gp += 2000
+            self.save_manager.save_stats(opp_id, opp_stats)
+            
+            res_text = f"🏳️ 玩家【{my_name}】直接认输了！对决结束，玩家【{opp_name}】获得了最终胜利！获得 2000 GP！"
             return res_text, True, opp_id, res_text, user_id, "🏳️ 你已认输，本局对战结束。"
             
         elif sub_lower in ("模式", "mode"):
@@ -523,11 +529,14 @@ class DuelRouter:
             self.engine.event_bus.dispatch(CardPlayedEvent(run, card, "p0", target))
             
             if run.player2.hp <= 0:
-                self.save_manager.delete_save(user_id)
-                win_text = f"🏆 恭喜玩家【{sender_name}】获得了最终胜利！对方领主生命值已归零！"
+                self.save_manager.delete_duel_save(user_id)
+                my_stats = self.save_manager.load_stats(user_id)
+                my_stats.gp += 2000
+                self.save_manager.save_stats(user_id, my_stats)
+                win_text = f"🏆 恭喜玩家【{sender_name}】获得了最终胜利！对方领主生命值已归零！获得 2000 GP！"
                 return win_text, True, opp_id, win_text, user_id, "☠️ 你的生命值已归零，你输了。"
                 
-            self.save_manager.save_save(user_id, run)
+            self.save_manager.save_duel_save(user_id, run)
             
             public_text = render_duel_battle_public(run)
             dm1 = render_duel_battle_private(run)
@@ -615,15 +624,21 @@ class DuelRouter:
             m.actions -= 1
             
             if run.player2.hp <= 0:
-                self.save_manager.delete_save(user_id)
-                win_text = f"🏆 恭喜玩家【{sender_name}】获得了最终胜利！对方领主生命值已归零！"
+                self.save_manager.delete_duel_save(user_id)
+                my_stats = self.save_manager.load_stats(user_id)
+                my_stats.gp += 2000
+                self.save_manager.save_stats(user_id, my_stats)
+                win_text = f"🏆 恭喜玩家【{sender_name}】获得了最终胜利！对方领主生命值已归零！获得 2000 GP！"
                 return win_text, True, opp_id, win_text, user_id, "☠️ 你的生命值已归零，你输了。"
             if run.player.hp <= 0:
-                self.save_manager.delete_save(user_id)
-                win_text = f"🏆 恭喜玩家【{run.node_data['player2_name' if run.user_id == p1_id else 'player1_name']}】获得了最终胜利！对方领主生命值已归零！"
+                self.save_manager.delete_duel_save(user_id)
+                opp_stats = self.save_manager.load_stats(opp_id)
+                opp_stats.gp += 2000
+                self.save_manager.save_stats(opp_id, opp_stats)
+                win_text = f"🏆 恭喜玩家【{run.node_data['player2_name' if run.user_id == p1_id else 'player1_name']}】获得了最终胜利！对方领主生命值已归零！获得 2000 GP！"
                 return win_text, True, opp_id, win_text, user_id, "☠️ 你的生命值已归零，你输了。"
                 
-            self.save_manager.save_save(user_id, run)
+            self.save_manager.save_duel_save(user_id, run)
             
             public_text = render_duel_battle_public(run)
             dm1 = render_duel_battle_private(run)
@@ -649,7 +664,7 @@ class DuelRouter:
             if res.startswith("❌"):
                 return res, False, None, None, None, None
                 
-            self.save_manager.save_save(user_id, run)
+            self.save_manager.save_duel_save(user_id, run)
             
             public_text = render_duel_battle_public(run)
             dm1 = render_duel_battle_private(run)
@@ -698,7 +713,7 @@ class DuelRouter:
             if res.startswith("❌"):
                 return res, False, None, None, None, None
                 
-            self.save_manager.save_save(user_id, run)
+            self.save_manager.save_duel_save(user_id, run)
             
             public_text = render_duel_battle_public(run)
             dm1 = render_duel_battle_private(run)
@@ -724,7 +739,21 @@ class DuelRouter:
                 return "❌ 现在不是你的回合，无法结束回合。", False, None, None, None, None
                 
             self.engine.end_turn(run)
-            self.save_manager.save_save(user_id, run)
+            if run.player2.hp <= 0:
+                self.save_manager.delete_duel_save(user_id)
+                my_stats = self.save_manager.load_stats(user_id)
+                my_stats.gp += 2000
+                self.save_manager.save_stats(user_id, my_stats)
+                win_text = f"🏆 恭喜玩家【{sender_name}】获得了最终胜利！对方领主生命值已归零！获得 2000 GP！"
+                return win_text, True, opp_id, win_text, user_id, "☠️ 你的生命值已归零，你输了。"
+            if run.player.hp <= 0:
+                self.save_manager.delete_duel_save(user_id)
+                opp_stats = self.save_manager.load_stats(opp_id)
+                opp_stats.gp += 2000
+                self.save_manager.save_stats(opp_id, opp_stats)
+                win_text = f"🏆 恭喜玩家【{run.node_data['player2_name' if run.user_id == p1_id else 'player1_name']}】获得了最终胜利！对方领主生命值已归零！获得 2000 GP！"
+                return win_text, True, opp_id, win_text, user_id, "☠️ 你的生命值已归零，你输了。"
+            self.save_manager.save_duel_save(run.user_id, run)
             
             public_text = render_duel_battle_public(run)
             dm1 = render_duel_battle_private(run)

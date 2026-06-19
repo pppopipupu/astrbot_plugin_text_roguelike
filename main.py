@@ -223,7 +223,7 @@ class MyPlugin(Star):
                     parts[idx] = f"[At:qq={opp_qq}]"
                     break
         if game_id:
-            run = self.save_manager.load_save(user_id)
+            run = self.save_manager.load_duel_save(user_id)
             if not run:
                 return True, "❌ 未找到你的活跃对局存档。", None, None, None, None
             res_pub, _, p1, dm1, p2, dm2 = self.duel_router.route_in_game_action(run, user_id, sender_name, parts)
@@ -285,12 +285,6 @@ class MyPlugin(Star):
         if first in ("rogue", "/rogue"):
             parts = parts[1:]
 
-        is_duel, res_pub, p1, dm1, p2, dm2 = await self.process_duel_cmd(event, user_id, parts, message_str)
-        if is_duel:
-            if res_pub:
-                yield event.plain_result(res_pub)
-            return
-            
         for res in self.cli_router.handle_command(user_id, parts):
             yield event.plain_result(res)
 
@@ -454,45 +448,62 @@ class MyPlugin(Star):
         
         prefix_config = self.config.get("shortcut_prefix", ".rogue")
         if isinstance(prefix_config, list):
-            prefixes = prefix_config
+            r_prefixes = prefix_config
         elif isinstance(prefix_config, str):
-            prefixes = [prefix_config]
+            r_prefixes = [prefix_config]
         else:
-            prefixes = [".rogue"]
+            r_prefixes = [".rogue"]
             
+        d_prefixes = [".duel", ".对决"]
+        
         message_str = event.message_str.strip()
-        sorted_prefixes = sorted([p for p in prefixes if p], key=len, reverse=True)
-        matched_prefix = None
+        
+        all_prefixes = []
+        for p in r_prefixes:
+            all_prefixes.append((p, "rogue"))
+        for p in d_prefixes:
+            all_prefixes.append((p, "duel"))
+            
+        all_prefixes_sorted = sorted(all_prefixes, key=lambda x: len(x[0]), reverse=True)
+        matched_p = None
+        matched_type = None
         matched_idx = -1
         
-        for p in sorted_prefixes:
+        for p, ptype in all_prefixes_sorted:
             idx = message_str.find(p)
             if idx == -1:
                 continue
             cmd_part = message_str[idx:]
             parts = cmd_part.split()
             if parts and parts[0].lower().startswith(p.lower()):
-                matched_prefix = p
+                matched_p = p
+                matched_type = ptype
                 matched_idx = idx
                 break
                 
-        if matched_prefix is not None:
+        if matched_p is not None:
             event.stop_event()
             cmd_part = message_str[matched_idx:]
             parts = cmd_part.split()
-            parts[0] = parts[0][len(matched_prefix):]
+            parts[0] = parts[0][len(matched_p):]
             if not parts[0]:
                 parts = parts[1:]
-            is_duel, res_pub, p1, dm1, p2, dm2 = await self.process_duel_cmd(event, user_id, parts, message_str)
-            if is_duel:
-                if res_pub:
-                    return event.plain_result(res_pub)
+                
+            if matched_type == "duel":
+                if not parts:
+                    parts = ["帮助"]
+                is_duel, res_pub, p1, dm1, p2, dm2 = await self.process_duel_cmd(event, user_id, parts, message_str, force_duel=True)
+                if is_duel:
+                    if res_pub:
+                        return event.plain_result(res_pub)
+                    return
+                return event.plain_result("❌ 未知对决指令，请输入 .duel 帮助 获取指南。")
+            else:
+                res_list = list(self.cli_router.handle_command(user_id, parts))
+                if res_list:
+                    return event.plain_result("\n".join(res_list))
                 return
-            res_list = list(self.cli_router.handle_command(user_id, parts))
-            if res_list:
-                return event.plain_result("\n".join(res_list))
-            return
-            
+                
         if duel_mode:
             parts = message_str.split()
             if parts:
