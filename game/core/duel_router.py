@@ -127,9 +127,9 @@ class DuelRouter:
                     counts[cid] = counts.get(cid, 0) + 1
                     
                 sorted_cids = sorted(list(counts.keys()))
-                from ..entities.cards.base import ALL_CARDS
+                from ..entities.cards.duel import ALL_DUEL_CARDS
                 for idx, cid in enumerate(sorted_cids, 1):
-                    card = ALL_CARDS.get(cid)
+                    card = ALL_DUEL_CARDS.get(cid)
                     if card:
                         cost_a = card.cost_a
                         cost_str = f"{cost_a}A" if cost_a >= 0 else "X A"
@@ -164,8 +164,8 @@ class DuelRouter:
             if not matched:
                 return "❌ 未找到符合条件的对决卡牌。", False
             if len(matched) > 1:
-                from ..entities.cards.base import ALL_CARDS
-                matches_str = "、".join([f"【{ALL_CARDS[cid].name.replace('对决·', '')}】" for cid in matched[:5]])
+                from ..entities.cards.duel import ALL_DUEL_CARDS
+                matches_str = "、".join([f"【{ALL_DUEL_CARDS[cid].name.replace('对决·', '')}】" for cid in matched[:5]])
                 return f"❌ 匹配到多个结果：{matches_str}，请提供更精确的名称。", False
                 
             cid = matched[0]
@@ -177,15 +177,15 @@ class DuelRouter:
                 
             cur_count = sum(1 for c in cards if c.rstrip("+") == base_id)
             if cur_count + count > 4:
-                from ..entities.cards.base import ALL_CARDS
-                cname = ALL_CARDS[cid].name.replace('对决·', '')
+                from ..entities.cards.duel import ALL_DUEL_CARDS
+                cname = ALL_DUEL_CARDS[cid].name.replace('对决·', '')
                 return f"❌ 单卡超限：【{cname}】在牌组里已有 {cur_count} 张，同名基础卡上限为 4 张。", False
                 
             for _ in range(count):
                 cards.append(cid)
             self.save_manager.save_duel_decks(user_id, data)
-            from ..entities.cards.base import ALL_CARDS
-            cname = ALL_CARDS[cid].name.replace('对决·', '')
+            from ..entities.cards.duel import ALL_DUEL_CARDS
+            cname = ALL_DUEL_CARDS[cid].name.replace('对决·', '')
             return f"✅ 成功往牌组【{active}】添加了 {count} 张 【{cname}】。", False
             
         elif sub in ("remove", "r", "移除"):
@@ -222,8 +222,8 @@ class DuelRouter:
                     actual_rem += 1
                     
             self.save_manager.save_duel_decks(user_id, data)
-            from ..entities.cards.base import ALL_CARDS
-            cname = ALL_CARDS[cid_to_rem].name.replace('对决·', '')
+            from ..entities.cards.duel import ALL_DUEL_CARDS
+            cname = ALL_DUEL_CARDS[cid_to_rem].name.replace('对决·', '')
             return f"✅ 成功从牌组【{active}】移除了 {actual_rem} 张 【{cname}】。", False
             
         return "❌ 未知牌组管理子指令，请输入帮助指令获取教程。", False
@@ -428,10 +428,13 @@ class DuelRouter:
         
         cmd = args[0].lower()
         
+        if cmd in ("帮助", "help", "hp", "放弃", "abandon", "confirm", "牌组", "deck", "dk", "模式", "mode"):
+            return self.handle_duel_cmd(user_id, sender_name, args)
+            
         if cmd in ("对决", "duel"):
             if len(args) >= 2:
                 sub_cmd = args[1].lower()
-                if sub_cmd in ("放弃", "abandon", "confirm", "帮助", "help", "hp", "牌组", "deck", "dk"):
+                if sub_cmd in ("放弃", "abandon", "confirm", "帮助", "help", "hp", "牌组", "deck", "dk", "模式", "mode"):
                     return self.handle_duel_cmd(user_id, sender_name, args[1:])
                 args = args[1:]
                 cmd = args[0].lower()
@@ -457,8 +460,8 @@ class DuelRouter:
                 return "❌ 手牌序号超出范围。", False, None, None, None, None
                 
             cid = p.hand[idx]
-            from ..entities.cards.base import ALL_CARDS
-            card = ALL_CARDS.get(cid)
+            from ..entities.cards.duel import ALL_DUEL_CARDS
+            card = ALL_DUEL_CARDS.get(cid)
             if not card:
                 return "❌ 未找到对应卡牌实体。", False, None, None, None, None
                 
@@ -697,9 +700,9 @@ class DuelRouter:
             if target.isdigit():
                 idx = int(target) - 1
                 if 0 <= idx < len(p.hand):
-                    from ..entities.cards.base import ALL_CARDS
+                    from ..entities.cards.duel import ALL_DUEL_CARDS
                     cid = p.hand[idx]
-                    card = ALL_CARDS.get(cid)
+                    card = ALL_DUEL_CARDS.get(cid)
                     if card:
                         evolve_target_name = f"手牌【{card.name.replace('对决·', '')}】"
             elif target.startswith("p") and len(target) > 1:

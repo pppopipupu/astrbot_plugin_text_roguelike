@@ -7,7 +7,6 @@ from . import wizard
 from . import legendary
 from . import curse
 from . import warrior
-from . import duel
 
 import copy
 
@@ -34,8 +33,7 @@ class CardRegistryDict(dict):
             if key in CARD_CLASS_REGISTRY:
                 cls, decorator_kwargs = CARD_CLASS_REGISTRY[key]
             else:
-                from .duel import get_duel_card_class
-                cls = get_duel_card_class(key) or Card
+                cls = Card
                 decorator_kwargs = {}
 
             inst_kwargs = {
@@ -190,8 +188,7 @@ for cid, cfg in CARD_CONFIG.items():
     if cid in CARD_CLASS_REGISTRY:
         cls, decorator_kwargs = CARD_CLASS_REGISTRY[cid]
     else:
-        from .duel import get_duel_card_class
-        cls = get_duel_card_class(cid) or Card
+        cls = Card
         decorator_kwargs = {}
 
     inst_kwargs = {

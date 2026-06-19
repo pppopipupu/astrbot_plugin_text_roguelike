@@ -6,7 +6,7 @@ from ..models.state import GameRun, PlayerState, EnemyState, Card, MinionState, 
 from .battle.base import BaseBattleEngine
 from .battle.combat_resolver import CombatResolver
 from .battle.card_player import CardPlayer
-from .battle.observers import BuffTriggerHandler, AmuletTriggerHandler, MinionTriggerHandler
+from .battle.duel_observers import BuffTriggerHandler, AmuletTriggerHandler, MinionTriggerHandler
 from ..models.events import DamageCalculateEvent, CardPlayedEvent, DamageTakeEvent, ShieldGainEvent
 
 class DuelEngine(BaseBattleEngine):
