@@ -259,5 +259,31 @@ class TestDuelSystem(unittest.TestCase):
         self.assertIn("📢 玩家【张三】结束了回合！", pub_e)
         self.assertIn("李四 的回合", pub_e)
 
+    def test_duel_system_commands_penetration(self):
+        u1 = "user_penetrate_1"
+        u2 = "user_penetrate_2"
+        self.router.handle_deck_cmd(u1, ["创建", "p1deck"])
+        cards = ["duel_warrior_strike", "duel_warrior_defend", "duel_warrior_bash", "duel_iron_wave", "duel_warrior_anger", "duel_body_slam"]
+        for c in cards:
+            self.router.handle_deck_cmd(u1, ["添加", c, "4"])
+        self.router.handle_deck_cmd(u1, ["添加", "duel_double_tap", "1"])
+        self.router.handle_deck_cmd(u2, ["创建", "p2deck"])
+        for c in cards:
+            self.router.handle_deck_cmd(u2, ["添加", c, "4"])
+        self.router.handle_deck_cmd(u2, ["添加", "duel_double_tap", "1"])
+        
+        self.router.handle_duel_cmd(u1, "张三", ["邀请", u2])
+        self.router.handle_duel_cmd(u2, "李四", ["接受"])
+        
+        run = self.save_manager.load_duel_save(u1)
+        self.assertIsNotNone(run)
+        
+        res, term, p1, dm1, p2, dm2 = self.router.route_in_game_action(run, u1, "张三", ["帮助"])
+        self.assertIn("帮助手册", res)
+        self.assertFalse(term)
+        
+        res, term, p1, dm1, p2, dm2 = self.router.route_in_game_action(run, u1, "张三", ["iv", "99999"])
+        self.assertIn("向你发起了 TCG 卡牌对决", res)
+
 if __name__ == "__main__":
     unittest.main()

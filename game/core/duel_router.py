@@ -428,13 +428,13 @@ class DuelRouter:
         
         cmd = args[0].lower()
         
-        if cmd in ("帮助", "help", "hp", "放弃", "abandon", "confirm", "牌组", "deck", "dk", "模式", "mode"):
+        if cmd in ("帮助", "help", "hp", "放弃", "abandon", "confirm", "牌组", "deck", "dk", "模式", "mode", "接受", "accept", "邀请", "invite", "iv") or cmd.startswith("[at:") or cmd.startswith("@"):
             return self.handle_duel_cmd(user_id, sender_name, args)
             
         if cmd in ("对决", "duel"):
             if len(args) >= 2:
                 sub_cmd = args[1].lower()
-                if sub_cmd in ("放弃", "abandon", "confirm", "帮助", "help", "hp", "牌组", "deck", "dk", "模式", "mode"):
+                if sub_cmd in ("放弃", "abandon", "confirm", "帮助", "help", "hp", "牌组", "deck", "dk", "模式", "mode", "接受", "accept", "邀请", "invite", "iv") or sub_cmd.startswith("[at:") or sub_cmd.startswith("@"):
                     return self.handle_duel_cmd(user_id, sender_name, args[1:])
                 args = args[1:]
                 cmd = args[0].lower()
