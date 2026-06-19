@@ -129,6 +129,20 @@ class TestDuelSystem(unittest.TestCase):
         
         run = self.save_manager.load_duel_save(u1)
         res, term, p1, dm1, p2, dm2 = self.router.route_in_game_action(run, u1, "张三", ["结束"])
+        self.assertEqual(p1, u1)
+        self.assertEqual(p2, u2)
+        latest_run = self.save_manager.load_duel_save(u2)
+        self.assertEqual(latest_run.user_id, u2)
+        expected_dm2 = render_duel_battle_private(latest_run)
+        expected_dm2 = self.router.engine._append_logs_to_res(latest_run, expected_dm2)
+        latest_run.player, latest_run.player2 = latest_run.player2, latest_run.player
+        latest_run.user_id = u1
+        expected_dm1 = render_duel_battle_private(latest_run)
+        expected_dm1 = self.router.engine._append_logs_to_res(latest_run, expected_dm1)
+        latest_run.player, latest_run.player2 = latest_run.player2, latest_run.player
+        latest_run.user_id = u2
+        self.assertEqual(dm1, expected_dm1)
+        self.assertEqual(dm2, expected_dm2)
         
         run = self.save_manager.load_duel_save(u2)
         res, term, p1, dm1, p2, dm2 = self.router.route_in_game_action(run, u2, "李四", ["结束"])

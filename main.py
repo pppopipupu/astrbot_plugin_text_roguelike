@@ -193,8 +193,12 @@ class MyPlugin(Star):
         event.stop_event()
         sender_name = "玩家"
         try:
-            if event and hasattr(event, "message_obj") and event.message_obj:
-                sender_name = getattr(event.message_obj, "sender", {}).get("nickname", "玩家")
+            if event:
+                sender_name = event.get_sender_name()
+                if not sender_name and hasattr(event, "message_obj") and event.message_obj:
+                    sender_name = getattr(event.message_obj, "sender", {}).get("nickname", "玩家")
+                if not sender_name:
+                    sender_name = "玩家"
         except:
             pass
         opp_qq = None

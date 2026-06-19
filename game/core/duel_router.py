@@ -759,14 +759,14 @@ class DuelRouter:
             self.save_manager.save_duel_save(run.user_id, run)
             
             public_text = render_duel_battle_public(run)
-            dm1 = render_duel_battle_private(run)
-            
-            run.player, run.player2 = run.player2, run.player
-            run.user_id = opp_id
             dm2 = render_duel_battle_private(run)
             
             run.player, run.player2 = run.player2, run.player
             run.user_id = user_id
+            dm1 = render_duel_battle_private(run)
+            
+            run.player, run.player2 = run.player2, run.player
+            run.user_id = opp_id
             
             public_text = self.engine._append_logs_to_res(run, public_text)
             dm1 = self.engine._append_logs_to_res(run, dm1)
