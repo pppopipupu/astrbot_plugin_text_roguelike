@@ -260,6 +260,83 @@ class DuelRouter:
             cname = ALL_DUEL_CARDS[cid_to_rem].name.replace('对决·', '')
             return f"✅ 成功从牌组【{active}】移除了 {actual_rem} 张 【{cname}】。", False
             
+        elif sub in ("export", "exp", "导出"):
+            name = data.get("active_deck")
+            if len(args) >= 2:
+                tgt = args[1].strip()
+                if tgt.isdigit():
+                    idx = int(tgt) - 1
+                    keys = list(decks.keys())
+                    if 0 <= idx < len(keys):
+                        name = keys[idx]
+                else:
+                    name = tgt
+            if not name or name not in decks:
+                return "❌ 未找到指定牌组或当前没有选中的活动牌组。", False
+            cards = decks[name]
+            import base64
+            import json
+            try:
+                payload = {"name": name, "cards": cards}
+                dumped = json.dumps(payload, ensure_ascii=False)
+                code = base64.b64encode(dumped.encode("utf-8")).decode("utf-8")
+                return f"✨ 牌组【{name}】导出成功！分享码如下（长按复制）：\n{code}\n\n可以使用以下指令导入：\n/rogue 对决 牌组 导入 <分享码> [新牌组名称]", False
+            except Exception as e:
+                return f"❌ 导出分享码失败: {str(e)}", False
+            
+        elif sub in ("import", "imp", "导入"):
+            if len(args) < 2:
+                return "❌ 请提供牌组分享码，例如：/rogue 对决 牌组 导入 <分享码> [自定义名称]", False
+            code = args[1].strip()
+            custom_name = args[2].strip() if len(args) >= 3 else None
+            import base64
+            import json
+            try:
+                decoded_bytes = base64.b64decode(code.encode("utf-8"))
+                dumped = decoded_bytes.decode("utf-8")
+                payload = json.loads(dumped)
+            except Exception as e:
+                return f"❌ 解析分享码失败，请检查分享码是否完整或正确: {str(e)}", False
+            
+            if not isinstance(payload, dict) or "name" not in payload or "cards" not in payload:
+                return "❌ 分享码格式不正确：解析后的数据结构无效。", False
+            
+            orig_name = payload["name"]
+            cards = payload["cards"]
+            if not isinstance(cards, list):
+                return "❌ 分享码卡牌列表数据格式错误。", False
+            
+            try:
+                from ..data.duel_card_data import DUEL_CARD_CONFIG
+            except ImportError:
+                from game.data.duel_card_data import DUEL_CARD_CONFIG
+                
+            for cid in cards:
+                if not isinstance(cid, str):
+                    return f"❌ 分享码中包含非法的卡牌ID类型: {type(cid)}", False
+                base_id = cid.rstrip("+")
+                if base_id not in DUEL_CARD_CONFIG:
+                    return f"❌ 分享码中包含未知的对决卡牌ID: {cid}，导入中止。", False
+            
+            target_name = custom_name if custom_name else orig_name
+            target_name = target_name.strip()
+            if not target_name:
+                target_name = "导入牌组"
+            
+            final_name = target_name
+            suffix = 0
+            while final_name in decks:
+                suffix += 1
+                final_name = f"{target_name}_导入{suffix}"
+            
+            decks[final_name] = cards
+            data["active_deck"] = final_name
+            self.save_manager.save_duel_decks(user_id, data)
+            
+            valid, reason = self.check_deck_validity(cards)
+            status_msg = "🟢 合法" if valid else f"❌ 不合法 ({reason})"
+            return f"✅ 成功导入牌组【{final_name}】（共 {len(cards)} 张卡）并设为当前活动牌组。\n卡组状态：{status_msg}", False
+            
         return "❌ 未知牌组管理子指令，请输入帮助指令获取教程。", False
 
     def render_duel_menu(self, user_id: str) -> str:
@@ -282,6 +359,8 @@ class DuelRouter:
             "👉 /rogue 对决 接受     -- 接受收到的对局邀请",
             "👉 /rogue 对决 拒绝     -- 拒绝收到的对局邀请",
             "👉 /rogue 对决 牌组     -- 查看或选择你的牌组",
+            "👉 /rogue 对决 牌组 导出 [序号/名称] -- 导出牌组为分享码",
+            "👉 /rogue 对决 牌组 导入 <分享码> [新名称] -- 导入牌组",
             "",
             "【局内指令（在你的回合）】",
             "👉 序号 / 使用 序号 [目标] -- 使用指定手牌。例如：1 或 使用 1 e1",

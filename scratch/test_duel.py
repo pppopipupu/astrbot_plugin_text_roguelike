@@ -906,5 +906,49 @@ class TestDuelSystem(unittest.TestCase):
         has_weak = any(b.id == "weak" for b in run.player2.minions["1"].buffs)
         self.assertTrue(has_weak)
 
+    def test_deck_share_code(self):
+        u1 = "user1"
+        u2 = "user2"
+        self.router.handle_deck_cmd(u1, ["创建", "sharedeck"])
+        self.router.handle_deck_cmd(u1, ["添加", "duel_warrior_strike", "4"])
+        self.router.handle_deck_cmd(u1, ["添加", "duel_warrior_defend", "2"])
+        
+        res, _ = self.router.handle_deck_cmd(u1, ["导出", "sharedeck"])
+        self.assertIn("导出成功", res)
+        lines = res.split("\n")
+        code = ""
+        for line in lines:
+            if not line.startswith("✨") and not line.startswith("可以使用") and not line.startswith("/rogue") and line.strip():
+                code = line.strip()
+                break
+        self.assertTrue(len(code) > 0)
+        
+        self.router.handle_deck_cmd(u2, ["创建", "temp"])
+        res_imp, _ = self.router.handle_deck_cmd(u2, ["导入", code])
+        self.assertIn("成功导入牌组", res_imp)
+        self.assertIn("sharedeck", res_imp)
+        
+        decks_u2 = self.save_manager.load_duel_decks(u2)["decks"]
+        self.assertIn("sharedeck", decks_u2)
+        self.assertEqual(len(decks_u2["sharedeck"]), 6)
+        
+        res_imp2, _ = self.router.handle_deck_cmd(u2, ["导入", code])
+        self.assertIn("sharedeck_导入1", res_imp2)
+        decks_u2_new = self.save_manager.load_duel_decks(u2)["decks"]
+        self.assertIn("sharedeck_导入1", decks_u2_new)
+        
+        res_imp_custom, _ = self.router.handle_deck_cmd(u2, ["导入", code, "my_custom_name"])
+        self.assertIn("my_custom_name", res_imp_custom)
+        
+        res_fail, _ = self.router.handle_deck_cmd(u2, ["导入", "invalid_base64_string_here_!!!"])
+        self.assertIn("解析分享码失败", res_fail)
+        
+        import base64
+        import json
+        bad_payload = json.dumps({"name": "bad", "cards": ["non_existent_card_id"]})
+        bad_code = base64.b64encode(bad_payload.encode("utf-8")).decode("utf-8")
+        res_fail_card, _ = self.router.handle_deck_cmd(u2, ["导入", bad_code])
+        self.assertIn("包含未知的对决卡牌ID", res_fail_card)
+
 if __name__ == "__main__":
     unittest.main()
