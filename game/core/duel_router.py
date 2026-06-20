@@ -2,10 +2,15 @@ import random
 import os
 import json
 import uuid
+import re
 from typing import Optional, Tuple
 from ..models.state import GameRun, PlayerState, MinionState, AmuletState, BuffState
 from .duel_engine import DuelEngine
 from ..renderer.duel_renderer import render_duel_battle_public, render_duel_battle_private
+
+from .duel.base import DuelCommandHandler, DuelActionHandler
+from .duel import commands
+from .duel import actions
 
 def clean_user_id(uid) -> str:
     if uid is None:
@@ -228,35 +233,6 @@ class DuelRouter:
             
         return "❌ 未知牌组管理子指令，请输入帮助指令获取教程。", False
 
-    def perform_invite(self, user_id: str, sender_name: str, target: str) -> Tuple[str, bool, Optional[str], Optional[str], Optional[str], Optional[str]]:
-        import re
-        opp_id = target.strip()
-        opp_id_match = re.search(r"qq=([^\s\]]+)", opp_id)
-        if opp_id_match:
-            opp_id = opp_id_match.group(1)
-        if opp_id.startswith("@"):
-            opp_id = opp_id[1:]
-            
-        if not opp_id:
-            return "❌ 未匹配到被邀请的对方用户 ID。", False, None, None, None, None
-            
-        opp_id_clean = clean_user_id(opp_id)
-        user_id_clean = clean_user_id(user_id)
-        if opp_id_clean == user_id_clean or opp_id_clean.split(":")[0] == user_id_clean.split(":")[0]:
-            return "❌ 不能与自己进行对决。", False, None, None, None, None
-            
-        _, my_deck = self.get_user_active_deck(user_id)
-        my_valid, my_err = self.check_deck_validity(my_deck)
-        if not my_valid:
-            return f"❌ 无法发起邀请：你的活动牌组不合法（{my_err}）。请先进行构筑并保证 25~50 张牌。", False, None, None, None, None
-            
-        self.pending_invites[user_id_clean] = opp_id_clean
-        self.pending_invites[user_id_clean + "_name"] = sender_name
-        self.pending_invites[user_id_clean + "_raw_target"] = opp_id
-        self.pending_invites[user_id_clean + "_raw_sender"] = user_id
-        
-        return f"⚔️ 玩家【{sender_name}】向你发起了 TCG 卡牌对决！请输入 /rogue 对决 接受 (或 accept) 以开始对战！", False, opp_id, f"⚔️ 【{sender_name}】向你发起了 TCG 卡牌对决！输入 /rogue 对决 接受 开始对局！", None, None
-
     def handle_duel_cmd(self, user_id: str, sender_name: str, args: list) -> Tuple[str, bool, Optional[str], Optional[str], Optional[str], Optional[str]]:
         if not args:
             return "❌ 请提供对决子指令或 At 目标进行对决邀请。", False, None, None, None, None
@@ -273,158 +249,18 @@ class DuelRouter:
         sub = args[0]
         sub_lower = sub.lower()
         
-        if sub_lower in ("帮助", "help", "hp"):
-            help_text = (
-                "━━━━━━━━━━━━━━━━━━━━\n"
-                "⚔️ 【对决模式 (Duel) 指令帮助手册】\n"
-                "对决模式是完全独立于肉鸽模式的双人 TCG 卡牌对决系统。\n\n"
-                "💡 [局外/系统指令] (前缀支持 .duel 或 /duel)：\n"
-                "• 发起对决：.duel @对方 或者是 .duel 邀请 <目标ID/At> (或 invite/iv)\n"
-                "• 接受对决：.duel 接受 (或 accept)\n"
-                "• 开启/关闭个人免前缀对决模式：.duel 模式 (或 mode)\n"
-                "• 直接认输：.duel 放弃 (或 abandon)\n"
-                "• 牌组管理：.duel 牌组 (或 deck/dk) <子指令>\n"
-                "  - 创建牌组：创建 <名称> (或 create)\n"
-                "  - 选择牌组：选择 <序号/名称> (或 select)\n"
-                "  - 牌组详情：详情 (或 info)\n"
-                "  - 添加卡牌：添加 <卡牌名> [数量] (或 add)\n"
-                "  - 移除卡牌：移除 <详情序号> [数量] (或 remove)\n\n"
-                "⚔️ [局内对局动作] (仅在你的回合生效，可用简写)：\n"
-                "• 查看状态：.duel 状态 (或 status/s/查看/overview)\n"
-                "• 使用卡牌：.duel 使用 <手牌序号> [目标格子] (或 play/use/p)\n"
-                "  (注：物理或法术伤害牌默认只能以敌方随从格子 e2-e7 为目标，有 face_target 词条 of 直伤卡方可打领主 e1)\n"
-                "• 随从攻击：.duel 随从 <我方格子> [攻击] [敌方格子] (或 minion/atk/m)\n"
-                "  (注：进场首回合随从无法立即攻击，突进/冲锋词条除外，未指定目标默认打敌方第一个存活随从/领主)\n"
-                "• 进化卡牌：.duel 进化 <我方格子/手牌序号> (或 evolve/ev)\n"
-                "  (注：第 3 回合起解禁，每回合可进化一次，随从生命补满且攻血+2，护符进化不减吟唱)\n"
-                "• 使用幸运币：.duel 幸运币 (或 coin/cn)\n"
-                "  (注：仅后手机会获得 2 个幸运币，使用不占手牌，本回合动作点 A+1)\n"
-                "• 结束回合：.duel 结束 (或 end/结束回合/e)\n"
-                "━━━━━━━━━━━━━━━━━━━━"
-            )
-            return help_text, False, None, None, None, None
+        handler = DuelCommandHandler.registry.get(sub_lower)
+        if handler:
+            return handler.execute(self, user_id, sender_name, args)
             
-        elif sub_lower in ("牌组", "deck", "dk"):
-            res, term = self.handle_deck_cmd(user_id, args[1:])
-            return res, term, None, None, None, None
-            
-        elif sub_lower in ("接受", "accept"):
-            invite_sender_clean = None
-            cur_user_clean = clean_user_id(user_id)
-            for sender_clean, target_clean in list(self.pending_invites.items()):
-                if sender_clean.endswith("_name") or sender_clean.endswith("_raw_target") or sender_clean.endswith("_raw_sender"):
-                    continue
-                tc_part = target_clean.split(":")[0]
-                cc_part = cur_user_clean.split(":")[0]
-                if target_clean == cur_user_clean or tc_part == cc_part:
-                    invite_sender_clean = sender_clean
-                    break
-            if not invite_sender_clean:
-                return "❌ 你当前没有收到任何未处理的对决邀请。", False, None, None, None, None
+        if sub.startswith("[At:") or sub.startswith("@"):
+            inv_handler = DuelCommandHandler.registry.get("邀请")
+            if inv_handler:
+                return inv_handler.execute(self, user_id, sender_name, ["邀请", sub])
                 
-            opp_id = self.pending_invites[invite_sender_clean + "_raw_sender"]
-            raw_target_id = self.pending_invites[invite_sender_clean + "_raw_target"]
-            p1_name = self.pending_invites.get(invite_sender_clean + "_name", "玩家一")
-            
-            del self.pending_invites[invite_sender_clean]
-            del self.pending_invites[invite_sender_clean + "_name"]
-            del self.pending_invites[invite_sender_clean + "_raw_sender"]
-            del self.pending_invites[invite_sender_clean + "_raw_target"]
-            
-            p1_active, p1_deck = self.get_user_active_deck(opp_id)
-            p2_active, p2_deck = self.get_user_active_deck(raw_target_id)
-            
-            p1_valid, p1_err = self.check_deck_validity(p1_deck)
-            p2_valid, p2_err = self.check_deck_validity(p2_deck)
-            
-            if not p1_valid:
-                return f"❌ 无法开始：发起方牌组不合法（{p1_err}）。", False, None, None, None, None
-            if not p2_valid:
-                return f"❌ 无法开始：你的活动牌组不合法（{p2_err}）。请进行构筑并保持 25~50 张牌。", False, None, None, None, None
-                
-            game_id = str(uuid.uuid4())[:8]
-            
-            p1_state = PlayerState(hp=200, max_hp=200, shield=0, gold=0, stage=1, deck=p1_deck, name=p1_name)
-            p2_state = PlayerState(hp=200, max_hp=200, shield=0, gold=0, stage=1, deck=p2_deck, name=sender_name)
-            
-            run = GameRun(
-                user_id=opp_id,
-                node_type="duel",
-                player=p1_state,
-                player2=p2_state,
-                node_data={
-                    "player1_id": opp_id,
-                    "player2_id": raw_target_id,
-                    "player1_name": p1_name,
-                    "player2_name": sender_name
-                }
-            )
-            
-            self.engine.init_duel(run)
-            self.save_manager.bind_duel_game(opp_id, raw_target_id, game_id)
-            self.save_manager.save_duel_save(opp_id, run)
-            
-            public_text = render_duel_battle_public(run)
-            dm1 = render_duel_battle_private(run)
-            
-            run.player, run.player2 = run.player2, run.player
-            run.user_id = raw_target_id
-            dm2 = render_duel_battle_private(run)
-            
-            run.player, run.player2 = run.player2, run.player
-            run.user_id = opp_id
-            
-            return public_text, False, opp_id, dm1, raw_target_id, dm2
-            
-        elif sub_lower in ("放弃", "abandon", "confirm"):
-            game_id = self.save_manager.get_duel_game_id(user_id)
-            if not game_id:
-                return "❌ 你当前不在任何对局中。", False, None, None, None, None
-                
-            run = self.save_manager.load_duel_save(user_id)
-            if not run:
-                return "❌ 未找到对应对战存档。", False, None, None, None, None
-                
-            p1_id = run.node_data["player1_id"]
-            p2_id = run.node_data["player2_id"]
-            p1_name = run.node_data["player1_name"]
-            p2_name = run.node_data["player2_name"]
-            
-            opp_id = p2_id if user_id == p1_id else p1_id
-            opp_name = p2_name if user_id == p1_id else p1_name
-            my_name = p1_name if user_id == p1_id else p2_name
-            
-            self.save_manager.delete_duel_save(user_id)
-            
-            opp_stats = self.save_manager.load_stats(opp_id)
-            opp_stats.gp += 2000
-            self.save_manager.save_stats(opp_id, opp_stats)
-            
-            res_text = f"🏳️ 玩家【{my_name}】直接认输了！对决结束，玩家【{opp_name}】获得了最终胜利！获得 2000 GP！"
-            return res_text, True, opp_id, res_text, user_id, "🏳️ 你已认输，本局对战结束。"
-            
-        elif sub_lower in ("模式", "mode"):
-            stats = self.save_manager.load_stats(user_id)
-            stats.duel_mode = not stats.duel_mode
-            if stats.duel_mode:
-                stats.rogue_mode = False
-            self.save_manager.save_stats(user_id, stats)
-            status_str = "开启" if stats.duel_mode else "关闭"
-            return f"✨ 免前缀对决模式已{status_str}！此设置仅对你个人生效。", False, None, None, None, None
-            
-        elif sub_lower in ("邀请", "invite", "iv"):
-            if len(args) < 2:
-                return "❌ 请指定要邀请的对方用户 ID，例如：/rogue 对决 邀请 @玩家", False, None, None, None, None
-            target = args[1]
-            return self.perform_invite(user_id, sender_name, target)
-            
-        else:
-            if sub.startswith("[At:") or sub.startswith("@"):
-                return self.perform_invite(user_id, sender_name, sub)
-            return "❌ 未知的对决指令，请输入帮助指令获取教程。", False, None, None, None, None
+        return "❌ 未知的对决指令，请输入帮助指令获取教程。", False, None, None, None, None
 
     def route_in_game_action(self, run: GameRun, user_id: str, sender_name: str, args: list) -> Tuple[str, bool, Optional[str], Optional[str], Optional[str], Optional[str]]:
-        current_turn_id = run.node_data.get("current_turn_id")
         p1_id = run.node_data["player1_id"]
         p2_id = run.node_data["player2_id"]
         opp_id = p2_id if user_id == p1_id else p1_id
@@ -490,396 +326,97 @@ class DuelRouter:
         return self._route_single_action(run, user_id, sender_name, args)
 
     def _route_single_action(self, run: GameRun, user_id: str, sender_name: str, args: list) -> Tuple[str, bool, Optional[str], Optional[str], Optional[str], Optional[str]]:
-        current_turn_id = run.node_data.get("current_turn_id")
-        p1_id = run.node_data["player1_id"]
-        p2_id = run.node_data["player2_id"]
-        opp_id = p2_id if user_id == p1_id else p1_id
-        
         if args[0].isdigit():
             args = ["使用"] + args
             
         cmd = args[0].lower()
-        
-        if cmd in ("使用", "use", "u", "play", "p"):
-            if user_id != current_turn_id:
-                return "❌ 当前是对方的回合，请耐心等待。", False, None, None, None, None
-            if len(args) < 2:
-                return "❌ 请输入要使用的手牌序号，例如：/rogue 使用 1", False, None, None, None, None
-                
-            tgt_idx_str = args[1]
-            if not tgt_idx_str.isdigit():
-                return "❌ 请提供合法的数字序号。", False, None, None, None, None
-                
-            idx = int(tgt_idx_str) - 1
-            p = run.player
-            if idx < 0 or idx >= len(p.hand):
-                return "❌ 手牌序号超出范围。", False, None, None, None, None
-                
-            cid = p.hand[idx]
-            from ..entities.cards.duel import ALL_DUEL_CARDS
-            card = ALL_DUEL_CARDS.get(cid)
-            if not card:
-                return "❌ 未找到对应卡牌实体。", False, None, None, None, None
-                
-            try:
-                from ..data.duel_card_data import DUEL_CARD_CONFIG
-            except ImportError:
-                from game.data.duel_card_data import DUEL_CARD_CONFIG
-            cfg = DUEL_CARD_CONFIG.get(card.id, {})
-            cost_a = card.cost_a
-            cost_ba = card.cost_ba
-            
-            x_cost_a = False
-            x_cost_ba = False
-            
-            if cost_a == -1:
-                cost_a = p.actions
-                x_cost_a = True
-            if cost_ba == -1:
-                cost_ba = p.bonus_actions
-                x_cost_ba = True
-                
-            if p.actions < cost_a or p.bonus_actions < cost_ba:
-                return f"❌ 动作点不足，该牌需要 {card.cost_a}A {card.cost_ba}BA，你当前有 {p.actions}A {p.bonus_actions}BA。", False, None, None, None, None
-                
-            target = None
-            if len(args) >= 3:
-                target = args[2].lower()
-            else:
-                is_damage = ("base_dmg" in cfg or "damage" in cfg or "damage_type" in cfg)
-                if is_damage and card.type == "spell":
-                    for i in range(1, 7):
-                        if str(i) in run.player2.minions:
-                            target = f"e{i+1}"
-                            break
-                    if not target:
-                        if cfg.get("face_target", True):
-                            target = "e1"
-                        else:
-                            return "❌ 敌方无随从，且该卡牌无法以领主为目标！", False, None, None, None, None
-                            
-            if target:
-                if target == "0" or target == "e0":
-                    target = "e1"
-                elif target == "p":
-                    target = "p0"
-                elif target.isdigit():
-                    target = f"e{target}"
-                    
-            if target and target.startswith("e"):
-                is_damage = ("base_dmg" in cfg or "damage" in cfg or "damage_type" in cfg)
-                if is_damage and not cfg.get("face_target", True) and target == "e1":
-                    return "❌ 该卡牌只能以随从为目标，无法以敌方领主为目标。", False, None, None, None, None
-                    
-            if x_cost_a:
-                run.node_data["last_x_cost_a"] = cost_a
-            if x_cost_ba:
-                run.node_data["last_x_cost_ba"] = cost_ba
-                
-            p.actions -= cost_a
-            p.bonus_actions -= cost_ba
-            p.hand.pop(idx)
-            
-            from ..models.events import CardPlayEvent
-            play_evt = CardPlayEvent(run, card, target, cost_a, cost_ba)
-            self.engine.event_bus.dispatch(play_evt)
-            
-            err_msg = self.engine._execute_card_effect(run, card, target)
-            if err_msg:
-                p.hand.insert(idx, cid)
-                p.actions += cost_a
-                p.bonus_actions += cost_ba
-                return err_msg, False, None, None, None, None
-                
-            from ..models.events import CardExhaustEvent
-            if card.type in ("minion", "amulet"):
-                self.engine.event_bus.dispatch(CardExhaustEvent(run, cid, "played"))
-            elif card.exhaust:
-                p.exhaust_pile.append(cid)
-                self.engine.event_bus.dispatch(CardExhaustEvent(run, cid, "played"))
-            else:
-                p.discard_pile.append(cid)
-            
-            played_count = run.node_data.get("cards_played_this_turn", 0)
-            from ..models.events import CardPlayedEvent
-            self.engine.event_bus.dispatch(CardPlayedEvent(run, card, target, ""))
-            run.node_data["cards_played_this_turn"] = played_count + 1
-            
-            if run.player2.hp <= 0:
-                self.save_manager.delete_duel_save(user_id)
-                my_stats = self.save_manager.load_stats(user_id)
-                my_stats.gp += 2000
-                self.save_manager.save_stats(user_id, my_stats)
-                win_text = f"🏆 恭喜玩家【{sender_name}】获得了最终胜利！对方领主生命值已归零！获得 2000 GP！"
-                return win_text, True, opp_id, win_text, user_id, "☠️ 你的生命值已归零，你输了。"
-                
-            self.save_manager.save_duel_save(user_id, run)
-            
-            public_text = render_duel_battle_public(run)
-            dm1 = render_duel_battle_private(run)
-            
-            run.player, run.player2 = run.player2, run.player
-            run.user_id = opp_id
-            dm2 = render_duel_battle_private(run)
-            
-            run.player, run.player2 = run.player2, run.player
-            run.user_id = user_id
-            
-            public_text = self.engine._append_logs_to_res(run, public_text)
-            dm1 = self.engine._append_logs_to_res(run, dm1)
-            dm2 = self.engine._append_logs_to_res(run, dm2)
-            
-            use_tip = f"📢 玩家【{sender_name}】打出了卡牌【{card.name.replace('对决·', '')}】！"
-            public_text = use_tip + "\n" + public_text
-            
-            return public_text, False, user_id, dm1, opp_id, dm2
-
-        elif cmd in ("随从", "minion", "m", "attack", "atk", "sk", "skill"):
-            if user_id != current_turn_id:
-                return "❌ 当前是对方的回合，请耐心等待。", False, None, None, None, None
-            if len(args) < 2:
-                return "❌ 请输入我方随从格子序号，例如：/rogue 随从 1 攻击 e1", False, None, None, None, None
-                
-            my_grid_raw = args[1]
-            p = run.player
-            
-            if my_grid_raw in ("all", "所有", "*"):
-                grids = sorted(list(p.minions.keys()))
-            else:
-                grids = []
-                for p_g in my_grid_raw.split(','):
-                    g = p_g.strip().replace("p", "")
-                    if g in p.minions:
-                        grids.append(g)
-            
-            if not grids:
-                return f"❌ 找不到我方随从格子 [{my_grid_raw}]。", False, None, None, None, None
-                
-            action = "攻击"
-            opp_grid = None
-            if len(args) > 2:
-                if args[2].lower() in ("攻击", "a", "attack"):
-                    action = "攻击"
-                    if len(args) > 3:
-                        opp_grid = args[3].lower()
-                elif args[2].lower() in ("技能", "s", "skill", "sk"):
-                    action = "技能"
-                else:
-                    action = "攻击"
-                    opp_grid = args[2].lower()
-            
-            results = []
-            for g in grids:
-                if run.player2.hp <= 0:
-                    break
-                
-                m = p.minions[g]
-                stunned = any(b.id == "stun" for b in m.buffs)
-                if stunned:
-                    results.append(f"❌ 随从【{m.name}】处于眩晕状态，无法行动。")
-                    continue
-                    
-                if action == "攻击":
-                    res = self.engine.minion_attack(run, g, opp_grid)
-                    if not res.startswith("❌"):
-                        target_name = "未知"
-                        if opp_grid == "e1" or opp_grid is None:
-                            p1_id = run.node_data["player1_id"]
-                            target_name = run.node_data.get("player2_name" if run.user_id == p1_id else "player1_name", "对手")
-                        elif opp_grid.startswith("e") and len(opp_grid) > 1:
-                            try:
-                                opp_idx = int(opp_grid[1:]) - 1
-                                opp_grid_clean = str(opp_idx)
-                                if opp_grid_clean in run.player2.minions:
-                                    target_name = run.player2.minions[opp_grid_clean].name
-                            except ValueError:
-                                pass
-                        atk_tip = f"📢 玩家【{sender_name}】指挥随从【{m.name.replace('+', '').replace('对决·', '')}】攻击了【{target_name.replace('+', '')}】！"
-                        res = atk_tip + "\n" + res
-                    results.append(res)
-                elif action == "技能":
-                    skill_idx = 1
-                    target = None
-                    if len(args) > 3:
-                        try:
-                            if args[2].lower() in ("技能", "s", "skill", "sk"):
-                                skill_idx = int(args[3])
-                                if len(args) > 4:
-                                    target = args[4].lower()
-                            else:
-                                skill_idx = int(args[2])
-                                if len(args) > 3:
-                                    target = args[3].lower()
-                        except ValueError:
-                            if args[2].lower() in ("技能", "s", "skill", "sk"):
-                                target = args[3].lower()
-                            else:
-                                target = args[2].lower()
-                    res = self.engine.minion_skill(run, g, skill_idx, target)
-                    results.append(res)
-            
-            if run.player2.hp <= 0:
-                self.save_manager.delete_duel_save(user_id)
-                my_stats = self.save_manager.load_stats(user_id)
-                my_stats.gp += 2000
-                self.save_manager.save_stats(user_id, my_stats)
-                win_text = f"🏆 恭喜玩家【{sender_name}】获得了最终胜利！对方领主生命值已归零！获得 2000 GP！"
-                return win_text, True, opp_id, win_text, user_id, "☠️ 你的生命值已归零，你输了。"
-                
-            self.save_manager.save_duel_save(user_id, run)
-            
-            public_text = render_duel_battle_public(run)
-            dm1 = render_duel_battle_private(run)
-            
-            run.player, run.player2 = run.player2, run.player
-            run.user_id = opp_id
-            dm2 = render_duel_battle_private(run)
-            
-            run.player, run.player2 = run.player2, run.player
-            run.user_id = user_id
-            
-            public_text = self.engine._append_logs_to_res(run, public_text)
-            dm1 = self.engine._append_logs_to_res(run, dm1)
-            dm2 = self.engine._append_logs_to_res(run, dm2)
-            
-            res_combined = "\n".join(results)
-            public_text = res_combined + "\n" + public_text
-            
-            return public_text, False, user_id, dm1, opp_id, dm2
-
-        elif cmd in ("幸运币", "coin", "cn"):
-            res = self.engine.use_coin(run, user_id)
-            if res.startswith("❌"):
-                return res, False, None, None, None, None
-                
-            self.save_manager.save_duel_save(user_id, run)
-            
-            public_text = render_duel_battle_public(run)
-            dm1 = render_duel_battle_private(run)
-            
-            run.player, run.player2 = run.player2, run.player
-            run.user_id = opp_id
-            dm2 = render_duel_battle_private(run)
-            
-            run.player, run.player2 = run.player2, run.player
-            run.user_id = user_id
-            
-            public_text = self.engine._append_logs_to_res(run, public_text)
-            dm1 = self.engine._append_logs_to_res(run, dm1)
-            dm2 = self.engine._append_logs_to_res(run, dm2)
-            
-            coin_tip = f"📢 玩家【{sender_name}】使用了幸运币，获得了 1 点动作点！"
-            public_text = coin_tip + "\n" + public_text
-            
-            return public_text, False, user_id, dm1, opp_id, dm2
-
-        elif cmd in ("进化", "evolve", "ev"):
-            if user_id != current_turn_id:
-                return "❌ 当前是对方的回合，请耐心等待。", False, None, None, None, None
-            if len(args) < 2:
-                return "❌ 请输入进化目标手牌序号或格子，例如：/rogue 进化 1 或 /rogue 进化 p1", False, None, None, None, None
-                
-            target = args[1]
-            evolve_target_name = "未知"
-            p = run.player
-            if target.isdigit():
-                idx = int(target) - 1
-                if 0 <= idx < len(p.hand):
-                    from ..entities.cards.duel import ALL_DUEL_CARDS
-                    cid = p.hand[idx]
-                    card = ALL_DUEL_CARDS.get(cid)
-                    if card:
-                        evolve_target_name = f"手牌【{card.name.replace('对决·', '')}】"
-            elif target.startswith("p") and len(target) > 1:
-                grid = target[1:]
-                if grid in p.minions:
-                    evolve_target_name = f"随从【{p.minions[grid].name}】"
-                elif grid in p.amulets:
-                    evolve_target_name = f"护符【{p.amulets[grid].name}】"
-                    
-            res = self.engine.evolve_card(run, user_id, target)
-            if res.startswith("❌"):
-                return res, False, None, None, None, None
-                
-            self.save_manager.save_duel_save(user_id, run)
-            
-            public_text = render_duel_battle_public(run)
-            dm1 = render_duel_battle_private(run)
-            
-            run.player, run.player2 = run.player2, run.player
-            run.user_id = opp_id
-            dm2 = render_duel_battle_private(run)
-            
-            run.player, run.player2 = run.player2, run.player
-            run.user_id = user_id
-            
-            public_text = self.engine._append_logs_to_res(run, public_text)
-            dm1 = self.engine._append_logs_to_res(run, dm1)
-            dm2 = self.engine._append_logs_to_res(run, dm2)
-            
-            evolve_tip = f"📢 玩家【{sender_name}】将{evolve_target_name.replace('+', '').replace('对决·', '')}进化了！"
-            public_text = evolve_tip + "\n" + public_text
-            
-            return public_text, False, user_id, dm1, opp_id, dm2
-
-        elif cmd in ("结束", "end", "endturn", "结束回合", "e"):
-            if user_id != current_turn_id:
-                return "❌ 现在不是你的回合，无法结束回合。", False, None, None, None, None
-                
-            self.engine.end_turn(run)
-            if run.player2.hp <= 0:
-                self.save_manager.delete_duel_save(user_id)
-                my_stats = self.save_manager.load_stats(user_id)
-                my_stats.gp += 2000
-                self.save_manager.save_stats(user_id, my_stats)
-                win_text = f"🏆 恭喜玩家【{sender_name}】获得了最终胜利！对方领主生命值已归零！获得 2000 GP！"
-                return win_text, True, opp_id, win_text, user_id, "☠️ 你的生命值已归零，你输了。"
-            if run.player.hp <= 0:
-                self.save_manager.delete_duel_save(user_id)
-                opp_stats = self.save_manager.load_stats(opp_id)
-                opp_stats.gp += 2000
-                self.save_manager.save_stats(opp_id, opp_stats)
-                win_text = f"🏆 恭喜玩家【{run.node_data['player2_name' if run.user_id == p1_id else 'player1_name']}】获得了最终胜利！对方领主生命值已归零！获得 2000 GP！"
-                return win_text, True, opp_id, win_text, user_id, "☠️ 你的生命值已归零，你输了。"
-            self.save_manager.save_duel_save(run.user_id, run)
-            
-            public_text = render_duel_battle_public(run)
-            dm2 = render_duel_battle_private(run)
-            
-            run.player, run.player2 = run.player2, run.player
-            run.user_id = user_id
-            dm1 = render_duel_battle_private(run)
-            
-            run.player, run.player2 = run.player2, run.player
-            run.user_id = opp_id
-            
-            public_text = self.engine._append_logs_to_res(run, public_text)
-            dm1 = self.engine._append_logs_to_res(run, dm1)
-            dm2 = self.engine._append_logs_to_res(run, dm2)
-            
-            end_tip = f"📢 玩家【{sender_name}】结束了回合！"
-            public_text = end_tip + "\n" + public_text
-            
-            return public_text, False, user_id, dm1, opp_id, dm2
-
-        elif cmd in ("状态", "status", "s", "查看", "overview"):
-            public_text = render_duel_battle_public(run)
-            dm1 = render_duel_battle_private(run)
-            
-            run.player, run.player2 = run.player2, run.player
-            run.user_id = opp_id
-            dm2 = render_duel_battle_private(run)
-            
-            run.player, run.player2 = run.player2, run.player
-            run.user_id = user_id
-            
-            public_text = self.engine._append_logs_to_res(run, public_text)
-            dm1 = self.engine._append_logs_to_res(run, dm1)
-            dm2 = self.engine._append_logs_to_res(run, dm2)
-            
-            return public_text, False, user_id, dm1, opp_id, dm2
+        handler = DuelActionHandler.registry.get(cmd)
+        if handler:
+            return handler.execute(self, run, user_id, sender_name, args)
             
         return "❌ 未知动作指令。输入帮助指令可查看操作提示。", False, None, None, None, None
+
+    def _save_and_render_state(self, run: GameRun, user_id: str, tip: str = "") -> Tuple[str, bool, Optional[str], Optional[str], Optional[str], Optional[str]]:
+        self.save_manager.save_duel_save(run.user_id, run)
+        
+        p1_id = run.node_data["player1_id"]
+        p2_id = run.node_data["player2_id"]
+        
+        current_acting_id = run.user_id
+        
+        if current_acting_id == p1_id:
+            dm1 = render_duel_battle_private(run)
+            
+            run.player, run.player2 = run.player2, run.player
+            run.user_id = p2_id
+            dm2 = render_duel_battle_private(run)
+            
+            run.player, run.player2 = run.player2, run.player
+            run.user_id = p1_id
+        else:
+            dm2 = render_duel_battle_private(run)
+            
+            run.player, run.player2 = run.player2, run.player
+            run.user_id = p1_id
+            dm1 = render_duel_battle_private(run)
+            
+            run.player, run.player2 = run.player2, run.player
+            run.user_id = p2_id
+            
+        public_text = render_duel_battle_public(run)
+        public_text = self.engine._append_logs_to_res(run, public_text)
+        dm1 = self.engine._append_logs_to_res(run, dm1)
+        dm2 = self.engine._append_logs_to_res(run, dm2)
+        
+        if tip:
+            public_text = tip + "\n" + public_text
+            
+        return public_text, False, p1_id, dm1, p2_id, dm2
+
+    def _check_victory(self, run: GameRun, user_id: str, sender_name: str) -> Optional[Tuple[str, bool, Optional[str], Optional[str], Optional[str], Optional[str]]]:
+        p1_id = run.node_data["player1_id"]
+        p2_id = run.node_data["player2_id"]
+        p1_name = run.node_data["player1_name"]
+        p2_name = run.node_data["player2_name"]
+        
+        acting_id = run.user_id
+        waiting_id = p2_id if acting_id == p1_id else p1_id
+        
+        if run.player2.hp <= 0:
+            self.save_manager.delete_duel_save(user_id)
+            win_stats = self.save_manager.load_stats(acting_id)
+            win_stats.gp += 2000
+            self.save_manager.save_stats(acting_id, win_stats)
+            win_text = f"🏆 恭喜玩家【{sender_name}】获得了最终胜利！对方领主生命值已归零！获得 2000 GP！"
+            return win_text, True, acting_id, win_text, waiting_id, "☠️ 你的生命值已归零，你输了。"
+            
+        if run.player.hp <= 0:
+            self.save_manager.delete_duel_save(user_id)
+            win_stats = self.save_manager.load_stats(waiting_id)
+            win_stats.gp += 2000
+            self.save_manager.save_stats(waiting_id, win_stats)
+            win_name = p2_name if acting_id == p1_id else p1_name
+            win_text = f"🏆 恭喜玩家【{win_name}】获得了最终胜利！对方领主生命值已归零！获得 2000 GP！"
+            return win_text, True, waiting_id, win_text, acting_id, "☠️ 你的生命值已归零，你输了。"
+            
+        return None
+
+    def _check_time_stop_interruption(self, run: GameRun, initial_opp_hp: int, initial_opp_shield: int, initial_minion_status: dict) -> bool:
+        if run.node_data.get("extra_turns_left", 0) <= 0:
+            return False
+        opp = run.player2
+        damaged = (opp.hp < initial_opp_hp) or (opp.shield < initial_opp_shield)
+        if not damaged:
+            for gid, ohp in initial_minion_status.items():
+                if gid in opp.minions:
+                    cur_m = opp.minions[gid]
+                    if cur_m.hp < ohp:
+                        damaged = True
+                        break
+                else:
+                    damaged = True
+                    break
+        return damaged
 
     def _handle_query_cmd(self, user_id: str, sender_name: str, args: list) -> Tuple[str, bool, Optional[str], Optional[str], Optional[str], Optional[str]]:
         if not args:
@@ -902,7 +439,6 @@ class DuelRouter:
                 sub_query = " ".join(args[1:]).strip().lower()
             else:
                 if run:
-                    from ..renderer.duel_renderer import render_duel_battle_public, render_duel_battle_private
                     public_text = render_duel_battle_public(run)
                     dm1 = render_duel_battle_private(run)
                     p1_id = run.node_data["player1_id"]

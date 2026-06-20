@@ -621,6 +621,12 @@ class ManaLeakBuff(BuffImpl):
                 if buff_state in event.run.player.buffs:
                     event.run.player.buffs.remove(buff_state)
 
+class WishPowerBuff(BuffImpl):
+    def on_damage_calculate(self, event, buff_state, entity):
+        if entity == event.run.player and event.card.type == "spell":
+            val = 6 if self.upgraded else 4
+            event.modified_damage += val
+
 @register_buff("commander_aurora_emperor")
 class AuroraEmperorBuff(BuffImpl):
     def on_damage_calculate(self, event, buff_state, entity):
@@ -675,6 +681,8 @@ def get_buff_impl(buff_id: str, stacks: int, stacks2: Optional[int] = None) -> O
         inst.upgraded = upgraded
         return inst
     cls = BUFF_CLASS_REGISTRY.get(buff_id)
+    if not cls and isinstance(buff_id, str) and buff_id.endswith("_buff"):
+        cls = BUFF_CLASS_REGISTRY.get(buff_id[:-5])
     if cls:
         inst = cls(stacks)
         inst.stacks2 = stacks2

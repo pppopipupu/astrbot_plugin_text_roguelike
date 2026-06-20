@@ -318,16 +318,14 @@ class TestDuelSystem(unittest.TestCase):
         run = self.save_manager.load_duel_save(u1)
         self.assertIsNotNone(run)
         
-        run.player.minions["1"] = MinionState(
-            id="water_elemental",
-            name="寒冰元素",
-            hp=15,
-            max_hp=15,
-            atk=3,
-            actions=3,
-            bonus_actions=0,
-            attack_actions=1
-        )
+        run.player.hand.append("duel_water_elemental")
+        run.player.actions = 2
+        self.save_manager.save_duel_save(u1, run)
+        res, term, p1, dm1, p2, dm2 = self.router.route_in_game_action(run, u1, "张三", ["使用", str(len(run.player.hand)), "p1"])
+        self.assertIn("召唤了", res)
+        run = self.save_manager.load_duel_save(u1)
+        m = run.player.minions["1"]
+        m.actions = 3
         self.save_manager.save_duel_save(u1, run)
         
         res, term, p1, dm1, p2, dm2 = self.router.route_in_game_action(run, u1, "张三", ["m", "1", "sk", "1"])
@@ -458,39 +456,45 @@ class TestDuelSystem(unittest.TestCase):
         run = self.save_manager.load_duel_save(u1)
         self.assertEqual(run.player2.hp, initial_opp_hp - 6)
         
-        run.player.minions["1"] = MinionState(
-            id="commander_patrol_captain",
-            name="巡逻队长",
-            hp=10,
-            max_hp=20,
-            atk=4,
-            actions=3,
-            bonus_actions=1,
-            attack_actions=1
-        )
-        run.player.minions["2"] = MinionState(
-            id="officer_banner_bearer",
-            name="军旗手",
-            hp=10,
-            max_hp=15,
-            atk=2,
-            actions=3,
-            bonus_actions=1,
-            attack_actions=1
-        )
+        run.player.hand = ["duel_commander_patrol_captain", "duel_officer_banner_bearer"]
+        run.player.actions = 6
+        run.player.bonus_actions = 2
+        self.save_manager.save_duel_save(u1, run)
+        
+        res, term, p1, dm1, p2, dm2 = self.router.route_in_game_action(run, u1, "张三", ["使用", "1", "p1"])
+        self.assertIn("召唤了", res)
+        
+        run = self.save_manager.load_duel_save(u1)
+        res, term, p1, dm1, p2, dm2 = self.router.route_in_game_action(run, u1, "张三", ["使用", "1", "p2"])
+        self.assertIn("召唤了", res)
+        
+        run = self.save_manager.load_duel_save(u1)
+        run.player.minions.pop("2", None)
+        m1 = run.player.minions["1"]
+        m1.max_hp = 20
+        m1.hp = 10
+        m1.actions = 3
+        m1.bonus_actions = 1
+        
+        m2_grid = [k for k, v in run.player.minions.items() if v.id == "officer_banner_bearer"][0]
+        m2 = run.player.minions[m2_grid]
+        m2.max_hp = 15
+        m2.hp = 10
+        m2.actions = 3
+        m2.bonus_actions = 1
         self.save_manager.save_duel_save(u1, run)
         
         res, term, p1, dm1, p2, dm2 = self.router.route_in_game_action(run, u1, "张三", ["m", "1", "sk", "1"])
         self.assertIn("恢复了", res)
         run = self.save_manager.load_duel_save(u1)
         self.assertEqual(run.player.minions["1"].hp, 13)
-        self.assertEqual(run.player.minions["2"].hp, 13)
+        self.assertEqual(run.player.minions[m2_grid].hp, 13)
         self.assertEqual(run.player.shield, 3)
         
-        res, term, p1, dm1, p2, dm2 = self.router.route_in_game_action(run, u1, "张三", ["m", "2", "sk", "1"])
+        res, term, p1, dm1, p2, dm2 = self.router.route_in_game_action(run, u1, "张三", ["m", m2_grid, "sk", "1"])
         self.assertIn("激励了", res)
         run = self.save_manager.load_duel_save(u1)
-        self.assertEqual(run.player.minions["1"].atk, 6)
+        self.assertEqual(run.player.minions["1"].atk, 5)
 
     def test_duel_time_warp_unmined_gem_and_queries(self):
         u1 = "user_q_1"
@@ -579,6 +583,144 @@ class TestDuelSystem(unittest.TestCase):
         self.assertIn("已通过私聊发送给你", res)
         self.assertIsNotNone(dm1)
         self.assertIn("抽牌堆", dm1)
+
+    def test_duel_more_special_cards_and_buffs(self):
+        u1 = "user_sp_1"
+        u2 = "user_sp_2"
+        self.router.handle_deck_cmd(u1, ["创建", "p1deck"])
+        cards = ["duel_warrior_strike", "duel_warrior_defend", "duel_warrior_bash", "duel_iron_wave", "duel_warrior_anger", "duel_body_slam", "duel_fireball"]
+        for c in cards:
+            self.router.handle_deck_cmd(u1, ["添加", c, "4"])
+        self.router.handle_deck_cmd(u2, ["创建", "p2deck"])
+        for c in cards:
+            self.router.handle_deck_cmd(u2, ["添加", c, "4"])
+        
+        self.router.handle_duel_cmd(u1, "张三", [f"@{u2}"])
+        self.router.handle_duel_cmd(u2, "李四", ["接受"])
+        
+        run = self.save_manager.load_duel_save(u1)
+        self.assertIsNotNone(run)
+        
+        run.player.hand = ["duel_barricade"]
+        run.player.actions = 2
+        self.save_manager.save_duel_save(u1, run)
+        res, term, p1, dm1, p2, dm2 = self.router.route_in_game_action(run, u1, "张三", ["使用", "1", "p0"])
+        self.assertIn("缓冲", res)
+        
+        run = self.save_manager.load_duel_save(u1)
+        self.assertTrue(any(b.id == "buffer" for b in run.player.buffs))
+        
+        run.player.hand = ["duel_barricade", "duel_glacier_fortress"]
+        run.player.actions = 6
+        self.save_manager.save_duel_save(u1, run)
+        
+        self.router.route_in_game_action(run, u1, "张三", ["使用", "1", "p0"])
+        run = self.save_manager.load_duel_save(u1)
+        self.router.route_in_game_action(run, u1, "张三", ["使用", "1", "p0"])
+        
+        run = self.save_manager.load_duel_save(u1)
+        self.assertTrue(any(b.id == "barricade" for b in run.player.buffs))
+        self.assertTrue(any(b.id == "glacier_fortress_buff" for b in run.player.buffs))
+        
+        run.player.shield = 10
+        self.save_manager.save_duel_save(u1, run)
+        
+        self.router.route_in_game_action(run, u1, "张三", ["结束"])
+        run = self.save_manager.load_duel_save(u2)
+        self.router.route_in_game_action(run, u2, "李四", ["结束"])
+        
+        run = self.save_manager.load_duel_save(u1)
+        self.assertGreaterEqual(run.player.shield, 10)
+        
+        run.player.hand = ["duel_archmage_wish", "duel_demon_form"]
+        run.player.actions = 6
+        run.player.bonus_actions = 2
+        self.save_manager.save_duel_save(u1, run)
+        
+        self.router.route_in_game_action(run, u1, "张三", ["使用", "1", "p0"])
+        run = self.save_manager.load_duel_save(u1)
+        self.assertTrue(any(b.id == "wish_power" for b in run.player.buffs))
+        
+        self.router.route_in_game_action(run, u1, "张三", ["使用", "1", "p0"])
+        run = self.save_manager.load_duel_save(u1)
+        self.assertTrue(any(b.id == "demon_form" for b in run.player.buffs))
+        
+    def test_time_stop_mechanic(self):
+        u1 = "user1"
+        u2 = "user2"
+        self.router.handle_deck_cmd(u1, ["创建", "p1deck"])
+        for c in ["duel_warrior_strike", "duel_warrior_defend", "duel_warrior_bash", "duel_iron_wave", "duel_warrior_anger", "duel_body_slam", "duel_time_stop", "duel_fireball"]:
+            self.router.handle_deck_cmd(u1, ["添加", c, "4"])
+        self.router.handle_deck_cmd(u2, ["创建", "p2deck"])
+        for c in ["duel_warrior_strike", "duel_warrior_defend", "duel_warrior_bash", "duel_iron_wave", "duel_warrior_anger", "duel_body_slam", "duel_fireball"]:
+            self.router.handle_deck_cmd(u2, ["添加", c, "4"])
+            
+        self.router.handle_duel_cmd(u1, "张三", [f"@user2"])
+        self.router.handle_duel_cmd(u2, "李四", ["接受"])
+        
+        run = self.save_manager.load_duel_save(u1)
+        run.player.hand = ["duel_time_stop", "duel_warrior_strike", "duel_fireball"]
+        run.player.actions = 10
+        self.save_manager.save_duel_save(u1, run)
+        
+        res, term, p1, dm1, p2, dm2 = self.router.route_in_game_action(run, u1, "张三", ["使用", "1"])
+        self.assertIn("时间停止", res)
+        
+        run = self.save_manager.load_duel_save(u1)
+        self.assertEqual(run.node_data.get("extra_turns_left"), 3)
+        self.assertEqual(run.node_data.get("current_turn_id"), u1)
+        
+        res, term, p1, dm1, p2, dm2 = self.router.route_in_game_action(run, u1, "张三", ["结束"])
+        self.assertIn("额外回合进行中", res)
+        
+        run = self.save_manager.load_duel_save(u1)
+        self.assertEqual(run.node_data.get("extra_turns_left"), 2)
+        self.assertEqual(run.node_data.get("current_turn_id"), u1)
+        
+        run.player.actions = 5
+        self.save_manager.save_duel_save(u1, run)
+        
+        res, term, p1, dm1, p2, dm2 = self.router.route_in_game_action(run, u1, "张三", ["使用", "2", "e1"])
+        self.assertIn("提前结束", res)
+        
+        run = self.save_manager.load_duel_save(u2)
+        self.assertEqual(run.node_data.get("extra_turns_left"), 0)
+        self.assertEqual(run.node_data.get("current_turn_id"), u2)
+
+    def test_aoe_empty_grid_filtering(self):
+        u1 = "user1"
+        u2 = "user2"
+        self.router.handle_deck_cmd(u1, ["创建", "p1deck"])
+        for c in ["duel_warrior_strike", "duel_warrior_defend", "duel_warrior_bash", "duel_iron_wave", "duel_warrior_anger", "duel_body_slam", "duel_meteor_swarm", "duel_frost_nova"]:
+            self.router.handle_deck_cmd(u1, ["添加", c, "4"])
+        self.router.handle_deck_cmd(u2, ["创建", "p2deck"])
+        for c in ["duel_warrior_strike", "duel_warrior_defend", "duel_warrior_bash", "duel_iron_wave", "duel_warrior_anger", "duel_body_slam", "duel_fireball"]:
+            self.router.handle_deck_cmd(u2, ["添加", c, "4"])
+            
+        self.router.handle_duel_cmd(u1, "张三", [f"@user2"])
+        self.router.handle_duel_cmd(u2, "李四", ["接受"])
+        
+        run = self.save_manager.load_duel_save(u1)
+        run.player.hand = ["duel_meteor_swarm", "duel_frost_nova"]
+        run.player.actions = 10
+        
+        from game.models.state import MinionState
+        run.player2.minions["1"] = MinionState(id="water_elemental", name="水元素", hp=9999, max_hp=9999, atk=2, actions=1, bonus_actions=0)
+        self.save_manager.save_duel_save(u1, run)
+        
+        res, term, p1, dm1, p2, dm2 = self.router.route_in_game_action(run, u1, "张三", ["使用", "1"])
+        self.assertNotIn("【空】", res)
+        self.assertNotIn("对手", res)
+        self.assertIn("水元素", res)
+        
+        run = self.save_manager.load_duel_save(u1)
+        self.assertEqual(run.player2.hp, 200)
+        self.assertLess(run.player2.minions["1"].hp, 9999)
+        
+        res, term, p1, dm1, p2, dm2 = self.router.route_in_game_action(run, u1, "张三", ["使用", "1"])
+        self.assertNotIn("【空】", res)
+        self.assertNotIn("对手", res)
+        self.assertIn("水元素", res)
 
 if __name__ == "__main__":
     unittest.main()

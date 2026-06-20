@@ -2619,5 +2619,130 @@ class TestRoguePlugin(unittest.TestCase):
         res, term = router_minion._execute_sub_action("test_user", mgr.saved_run, ["m", "1", "skill", "e1"])
         self.assertTrue(mock_engine.skill_called)
 
+    def test_flow_more_special_cards_and_buffs(self):
+        class DummySaveManager:
+            def save_save(self, user_id, run):
+                pass
+        sm = DummySaveManager()
+        engine = BattleEngine(sm)
+        player = PlayerState(
+            hp=30,
+            max_hp=100,
+            shield=15,
+            actions=10,
+            bonus_actions=10,
+            deck=["barricade"],
+            hand=["barricade"],
+            draw_pile=["arcane_spark", "arcane_spark"],
+            discard_pile=[],
+            exhaust_pile=[],
+            graveyard=[],
+            amulets={},
+            minions={},
+            buffs=[],
+            gold=100,
+            stage=1
+        )
+        run = GameRun(
+            user_id="test_user_sp",
+            node_type="battle",
+            node_data={"cards_played_this_turn": 0},
+            player=player,
+            enemies=[EnemyState(name="地精", hp=9999, max_hp=9999, shield=0, actions=0, bonus_actions=0, max_actions=0, max_bonus_actions=0)]
+        )
+        engine.play_card(run, 1)
+        self.assertTrue(any(b.id == "buffer" for b in player.buffs))
+        self.assertTrue(any(b.id == "barricade" for b in player.buffs))
+        engine._damage_target(run, "p0", 10, damage_type="slash")
+        self.assertEqual(player.hp, 30)
+        self.assertFalse(any(b.id == "buffer" for b in player.buffs))
+        player.shield = 15
+        engine.end_turn(run)
+        self.assertEqual(player.shield, 15)
+        
+        player.hand = ["glacier_fortress"]
+        player.actions = 2
+        engine.play_card(run, 1)
+        self.assertEqual(player.shield, 35)
+        self.assertTrue(any(b.id == "glacier_fortress_buff" for b in player.buffs))
+        engine.end_turn(run)
+        self.assertEqual(player.shield, 39)
+        
+        player.hand = ["archmage_wish", "fire_bolt"]
+        player.actions = 4
+        player.bonus_actions = 4
+        engine.play_card(run, 1)
+        self.assertTrue(any(b.id == "wish_power" for b in player.buffs))
+        enemy = run.enemies[0]
+        engine.play_card(run, 1, "e1")
+        self.assertEqual(enemy.hp, 9992)
+        
+        player.hand = ["demon_form"]
+        player.actions = 2
+        engine.play_card(run, 1)
+        self.assertTrue(any(b.id == "demon_form" for b in player.buffs))
+        self.assertEqual(next(b for b in player.buffs if b.id == "demon_form").stacks, 3)
+        from game.models.events import TurnStartEvent
+        engine.event_bus.dispatch(TurnStartEvent(run, is_player=True))
+        self.assertTrue(any(b.id == "strength" for b in player.buffs))
+        self.assertEqual(next(b for b in player.buffs if b.id == "strength").stacks, 3)
+        
+        player.hand = ["time_warp", "arcane_spark"]
+        player.discard_pile = ["arcane_spark"]
+        player.actions = 2
+        engine.play_card(run, 1)
+        self.assertEqual(len(player.discard_pile), 0)
+        self.assertEqual(len(player.hand), 2)
+        
+        player.buffs = [BuffState(id="strength", name="力量", desc="", stacks=2)]
+        player.hand = ["break_limits"]
+        player.actions = 2
+        engine.play_card(run, 1)
+        self.assertEqual(next(b for b in player.buffs if b.id == "strength").stacks, 4)
+        
+        enemy.buffs = []
+        player.hand = ["abyss_collapse"]
+        player.actions = 2
+        engine.play_card(run, 1, "e1")
+        self.assertEqual(enemy.hp, 9968)
+        
+        engine._add_buff_to(enemy, "stun", "眩晕", "无法行动", 1)
+        player.hand = ["abyss_collapse"]
+        player.actions = 2
+        engine.play_card(run, 1, "e1")
+        self.assertEqual(enemy.hp, 9920)
+        
+        player.hand = ["demon_contract"]
+        player.actions = 2
+        player.bonus_actions = 1
+        engine.play_card(run, 1)
+        self.assertTrue(any(b.id == "demon_contract_buff" for b in player.buffs))
+        self.assertEqual(player.bonus_actions, 3)
+        
+        enemy.buffs = []
+        player.hand = ["frost_nova"]
+        player.actions = 2
+        engine.play_card(run, 1)
+        self.assertTrue(any(b.id == "stun" for b in enemy.buffs))
+        self.assertTrue(any(b.id == "minor_vulnerable_cold" for b in enemy.buffs))
+        
+        enemy.buffs = []
+        player.hand = ["abyss_erosion"]
+        player.actions = 2
+        engine.play_card(run, 1, "e1")
+        self.assertTrue(any(b.id == "void_weakness" for b in enemy.buffs))
+        
+        player.minions = {"1": MinionState(id="mercenary", name="雇佣兵", hp=10, max_hp=10, atk=4, actions=1, bonus_actions=0)}
+        player.shield = 0
+        player.hand = ["glacier_tempest"]
+        player.actions = 4
+        engine.play_card(run, 1)
+        self.assertEqual(player.shield, 6)
+        
+        player.hand = ["time_stop"]
+        player.actions = 2
+        engine.play_card(run, 1)
+        self.assertEqual(run.node_data["extra_turns_left"], 3)
+
 if __name__ == "__main__":
     unittest.main()
