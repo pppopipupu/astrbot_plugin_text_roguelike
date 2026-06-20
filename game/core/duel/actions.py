@@ -1,27 +1,27 @@
 from typing import Tuple, Optional
 from .base import DuelActionHandler
+from ...data.duel_template_data import DUEL_BROADCAST_TEMPLATES
 
 class PlayAction(DuelActionHandler, names=["使用", "use", "u", "play", "p"]):
     def execute(self, router, run, user_id: str, sender_name: str, args: list) -> Tuple[str, bool, Optional[str], Optional[str], Optional[str], Optional[str]]:
         current_turn_id = run.node_data.get("current_turn_id")
         p1_id = run.node_data["player1_id"]
         p2_id = run.node_data["player2_id"]
-        opp_id = p2_id if user_id == p1_id else p1_id
         
         if user_id != current_turn_id:
-            return "❌ 当前是对方的回合，请耐心等待。", False, None, None, None, None
+            return DUEL_BROADCAST_TEMPLATES["play_not_my_turn"], False, None, None, None, None
             
         if len(args) < 2:
-            return "❌ 请输入要使用的手牌序号，例如：/rogue 使用 1", False, None, None, None, None
+            return DUEL_BROADCAST_TEMPLATES["play_no_idx"], False, None, None, None, None
             
         tgt_idx_str = args[1]
         if not tgt_idx_str.isdigit():
-            return "❌ 请提供合法的数字序号。", False, None, None, None, None
+            return DUEL_BROADCAST_TEMPLATES["play_invalid_idx"], False, None, None, None, None
             
         idx = int(tgt_idx_str) - 1
         p = run.player
         if idx < 0 or idx >= len(p.hand):
-            return "❌ 手牌序号超出范围。", False, None, None, None, None
+            return DUEL_BROADCAST_TEMPLATES["play_out_of_range"], False, None, None, None, None
             
         cid = p.hand[idx]
         try:
@@ -33,7 +33,7 @@ class PlayAction(DuelActionHandler, names=["使用", "use", "u", "play", "p"]):
                 from game.entities.cards import ALL_CARDS as ALL_DUEL_CARDS
         card = ALL_DUEL_CARDS.get(cid)
         if not card:
-            return "❌ 未找到对应卡牌实体。", False, None, None, None, None
+            return DUEL_BROADCAST_TEMPLATES["play_no_card_entity"], False, None, None, None, None
             
         try:
             from ...data.duel_card_data import DUEL_CARD_CONFIG
@@ -59,7 +59,7 @@ class PlayAction(DuelActionHandler, names=["使用", "use", "u", "play", "p"]):
             x_cost_ba = True
             
         if p.actions < cost_a or p.bonus_actions < cost_ba:
-            return f"❌ 动作点不足，该牌需要 {card.cost_a}A {card.cost_ba}BA，你当前有 {p.actions}A {p.bonus_actions}BA。", False, None, None, None, None
+            return DUEL_BROADCAST_TEMPLATES["play_insufficient_actions"].format(cost_a=card.cost_a, cost_ba=card.cost_ba, actions=p.actions, bonus_actions=p.bonus_actions), False, None, None, None, None
             
         target = None
         if len(args) >= 3:
@@ -84,7 +84,7 @@ class PlayAction(DuelActionHandler, names=["使用", "use", "u", "play", "p"]):
         if target and target.startswith("e"):
             is_damage = ("base_dmg" in cfg or "damage" in cfg or "damage_type" in cfg)
             if is_damage and not cfg.get("face_target", True) and not cfg.get("aoe", False) and target == "e1":
-                return "❌ 该卡牌只能以随从为目标，无法以敌方领主为目标。", False, None, None, None, None
+                return DUEL_BROADCAST_TEMPLATES["play_minion_only_err"], False, None, None, None, None
                 
         if x_cost_a:
             run.node_data["last_x_cost_a"] = cost_a
@@ -129,12 +129,16 @@ class PlayAction(DuelActionHandler, names=["使用", "use", "u", "play", "p"]):
         played_count = run.node_data.get("cards_played_this_turn", 0)
         router.engine.event_bus.dispatch(CardPlayedEvent(run, card, target, ""))
         run.node_data["cards_played_this_turn"] = played_count + 1
+        extra_msgs = run.node_data.pop("extra_play_msgs", [])
+        if extra_msgs:
+            for extra in extra_msgs:
+                router.engine._log_event(run, extra)
         
         victory_res = router._check_victory(run, user_id, sender_name)
         if victory_res:
             return victory_res
             
-        use_tip = f"📢 玩家【{sender_name}】打出了卡牌【{card.name.replace('对决·', '')}】！"
+        use_tip = DUEL_BROADCAST_TEMPLATES["play_card_tip"].format(sender_name=sender_name, card_name=card.name.replace('对决·', ''))
         
         interrupted = router._check_time_stop_interruption(run, initial_opp_hp, initial_opp_shield, initial_minion_status)
         if interrupted:
@@ -143,7 +147,7 @@ class PlayAction(DuelActionHandler, names=["使用", "use", "u", "play", "p"]):
             victory_res = router._check_victory(run, user_id, sender_name)
             if victory_res:
                 return victory_res
-            msg = "⏳ [时间停止] 额外回合中对敌方造成了伤害，当前额外回合提前结束！"
+            msg = DUEL_BROADCAST_TEMPLATES["time_stop_damage_interrupted"]
             return router._save_and_render_state(run, user_id, use_tip + "\n" + msg)
             
         return router._save_and_render_state(run, user_id, use_tip)
@@ -152,14 +156,12 @@ class MinionAction(DuelActionHandler, names=["随从", "minion", "m", "attack", 
     def execute(self, router, run, user_id: str, sender_name: str, args: list) -> Tuple[str, bool, Optional[str], Optional[str], Optional[str], Optional[str]]:
         current_turn_id = run.node_data.get("current_turn_id")
         p1_id = run.node_data["player1_id"]
-        p2_id = run.node_data["player2_id"]
-        opp_id = p2_id if user_id == p1_id else p1_id
         
         if user_id != current_turn_id:
-            return "❌ 当前是对方的回合，请耐心等待。", False, None, None, None, None
+            return DUEL_BROADCAST_TEMPLATES["play_not_my_turn"], False, None, None, None, None
             
         if len(args) < 2:
-            return "❌ 请输入我方随从格子序号，例如：/rogue 随从 1 攻击 e1", False, None, None, None, None
+            return DUEL_BROADCAST_TEMPLATES["minion_no_idx"], False, None, None, None, None
             
         my_grid_raw = args[1]
         p = run.player
@@ -174,7 +176,7 @@ class MinionAction(DuelActionHandler, names=["随从", "minion", "m", "attack", 
                     grids.append(g)
                     
         if not grids:
-            return f"❌ 找不到我方随从格子 [{my_grid_raw}]。", False, None, None, None, None
+            return DUEL_BROADCAST_TEMPLATES["minion_not_found"].format(grid=my_grid_raw), False, None, None, None, None
             
         action = "攻击"
         opp_grid = None
@@ -202,7 +204,7 @@ class MinionAction(DuelActionHandler, names=["随从", "minion", "m", "attack", 
             m = p.minions[g]
             stunned = any(b.id == "stun" for b in m.buffs)
             if stunned:
-                results.append(f"❌ 随从【{m.name}】处于眩晕状态，无法行动。")
+                results.append(DUEL_BROADCAST_TEMPLATES["minion_stunned"].format(name=m.name))
                 continue
                 
             if action == "攻击":
@@ -219,7 +221,7 @@ class MinionAction(DuelActionHandler, names=["随从", "minion", "m", "attack", 
                                 target_name = run.player2.minions[opp_grid_clean].name
                         except ValueError:
                             pass
-                    atk_tip = f"📢 玩家【{sender_name}】指挥随从【{m.name.replace('+', '').replace('对决·', '')}】攻击了【{target_name.replace('+', '')}】！"
+                    atk_tip = DUEL_BROADCAST_TEMPLATES["minion_attack_tip"].format(sender_name=sender_name, minion_name=m.name.replace('+', '').replace('对决·', ''), target_name=target_name.replace('+', ''))
                     res = atk_tip + "\n" + res
                 results.append(res)
             elif action == "技能":
@@ -256,7 +258,7 @@ class MinionAction(DuelActionHandler, names=["随从", "minion", "m", "attack", 
             victory_res = router._check_victory(run, user_id, sender_name)
             if victory_res:
                 return victory_res
-            msg = "⏳ [时间停止] 额外回合中对敌方造成了伤害，当前额外回合提前结束！"
+            msg = DUEL_BROADCAST_TEMPLATES["time_stop_damage_interrupted"]
             return router._save_and_render_state(run, user_id, res_combined + "\n" + msg)
             
         return router._save_and_render_state(run, user_id, res_combined)
@@ -267,16 +269,16 @@ class CoinAction(DuelActionHandler, names=["幸运币", "coin", "cn"]):
         if res.startswith("❌"):
             return res, False, None, None, None, None
             
-        coin_tip = f"📢 玩家【{sender_name}】使用了幸运币，获得了 1 点动作点！"
+        coin_tip = DUEL_BROADCAST_TEMPLATES["coin_success_tip"].format(sender_name=sender_name)
         return router._save_and_render_state(run, user_id, coin_tip)
 
 class EvolveAction(DuelActionHandler, names=["进化", "evolve", "ev"]):
     def execute(self, router, run, user_id: str, sender_name: str, args: list) -> Tuple[str, bool, Optional[str], Optional[str], Optional[str], Optional[str]]:
         current_turn_id = run.node_data.get("current_turn_id")
         if user_id != current_turn_id:
-            return "❌ 当前是对方的回合，请耐心等待。", False, None, None, None, None
+            return DUEL_BROADCAST_TEMPLATES["play_not_my_turn"], False, None, None, None, None
         if len(args) < 2:
-            return "❌ 请输入进化目标手牌序号或格子，例如：/rogue 进化 1 或 /rogue 进化 p1", False, None, None, None, None
+            return DUEL_BROADCAST_TEMPLATES["evolve_no_target"], False, None, None, None, None
             
         target = args[1]
         evolve_target_name = "未知"
@@ -306,14 +308,14 @@ class EvolveAction(DuelActionHandler, names=["进化", "evolve", "ev"]):
         if res.startswith("❌"):
             return res, False, None, None, None, None
             
-        evolve_tip = f"📢 玩家【{sender_name}】将{evolve_target_name.replace('+', '').replace('对决·', '')}进化了！"
+        evolve_tip = DUEL_BROADCAST_TEMPLATES["evolve_tip"].format(sender_name=sender_name, evolve_target_name=evolve_target_name.replace('+', '').replace('对决·', ''))
         return router._save_and_render_state(run, user_id, evolve_tip)
 
 class EndAction(DuelActionHandler, names=["结束", "end", "endturn", "结束回合", "e"]):
     def execute(self, router, run, user_id: str, sender_name: str, args: list) -> Tuple[str, bool, Optional[str], Optional[str], Optional[str], Optional[str]]:
         current_turn_id = run.node_data.get("current_turn_id")
         if user_id != current_turn_id:
-            return "❌ 现在不是你的回合，无法结束回合。", False, None, None, None, None
+            return DUEL_BROADCAST_TEMPLATES["end_turn_not_my_turn"], False, None, None, None, None
             
         router.engine.end_turn(run)
         
@@ -321,7 +323,7 @@ class EndAction(DuelActionHandler, names=["结束", "end", "endturn", "结束回
         if victory_res:
             return victory_res
             
-        end_tip = f"📢 玩家【{sender_name}】结束了回合！"
+        end_tip = DUEL_BROADCAST_TEMPLATES["end_turn_tip"].format(sender_name=sender_name)
         return router._save_and_render_state(run, user_id, end_tip)
 
 class StatusAction(DuelActionHandler, names=["状态", "status", "s", "查看", "overview"]):

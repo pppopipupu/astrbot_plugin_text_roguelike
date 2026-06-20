@@ -950,5 +950,56 @@ class TestDuelSystem(unittest.TestCase):
         res_fail_card, _ = self.router.handle_deck_cmd(u2, ["导入", bad_code])
         self.assertIn("包含未知的对决卡牌ID", res_fail_card)
 
+    def test_quicken_and_echo_form(self):
+        u1 = "user1"
+        u2 = "user2"
+        self.router.handle_deck_cmd(u1, ["创建", "p1deck"])
+        for c in ["duel_warrior_strike", "duel_warrior_defend", "duel_warrior_bash", "duel_iron_wave", "duel_warrior_anger", "duel_body_slam"]:
+            self.router.handle_deck_cmd(u1, ["添加", c, "4"])
+        self.router.handle_deck_cmd(u1, ["添加", "duel_meteor_swarm", "2"])
+        
+        self.router.handle_deck_cmd(u2, ["创建", "p2deck"])
+        for c in ["duel_warrior_strike", "duel_warrior_defend", "duel_warrior_bash", "duel_iron_wave", "duel_warrior_anger", "duel_body_slam"]:
+            self.router.handle_deck_cmd(u2, ["添加", c, "4"])
+        self.router.handle_deck_cmd(u2, ["添加", "duel_meteor_swarm", "2"])
+        
+        self.router.handle_duel_cmd(u1, "张三", ["@user2"])
+        self.router.handle_duel_cmd(u2, "李四", ["接受"])
+        
+        run = self.save_manager.load_duel_save(u1)
+        run.player.hand = ["duel_quicken", "duel_echo_form", "duel_fireball"]
+        run.player.actions = 10
+        run.player.bonus_actions = 10
+        self.save_manager.save_duel_save(u1, run)
+        
+        res, term, p1, dm1, p2, dm2 = self.router.route_in_game_action(run, u1, "张三", ["使用", "1", "p0"])
+        self.assertNotIn("❌", res)
+        run = self.save_manager.load_duel_save(u1)
+        has_quicken = any(b.id == "quicken" for b in run.player.buffs)
+        self.assertTrue(has_quicken)
+        
+        res, term, p1, dm1, p2, dm2 = self.router.route_in_game_action(run, u1, "张三", ["使用", "1", "p0"])
+        self.assertNotIn("❌", res)
+        run = self.save_manager.load_duel_save(u1)
+        has_echo = any(b.id == "echo_form" for b in run.player.buffs)
+        self.assertTrue(has_echo)
+        
+        res, term, p1, dm1, p2, dm2 = self.router.route_in_game_action(run, u1, "张三", ["结束"])
+        run = self.save_manager.load_duel_save(u2)
+        res, term, p1, dm1, p2, dm2 = self.router.route_in_game_action(run, u2, "李四", ["结束"])
+        
+        run = self.save_manager.load_duel_save(u1)
+        run.player.hand = ["duel_fireball"]
+        run.player.actions = 10
+        self.save_manager.save_duel_save(u1, run)
+        
+        initial_opp_hp = run.player2.hp
+        res, term, p1, dm1, p2, dm2 = self.router.route_in_game_action(run, u1, "张三", ["使用", "1", "e1"])
+        self.assertNotIn("❌", res)
+        self.assertIn("回响触发", res)
+        run = self.save_manager.load_duel_save(u1)
+        final_opp_hp = run.player2.hp
+        self.assertEqual(initial_opp_hp - final_opp_hp, 24)
+
 if __name__ == "__main__":
     unittest.main()

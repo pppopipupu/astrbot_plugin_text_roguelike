@@ -27,7 +27,7 @@
     - `battle_engine.py`: 战斗引擎 Facade 门面接口，委派执行实际战斗动作。
     - `cli_router.py`: 用户命令行分发路由，委派具体的处理器完成命令与动作。
     - `duel_engine.py`: 对决模式核心 TCG 逻辑引擎，独立处理双人对局状态。
-    - `duel_router.py`: 对决模式指令与动作分发路由器，拦截解析牌组和动作。
+    - `duel_router.py`: 对决模式指令与动作分发路由器，在重构后仅作为门面 Facade，委派牌组和查询功能。
     - `cli/`: 命令行指令逻辑子包。
       - `base.py`: 指令与动作处理器基类，提供 `__init_subclass__` 自动注册机制。
       - `actions.py`: 具体动作处理器实现。
@@ -39,7 +39,9 @@
       - `enemy_controller.py`: 负责敌人意图判定与回合状态处理。
       - `observers.py`: 被动的遗物、Buff、护符触发观察者类定义。
       - `AGENTS.md`: 肉鸽模式开发规范文档。
-    - `duel/`: 对决模式专属规范子包。
+    - `duel/`: 对决模式专属规范及逻辑子包。
+      - `deck_manager.py`: 对决模式牌组管理器，独立负责牌组创建、校验、导入导出与分享码处理。
+      - `query_manager.py`: 对决模式查询管理器，负责对决状态查询、抽牌堆、弃牌堆、随从墓地等信息查询。
       - `AGENTS.md`: 对决模式开发规范文档。
     - `event_bus.py`: 事件总线订阅与广播机制。
     - `explore_engine.py`: 荒野探索、宝箱房、奇妙商店、篝火等节点逻辑。
@@ -47,6 +49,7 @@
   - `data/`: 静态配置与文本模板数据字典。
     - `card_data.py`: 全体卡牌的基础映射字典与卡牌桥接属性配置。
     - `duel_card_data.py`: 全体对决卡牌静态映射属性、Quest与奖励卡配置。
+    - `duel_template_data.py`: 全体对决系统广播、提示和错误反馈的静态文本模板配置文件。
     - `neutral_card_data.py`: 中立卡牌的属性、伤害/护盾/治疗参数与反馈模板数据。
     - `wizard_card_data.py`: 法师职业卡牌的属性、伤害/护盾/治疗参数与反馈模板数据。
     - `warrior_card_data.py`: 战士职业卡牌的属性、伤害/护盾/治疗参数与反馈模板数据.
@@ -56,13 +59,13 @@
     - `amulet_data.py`: 全体护符的默认吟唱时间与结算效果参数。
     - `buff_data.py`: 全体战斗 Buff 的展示名称与效果描述配置。
     - `event_data.py`: 荒野事件的场景叙述、选项参数及选项触发反馈模板。
-    - `relic_data.py`: 全体遗物的属性、稀有度、售价与效果描述配置。
+    - `relic_data.py`: 全体遗物的属性、稀有度、售价与效果描述配置.
   - `models/`: 数据模型及底层管理。
     - `state.py`: 玩家、敌人、随从、卡牌、护符等实体状态的 Dataclass 模型。
     - `events.py`: 包含 BattleStartEvent 等 14 个原子事件的定义。
     - `manager.py`: 本地存档序列化、载入及销毁管理。
   - `entities/`: 实体行为与逻辑多态实现。
-    - `effects.py`: 原子游戏效果定义。
+    - `effects.py`: 原子游戏效果 definition。
     - `cards/`: 卡牌逻辑包，包含 registry.py，base.py，neutral.py，wizard.py，warrior.py，legendary.py，curse.py 以及 duel.py 等对决卡牌具体打出效果类实现。
     - `buffs/`: 战斗 Buff 逻辑包，包含 registry.py 提供装饰器注册机制，以及 buffs.py 继承自 BuffImpl 的各种 Buff 响应逻辑。
     - `relics/`: 遗物逻辑包，包含 registry.py 提供装饰器注册机制，以及 relics.py 包含各种遗物的被动监听逻辑实现。
@@ -74,7 +77,7 @@
       - `registry.py`: 事件选项注册器桥接。
       - `fountain.py`, `knight.py` 等 11 个具体事件选项的多态模块实现。
   - `renderer/`: 游戏状态文本渲染层。
-    - `__init__.py`: 代理至各渲染子模块的 GameRenderer。
+    - `__init__.py`: 代理至各渲染子模块的 GameRenderer.
     - `menu.py`: 菜单、卡牌库及玩家牌组渲染。
     - `battle.py`: 战斗界面及简要战斗状态渲染.
     - `duel_renderer.py`: 对决模式公开战局脱敏与各自私密详情渲染。
@@ -120,7 +123,7 @@
 ### 2.6 开闭原则 (OCP) 与事件驱动扩展规范
 - 严格遵循开闭原则：对扩展开放，对修改封闭。
 - 当引入新的遗物、Buff 或卡牌特性时，绝对禁止直接修改核心战斗引擎 (`battle_engine.py`) 或其它基础状态逻辑。
-- 新增逻辑必须通过实现独立的监听器，并在加载时将其绑定 to `event_bus.py` 定义的原子事件（如 `BattleStartEvent`、`CardPlayedEvent`、`DamageCalculateEvent`）上来完成交互。确保任何特异性的判断和数值加成都内聚在具体实体类的回调中，不污染基础流转逻辑。
+- 新增逻辑必须通过实现独立的监听器，并在加载时将其绑定 to `event_bus.py` 定义 of 原子事件（如 `BattleStartEvent`、`CardPlayedEvent`、`DamageCalculateEvent`）上来完成交互。确保任何特异性的判断和数值加成都内聚在具体实体类的回调中，不污染基础流转逻辑。
 
 ### 2.7 卡牌、遗物、Buff与指令注册规范
 - 卡牌注册使用装饰器模式自动完成注册。全局统一在 `game/entities/cards/registry.py` 中导出 `@register_card(cid, **kwargs)`，在具体卡牌类声明处使用，并在 `base.py` 中自动装配实例化，禁止任何硬编码的卡牌注册分支。
@@ -142,7 +145,7 @@
   - 涉及通用且常见的业务逻辑（例如：展示三选一卡牌且支持跳过、移除牌组卡牌、给予/扣除金币或生命值上限变动），禁止在具体事件选项类中以复制粘贴等形式编写实现，必须直接调用核心引擎中已公开并测试的复用接口（如 `ExploreEngine` 的奖励生成接口、`CombatResolver` 的状态属性增减接口）。
 - **可扩展的新机制设计**：
   - 添加新战斗或底层机制时，必须定义新的原子事件（继承自 `GameEvent` 并由 `event_bus` 调度），并对外提供可由 Relic 或 Buff 修改机制参数的标准化字段。
-  - 核心处理引擎在进行机制计算时，应只依赖该事件的最终结算数据，以便后续的新卡牌、新被动能够通过单纯订阅该事件完成逻辑扩展，禁止在核心流程中加入特定卡牌或状态的 `if` 逻辑。
+  - 核心处理引擎在进行机制计算时，应只依赖该事件的最终结算数据，以便后续的新卡牌、新被动能够通过订阅该事件完成逻辑扩展，禁止在核心流程中加入特定卡牌或状态的 `if` 逻辑。
   - 任何怪物或 Boss 特异性的生存被动、死亡拦截或形态觉醒逻辑（如“尤格-索托斯”濒死时进入觉醒形态），绝对禁止在核心结算机制 `CombatResolver` 中硬编码。必须完全通过在具体 `EnemyTemplate` 模板中订阅 `EnemyBeforeDeathEvent` 并执行 `event.cancel()` 拦截，进而自适应重组其属性状态，保证核心引擎纯净、高复用。
 
 ### 2.10 版本控制与命令规范
@@ -154,18 +157,38 @@
 
 ---
 
-## 3. 测试与运行异常规范
+## 3. 代码编辑与扩展指引
 
-### 3.1 Windows 本地命令行测试运行异常提示
+在对项目进行代码编辑、新增卡牌、添加指令或修改系统播报时，应遵守以下编辑指引：
+
+### 3.1 对决模式卡牌开发与扩展指引
+- 数据配置分离：新增对决卡牌时，需在 game/data/duel_card_data.py 中的 DUEL_CARD_CONFIG 字典里添加其静态属性定义（包含 cost_a、cost_ba、rarity、type、desc等）。
+- 卡牌效果注册：需在 game/entities/cards/duel.py 中实现具体的卡牌效果逻辑类，继承自 DuelCardImpl / CardImpl，并使用装饰器 @register_card(cid) 进行全局注册。
+- 0 注释原则：在新增卡牌类时，严禁编写任何 # 井号注释和 docstring 说明文档。
+
+### 3.2 播报及反馈文案修改指引
+- 系统消息数据驱动：对决模式中所有的局内外系统广播、错误提示、操作反馈、胜负判决和帮助文本，均统一定义在 game/data/duel_template_data.py 中的 DUEL_BROADCAST_TEMPLATES 字典中。
+- 禁止在逻辑代码中硬编码任何中文提示语。所有提示文案的修改必须只在 duel_template_data.py 中进行，并在调用处通过 DUEL_BROADCAST_TEMPLATES["key_name"].format(...) 动态注入。
+
+### 3.3 指令与动作扩展指引
+- 局外指令：若要为对决模式新增局外指令，必须在 game/core/duel/commands.py 中编写继承自 DuelCommandHandler 类的具体处理器类，并通过 names 参数传入其支持的指令名别名列表。
+- 局内动作：若要新增局内打牌动作，必须在 game/core/duel/actions.py 中编写继承自 DuelActionHandler 类的具体动作处理器，并通过 names 参数传入支持的动作名别名列表。
+- 装配机制：系统在运行初始化加载 commands.py 和 actions.py 时，会自动利用 __init_subclass__ 钩子将这些指令类和动作类实例化并挂载到全局路由中，无需手动在路由器中编写额外的 switch 分支。
+
+---
+
+## 4. 测试与运行异常规范
+
+### 4.1 Windows 本地命令行测试运行异常提示
 在 Windows 环境下使用 PowerShell 或 CMD 直接运行测试脚本时，可能遇到以下两类环境问题：
 1. 模块导入失败（ModuleNotFoundError）：若遇到无法导入 game 的错误，需在运行前显式指定 PYTHONPATH 环境变量（例如在 PowerShell 中执行：$env:PYTHONPATH="."）。
 2. 控制台字符集编码错误（UnicodeEncodeError）：若在控制台打印带有各类圆形字符等 Unicode 符号时发生编码报错，需在执行前将 Python 的控制台编码指定为 utf-8（例如在 PowerShell 中执行：$env:PYTHONIOENCODING="utf-8"）。
 3. 别名挂起与高 CPU 占用问题：在 Windows 环境下，严禁使用 `python` 命令运行脚本，必须统一使用 `py` 命令行启动器工具（例如 `py scratch/test_flow.py`），以规避触发 Windows 系统默认 of App Execution Aliases 机制，防止外壳包装进程静默死循环挂起并持续耗费 CPU 资源。
 
-### 3.2 测试豁免规则
+### 4.2 测试豁免规则
 - 针对仅涉及纯数值微调或修正的改动（例如修改卡牌的伤害、护盾、治疗数值等静态数据配置，而不涉及控制流、游戏状态逻辑修改或新功能开发），无需运行自动化仿真及流验证测试。
 
-### 3.3 单元测试编写规范
+### 4.3 单元测试编写规范
 为确保项目自动化测试流程的正确性与可维护性，编写新的单元测试和集成测试时必须遵守以下规范：
 - 源码零注释约束：所有的测试脚本（包括 scratch/test_flow.py 和 scratch/test_duel.py）同样被视为 Python 源码，其中绝对禁止包含任何以井号字符开头的注释和 docstring 文档字符串。
 - 目标血量保护设计：在测试高额伤害的卡牌、随从或特殊状态效果时，应当将承受伤害的敌方目标或随从目标的生命值上限（max_hp）及当前生命值（hp）设定为极高数值（如 9999），以防止目标由于伤害过高而意外死亡并被系统从活动实体字典中移除，导致后续测试指令执行因找不到目标而触发 KeyError 或断言失败。

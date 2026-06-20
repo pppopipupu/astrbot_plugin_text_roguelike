@@ -219,6 +219,8 @@ class AbilityCard(Card):
     def execute(self, run, target, engine) -> str:
         from ...data.buff_data import BUFF_CONFIG
         base_id = self.id.split(":replay:")[0].split(":fragile:")[0].rstrip("+")
+        if base_id.startswith("duel_"):
+            base_id = base_id[5:]
         buff_info = BUFF_CONFIG.get(base_id, {})
         buff_name = buff_info.get("name", self.name.split(" (重放 ")[0].split(" (易碎 ")[0])
         buff_desc = buff_info.get("desc", "")
