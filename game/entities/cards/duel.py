@@ -37,7 +37,7 @@ class DuelGenericCard(Card):
         if minion_hp > 0:
             minion_atk = cfg.get("minion_atk", 1)
             minion_id = self.id.replace("duel_", "")
-            engine._summon_minion(run, minion_id, self.name.replace("对决·", ""), minion_hp, minion_atk, 0)
+            engine._summon_minion(run, minion_id, self.name, minion_hp, minion_atk, 0)
             
         if self.type == "amulet":
             grid = engine._get_free_grid(run.player)
@@ -95,7 +95,7 @@ class DuelUnminedGem(Card):
             p.hand[idx] = new_cid
             
             from .duel import ALL_DUEL_CARDS
-            card_name = ALL_DUEL_CARDS[new_cid].name.replace("对决·", "")
+            card_name = ALL_DUEL_CARDS[new_cid].name
             if ":replay:" in target_cid:
                 msg = f"使用了【未掘宝石】。随机使手牌中的【{card_name}】获得了重放 {val} 效果（累计重放 {new_val}）。"
             else:
@@ -125,7 +125,7 @@ class DuelWarriorBash(Card):
         damage = cfg.get("base_dmg", cfg.get("damage", 8))
         engine._damage_target(run, target, damage, damage_type="bludgeoning", card=self)
         
-        from ...core.battle.duel_observers import get_entity_by_ref
+        from ...core.duel.observers import get_entity_by_ref
         tgt_entity = get_entity_by_ref(run, target)
         if tgt_entity:
             layers = 3 if self.upgraded else 2
@@ -296,6 +296,200 @@ class DuelRewardFury(Card):
     def execute(self, run, target, engine) -> str:
         engine._add_buff_to(run.player, "duel_fury_buff", "狂怒", "物理伤害额外加 6", 6)
         return "🩸 [狂暴] 获得了狂怒 Buff，物理伤害永久 +6！"
+
+@register_duel_card("duel_meteor_swarm")
+class DuelMeteorSwarm(Card):
+    def execute(self, run, target, engine) -> str:
+        import random
+        num_dice = 8 if self.upgraded else 6
+        dice_results = [random.randint(1, 6) for _ in range(num_dice)]
+        dmg = sum(dice_results)
+        extra_true_dmg = sum(2 for d in dice_results if d == 6) if self.upgraded else 0
+        engine._damage_target(run, "e1", dmg, damage_type="fire", card=self)
+        if extra_true_dmg > 0:
+            engine._damage_target(run, "e1", extra_true_dmg, damage_type="true", card=self)
+        p2 = run.player2
+        for gid, m in list(p2.minions.items()):
+            t_ref = f"e{int(gid)+1}"
+            engine._damage_target(run, t_ref, dmg, damage_type="fire", card=self)
+            if extra_true_dmg > 0:
+                engine._damage_target(run, t_ref, extra_true_dmg, damage_type="true", card=self)
+        if self.upgraded:
+            return f"释放流星爆！对所有敌方角色造成了 {dmg} 点火焰伤害，并因大骰子额外造成 {extra_true_dmg} 点真实伤害。"
+        return f"释放流星爆！对所有敌方角色造成了 {dmg} 点火焰伤害。"
+
+@register_duel_card("duel_doomsday_judgment")
+class DuelDoomsdayJudgment(Card):
+    def execute(self, run, target, engine) -> str:
+        dmg = 18 if self.upgraded else 12
+        engine._add_buff_to(run.player2, "stun", "眩晕", "无法行动", 1)
+        engine._damage_target(run, "e1", dmg, damage_type="necrotic", card=self)
+        p2 = run.player2
+        for gid, m in list(p2.minions.items()):
+            t_ref = f"e{int(gid)+1}"
+            engine._add_buff_to(m, "stun", "眩晕", "无法行动", 1)
+            engine._damage_target(run, t_ref, dmg, damage_type="necrotic", card=self)
+        return f"释放末日审判！对所有敌方角色造成了 {dmg} 点黯蚀伤害并眩晕他们一回合。"
+
+@register_duel_card("duel_glacier_tempest")
+class DuelGlacierTempest(Card):
+    def execute(self, run, target, engine) -> str:
+        base_dmg = 12 if self.upgraded else 8
+        total_dmg = 0
+        engine._damage_target(run, "e1", base_dmg, damage_type="cold", card=self)
+        total_dmg += base_dmg
+        p2 = run.player2
+        for gid, m in list(p2.minions.items()):
+            t_ref = f"e{int(gid)+1}"
+            engine._damage_target(run, t_ref, base_dmg, damage_type="cold", card=self)
+            total_dmg += base_dmg
+        shield_msg = ""
+        if run.player.minions and total_dmg > 0:
+            shield_gain = total_dmg // 2
+            engine._gain_shield(run, "p0", shield_gain)
+            shield_msg = f"，并获得了 {shield_gain} 点护盾"
+        return f"释放了极寒风暴！对所有敌方角色造成了 {base_dmg} 点冰霜伤害{shield_msg}。"
+
+@register_duel_card("duel_frost_nova")
+class DuelFrostNova(Card):
+    def execute(self, run, target, engine) -> str:
+        dmg = 14 if self.upgraded else 10
+        vuln_stacks = 3 if self.upgraded else 2
+        engine._damage_target(run, "e1", dmg, damage_type="cold", card=self)
+        engine._add_buff_to(run.player2, "minor_vulnerable_cold", "轻度寒冷易伤", "受到的寒冷伤害增加 50%", vuln_stacks)
+        engine._add_buff_to(run.player2, "stun", "眩晕", "无法行动", 1)
+        p2 = run.player2
+        for gid, m in list(p2.minions.items()):
+            t_ref = f"e{int(gid)+1}"
+            engine._damage_target(run, t_ref, dmg, damage_type="cold", card=self)
+            engine._add_buff_to(m, "minor_vulnerable_cold", "轻度寒冷易伤", "受到的寒冷伤害增加 50%", vuln_stacks)
+            engine._add_buff_to(m, "stun", "眩晕", "无法行动", 1)
+        return f"释放霜冻新星！对所有敌方角色造成了 {dmg} 点冰霜伤害且被施加 {vuln_stacks} 层寒冷易伤与眩晕。"
+
+@register_duel_card("duel_abyss_collapse")
+class DuelAbyssCollapse(Card):
+    def execute(self, run, target, engine) -> str:
+        dmg = 24 if self.upgraded else 18
+        is_p2_stunned = any(b.id == "stun" for b in run.player2.buffs)
+        p2_dmg = dmg * 2 if is_p2_stunned else dmg
+        engine._damage_target(run, "e1", p2_dmg, damage_type="necrotic", card=self)
+        p2 = run.player2
+        for gid, m in list(p2.minions.items()):
+            t_ref = f"e{int(gid)+1}"
+            is_stunned = any(b.id == "stun" for b in m.buffs)
+            m_dmg = dmg * 2 if is_stunned else dmg
+            engine._damage_target(run, t_ref, m_dmg, damage_type="necrotic", card=self)
+        return f"释放深渊崩塌！对所有敌方角色造成了黯蚀伤害（被眩晕目标受到双倍伤害）。"
+
+@register_duel_card("duel_shockwave")
+class DuelShockwave(Card):
+    def execute(self, run, target, engine) -> str:
+        stacks = 3 if self.upgraded else 2
+        engine._add_buff_to(run.player2, "minor_vulnerable", "轻度易伤", "受到的所有类型伤害增加 50%", stacks)
+        engine._add_buff_to(run.player2, "weak", "虚弱", "造成的物理伤害减少 3 点", stacks)
+        p2 = run.player2
+        for gid, m in list(p2.minions.items()):
+            engine._add_buff_to(m, "minor_vulnerable", "轻度易伤", "受到的所有类型伤害增加 50%", stacks)
+            engine._add_buff_to(m, "weak", "虚弱", "造成的物理伤害减少 3 点", stacks)
+        return f"释放了【震荡波】，对所有敌方角色施加了 {stacks} 层【轻度易伤】和【虚弱】。"
+
+@register_duel_card("duel_mana_overload")
+class DuelManaOverload(Card):
+    def execute(self, run, target, engine) -> str:
+        if target == "e1" or not target or not target.startswith("e"):
+            return "❌ 该卡牌只能以随从为目标"
+        p2 = run.player2
+        try:
+            gid = str(int(target[1:]) - 1)
+        except ValueError:
+            return "❌ 无效的目标格子"
+        if gid not in p2.minions:
+            return "❌ 目标格子没有随从"
+        m = p2.minions[gid]
+        p = run.player
+        base_dmg = 10
+        is_double = (p.bonus_actions == 0)
+        dmg = base_dmg * 2 if is_double else base_dmg
+        engine._damage_target(run, target, dmg, damage_type="effect", card=self)
+        is_killed = (m.hp <= 0 or gid not in p2.minions)
+        ba_msg = ""
+        if is_killed:
+            p.bonus_actions += 2
+            ba_msg = "，并成功击杀目标，获得 2BA"
+        double_msg = "（触发翻倍）" if is_double else ""
+        return f"使用了【能量逆载】{double_msg}对随从造成了 {dmg} 点伤害{ba_msg}。"
+
+@register_duel_card("duel_destiny_scales")
+class DuelDestinyScales(Card):
+    def execute(self, run, target, engine) -> str:
+        if target == "e1" or not target or not target.startswith("e"):
+            return "❌ 该卡牌只能以随从为目标"
+        p2 = run.player2
+        try:
+            gid = str(int(target[1:]) - 1)
+        except ValueError:
+            return "❌ 无效的目标格子"
+        if gid not in p2.minions:
+            return "❌ 目标格子没有随从"
+        m = p2.minions[gid]
+        old_atk = m.atk
+        old_hp = m.hp
+        m.atk = old_hp
+        m.hp = old_atk
+        if m.hp > m.max_hp:
+            m.hp = m.max_hp
+        has_stun = any(b.id == "stun" for b in m.buffs)
+        has_vuln = any(b.id == "vulnerable" or b.id == "minor_vulnerable" for b in m.buffs)
+        bonus_msg = ""
+        if has_stun or has_vuln:
+            engine._damage_target(run, target, 8, damage_type="true", card=self)
+            engine._draw_cards(run.player, 1, run, ignore_focus=True)
+            bonus_msg = "，且由于目标处于负面状态，额外对其造成 8 点真伤并抽了 1 张牌"
+        return f"使用了【命运天平】，将随从的攻防对调为 {m.atk}/{m.hp}{bonus_msg}。"
+
+@register_duel_card("duel_ancient_blessing")
+class DuelAncientBlessing(Card):
+    def execute(self, run, target, engine) -> str:
+        p = run.player
+        minions_count = len(p.minions)
+        if minions_count == 0:
+            engine._draw_cards(p, 2, run, ignore_focus=True)
+            return "使用了【古老祈福】，我方场上无随从，触发兜底效果：抽取了 2 张牌。"
+        if minions_count > 2:
+            for gid, m in list(p.minions.items()):
+                m.atk += 2
+                m.hp += 2
+                m.max_hp += 2
+            engine._gain_shield(run, "p0", 8)
+            return "使用了【古老祈福】，我方拥有多于 2 个随从，触发群体强化：所有随从获得+2/+2，且玩家获得 8 点护盾。"
+        import random
+        gid = random.choice(list(p.minions.keys()))
+        m = p.minions[gid]
+        m.atk += 2
+        m.hp += 2
+        m.max_hp += 2
+        return f"使用了【古老祈福】，随机强化了随从【{m.name}】（+2/+2）。"
+
+@register_duel_card("duel_storm_barrier")
+class DuelStormBarrier(Card):
+    def execute(self, run, target, engine) -> str:
+        p = run.player
+        p2 = run.player2
+        shield_val = 12
+        is_low_hp = (p.hp < 80)
+        if is_low_hp:
+            shield_val += 8
+        engine._gain_shield(run, "p0", shield_val)
+        storm_msg = ""
+        if p2.minions:
+            import random
+            gid = random.choice(list(p2.minions.keys()))
+            m = p2.minions[gid]
+            engine._damage_target(run, f"e{int(gid)+1}", 6, damage_type="thunder", card=self)
+            engine._add_buff_to(m, "weak", "虚弱", "造成的物理伤害减少 3 点", 2)
+            storm_msg = f"，且对敌方随从【{m.name}】造成 6 点雷鸣伤害并施加 2 层虚弱"
+        hp_msg = "（触发低血量强化）" if is_low_hp else ""
+        return f"使用了【雷雨屏障】{hp_msg}，获得了 {shield_val} 点护盾{storm_msg}。"
 
 class DuelCardRegistryDict(dict):
     def _lazy_load_card(self, key):

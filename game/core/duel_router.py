@@ -40,18 +40,32 @@ class DuelRouter:
     def check_deck_validity(self, deck_list: list) -> Tuple[bool, str]:
         if len(deck_list) < 25 or len(deck_list) > 50:
             return False, f"卡牌数量不合法（当前 {len(deck_list)} 张，应在 25~50 张之间）。"
+        try:
+            from ..data.duel_card_data import DUEL_CARD_CONFIG
+        except ImportError:
+            from game.data.duel_card_data import DUEL_CARD_CONFIG
         counts = {}
         for cid in deck_list:
             base_id = cid.rstrip("+")
             counts[base_id] = counts.get(base_id, 0) + 1
-            if counts[base_id] > 4:
-                try:
-                    from ..data.duel_card_data import DUEL_CARD_CONFIG
-                except ImportError:
-                    from game.data.duel_card_data import DUEL_CARD_CONFIG
-                cfg = DUEL_CARD_CONFIG.get(base_id, {})
-                name = cfg.get("name", base_id).replace("对决·", "")
-                return False, f"单卡超限：【{name}】超过了 4 张限制。"
+            cfg = DUEL_CARD_CONFIG.get(base_id, {})
+            name = cfg.get("name", base_id)
+            rarity = cfg.get("rarity", "common")
+            ctype = cfg.get("type", "spell")
+            
+            limit = 4
+            if rarity == "mythic" or rarity == "artifact" or ctype == "artifact":
+                limit = 1
+            elif rarity == "legendary":
+                limit = 2
+                
+            if counts[base_id] > limit:
+                if limit == 1:
+                    return False, f"单卡超限：神话或神器卡【{name}】在每个牌组中限制只能携带 1 张。"
+                elif limit == 2:
+                    return False, f"单卡超限：传奇卡【{name}】在每个牌组中限制只能携带 2 张。"
+                else:
+                    return False, f"单卡超限：【{name}】超过了 4 张限制。"
         return True, "合法"
 
     def handle_deck_cmd(self, user_id: str, args: list) -> Tuple[str, bool]:
@@ -181,10 +195,25 @@ class DuelRouter:
                 return "❌ 牌组容量已满，不可超过 50 张。", False
                 
             cur_count = sum(1 for c in cards if c.rstrip("+") == base_id)
-            if cur_count + count > 4:
+            cfg = DUEL_CARD_CONFIG.get(base_id, {})
+            rarity = cfg.get("rarity", "common")
+            ctype = cfg.get("type", "spell")
+            
+            limit = 4
+            if rarity == "mythic" or rarity == "artifact" or ctype == "artifact":
+                limit = 1
+            elif rarity == "legendary":
+                limit = 2
+                
+            if cur_count + count > limit:
                 from ..entities.cards.duel import ALL_DUEL_CARDS
                 cname = ALL_DUEL_CARDS[cid].name.replace('对决·', '')
-                return f"❌ 单卡超限：【{cname}】在牌组里已有 {cur_count} 张，同名基础卡上限为 4 张。", False
+                if limit == 1:
+                    return f"❌ 单卡超限：神话或神器卡【{cname}】在每个牌组中限制只能携带 1 张（当前已有 {cur_count} 张）。", False
+                elif limit == 2:
+                    return f"❌ 单卡超限：传奇卡【{cname}】在每个牌组中限制只能携带 2 张（当前已有 {cur_count} 张）。", False
+                else:
+                    return f"❌ 单卡超限：【{cname}】在牌组里已有 {cur_count} 张，同名基础卡上限为 4 张。", False
                 
             for _ in range(count):
                 cards.append(cid)
@@ -233,9 +262,43 @@ class DuelRouter:
             
         return "❌ 未知牌组管理子指令，请输入帮助指令获取教程。", False
 
+    def render_duel_menu(self, user_id: str) -> str:
+        active_name, deck_list = self.get_user_active_deck(user_id)
+        deck_info = "🔴 未选择活动牌组"
+        if active_name:
+            valid, reason = self.check_deck_validity(deck_list)
+            status_str = "✅ 合法" if valid else f"❌ 不合法 ({reason})"
+            deck_info = f"🎴 当前活动牌组：{active_name} ({len(deck_list)}张) [{status_str}]"
+            
+        lines = [
+            "━━━━━━━━━━━━━━━━━━━━",
+            "⚔️ 魔法肉鸽卡牌游戏 - 对决模式",
+            "",
+            "在双人对局中展现你的牌组构筑与即时决策！",
+            deck_info,
+            "",
+            "【局外指令】",
+            "👉 /rogue 对决 邀请 @用户 -- 邀请对方进行对局",
+            "👉 /rogue 对决 接受     -- 接受收到的对局邀请",
+            "👉 /rogue 对决 拒绝     -- 拒绝收到的对局邀请",
+            "👉 /rogue 对决 牌组     -- 查看或选择你的牌组",
+            "",
+            "【局内指令（在你的回合）】",
+            "👉 序号 / 使用 序号 [目标] -- 使用指定手牌。例如：1 或 使用 1 e1",
+            "👉 随从 序号 攻击/a [目标]   -- 指挥随从攻击。例如：随从 1 攻击 e1",
+            "👉 随从 序号 技能/s [序号]   -- 释放随从技能。例如：随从 1 技能 1",
+            "👉 进化 序号 [手牌/随从/护符] -- 消耗进化点进化目标。例如：进化 1",
+            "👉 幸运币                  -- 消耗幸运币获得 1A（后手专属）",
+            "👉 结束                    -- 结束当前回合",
+            "👉 状态                    -- 在局内查看当前对战详细快照",
+            "👉 队列 [指令1, 指令2...]  -- 批量顺序执行多个指令。例如：队列 [1, 随从 1 a, 结束]",
+            "━━━━━━━━━━━━━━━━━━━━"
+        ]
+        return "\n".join(lines)
+
     def handle_duel_cmd(self, user_id: str, sender_name: str, args: list) -> Tuple[str, bool, Optional[str], Optional[str], Optional[str], Optional[str]]:
-        if not args:
-            return "❌ 请提供对决子指令或 At 目标进行对决邀请。", False, None, None, None, None
+        if not args or args[0].lower() in ("状态", "s", "status"):
+            return self.render_duel_menu(user_id), False, None, None, None, None
             
         query_cmds = ("查询", "query", "info", "i", "抽牌堆", "draw", "draw_pile", "弃牌堆", "discard", "discard_pile", "消耗堆", "exhaust", "exhaust_pile", "随从墓地", "minion_graveyard", "mg", "minion_grave")
         if args[0].lower() in query_cmds or (args[0].lower() in ("对决", "duel") and len(args) > 1 and args[1].lower() in query_cmds):
@@ -244,7 +307,7 @@ class DuelRouter:
         if args[0].lower() in ("对决", "duel"):
             args = args[1:]
             if not args:
-                return "❌ 请提供对决子指令或 At 目标进行对决邀请。", False, None, None, None, None
+                return self.render_duel_menu(user_id), False, None, None, None, None
                 
         sub = args[0]
         sub_lower = sub.lower()
@@ -286,9 +349,21 @@ class DuelRouter:
         if cmd in ("放弃", "abandon"):
             return self.handle_duel_cmd(user_id, sender_name, ["放弃"])
 
-        raw_cmd = " ".join(args).strip()
-        if "," in raw_cmd or "，" in raw_cmd:
-            from .cli.base import split_by_comma_with_brackets
+        cmd = args[0].lower()
+        is_queue = False
+        raw_cmd = ""
+        if cmd in ("队列", "q", "queue"):
+            is_queue = True
+            raw_cmd = " ".join(args[1:]).strip()
+        else:
+            raw_cmd = " ".join(args).strip()
+            if "," in raw_cmd or "，" in raw_cmd:
+                is_queue = True
+
+        if is_queue:
+            if raw_cmd.startswith("[") and raw_cmd.endswith("]"):
+                raw_cmd = raw_cmd[1:-1].strip()
+            from .duel.base import split_by_comma_with_brackets
             items = split_by_comma_with_brackets(raw_cmd)
             results = []
             term = False
@@ -298,6 +373,8 @@ class DuelRouter:
                 parts_sub = item.split()
                 if not parts_sub:
                     continue
+                if parts_sub[0].isdigit():
+                    parts_sub = ["使用"] + parts_sub
                 res_pub, should_term, _, _, _, _ = self._route_single_action(run, user_id, sender_name, parts_sub)
                 results.append(res_pub)
                 if should_term:

@@ -6,7 +6,7 @@
 
 - **肉鸽模式 (Rogue Mode)**：包含战斗引擎、随机事件、探索地图、职业卡牌以及核心测试流等规范。
   - 请阅读：[game/core/battle/AGENTS.md](file:///c:/Users/pppop/Desktop/azuki/astrbot_plugin_text_roguelike/game/core/battle/AGENTS.md)
-- **对决模式 (Duel Mode)**：包含双方对局、能量与动作成长、召唤失调、进化机制、局外牌组校验以及对局测试等规范。
+- **对决模式 (Duel Mode)**：包含双方对局、能量与动作成长、召唤失调、进化机制、局外牌组校验、局外主菜单、指令队列执行以及对局测试等规范。
   - 请阅读：[game/core/duel/AGENTS.md](file:///c:/Users/pppop/Desktop/azuki/astrbot_plugin_text_roguelike/game/core/duel/AGENTS.md)
 
 ---

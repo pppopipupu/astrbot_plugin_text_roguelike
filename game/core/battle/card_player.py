@@ -146,7 +146,7 @@ class CardPlayer:
     def play_card(self, run: GameRun, hand_idx: int, target: Optional[str] = None) -> str:
         initial_status = [(e.hp, e.shield) for e in run.enemies]
         p = run.player
-        if run.node_type not in ("battle", "duel"):
+        if run.node_type != "battle":
             return "❌ 只有在战斗中才能使用卡牌。"
         if hand_idx < 1 or hand_idx > len(p.hand):
             return "❌ 无效的手牌序号。"
@@ -261,7 +261,7 @@ class CardPlayer:
     def play_special_action(self, run: GameRun, hand_idx: int, target: Optional[str] = None) -> str:
         initial_status = [(e.hp, e.shield) for e in run.enemies]
         p = run.player
-        if run.node_type not in ("battle", "duel"):
+        if run.node_type != "battle":
             return "❌ 只有在战斗中才能使用卡牌的特殊行动。"
         if hand_idx < 1 or hand_idx > len(p.hand):
             return "❌ 无效的手牌序号。"
@@ -364,7 +364,7 @@ class CardPlayer:
     def minion_attack(self, run: GameRun, my_grid: str, opp_grid: Optional[str] = None) -> str:
         initial_status = [(e.hp, e.shield) for e in run.enemies]
         p = run.player
-        if run.node_type not in ("battle", "duel"):
+        if run.node_type != "battle":
             return "❌ 只有在战斗中才能控制随从攻击。"
         if my_grid not in p.minions:
             return f"❌ 我方格子 [{my_grid}] 没有随从。"
@@ -405,7 +405,7 @@ class CardPlayer:
     def minion_skill(self, run: GameRun, my_grid: str, skill_idx: int = 1, target: Optional[str] = None) -> str:
         initial_status = [(e.hp, e.shield) for e in run.enemies]
         p = run.player
-        if run.node_type not in ("battle", "duel"):
+        if run.node_type != "battle":
             return "❌ 只有在战斗中才能发动随从技能。"
         if my_grid not in p.minions:
             return f"❌ 我方格子 [{my_grid}] 没有随从。"
@@ -472,7 +472,7 @@ class CardPlayer:
         return self.engine._append_logs_to_res(run, msg)
 
     def end_turn(self, run: GameRun) -> str:
-        if run.node_type not in ("battle", "duel"):
+        if run.node_type != "battle":
             return "❌ 只有在战斗中才能结束回合。"
         p = run.player
         evt_end = TurnEndEvent(run, is_player=True)

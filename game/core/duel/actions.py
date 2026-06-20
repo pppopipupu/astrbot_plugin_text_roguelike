@@ -65,17 +65,13 @@ class PlayAction(DuelActionHandler, names=["使用", "use", "u", "play", "p"]):
         if len(args) >= 3:
             target = args[2].lower()
         else:
-            is_damage = ("base_dmg" in cfg or "damage" in cfg or "damage_type" in cfg)
-            if is_damage and card.type == "spell":
-                for i in range(1, 7):
-                    if str(i) in run.player2.minions:
-                        target = f"e{i+1}"
-                        break
-                if not target:
-                    if cfg.get("face_target", True):
-                        target = "e1"
-                    else:
-                        return "❌ 敌方无随从，且该卡牌无法以领主为目标！", False, None, None, None, None
+            if card.type == "spell":
+                p0_spells = {"first_aid", "get_ready", "adrenaline", "mana_potion", "mass_healing_word", "refresh_spirit", "shield", "misty_step", "arcane_intellect", "calculated_gamble", "time_warp", "time_stop", "archmage_wish"}
+                clean_id = card.id.replace("duel_", "").replace("+", "")
+                if clean_id in p0_spells:
+                    target = "p0"
+                else:
+                    target = router.engine._get_first_alive_enemy(run)
                         
         if target:
             if target == "0" or target == "e0":
@@ -87,7 +83,7 @@ class PlayAction(DuelActionHandler, names=["使用", "use", "u", "play", "p"]):
                 
         if target and target.startswith("e"):
             is_damage = ("base_dmg" in cfg or "damage" in cfg or "damage_type" in cfg)
-            if is_damage and not cfg.get("face_target", True) and target == "e1":
+            if is_damage and not cfg.get("face_target", True) and not cfg.get("aoe", False) and target == "e1":
                 return "❌ 该卡牌只能以随从为目标，无法以敌方领主为目标。", False, None, None, None, None
                 
         if x_cost_a:

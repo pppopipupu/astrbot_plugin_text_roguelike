@@ -3,17 +3,24 @@ import os
 import json
 from typing import Optional, List
 from ..models.state import GameRun, PlayerState, EnemyState, Card, MinionState, AmuletState, BuffState
-from .battle.base import BaseBattleEngine
-from .battle.combat_resolver import CombatResolver
-from .battle.card_player import CardPlayer
-from .battle.duel_observers import BuffTriggerHandler, AmuletTriggerHandler, MinionTriggerHandler
+from .duel.combat_resolver import DuelCombatResolver
+from .duel.card_player import DuelCardPlayer
+from .duel.observers import BuffTriggerHandler, AmuletTriggerHandler, MinionTriggerHandler
 from ..models.events import DamageCalculateEvent, CardPlayedEvent, DamageTakeEvent, ShieldGainEvent
 
-class DuelEngine(BaseBattleEngine):
+class DuelEngine:
     def __init__(self, save_manager):
-        super().__init__(save_manager)
-        self.combat_resolver = CombatResolver(self)
-        self.card_player = CardPlayer(self)
+        self.save_manager = save_manager
+        from .event_bus import EventBus
+        self.event_bus = EventBus()
+        orig_dispatch = self.event_bus.dispatch
+        def decorated_dispatch(event, *args, **kwargs):
+            event.engine = self
+            return orig_dispatch(event, *args, **kwargs)
+        self.event_bus.dispatch = decorated_dispatch
+
+        self.combat_resolver = DuelCombatResolver(self)
+        self.card_player = DuelCardPlayer(self)
         self.buff_handler = BuffTriggerHandler(self.event_bus, self)
         self.amulet_handler = AmuletTriggerHandler(self.event_bus, self)
         self.minion_handler = MinionTriggerHandler(self.event_bus, self)
@@ -46,21 +53,17 @@ class DuelEngine(BaseBattleEngine):
             cid_for_cfg = "duel_" + cid_for_cfg
         cfg = DUEL_CARD_CONFIG.get(cid_for_cfg, {})
         face_target = cfg.get("face_target", True)
-        if card.type == "spell" and not face_target and run.enemies:
+        if card.type == "spell" and not face_target and not cfg.get("aoe", False) and run.enemies:
             run.enemies[0] = EnemyState(name="空", hp=0, max_hp=0, shield=0)
         orig_id = card.id
-        orig_name = card.name
         is_custom = getattr(card, "is_duel_custom", False)
         if not is_custom:
             card.id = orig_id.replace("duel_", "")
-            if orig_name.startswith("对决·"):
-                card.name = orig_name.replace("对决·", "", 1)
         try:
             res = card.execute(run, target, self)
         finally:
             if not is_custom:
                 card.id = orig_id
-                card.name = orig_name
         run.enemies = orig_enemies
         for p in (run.player, run.player2):
             for pile_name in ("hand", "draw_pile", "discard_pile", "exhaust_pile"):
@@ -240,7 +243,7 @@ class DuelEngine(BaseBattleEngine):
             if not cid_for_cfg.startswith("duel_"):
                 cid_for_cfg = "duel_" + cid_for_cfg
             cfg = DUEL_CARD_CONFIG.get(cid_for_cfg, {})
-            if card.type == "spell" and not cfg.get("face_target", False):
+            if card.type == "spell" and not cfg.get("face_target", False) and not cfg.get("aoe", False):
                 return
         p = run.player
         p2 = run.player2
@@ -337,7 +340,7 @@ class DuelEngine(BaseBattleEngine):
         take_evt = DamageTakeEvent(run, source, target, final_dmg, is_fatal, damage_type)
         self.event_bus.dispatch(take_evt)
         
-        from .battle.combat_resolver import DAMAGE_TYPE_NAMES
+        from .duel.combat_resolver import DAMAGE_TYPE_NAMES
         damage_type_str = damage_type.value if hasattr(damage_type, "value") else str(damage_type)
         type_name = DAMAGE_TYPE_NAMES.get(damage_type_str, "物理" if damage_type_str == "attack" else "效果")
         log_msg = f"对【{target_name}】造成 {final_dmg} 点{type_name}伤害"
