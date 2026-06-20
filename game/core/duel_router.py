@@ -261,6 +261,10 @@ class DuelRouter:
         if not args:
             return "❌ 请提供对决子指令或 At 目标进行对决邀请。", False, None, None, None, None
             
+        query_cmds = ("查询", "query", "info", "i", "抽牌堆", "draw", "draw_pile", "弃牌堆", "discard", "discard_pile", "消耗堆", "exhaust", "exhaust_pile", "随从墓地", "minion_graveyard", "mg", "minion_grave")
+        if args[0].lower() in query_cmds or (args[0].lower() in ("对决", "duel") and len(args) > 1 and args[1].lower() in query_cmds):
+            return self._handle_query_cmd(user_id, sender_name, args)
+
         if args[0].lower() in ("对决", "duel"):
             args = args[1:]
             if not args:
@@ -290,7 +294,7 @@ class DuelRouter:
                 "• 使用卡牌：.duel 使用 <手牌序号> [目标格子] (或 play/use/p)\n"
                 "  (注：物理或法术伤害牌默认只能以敌方随从格子 e2-e7 为目标，有 face_target 词条 of 直伤卡方可打领主 e1)\n"
                 "• 随从攻击：.duel 随从 <我方格子> [攻击] [敌方格子] (或 minion/atk/m)\n"
-                "  (注：进场首回合随从召唤失调，突进/冲锋词条除外，未指定目标默认打敌方第一个存活随从/领主)\n"
+                "  (注：进场首回合随从无法立即攻击，突进/冲锋词条除外，未指定目标默认打敌方第一个存活随从/领主)\n"
                 "• 进化卡牌：.duel 进化 <我方格子/手牌序号> (或 evolve/ev)\n"
                 "  (注：第 3 回合起解禁，每回合可进化一次，随从生命补满且攻血+2，护符进化不减吟唱)\n"
                 "• 使用幸运币：.duel 幸运币 (或 coin/cn)\n"
@@ -425,6 +429,10 @@ class DuelRouter:
         p2_id = run.node_data["player2_id"]
         opp_id = p2_id if user_id == p1_id else p1_id
         
+        query_cmds = ("查询", "query", "info", "i", "抽牌堆", "draw", "draw_pile", "弃牌堆", "discard", "discard_pile", "消耗堆", "exhaust", "exhaust_pile", "随从墓地", "minion_graveyard", "mg", "minion_grave")
+        if args[0].lower() in query_cmds or (args[0].lower() in ("对决", "duel") and len(args) > 1 and args[1].lower() in query_cmds):
+            return self._handle_query_cmd(user_id, sender_name, args)
+
         cmd = args[0].lower()
         if cmd in ("帮助", "help", "hp", "放弃", "abandon", "confirm", "牌组", "deck", "dk", "模式", "mode", "接受", "accept", "邀请", "invite", "iv") or cmd.startswith("[at:") or cmd.startswith("@"):
             return self.handle_duel_cmd(user_id, sender_name, args)
@@ -576,16 +584,21 @@ class DuelRouter:
             play_evt = CardPlayEvent(run, card, target, cost_a, cost_ba)
             self.engine.event_bus.dispatch(play_evt)
             
-            err_msg = card.execute(run, target, self.engine)
+            err_msg = self.engine._execute_card_effect(run, card, target)
             if err_msg:
                 p.hand.insert(idx, cid)
                 p.actions += cost_a
                 p.bonus_actions += cost_ba
                 return err_msg, False, None, None, None, None
                 
-            if not card.exhaust:
-                if card.type not in ("minion", "amulet"):
-                    p.discard_pile.append(cid)
+            from ..models.events import CardExhaustEvent
+            if card.type in ("minion", "amulet"):
+                self.engine.event_bus.dispatch(CardExhaustEvent(run, cid, "played"))
+            elif card.exhaust:
+                p.exhaust_pile.append(cid)
+                self.engine.event_bus.dispatch(CardExhaustEvent(run, cid, "played"))
+            else:
+                p.discard_pile.append(cid)
             
             played_count = run.node_data.get("cards_played_this_turn", 0)
             from ..models.events import CardPlayedEvent
@@ -681,7 +694,7 @@ class DuelRouter:
                                     target_name = run.player2.minions[opp_grid_clean].name
                             except ValueError:
                                 pass
-                        atk_tip = f"📢 玩家【{sender_name}】指挥随从【{m.name.replace('+', '')}】攻击了【{target_name.replace('+', '')}】！"
+                        atk_tip = f"📢 玩家【{sender_name}】指挥随从【{m.name.replace('+', '').replace('对决·', '')}】攻击了【{target_name.replace('+', '')}】！"
                         res = atk_tip + "\n" + res
                     results.append(res)
                 elif action == "技能":
@@ -804,7 +817,7 @@ class DuelRouter:
             dm1 = self.engine._append_logs_to_res(run, dm1)
             dm2 = self.engine._append_logs_to_res(run, dm2)
             
-            evolve_tip = f"📢 玩家【{sender_name}】将{evolve_target_name.replace('+', '')}进化了！"
+            evolve_tip = f"📢 玩家【{sender_name}】将{evolve_target_name.replace('+', '').replace('对决·', '')}进化了！"
             public_text = evolve_tip + "\n" + public_text
             
             return public_text, False, user_id, dm1, opp_id, dm2
@@ -867,3 +880,150 @@ class DuelRouter:
             return public_text, False, user_id, dm1, opp_id, dm2
             
         return "❌ 未知动作指令。输入帮助指令可查看操作提示。", False, None, None, None, None
+
+    def _handle_query_cmd(self, user_id: str, sender_name: str, args: list) -> Tuple[str, bool, Optional[str], Optional[str], Optional[str], Optional[str]]:
+        if not args:
+            return "❌ 请输入具体的查询内容。", False, None, None, None, None
+            
+        cmd = args[0].lower()
+        if cmd in ("对决", "duel"):
+            if len(args) > 1:
+                args = args[1:]
+                cmd = args[0].lower()
+            else:
+                return "❌ 请输入具体的查询内容。", False, None, None, None, None
+
+        run = self.save_manager.load_duel_save(user_id)
+        
+        is_query_cmd = cmd in ("查询", "query", "info", "i")
+        sub_query = None
+        if is_query_cmd:
+            if len(args) > 1:
+                sub_query = " ".join(args[1:]).strip().lower()
+            else:
+                if run:
+                    from ..renderer.duel_renderer import render_duel_battle_public, render_duel_battle_private
+                    public_text = render_duel_battle_public(run)
+                    dm1 = render_duel_battle_private(run)
+                    p1_id = run.node_data["player1_id"]
+                    p2_id = run.node_data["player2_id"]
+                    opp_id = p2_id if user_id == p1_id else p1_id
+                    
+                    run.player, run.player2 = run.player2, run.player
+                    run.user_id = opp_id
+                    dm2 = render_duel_battle_private(run)
+                    
+                    run.player, run.player2 = run.player2, run.player
+                    run.user_id = user_id
+                    
+                    public_text = self.engine._append_logs_to_res(run, public_text)
+                    dm1 = self.engine._append_logs_to_res(run, dm1)
+                    dm2 = self.engine._append_logs_to_res(run, dm2)
+                    
+                    return public_text, False, user_id, dm1, opp_id, dm2
+                else:
+                    return "❌ 只有在对战中才能查询详细战斗信息。请输入想要查询的卡牌、随从、Buff名称。\n💡 提示：你可以输入：对决查询 <名称>（如：对决查询 痛击）或对决查询 buff 查看相关介绍。", False, None, None, None, None
+        else:
+            sub_query = cmd
+            
+        if sub_query:
+            if sub_query in ("抽牌堆", "draw", "draw_pile", "弃牌堆", "discard", "discard_pile", "消耗堆", "exhaust", "exhaust_pile", "随从墓地", "minion_graveyard", "mg", "minion_grave"):
+                if not run:
+                    return f"❌ 只有在对决战斗中才能查询对决{sub_query}。", False, None, None, None, None
+                
+                from ..renderer import GameRenderer
+                if sub_query in ("抽牌堆", "draw", "draw_pile"):
+                    render_res = GameRenderer.render_draw_pile(run)
+                elif sub_query in ("弃牌堆", "discard", "discard_pile"):
+                    render_res = GameRenderer.render_discard_pile(run)
+                elif sub_query in ("消耗堆", "exhaust", "exhaust_pile"):
+                    render_res = GameRenderer.render_exhaust_pile(run)
+                else:
+                    render_res = GameRenderer.render_minion_graveyard(run)
+                    
+                return f"✨ 对局当前【{sub_query}】信息已通过私聊发送给你！", False, user_id, render_res, None, None
+
+            res_str = self.render_duel_query_info(sub_query)
+            return res_str, False, None, None, None, None
+            
+        return "❌ 未知的查询指令。", False, None, None, None, None
+
+    def render_duel_query_info(self, query_str: str) -> str:
+        q = query_str.strip().lower()
+        if not q:
+            return "❌ 请输入具体的查询内容。"
+            
+        try:
+            from ..data.duel_card_data import DUEL_CARD_CONFIG, QUEST_CONFIGS
+        except ImportError:
+            from game.data.duel_card_data import DUEL_CARD_CONFIG, QUEST_CONFIGS
+            
+        lines = ["━━━━━━━━━━━━━━━━━━━━", f"🔍 对决查询结果：{query_str}", ""]
+        found = False
+        
+        for cid, val in DUEL_CARD_CONFIG.items():
+            name = val.get("name", cid).replace("对决·", "")
+            if q == cid.lower() or q == name.lower() or q in name.lower() or q in cid.lower():
+                found = True
+                rarity = val.get("rarity", "common")
+                rarity_map = {
+                    "common": "普通",
+                    "rare": "稀有",
+                    "epic": "珍奇",
+                    "legendary": "传奇",
+                    "mythic": "神话",
+                    "artifact": "神器",
+                    "curse": "诅咒"
+                }
+                rname = rarity_map.get(rarity, rarity)
+                cost_a = val.get("cost_a", 0)
+                cost_ba = val.get("cost_ba", 0)
+                cost_str = ""
+                if cost_a == -1:
+                    cost_str += "X A "
+                elif cost_a > 0:
+                    cost_str += f"{cost_a}A "
+                if cost_ba == -1:
+                    cost_str += "X BA "
+                elif cost_ba > 0:
+                    cost_str += f"{cost_ba}BA "
+                cost_str = cost_str.strip() or "0"
+                
+                lines.append(f"🎴 对决卡牌：【{name}】 ({rname})")
+                lines.append(f"类型：{val.get('type', 'spell')} | 消耗: {cost_str}")
+                lines.append(f"效果：{val.get('desc', '')}")
+                lines.append("")
+                
+        for qid, val in QUEST_CONFIGS.items():
+            name = val.get("name", qid)
+            if q == qid.lower() or q == name.lower() or q in name.lower() or q in qid.lower():
+                found = True
+                rarity = val.get("rarity", "common")
+                rname = {
+                    "common": "普通", "rare": "稀有", "epic": "珍奇", 
+                    "legendary": "传奇", "mythic": "神话", "artifact": "神器", "curse": "诅咒"
+                }.get(rarity, rarity)
+                cost_a = val.get("cost_a", 0)
+                cost_ba = val.get("cost_ba", 0)
+                cost_str = ""
+                if cost_a > 0: cost_str += f"{cost_a}A "
+                if cost_ba > 0: cost_str += f"{cost_ba}BA "
+                cost_str = cost_str.strip() or "0"
+                
+                lines.append(f"🏆 对决任务/奖励：【{name}】 ({rname})")
+                lines.append(f"类型：{val.get('type', 'spell')} | 消耗: {cost_str}")
+                lines.append(f"描述：{val.get('desc', '')}")
+                lines.append("")
+                
+        from ..renderer.query import render_query_info
+        public_res = render_query_info(query_str)
+        if "🔍 查询结果：" in public_res:
+            parts = public_res.split("🔍 查询结果：" + query_str)[1].strip()
+            if parts:
+                found = True
+                lines.append(parts)
+                
+        if not found:
+            return f"❌ 未在对决模式中匹配到“{query_str}”相关的卡牌、随从、Buff、遗物或词条信息。"
+            
+        return "\n".join(lines).strip()

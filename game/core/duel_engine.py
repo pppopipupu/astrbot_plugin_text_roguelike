@@ -24,8 +24,47 @@ class DuelEngine(BaseBattleEngine):
     def is_battle_won(self, run: GameRun) -> bool:
         return run.player.hp <= 0 or run.player2.hp <= 0
 
+    def get_modified_spell_damage(self, run: GameRun, card: Card, damage: int) -> int:
+        return self.combat_resolver.get_modified_spell_damage(run, card, damage)
+
+    def _get_first_alive_enemy(self, run: GameRun) -> str:
+        return self.combat_resolver.get_first_alive_enemy(run)
+
+    def _discard_card(self, run: GameRun, cid: str) -> str:
+        return self.card_player.discard_card(run, cid)
+
     def _execute_card_effect(self, run: GameRun, card: Card, target: Optional[str] = None) -> str:
-        return card.execute(run, target, self)
+        res = card.execute(run, target, self)
+        for p in (run.player, run.player2):
+            for pile_name in ("hand", "draw_pile", "discard_pile", "exhaust_pile"):
+                pile = getattr(p, pile_name)
+                for idx, cid in enumerate(pile):
+                    if isinstance(cid, str) and not cid.startswith("duel_"):
+                        base_cid = cid
+                        suffix = ""
+                        for s_tag in (":replay:", ":fragile:"):
+                            if s_tag in cid:
+                                parts = cid.split(s_tag, 1)
+                                base_cid = parts[0]
+                                suffix = s_tag + parts[1]
+                                break
+                        is_upgraded = base_cid.endswith("+")
+                        core_cid = base_cid[:-1] if is_upgraded else base_cid
+                        duel_core_cid = f"duel_{core_cid}"
+                        try:
+                            from ..data.duel_card_data import DUEL_CARD_CONFIG
+                        except ImportError:
+                            from game.data.duel_card_data import DUEL_CARD_CONFIG
+                        if duel_core_cid in DUEL_CARD_CONFIG:
+                            new_base = duel_core_cid + ("+" if is_upgraded else "")
+                            pile[idx] = new_base + suffix
+        if res:
+            if res.startswith("❌") or "不足" in res or "超出范围" in res or "无法" in res or "未找到" in res:
+                return res
+            else:
+                self._log_event(run, res)
+                return ""
+        return ""
 
 
 
@@ -477,7 +516,7 @@ class DuelEngine(BaseBattleEngine):
                 m.actions += 1
                 
             for b in list(m.buffs):
-                if b.id in ("summon_sickness", "rush_buff"):
+                if b.id == "rush_buff":
                     m.buffs.remove(b)
                     
         run.node_data[f"{prefix}_evolved_this_turn"] = False

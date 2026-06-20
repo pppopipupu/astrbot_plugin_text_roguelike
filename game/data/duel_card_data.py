@@ -21,7 +21,7 @@ FACE_DAMAGE_CARDS = {
     "strike", "heavy_strike", "execut", "counterstrike",
     "fireball", "sunburst",
     "warrior_strike", "heavy_blade", "bludgeon",
-    "arcane_torrent"
+    "arcane_torrent", "warrior_bash", "warrior_anger", "body_slam"
 }
 
 RUSH_MINIONS = {
@@ -69,7 +69,7 @@ def _transform_configs():
                 dval["shield"] = max(3, int(val["shield"] * 0.7))
             if "heal_amount" in val:
                 dval["heal_amount"] = max(3, int(val["heal_amount"] * 0.7))
-            for k in ("countdown", "minion_hp", "minion_atk", "damage_type"):
+            for k in ("countdown", "minion_hp", "minion_atk", "damage_type", "amulet_desc"):
                 if k in val:
                     dval[k] = val[k]
             

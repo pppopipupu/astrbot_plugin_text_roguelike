@@ -47,6 +47,117 @@ class DuelGenericCard(Card):
             
         return ""
 
+@register_duel_card("duel_time_warp")
+class DuelTimeWarp(Card):
+    def execute(self, run, target, engine) -> str:
+        p = run.player
+        p.draw_pile.extend(p.discard_pile)
+        p.draw_pile.extend(p.hand)
+        p.discard_pile.clear()
+        p.hand.clear()
+        import random
+        random.shuffle(p.draw_pile)
+        before = len(p.hand)
+        engine._draw_cards(p, 12, run, ignore_focus=True)
+        after = len(p.hand)
+        draw_count = after - before
+        msg = f"时光倒流！已将所有卡牌重新洗回抽牌堆，重新抽取了 {draw_count} 张牌。"
+        if self.upgraded:
+            p.actions += 1
+            p.bonus_actions += 1
+            engine._add_buff_to(p, "time_warp_spell_boost", "时空强化", "本回合所有法术伤害 +2", 1)
+            msg = f"时光倒流！已将所有卡牌重新洗回抽牌堆，重新抽取了 {draw_count} 张牌。玩家额外获得 1A 1BA，且本回合所有法术伤害 +2。"
+        run.node_data.setdefault("battle_logs", []).append(msg)
+        return ""
+
+@register_duel_card("duel_unmined_gem")
+class DuelUnminedGem(Card):
+    def execute(self, run, target, engine) -> str:
+        import random
+        p = run.player
+        if p.hand:
+            idx = random.randint(0, len(p.hand) - 1)
+            target_cid = p.hand[idx]
+            val = 4 if self.upgraded else 3
+            import re
+            if ":replay:" in target_cid:
+                match = re.search(r":replay:(\d+)", target_cid)
+                if match:
+                    old_val = int(match.group(1))
+                    new_val = old_val + val
+                    new_cid = re.sub(r":replay:\d+", f":replay:{new_val}", target_cid)
+                else:
+                    new_cid = f"{target_cid}:replay:{val}"
+                    new_val = val
+            else:
+                new_cid = f"{target_cid}:replay:{val}"
+                new_val = val
+            p.hand[idx] = new_cid
+            
+            from .duel import ALL_DUEL_CARDS
+            card_name = ALL_DUEL_CARDS[new_cid].name.replace("对决·", "")
+            if ":replay:" in target_cid:
+                msg = f"使用了【未掘宝石】。随机使手牌中的【{card_name}】获得了重放 {val} 效果（累计重放 {new_val}）。"
+            else:
+                msg = f"使用了【未掘宝石】。随机使手牌中的【{card_name}】获得了重放 {val} 效果。"
+            run.node_data.setdefault("battle_logs", []).append(msg)
+        return ""
+
+@register_duel_card("duel_body_slam")
+class DuelBodySlam(Card):
+    def execute(self, run, target, engine) -> str:
+        p = run.player
+        shield_val = p.shield
+        damage = shield_val
+        if self.upgraded:
+            damage = int(shield_val * 1.5)
+        engine._damage_target(run, target, damage, damage_type="slashing", card=self)
+        return ""
+
+@register_duel_card("duel_warrior_bash")
+class DuelWarriorBash(Card):
+    def execute(self, run, target, engine) -> str:
+        try:
+            from ...data.duel_card_data import DUEL_CARD_CONFIG
+        except ImportError:
+            from game.data.duel_card_data import DUEL_CARD_CONFIG
+        cfg = DUEL_CARD_CONFIG.get(self.id, {})
+        damage = cfg.get("base_dmg", cfg.get("damage", 8))
+        engine._damage_target(run, target, damage, damage_type="bludgeoning", card=self)
+        
+        from ...core.battle.duel_observers import get_entity_by_ref
+        tgt_entity = get_entity_by_ref(run, target)
+        if tgt_entity:
+            layers = 3 if self.upgraded else 2
+            engine._add_buff_to(tgt_entity, "vulnerable", "易伤", "受到的伤害增加 50%", layers)
+        return ""
+
+@register_duel_card("duel_warrior_anger")
+class DuelWarriorAnger(Card):
+    def execute(self, run, target, engine) -> str:
+        try:
+            from ...data.duel_card_data import DUEL_CARD_CONFIG
+        except ImportError:
+            from game.data.duel_card_data import DUEL_CARD_CONFIG
+        cfg = DUEL_CARD_CONFIG.get(self.id, {})
+        damage = cfg.get("base_dmg", cfg.get("damage", 4))
+        engine._damage_target(run, target, damage, damage_type="slashing", card=self)
+        run.player.discard_pile.append("duel_warrior_anger" + ("+" if self.upgraded else ""))
+        return ""
+
+@register_duel_card("duel_calculated_gamble")
+class DuelCalculatedGamble(Card):
+    def execute(self, run, target, engine) -> str:
+        p = run.player
+        hand_len = len(p.hand)
+        p.discard_pile.extend(p.hand)
+        p.hand.clear()
+        draw_count = hand_len + (1 if self.upgraded else 0)
+        engine._draw_cards(p, draw_count, run, ignore_focus=True)
+        msg = f"使用了【计算下注】。丢弃了所有手牌，并重新抽取了 {draw_count} 张牌。"
+        run.node_data.setdefault("battle_logs", []).append(msg)
+        return ""
+
 @register_duel_card("duel_double_tap")
 class DuelDoubleTap(Card):
     def execute(self, run, target, engine) -> str:
@@ -210,8 +321,16 @@ class DuelCardRegistryDict(dict):
             if key in DUEL_CARD_CLASS_REGISTRY:
                 cls, decorator_kwargs = DUEL_CARD_CLASS_REGISTRY[key]
             else:
-                cls = DuelGenericCard
-                decorator_kwargs = {}
+                orig_key = key.replace("duel_", "")
+                try:
+                    from .registry import CARD_CLASS_REGISTRY
+                except ImportError:
+                    from game.entities.cards.registry import CARD_CLASS_REGISTRY
+                if orig_key in CARD_CLASS_REGISTRY:
+                    cls, decorator_kwargs = CARD_CLASS_REGISTRY[orig_key]
+                else:
+                    cls = DuelGenericCard
+                    decorator_kwargs = {}
                 
             inst_kwargs = {
                 "id": key,
@@ -225,6 +344,8 @@ class DuelCardRegistryDict(dict):
             for prop in ("base_dmg", "heal_amount", "countdown", "amulet_desc", "minion_hp", "minion_atk", "exhaust", "damage_type"):
                 if prop in cfg:
                     inst_kwargs[prop] = cfg[prop]
+            if "amulet_desc" not in inst_kwargs:
+                inst_kwargs["amulet_desc"] = desc
             inst_kwargs.update(decorator_kwargs)
             
             sig = inspect.signature(cls.__init__)
@@ -235,6 +356,9 @@ class DuelCardRegistryDict(dict):
                 filtered = {k: v for k, v in inst_kwargs.items() if k in sig.parameters}
                 
             inst = cls(**filtered)
+            for prop in ("base_dmg", "heal_amount", "countdown", "amulet_desc", "minion_hp", "minion_atk", "exhaust", "damage_type"):
+                if prop in cfg:
+                    setattr(inst, prop, cfg[prop])
             inst.rarity = rarity
             inst.exhaust = exhaust
             inst.fleeting = fleeting
@@ -253,6 +377,41 @@ class DuelCardRegistryDict(dict):
         return None
 
     def __getitem__(self, key):
+        if isinstance(key, str) and ":replay:" in key:
+            parts = key.rsplit(":replay:", 1)
+            base_key = parts[0]
+            replay_val = int(parts[1])
+            base_card = self[base_key]
+            import copy
+            replay_card = copy.copy(base_card)
+            replay_card.id = key
+            replay_card.replay = replay_val
+            replay_card.name = base_card.name
+            import re
+            clean_desc = re.sub(r"重放 \d+。", "", base_card.desc)
+            if clean_desc.endswith("。") or clean_desc.endswith("！"):
+                replay_card.desc = clean_desc + f"重放 {replay_val}。"
+            else:
+                replay_card.desc = clean_desc + f"。重放 {replay_val}。"
+            return replay_card
+
+        if isinstance(key, str) and ":fragile:" in key:
+            parts = key.split(":fragile:")
+            base_key = parts[0]
+            fragile_val = int(parts[1])
+            base_card = self[base_key]
+            import copy
+            fragile_card = copy.copy(base_card)
+            fragile_card.id = key
+            fragile_card.fragile = fragile_val
+            clean_name = base_card.name
+            if " (易碎 " in clean_name:
+                clean_name = clean_name.split(" (易碎 ")[0]
+            fragile_card.name = f"{clean_name} (易碎 {fragile_val})"
+            import re
+            fragile_card.desc = re.sub(r"易碎 \d+。", f"易碎 {fragile_val}。", base_card.desc)
+            return fragile_card
+
         if isinstance(key, str) and key.endswith("+"):
             base_key = key[:-1]
             if not super().__contains__(base_key):
@@ -301,16 +460,19 @@ class DuelCardRegistryDict(dict):
             return default
 
     def __contains__(self, key):
-        if isinstance(key, str) and key.endswith("+"):
-            base_key = key[:-1]
-            if super().__contains__(base_key):
+        if isinstance(key, str):
+            clean_key = key.split(":replay:")[0].split(":fragile:")[0]
+            if clean_key.endswith("+"):
+                base_key = clean_key[:-1]
+                if super().__contains__(base_key):
+                    return True
+                from ...data.duel_card_data import DUEL_CARD_CONFIG
+                return base_key in DUEL_CARD_CONFIG
+            if super().__contains__(clean_key):
                 return True
             from ...data.duel_card_data import DUEL_CARD_CONFIG
-            return base_key in DUEL_CARD_CONFIG
-        if super().__contains__(key):
-            return True
-        from ...data.duel_card_data import DUEL_CARD_CONFIG
-        return key in DUEL_CARD_CONFIG
+            return clean_key in DUEL_CARD_CONFIG
+        return super().__contains__(key)
 
 from ...data.duel_card_data import DUEL_CARD_CONFIG
 ALL_DUEL_CARDS = DuelCardRegistryDict()

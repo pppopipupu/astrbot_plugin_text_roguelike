@@ -252,6 +252,8 @@ class SaveManager:
         for k, v in p_data.get("minions", {}).items():
             m_buffs = []
             for b in v.get("buffs", []):
+                if b.get("id") == "summon_sickness":
+                    continue
                 m_buffs.append(BuffState(
                     id=b["id"],
                     name=b["name"],
@@ -273,6 +275,8 @@ class SaveManager:
         p_amulets = {k: AmuletState(**v) for k, v in p_data.get("amulets", {}).items()}
         p_buffs = []
         for b in p_data.get("buffs", []):
+            if b.get("id") == "summon_sickness":
+                continue
             p_buffs.append(BuffState(
                 id=b["id"],
                 name=b["name"],
@@ -327,6 +331,8 @@ class SaveManager:
             for ed in d["enemies"]:
                 e_buffs = []
                 for b in ed.get("buffs", []):
+                    if b.get("id") == "summon_sickness":
+                        continue
                     e_buffs.append(BuffState(
                         id=b["id"],
                         name=b["name"],

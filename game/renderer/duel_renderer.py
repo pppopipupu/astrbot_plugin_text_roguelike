@@ -201,7 +201,7 @@ def render_duel_battle_private(run: GameRun) -> str:
         lines.append("• 使用手牌：/rogue 使用 <手牌序号> [目标格子]")
         lines.append("  (注：物理或法术直伤卡牌必须以敌方随从格子 e2-e7 为目标，除非卡牌说明可打脸)")
         lines.append("• 随从攻击：/rogue 随从 <我方格子> 攻击 [目标格子]")
-        lines.append("  (注：第一个回合召唤失调，有冲锋/突进词条除外，未指定目标默认打敌方第一个存活的随从/领主)")
+        lines.append("  (注：第一个回合无法立即攻击，有冲锋/突进词条除外，未指定目标默认打敌方第一个存活的随从/领主)")
         lines.append("• 使用幸运币：/rogue 幸运币 (或 coin/cn)")
         lines.append("• 进化卡牌：/rogue 进化 <我方格子/手牌序号> (或 evolve/ev)")
         lines.append("• 结束回合：/rogue 结束 (或 end)")
