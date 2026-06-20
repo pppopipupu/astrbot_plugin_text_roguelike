@@ -714,7 +714,7 @@ class TestDuelSystem(unittest.TestCase):
         self.assertIn("水元素", res)
         
         run = self.save_manager.load_duel_save(u1)
-        self.assertEqual(run.player2.hp, 200)
+        self.assertLess(run.player2.hp, 200)
         self.assertLess(run.player2.minions["1"].hp, 9999)
         
         res, term, p1, dm1, p2, dm2 = self.router.route_in_game_action(run, u1, "张三", ["使用", "1"])

@@ -506,6 +506,7 @@ class DuelEngine(BaseBattleEngine):
 
     def start_turn(self, run: GameRun):
         p = run.player
+        run.node_data["cards_played_this_turn"] = 0
         p1_id = run.node_data["player1_id"]
         is_p1 = (run.user_id == p1_id)
         prefix = "p1" if is_p1 else "p2"

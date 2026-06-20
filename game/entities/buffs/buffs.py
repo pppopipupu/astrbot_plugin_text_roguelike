@@ -94,7 +94,10 @@ class EchoFormBuff(BuffImpl):
             return
         played_count = event.run.node_data.get("cards_played_this_turn", 0)
         stacks = buff_state.stacks
-        if event.card.id.startswith("echo_form"):
+        card_id = event.card.id
+        if card_id.startswith("duel_"):
+            card_id = card_id[5:]
+        if card_id.startswith("echo_form"):
             stacks = max(0, stacks - 1)
         num_echoes = min(10, max(0, stacks - 10 * played_count))
         if num_echoes > 0:
@@ -114,7 +117,10 @@ class EchoFormBuff(BuffImpl):
     def on_card_played_legacy(self, run, card, target: str, engine) -> str:
         played_count = run.node_data.get("cards_played_this_turn", 0)
         stacks = self.stacks
-        if card.id.startswith("echo_form"):
+        card_id = card.id
+        if card_id.startswith("duel_"):
+            card_id = card_id[5:]
+        if card_id.startswith("echo_form"):
             stacks = max(0, stacks - 1)
         num_echoes = min(10, max(0, stacks - 10 * played_count))
         res = ""
@@ -234,8 +240,12 @@ class StrengthBuff(BuffImpl):
             dtype_str = event.damage_type.value if hasattr(event.damage_type, "value") else str(event.damage_type)
             if dtype_str in ("slashing", "bludgeoning", "piercing"):
                 mult = 1
-                if event.card and event.card.id.startswith("heavy_blade"):
-                    mult = 5 if event.card.upgraded else 3
+                if event.card:
+                    card_id = event.card.id
+                    if card_id.startswith("duel_"):
+                        card_id = card_id[5:]
+                    if card_id.startswith("heavy_blade"):
+                        mult = 5 if event.card.upgraded else 3
                 event.modified_damage += buff_state.stacks * mult
 
 @register_buff("minor_vulnerable")
@@ -566,8 +576,12 @@ class BufferBuff(BuffImpl):
 
 class DemonContractBuff(BuffImpl):
     def on_card_played(self, event, buff_state, entity):
-        if entity == event.run.player and event.card.type == "spell" and not event.card.id.startswith("demon_contract"):
-            stacks = buff_state.stacks
+        if entity == event.run.player and event.card.type == "spell":
+            card_id = event.card.id
+            if card_id.startswith("duel_"):
+                card_id = card_id[5:]
+            if not card_id.startswith("demon_contract"):
+                stacks = buff_state.stacks
             for _ in range(stacks):
                 if event.engine.is_battle_won(event.run):
                     break

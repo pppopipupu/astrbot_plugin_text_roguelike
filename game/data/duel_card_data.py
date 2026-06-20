@@ -21,7 +21,8 @@ FACE_DAMAGE_CARDS = {
     "strike", "heavy_strike", "execut", "counterstrike",
     "fireball", "sunburst",
     "warrior_strike", "heavy_blade", "bludgeon",
-    "arcane_torrent", "warrior_bash", "warrior_anger", "body_slam"
+    "arcane_torrent", "warrior_bash", "warrior_anger", "body_slam",
+    "meteor_swarm", "doomsday_judgment"
 }
 
 RUSH_MINIONS = {
@@ -77,12 +78,30 @@ def _transform_configs():
             is_damage = ("base_dmg" in dval or "damage" in dval or "damage_type" in val)
             
             if is_damage and dval["type"] == "spell":
-                if is_face:
-                    dval["desc"] = f"（可选择领主或随从）造成 {dval.get('base_dmg', dval.get('damage', 10))} 点伤害。"
-                    dval["face_target"] = True
+                has_fixed_dmg = False
+                dmg_val = 0
+                if "base_dmg" in val and val["base_dmg"] > 0:
+                    has_fixed_dmg = True
+                    dmg_val = dval["base_dmg"]
+                elif "damage" in val and val["damage"] > 0:
+                    has_fixed_dmg = True
+                    dmg_val = dval["damage"]
+                
+                if has_fixed_dmg:
+                    if is_face:
+                        dval["desc"] = f"（可选择领主或随从）造成 {dmg_val} 点伤害。"
+                        dval["face_target"] = True
+                    else:
+                        dval["desc"] = f"（只能选择随从）造成 {dmg_val} 点伤害。"
+                        dval["face_target"] = False
                 else:
-                    dval["desc"] = f"（只能选择随从）造成 {dval.get('base_dmg', dval.get('damage', 10))} 点伤害。"
-                    dval["face_target"] = False
+                    orig_desc = val.get("desc", "")
+                    if is_face:
+                        dval["desc"] = f"（可选择领主或随从）{orig_desc}"
+                        dval["face_target"] = True
+                    else:
+                        dval["desc"] = f"（只能选择随从）{orig_desc}"
+                        dval["face_target"] = False
             else:
                 dval["desc"] = val.get("desc", "")
             
