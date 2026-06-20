@@ -563,7 +563,6 @@ class CardPlayer:
                 self.engine._log_event(run, "⏳ [时序被动] 触发时间跳跃，本回合额外获得 1 个附赠动作（BA）！")
         for mk, mv in p.minions.items():
             mv.actions += 1
-            mv.bonus_actions += 1 if mv.id.startswith("arcane_golem") else 0
             mv.attack_actions = 1
             if mv.id == "mercenary":
                 mv.atk = 4

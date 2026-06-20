@@ -41,11 +41,26 @@ class DuelEngine(BaseBattleEngine):
             from ..data.duel_card_data import DUEL_CARD_CONFIG
         except ImportError:
             from game.data.duel_card_data import DUEL_CARD_CONFIG
-        cfg = DUEL_CARD_CONFIG.get(card.id, {})
+        cid_for_cfg = card.id
+        if not cid_for_cfg.startswith("duel_"):
+            cid_for_cfg = "duel_" + cid_for_cfg
+        cfg = DUEL_CARD_CONFIG.get(cid_for_cfg, {})
         face_target = cfg.get("face_target", True)
         if card.type == "spell" and not face_target and run.enemies:
             run.enemies[0] = EnemyState(name="空", hp=0, max_hp=0, shield=0)
-        res = card.execute(run, target, self)
+        orig_id = card.id
+        orig_name = card.name
+        is_custom = getattr(card, "is_duel_custom", False)
+        if not is_custom:
+            card.id = orig_id.replace("duel_", "")
+            if orig_name.startswith("对决·"):
+                card.name = orig_name.replace("对决·", "", 1)
+        try:
+            res = card.execute(run, target, self)
+        finally:
+            if not is_custom:
+                card.id = orig_id
+                card.name = orig_name
         run.enemies = orig_enemies
         for p in (run.player, run.player2):
             for pile_name in ("hand", "draw_pile", "discard_pile", "exhaust_pile"):
@@ -66,6 +81,12 @@ class DuelEngine(BaseBattleEngine):
                         if duel_core_cid in DUEL_CARD_CONFIG:
                             new_base = duel_core_cid + ("+" if is_upgraded else "")
                             pile[idx] = new_base + suffix
+            for a_key, a_val in list(p.amulets.items()):
+                if not a_val.id.startswith("duel_"):
+                    a_val.id = "duel_" + a_val.id
+            for idx, cid in enumerate(p.minion_graveyard):
+                if isinstance(cid, str) and not cid.startswith("duel_"):
+                    p.minion_graveyard[idx] = "duel_" + cid
         if res:
             if res.startswith("❌") or "不足" in res or "超出范围" in res or "无法" in res or "未找到" in res:
                 return res
@@ -94,7 +115,10 @@ class DuelEngine(BaseBattleEngine):
             from ..data.duel_card_data import DUEL_CARD_CONFIG
         except ImportError:
             from game.data.duel_card_data import DUEL_CARD_CONFIG
-        cfg = DUEL_CARD_CONFIG.get(card.id, {})
+        cid_for_cfg = card.id
+        if not cid_for_cfg.startswith("duel_"):
+            cid_for_cfg = "duel_" + cid_for_cfg
+        cfg = DUEL_CARD_CONFIG.get(cid_for_cfg, {})
         dtype = cfg.get("damage_type", "")
         is_spell = (card.type == "spell" and dtype not in ("slashing", "bludgeoning", "piercing", "attack"))
         
@@ -134,7 +158,7 @@ class DuelEngine(BaseBattleEngine):
             if dt_buff:
                 p.buffs.remove(dt_buff)
                 self._log_event(event.run, f"⚡ [双发] 复制并再次重放了卡牌 【{card.name}】！")
-                card.execute(event.run, event.target, self)
+                self._execute_card_effect(event.run, card, event.target)
 
     def on_damage_take_quests(self, event):
         p = event.run.player
@@ -212,7 +236,10 @@ class DuelEngine(BaseBattleEngine):
                 from ..data.duel_card_data import DUEL_CARD_CONFIG
             except ImportError:
                 from game.data.duel_card_data import DUEL_CARD_CONFIG
-            cfg = DUEL_CARD_CONFIG.get(card.id, {})
+            cid_for_cfg = card.id
+            if not cid_for_cfg.startswith("duel_"):
+                cid_for_cfg = "duel_" + cid_for_cfg
+            cfg = DUEL_CARD_CONFIG.get(cid_for_cfg, {})
             if card.type == "spell" and not cfg.get("face_target", False):
                 return
         p = run.player

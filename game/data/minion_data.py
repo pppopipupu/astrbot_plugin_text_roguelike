@@ -98,9 +98,9 @@ MINION_CONFIG = {
             {
                 "id": "overload",
                 "name": "能量过载",
-                "cost_a": 0,
-                "cost_ba": 2,
-                "desc": "消耗 2BA，自身失去 4 生命，本回合攻击力 +3。",
+                "cost_a": 2,
+                "cost_ba": 0,
+                "desc": "消耗 2A，自身失去 4 生命，本回合攻击力 +3。",
                 "self_damage": 4,
                 "atk_buff": 3,
                 "feedback": "自身失去 {self_damage} 点生命值，本回合攻击力增加 {atk_buff} 点。",
@@ -123,18 +123,18 @@ MINION_CONFIG = {
             {
                 "id": "icerain_spray",
                 "name": "冰雨散射",
-                "cost_a": 1,
-                "cost_ba": 1,
-                "desc": "消耗 1A 1BA，对所有敌人造成 4 点寒冷伤害，并使所有敌人受到 1 层轻度寒冷易伤。",
+                "cost_a": 2,
+                "cost_ba": 0,
+                "desc": "消耗 2A，对所有敌人造成 4 点寒冷伤害，并使所有敌人受到 1 层轻度寒冷易伤。",
                 "damage": 4,
                 "feedback": "降下漫天冰雨散射攻击敌人。"
             },
             {
                 "id": "aurora_shield",
                 "name": "极光屏障",
-                "cost_a": 0,
-                "cost_ba": 1,
-                "desc": "消耗 1BA，为玩家提供 8 点护盾，且我方所有随从和玩家均获得 4 点护盾（随从获得 4 点生命恢复，玩家共获得 12 点护盾）。",
+                "cost_a": 1,
+                "cost_ba": 0,
+                "desc": "消耗 1A，为玩家提供 8 点护盾，且我方所有随从和玩家均获得 4 点护盾（随从获得 4 点生命恢复，玩家共获得 12 点护盾）。",
                 "shield": 8,
                 "feedback": "凝聚极光屏障，为所有人附加防护效果。"
             }
@@ -240,9 +240,9 @@ MINION_CONFIG = {
             {
                 "id": "overload",
                 "name": "能量过载+",
-                "cost_a": 0,
-                "cost_ba": 1,
-                "desc": "消耗 1BA，自身失去 3 生命，本回合攻击力 +4。",
+                "cost_a": 1,
+                "cost_ba": 0,
+                "desc": "消耗 1A，自身失去 3 生命，本回合攻击力 +4。",
                 "self_damage": 3,
                 "atk_buff": 4,
                 "feedback": "自身失去 {self_damage} 点生命值，本回合攻击力增加 {atk_buff} 点。",
@@ -265,9 +265,9 @@ MINION_CONFIG = {
             {
                 "id": "icerain_spray",
                 "name": "冰雨散射+",
-                "cost_a": 1,
-                "cost_ba": 1,
-                "desc": "消耗 1A 1BA，对所有敌人造成 7 点寒冷伤害，并使所有敌人受到 2 层轻度寒冷易伤。",
+                "cost_a": 2,
+                "cost_ba": 0,
+                "desc": "消耗 2A，对所有敌人造成 7 点寒冷伤害，并使所有敌人受到 2 层轻度寒冷易伤。",
                 "damage": 7,
                 "vulnerable_layers": 2,
                 "feedback": "降下漫天冰雨散射攻击敌人。"
@@ -275,9 +275,9 @@ MINION_CONFIG = {
             {
                 "id": "aurora_shield",
                 "name": "极光屏障+",
-                "cost_a": 0,
-                "cost_ba": 1,
-                "desc": "消耗 1BA，为玩家提供 12 点护盾，且我方所有随从和玩家均获得 6 点护盾（随从获得 6 点生命恢复，玩家共获得 18 点护盾）。",
+                "cost_a": 1,
+                "cost_ba": 0,
+                "desc": "消耗 1A，为玩家提供 12 点护盾，且我方所有随从和玩家均获得 6 点护盾（随从获得 6 点生命恢复，玩家共获得 18 点护盾）。",
                 "player_shield": 12,
                 "minion_heal": 6,
                 "feedback": "凝聚极光屏障，为所有人附加防护效果。"

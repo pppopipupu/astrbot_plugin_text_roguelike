@@ -178,8 +178,7 @@ class SummonMinionCard(Card):
             if not boss_cfg.get("icerainboww_enabled", True):
                 return "❌ 该卡牌当前已被管理员禁用，无法使用。"
         cfg = CARD_CONFIG.get(self.id.replace("+", ""), {})
-        ba = 1 if self.id.startswith("arcane_golem") else 0
-        grid = engine._summon_minion(run, self.id, self.name, self.minion_hp, self.minion_atk, ba)
+        grid = engine._summon_minion(run, self.id, self.name, self.minion_hp, self.minion_atk, 0)
         if grid:
             battlecry_msg = ""
             target_name = "无"

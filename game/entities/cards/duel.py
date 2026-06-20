@@ -359,6 +359,7 @@ class DuelCardRegistryDict(dict):
             for prop in ("base_dmg", "heal_amount", "countdown", "amulet_desc", "minion_hp", "minion_atk", "exhaust", "damage_type"):
                 if prop in cfg:
                     setattr(inst, prop, cfg[prop])
+            inst.is_duel_custom = (key in DUEL_CARD_CLASS_REGISTRY) or (cls == DuelGenericCard)
             inst.rarity = rarity
             inst.exhaust = exhaust
             inst.fleeting = fleeting
