@@ -344,8 +344,8 @@ class DuelRouter:
                 
             game_id = str(uuid.uuid4())[:8]
             
-            p1_state = PlayerState(hp=200, max_hp=200, shield=0, gold=0, stage=1, deck=p1_deck)
-            p2_state = PlayerState(hp=200, max_hp=200, shield=0, gold=0, stage=1, deck=p2_deck)
+            p1_state = PlayerState(hp=200, max_hp=200, shield=0, gold=0, stage=1, deck=p1_deck, name=p1_name)
+            p2_state = PlayerState(hp=200, max_hp=200, shield=0, gold=0, stage=1, deck=p2_deck, name=sender_name)
             
             run = GameRun(
                 user_id=opp_id,

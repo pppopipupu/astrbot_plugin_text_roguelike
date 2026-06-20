@@ -122,6 +122,7 @@ class PlayerState:
     shield: int
     gold: int
     stage: int
+    name: str = "玩家"
     deck: List[str] = field(default_factory=list)
     draw_pile: List[str] = field(default_factory=list)
     discard_pile: List[str] = field(default_factory=list)

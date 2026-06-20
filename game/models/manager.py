@@ -300,6 +300,7 @@ class SaveManager:
             shield=p_data["shield"],
             gold=p_data["gold"],
             stage=p_data["stage"],
+            name=p_data.get("name", "玩家"),
             deck=p_data.get("deck", []),
             draw_pile=p_data.get("draw_pile", []),
             discard_pile=p_data.get("discard_pile", []),

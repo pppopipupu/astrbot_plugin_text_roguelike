@@ -188,6 +188,18 @@ class DuelEngine(BaseBattleEngine):
 
     def _damage_target(self, run: GameRun, target: str, dmg: int, source: str = "effect", damage_type: str = "effect", card: Optional[Card] = None):
         self._sync_forward(run)
+        p = run.player
+        p2 = run.player2
+        if target.startswith("p") and target != "p0":
+            if target[1:] not in p.minions:
+                return
+        if target.startswith("e") and target != "e1":
+            try:
+                g = str(int(target[1:]) - 1)
+                if g not in p2.minions:
+                    return
+            except ValueError:
+                return
         if source == "effect":
             if run.node_data.get("current_acting_minion_grid"):
                 source = f"p{run.node_data['current_acting_minion_grid']}"
@@ -387,6 +399,8 @@ class DuelEngine(BaseBattleEngine):
         self.card_player.draw_cards(p, count, run, ignore_focus)
 
     def _add_buff_to(self, entity, buff_id: str, buff_name: str, desc: str, count: int = 1, count2: Optional[int] = None):
+        if getattr(entity, "name", "") == "空":
+            return
         self.combat_resolver.add_buff_to(entity, buff_id, buff_name, desc, count, count2)
 
     def _get_free_grid(self, p: PlayerState) -> Optional[str]:
@@ -456,6 +470,8 @@ class DuelEngine(BaseBattleEngine):
         
         self._draw_cards(p1, 6, run, ignore_focus=True)
         self._draw_cards(p2, 6, run, ignore_focus=True)
+        
+        self._sync_forward(run)
         
         from ..models.events import BattleStartEvent
         self.event_bus.dispatch(BattleStartEvent(run))
