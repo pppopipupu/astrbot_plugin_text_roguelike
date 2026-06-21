@@ -1001,5 +1001,40 @@ class TestDuelSystem(unittest.TestCase):
         final_opp_hp = run.player2.hp
         self.assertEqual(initial_opp_hp - final_opp_hp, 24)
 
+    def test_player_lord_buff_rendering_and_effects(self):
+        u1 = "user1"
+        u2 = "user2"
+        self.router.handle_deck_cmd(u1, ["创建", "p1deck"])
+        for c in ["duel_warrior_strike", "duel_warrior_defend", "duel_warrior_bash", "duel_iron_wave", "duel_warrior_anger", "duel_body_slam"]:
+            self.router.handle_deck_cmd(u1, ["添加", c, "4"])
+        self.router.handle_deck_cmd(u1, ["添加", "duel_meteor_swarm", "2"])
+        
+        self.router.handle_deck_cmd(u2, ["创建", "p2deck"])
+        for c in ["duel_warrior_strike", "duel_warrior_defend", "duel_warrior_bash", "duel_iron_wave", "duel_warrior_anger", "duel_body_slam"]:
+            self.router.handle_deck_cmd(u2, ["添加", c, "4"])
+        self.router.handle_deck_cmd(u2, ["添加", "duel_meteor_swarm", "2"])
+        
+        self.router.handle_duel_cmd(u1, "张三", ["@user2"])
+        self.router.handle_duel_cmd(u2, "李四", ["接受"])
+        
+        run = self.save_manager.load_duel_save(u1)
+        run.player.hand = ["duel_reward_fury"]
+        run.player.actions = 10
+        self.save_manager.save_duel_save(u1, run)
+        
+        res, term, p1, dm1, p2, dm2 = self.router.route_in_game_action(run, u1, "张三", ["使用", "1"])
+        self.assertNotIn("❌", res)
+        self.assertIn("狂怒", res)
+        
+        run = self.save_manager.load_duel_save(u1)
+        has_fury = any(b.id == "duel_fury_buff" for b in run.player.buffs)
+        self.assertTrue(has_fury)
+        
+        public_view = render_duel_battle_public(run)
+        self.assertIn("狂怒", public_view)
+        
+        private_view = render_duel_battle_private(run)
+        self.assertIn("狂怒", private_view)
+
 if __name__ == "__main__":
     unittest.main()

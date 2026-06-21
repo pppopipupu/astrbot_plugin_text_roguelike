@@ -3,6 +3,19 @@ from ..models.state import GameRun
 from ..cards import ALL_CARDS, MINION_SKILLS
 from .menu import get_card_cost_str
 
+def get_entity_buffs_str(entity) -> str:
+    if not getattr(entity, "buffs", None):
+        return ""
+    buff_strs = []
+    for b in entity.buffs:
+        if b.stacks > 1:
+            buff_strs.append(f"{b.name} x{b.stacks}")
+        else:
+            buff_strs.append(f"{b.name}")
+    if buff_strs:
+        return " | Buff: " + " ".join(buff_strs)
+    return ""
+
 def get_p1_p2_states(run: GameRun):
     p1_id = run.node_data.get("player1_id")
     if run.user_id == p1_id:
@@ -20,6 +33,8 @@ def render_duel_battle_public(run: GameRun) -> str:
     p2_coins = run.node_data.get("p2_coins", 0)
     p1_ev = run.node_data.get("p1_evolve_points", 4)
     p2_ev = run.node_data.get("p2_evolve_points", 4)
+    p1_buffs = get_entity_buffs_str(p1)
+    p2_buffs = get_entity_buffs_str(p2)
     
     lines = [
         "━━━━━━━━━━━━━━━━━━━━",
@@ -27,7 +42,7 @@ def render_duel_battle_public(run: GameRun) -> str:
         f"当前回合：⏳ {turn_name} 的回合 (回合数: {run.node_data.get('turn_count', 1)})",
         "",
         f"🔴 玩家一：{p1_name}",
-        f"❤️ HP {p1.hp}/{p1.max_hp} | 🛡️ 护盾 {p1.shield} | ⚡ 能量 {p1.actions}A {p1.bonus_actions}BA",
+        f"❤️ HP {p1.hp}/{p1.max_hp} | 🛡️ 护盾 {p1.shield} | ⚡ 能量 {p1.actions}A {p1.bonus_actions}BA{p1_buffs}",
         f"进化点: {p1_ev}/4 | 幸运币: {p1_coins} 个",
         "玩家一战场：",
     ]
@@ -58,7 +73,7 @@ def render_duel_battle_public(run: GameRun) -> str:
                 
     lines.append("")
     lines.append(f"🔵 玩家二：{p2_name}")
-    lines.append(f"❤️ HP {p2.hp}/{p2.max_hp} | 🛡️ 护盾 {p2.shield} | ⚡ 能量 {p2.actions}A {p2.bonus_actions}BA")
+    lines.append(f"❤️ HP {p2.hp}/{p2.max_hp} | 🛡️ 护盾 {p2.shield} | ⚡ 能量 {p2.actions}A {p2.bonus_actions}BA{p2_buffs}")
     lines.append(f"进化点: {p2_ev}/4 | 幸运币: {p2_coins} 个")
     lines.append("玩家二战场：")
     
@@ -109,6 +124,8 @@ def render_duel_battle_private(run: GameRun) -> str:
         
     p = run.player
     opp = run.player2
+    my_buffs = get_entity_buffs_str(p)
+    opp_buffs = get_entity_buffs_str(opp)
     
     current_turn_id = run.node_data.get("current_turn_id")
     is_my_turn = (current_turn_id == run.user_id)
@@ -117,7 +134,7 @@ def render_duel_battle_private(run: GameRun) -> str:
     lines = [
         "━━━━━━━━━━━━━━━━━━━━",
         f"⚔️ 【对决战局详情 ({turn_status})】",
-        f"自己({my_name})：❤️ HP {p.hp}/{p.max_hp} | 🛡️ 护盾 {p.shield} | ⚡ 能量 {p.actions}A {p.bonus_actions}BA",
+        f"自己({my_name})：❤️ HP {p.hp}/{p.max_hp} | 🛡️ 护盾 {p.shield} | ⚡ 能量 {p.actions}A {p.bonus_actions}BA{my_buffs}",
         f"进化点: {my_ev}/4 | 幸运币: {my_coins} 个",
         "",
         "【我方战场】",
@@ -148,7 +165,7 @@ def render_duel_battle_private(run: GameRun) -> str:
                 lines.append(f" 格子 [{i}] 护符：{a.name} (⏳ 吟唱 {a.countdown}) - {a.desc}")
                 
     lines.append("")
-    lines.append(f"对手({opp_name})：❤️ HP {opp.hp}/{opp.max_hp} | 🛡️ 护盾 {opp.shield} | ⚡ 能量 {opp.actions}A {opp.bonus_actions}BA")
+    lines.append(f"对手({opp_name})：❤️ HP {opp.hp}/{opp.max_hp} | 🛡️ 护盾 {opp.shield} | ⚡ 能量 {opp.actions}A {opp.bonus_actions}BA{opp_buffs}")
     lines.append(f"对手进化点: {opp_ev}/4")
     lines.append("【敌方战场】")
     

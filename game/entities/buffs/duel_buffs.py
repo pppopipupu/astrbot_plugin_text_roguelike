@@ -19,6 +19,8 @@ def get_duel_buff_impl(buff_id: str, stacks: int, stacks2: Optional[int] = None)
     if isinstance(buff_id, str) and buff_id.startswith("duel_"):
         buff_id = buff_id[5:]
     cls = DUEL_BUFF_CLASS_REGISTRY.get(buff_id)
+    if not cls and isinstance(buff_id, str) and buff_id.endswith("_buff"):
+        cls = DUEL_BUFF_CLASS_REGISTRY.get(buff_id[:-5])
     if cls:
         inst = cls(stacks)
         inst.stacks2 = stacks2
