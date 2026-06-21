@@ -126,7 +126,9 @@ class CardPlayer:
                     if self.engine.is_battle_won(run):
                         break
                     extra_res = self.engine._execute_card_effect(run, card, target)
-                    run.node_data.setdefault("extra_play_msgs", []).append(f" 🔁 [重放触发] {extra_res}")
+                    played_evt_rep = CardPlayedEvent(run, card, target, extra_res, is_extra=True)
+                    self.engine.event_bus.dispatch(played_evt_rep)
+                    run.node_data.setdefault("extra_play_msgs", []).append(f" 🔁 [重放触发] {played_evt_rep.feedback}")
             played_evt = CardPlayedEvent(run, card, target, res)
             self.engine.event_bus.dispatch(played_evt)
             res = played_evt.feedback
@@ -229,7 +231,9 @@ class CardPlayer:
                     if self.engine.is_battle_won(run):
                         break
                     extra_res = self.engine._execute_card_effect(run, card, target)
-                    run.node_data.setdefault("extra_play_msgs", []).append(f" 🔁 [重放触发] {extra_res}")
+                    played_evt_rep = CardPlayedEvent(run, card, target, extra_res, is_extra=True)
+                    self.engine.event_bus.dispatch(played_evt_rep)
+                    run.node_data.setdefault("extra_play_msgs", []).append(f" 🔁 [重放触发] {played_evt_rep.feedback}")
         finally:
             run.node_data["current_playing_card_id"] = ""
         played_count = run.node_data.get("cards_played_this_turn", 0)

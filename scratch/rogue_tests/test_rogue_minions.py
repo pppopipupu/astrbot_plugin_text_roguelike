@@ -1,0 +1,115 @@
+import unittest
+from scratch.rogue_tests.base import *
+
+class TestRogueMinions(unittest.TestCase):
+    def test_minion_reindexing(self):
+        class DummySaveManager:
+            def save_save(self, user_id, run):
+                pass
+            def delete_save(self, user_id):
+                pass
+        sm = DummySaveManager()
+        engine = BattleEngine(sm)
+        player = PlayerState(
+            hp=50,
+            max_hp=100,
+            shield=0,
+            gold=100,
+            stage=1,
+            deck=["quick_strike"],
+            hand=["quick_strike"],
+            actions=5,
+            bonus_actions=5,
+            minions={
+                "1": MinionState("mercenary", "雇佣兵 1", 20, 20, 4, 1, 0),
+                "2": MinionState("mercenary", "雇佣兵 2", 10, 10, 4, 1, 0),
+                "3": MinionState("mercenary", "雇佣兵 3", 30, 30, 4, 1, 0)
+            }
+        )
+        run = GameRun(
+            user_id="test_user_reindexing",
+            node_type="battle",
+            player=player,
+            enemies=[EnemyState("测试敌人", 30, 30, 0)]
+        )
+        engine._damage_target(run, "p2", 10, damage_type="true")
+        self.assertNotIn("2", player.minions)
+        self.assertIn("3", player.minions)
+        engine.play_card(run, 1, None)
+        self.assertEqual(len(player.minions), 2)
+        self.assertEqual(player.minions["1"].name, "雇佣兵 1")
+        self.assertEqual(player.minions["2"].name, "雇佣兵 3")
+        self.assertNotIn("3", player.minions)
+
+    def test_minion_attack_digit_target(self):
+        class DummySaveManager:
+            def save_save(self, user_id, run):
+                pass
+            def delete_save(self, user_id):
+                pass
+        mgr = DummySaveManager()
+        engine = BattleEngine(mgr)
+        player = PlayerState(
+            hp=50,
+            max_hp=50,
+            shield=0,
+            gold=100,
+            stage=1,
+            deck=[],
+            hand=[],
+            minions={
+                "1": MinionState("mercenary", "雇佣兵", 10, 10, 4, 1, 0)
+            }
+        )
+        enemy = EnemyState("哥布林", 20, 20, 0)
+        run = GameRun(
+            user_id="test_user",
+            node_type="battle",
+            player=player,
+            enemies=[enemy]
+        )
+        res = engine.card_player.minion_attack(run, "1", "1")
+        self.assertEqual(enemy.hp, 16)
+        self.assertIn("造成 4 点物理伤害", res)
+
+    def test_minion_defeat_non_summon_and_win(self):
+        class DummySaveManager:
+            def __init__(self):
+                self.saved_run = None
+                self.stats = UserStats()
+            def save_save(self, user_id, run):
+                self.saved_run = run
+            def delete_save(self, user_id):
+                pass
+            def load_stats(self, user_id):
+                return self.stats
+            def save_stats(self, user_id, stats):
+                self.stats = stats
+        mgr = DummySaveManager()
+        engine = BattleEngine(mgr)
+        router = CLIRouter(mgr, engine)
+        player = PlayerState(
+            hp=50,
+            max_hp=50,
+            shield=0,
+            gold=100,
+            stage=1,
+            deck=[],
+            hand=[],
+            minions={
+                "1": MinionState("mercenary", "雇佣兵", 10, 10, 4, 1, 0)
+            }
+        )
+        enemy_non_summon = EnemyState("Boss", 4, 4, 0, is_summon=False)
+        enemy_summon = EnemyState("爪牙", 10, 10, 0, is_summon=True)
+        run = GameRun(
+            user_id="test_user",
+            node_type="battle",
+            player=player,
+            enemies=[enemy_non_summon, enemy_summon]
+        )
+        res, term = router._execute_sub_action("test_user", run, ["随从", "1", "攻击", "e1"])
+        self.assertEqual(enemy_non_summon.hp, 0)
+        self.assertTrue(term)
+        self.assertEqual(run.node_type, "reward")
+        self.assertIn("战斗胜利！你击败了敌方所有单位。", res)

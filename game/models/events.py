@@ -42,6 +42,7 @@ class CardPlayedEvent(GameEvent):
     card: Card
     target: Optional[str]
     feedback: str = ""
+    is_extra: bool = False
 
 @dataclass
 class DamageCalculateEvent(GameEvent):

@@ -66,7 +66,9 @@ class DuelCardPlayer:
                     if self.engine.is_battle_won(run):
                         break
                     extra_res = self.engine._execute_card_effect(run, card, target)
-                    run.node_data.setdefault("extra_play_msgs", []).append(f" 🔁 [重放触发] {extra_res}")
+                    played_evt_rep = CardPlayedEvent(run, card, target, extra_res, is_extra=True)
+                    self.engine.event_bus.dispatch(played_evt_rep)
+                    run.node_data.setdefault("extra_play_msgs", []).append(f" 🔁 [重放触发] {played_evt_rep.feedback}")
             played_evt = CardPlayedEvent(run, card, target, res)
             self.engine.event_bus.dispatch(played_evt)
             res = played_evt.feedback

@@ -92,6 +92,8 @@ class EchoFormBuff(BuffImpl):
     def on_card_played(self, event, buff_state, entity):
         if entity != event.run.player:
             return
+        if getattr(event, "is_extra", False):
+            return
         played_count = event.run.node_data.get("cards_played_this_turn", 0)
         stacks = buff_state.stacks
         card_id = event.card.id
@@ -105,14 +107,19 @@ class EchoFormBuff(BuffImpl):
                 if event.engine.is_battle_won(event.run):
                     break
                 extra_res = event.engine._execute_card_effect(event.run, event.card, event.target)
-                event.run.node_data.setdefault("extra_play_msgs", []).append(f" 🔁 [回响触发] {extra_res}")
+                from ...models.events import CardPlayedEvent
+                played_evt = CardPlayedEvent(event.run, event.card, event.target, extra_res, is_extra=True)
+                event.engine.event_bus.dispatch(played_evt)
+                event.run.node_data.setdefault("extra_play_msgs", []).append(f" 🔁 [回响触发] {played_evt.feedback}")
                 replay_val = getattr(event.card, "replay", 0)
                 if replay_val > 0:
                     for _ in range(replay_val):
                         if event.engine.is_battle_won(event.run):
                             break
                         extra_res_rep = event.engine._execute_card_effect(event.run, event.card, event.target)
-                        event.run.node_data.setdefault("extra_play_msgs", []).append(f" 🔁 [重放触发] {extra_res_rep}")
+                        played_evt_rep = CardPlayedEvent(event.run, event.card, event.target, extra_res_rep, is_extra=True)
+                        event.engine.event_bus.dispatch(played_evt_rep)
+                        event.run.node_data.setdefault("extra_play_msgs", []).append(f" 🔁 [重放触发] {played_evt_rep.feedback}")
 
     def on_card_played_legacy(self, run, card, target: str, engine) -> str:
         played_count = run.node_data.get("cards_played_this_turn", 0)

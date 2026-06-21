@@ -85,11 +85,26 @@
     - `explore.py`: 荒野事件、奇妙商店、古老宝箱、战利品等界面渲染.
     - `query.py`: 随从、遗物、Buff及卡牌模糊匹配查询效果渲染。
 - `scratch/`: 本地临时测试与仿真目录。
+  - `test_flow.py`: 自动化测试入口（肉鸽模式），采用自动扫描机制，加载运行 `rogue_tests/` 下的所有测试用例。
+  - `test_duel.py`: 自动化测试入口（对决模式），采用自动扫描机制，加载运行 `duel_tests/` 下的所有测试用例。
   - `test_game.py`: 包含交互式与自动随机仿真的控制台测试程序。
-  - `test_flow.py`: 综合单元测试与集成测试脚本，采用 unittest 框架，覆盖 14 个核心业务逻辑场景。
   - `test_astrbot_load.py`: 用于在宿主机验证 Docker 容器内插件加载与依赖导入状况。
-  - `test_duel.py`: 对决模式自动化单元与集成测试。
   - `run_tests_docker.bat`: 依次在容器中运行上述核心测试文件。
+  - `rogue_tests/`: 肉鸽模式拆分后的高内聚单元与集成测试包。
+    - `base.py`: 基础 Dummy 测试桩与环境配置。
+    - `test_rogue_basic.py`: 基础游戏流程、选择主/子职业、中英文指令别名等基础用例。
+    - `test_rogue_card_mech1.py`: 护盾与保留、回响形态及死亡律动交互、钢铁意志卡牌升级与护盾治疗叠加等机制测试。
+    - `test_rogue_card_mech2.py`: 0 费消耗牌、多重重放、Arcane Torrent 伤害判定与法术黑名单限制、冲击波与回响形态交互等机制测试。
+    - `test_rogue_minions.py`: 随从受击、攻击机制、佣兵在队伍中的索引重组等随从用例。
+    - `test_rogue_enemy_stage.py`: 伤害结算及真实伤害判定、怪物行动与晕眩、状态压缩和关卡胜利结算等敌人与关卡用例。
+    - `test_rogue_explore.py`: 荒野事件选项（如老兵房、古泉等）、遗物与护符结算、篝火 forge 卡牌强化与跳过等非战斗探索用例。
+    - `test_rogue_system.py`: 局外持久化存档与恢复、牌组完备性、以及不同子命令间执行状态的强隔离用例。
+  - `duel_tests/`: 对决模式拆分后的高内聚单元与集成测试包。
+    - `base.py`: 对决模式基础 Dummy 测试桩与环境配置。
+    - `test_duel_basic.py`: 局外牌组创建校验（25-50张、同名卡上限4张）、卡组导出导入分享码、对决菜单等用例。
+    - `test_duel_flow.py`: 对局开始、使用卡牌能量扣除、指令队列执行、双人多轮交替回合流转的完整生命周期用例。
+    - `test_duel_advanced.py`: 力量 Buff 数值伤害缩放、双击及回响多重打出检测、随从召唤与技能效果（如巡逻队长和旗手）触发用例。
+    - `test_duel_minions_spells.py`: 随从死亡、AOE 伤害对空方格过滤、生命上限与护盾变动、对决模式查询与隔离用例。
 
 ---
 
