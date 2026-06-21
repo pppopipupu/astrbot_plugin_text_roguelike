@@ -447,6 +447,44 @@ class MyPlugin(Star):
         
         user_id = event.get_sender_id()
         stats = self.save_manager.load_stats(user_id)
+        if stats and stats.reader_active:
+            message_str = event.message_str.strip()
+            clean_str = message_str
+            prefix_config = self.config.get("shortcut_prefix", ".rogue")
+            r_prefixes = prefix_config if isinstance(prefix_config, list) else [prefix_config] if isinstance(prefix_config, str) else [".rogue"]
+            d_prefixes = [".duel", ".对决"]
+            for p in sorted(r_prefixes + d_prefixes, key=len, reverse=True):
+                if clean_str.lower().startswith(p.lower()):
+                    clean_str = clean_str[len(p):].strip()
+                    break
+            parts = clean_str.split()
+            if parts:
+                cmd = parts[0].lower()
+                if cmd in ("下一页", "n", "next", "上一页", "b", "back", "prev", "退出", "q", "quit", "exit"):
+                    event.stop_event()
+                    if cmd in ("退出", "q", "quit", "exit"):
+                        stats.reader_active = False
+                        self.save_manager.save_stats(user_id, stats)
+                        return event.plain_result("🚪 已退出阅读器。")
+                    elif cmd in ("下一页", "n", "next"):
+                        total_items = len(stats.reader_items)
+                        total_pages = (total_items + 9) // 10
+                        if stats.reader_page >= total_pages:
+                            return event.plain_result("⚠️ 已经是最后一页了。")
+                        stats.reader_page += 1
+                        self.save_manager.save_stats(user_id, stats)
+                        from game.renderer.menu import render_reader_page
+                        return event.plain_result(render_reader_page(stats))
+                    elif cmd in ("上一页", "b", "back", "prev"):
+                        if stats.reader_page <= 1:
+                            return event.plain_result("⚠️ 已经是第一页了。")
+                        stats.reader_page -= 1
+                        self.save_manager.save_stats(user_id, stats)
+                        from game.renderer.menu import render_reader_page
+                        return event.plain_result(render_reader_page(stats))
+                else:
+                    stats.reader_active = False
+                    self.save_manager.save_stats(user_id, stats)
         rogue_mode = stats.rogue_mode if stats else False
         duel_mode = stats.duel_mode if stats else False
         
@@ -517,7 +555,7 @@ class MyPlugin(Star):
                     "帮助", "help", "hp", "牌组", "deck", "dk", "接受", "accept",
                     "放弃", "abandon", "confirm", "邀请", "invite", "iv", "模式", "mode",
                     "使用", "use", "u", "play", "p", "随从", "minion", "atk", "m", "结束", "end",
-                    "进化", "evolve", "ev", "幸运币", "coin", "cn", "状态", "status", "s", "e", "查看", "overview"
+                    "进化", "evolve", "ev", "幸运币", "coin", "cn", "状态", "status", "s", "e", "查看", "overview", "总览"
                 }
                 if first_word in valid_duel_cmds:
                     is_duel_cmd = True
@@ -544,7 +582,8 @@ class MyPlugin(Star):
                     "帮助", "help", "使用", "p", "随从", "m", "选择", "c", "特殊", "sa", 
                     "结束", "e", "折叠", "f", "fold", "队列", "q", "queue", "统计", "stat", 
                     "stats", "查询", "query", "info", "i", "放弃", "abandon", "mode", "模式",
-                    "职业", "class", "商店", "shop", "教程", "tutorial"
+                    "职业", "class", "商店", "shop", "教程", "tutorial",
+                    "技能", "skill", "sk", "k"
                 }
                 if first_word in valid_cmds:
                     is_game_cmd = True

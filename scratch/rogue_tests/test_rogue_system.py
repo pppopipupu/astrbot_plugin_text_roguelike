@@ -234,28 +234,39 @@ class TestRogueSystem(unittest.TestCase):
                 pass
         
         router.save_manager = DummySaveManagerWithSave(run)
+        run.node_data["action_surge_turn_used"] = False
         generator = router.handle_command("test_warrior_user", ["技能", "as"])
         res_list = list(generator)
         res_text = "\n".join(res_list)
         self.assertIn("额外", res_text)
         self.assertEqual(run.player.actions, 4)
+        self.assertEqual(run.player.bonus_actions, 2)
         self.assertEqual(run.node_data["action_surge_uses"], 1)
+        self.assertTrue(run.node_data["action_surge_turn_used"])
 
         run.node_data["action_surge_uses"] = 2
+        run.node_data["action_surge_turn_used"] = False
         run.player.actions = 2
+        run.player.bonus_actions = 1
         generator_sk = router.handle_command("test_warrior_user", ["sk"])
         res_text_sk = "\n".join(list(generator_sk))
         self.assertIn("额外", res_text_sk)
         self.assertEqual(run.player.actions, 4)
+        self.assertEqual(run.player.bonus_actions, 2)
         self.assertEqual(run.node_data["action_surge_uses"], 1)
+        self.assertTrue(run.node_data["action_surge_turn_used"])
 
         run.node_data["action_surge_uses"] = 2
+        run.node_data["action_surge_turn_used"] = False
         run.player.actions = 2
+        run.player.bonus_actions = 1
         generator_k = router.handle_command("test_warrior_user", ["k"])
         res_text_k = "\n".join(list(generator_k))
         self.assertIn("额外", res_text_k)
         self.assertEqual(run.player.actions, 4)
+        self.assertEqual(run.player.bonus_actions, 2)
         self.assertEqual(run.node_data["action_surge_uses"], 1)
+        self.assertTrue(run.node_data["action_surge_turn_used"])
 
     def test_warrior_ward_and_rally(self):
         from game.core.battle_engine import BattleEngine
@@ -343,3 +354,113 @@ class TestRogueSystem(unittest.TestCase):
         
         res_duel = render_query_info("duel_warrior_strike")
         self.assertIn("未找到", res_duel)
+
+    def test_rogue_overview_reader(self):
+        plugin = MyPlugin(DummyContext())
+        save_manager = SaveManager()
+        save_manager.delete_save("test_user_reader")
+        
+        async def go():
+            stats = save_manager.load_stats("test_user_reader")
+            stats.rogue_mode = True
+            save_manager.save_stats("test_user_reader", stats)
+            
+            res = await run_command(plugin, ".rogue overview", sender_id="test_user_reader")
+            self.assertIn("魔法肉鸽卡牌总览", res)
+            self.assertIn("第 1 /", res)
+            
+            stats = save_manager.load_stats("test_user_reader")
+            self.assertTrue(stats.reader_active)
+            self.assertEqual(stats.reader_page, 1)
+            
+            res2 = await run_command(plugin, "n", sender_id="test_user_reader")
+            self.assertIn("第 2 /", res2)
+            stats = save_manager.load_stats("test_user_reader")
+            self.assertEqual(stats.reader_page, 2)
+            
+            res3 = await run_command(plugin, "b", sender_id="test_user_reader")
+            self.assertIn("第 1 /", res3)
+            stats = save_manager.load_stats("test_user_reader")
+            self.assertEqual(stats.reader_page, 1)
+            
+            res4 = await run_command(plugin, "q", sender_id="test_user_reader")
+            self.assertIn("已退出阅读器", res4)
+            stats = save_manager.load_stats("test_user_reader")
+            self.assertFalse(stats.reader_active)
+            
+            await run_command(plugin, "overview", sender_id="test_user_reader")
+            stats = save_manager.load_stats("test_user_reader")
+            self.assertTrue(stats.reader_active)
+            
+            res5 = await run_command(plugin, "牌组", sender_id="test_user_reader")
+            self.assertIn("你当前没有正在进行的游戏", res5)
+            stats = save_manager.load_stats("test_user_reader")
+            self.assertFalse(stats.reader_active)
+            
+            save_manager.delete_save("test_user_reader")
+            
+        asyncio.run(go())
+
+    def test_rogue_action_surge_execution(self):
+        plugin = MyPlugin(DummyContext())
+        save_manager = SaveManager()
+        save_manager.delete_save("test_user_warrior")
+        
+        async def go():
+            stats = save_manager.load_stats("test_user_warrior")
+            stats.selected_class = "战士"
+            stats.selected_subclass = ""
+            stats.rogue_mode = True
+            save_manager.save_stats("test_user_warrior", stats)
+            
+            player = PlayerState(
+                hp=80, max_hp=80, shield=0, gold=100, stage=1,
+                deck=["strike"], draw_pile=["strike"], discard_pile=[], exhaust_pile=[], graveyard=[]
+            )
+            run = GameRun("test_user_warrior", "battle", player=player, enemies=[EnemyState("测试怪物", 20, 20, 0, 1, 0, 1, 0)])
+            save_manager.save_save("test_user_warrior", run)
+            
+            plugin.engine.battle_engine._init_battle_node(run)
+            save_manager.save_save("test_user_warrior", run)
+            
+            self.assertEqual(run.node_data.get("action_surge_uses"), 2)
+            self.assertFalse(run.node_data.get("action_surge_turn_used", False))
+            
+            res = await run_command(plugin, "k", sender_id="test_user_warrior")
+            self.assertIn("战士发动了【动作如潮】", res)
+            self.assertIn("还可使用 1 次", res)
+            
+            run = save_manager.load_save("test_user_warrior")
+            self.assertEqual(run.node_data.get("action_surge_uses"), 1)
+            self.assertTrue(run.node_data.get("action_surge_turn_used"))
+            self.assertEqual(run.player.actions, 4)
+            self.assertEqual(run.player.bonus_actions, 2)
+            
+            res2 = await run_command(plugin, "k", sender_id="test_user_warrior")
+            self.assertIn("每回合只能使用一次", res2)
+            
+            run = save_manager.load_save("test_user_warrior")
+            self.assertEqual(run.node_data.get("action_surge_uses"), 1)
+            self.assertEqual(run.player.actions, 4)
+            self.assertEqual(run.player.bonus_actions, 2)
+            
+            await run_command(plugin, "e", sender_id="test_user_warrior")
+            
+            run = save_manager.load_save("test_user_warrior")
+            self.assertFalse(run.node_data.get("action_surge_turn_used", False))
+            self.assertEqual(run.node_data.get("action_surge_uses"), 1)
+            
+            res3 = await run_command(plugin, "k", sender_id="test_user_warrior")
+            self.assertIn("战士发动了【动作如潮】", res3)
+            self.assertIn("还可使用 0 次", res3)
+            
+            run = save_manager.load_save("test_user_warrior")
+            self.assertEqual(run.node_data.get("action_surge_uses"), 0)
+            self.assertTrue(run.node_data.get("action_surge_turn_used"))
+            
+            res4 = await run_command(plugin, "k", sender_id="test_user_warrior")
+            self.assertIn("本场战斗的使用次数已用尽", res4)
+            
+            save_manager.delete_save("test_user_warrior")
+            
+        asyncio.run(go())

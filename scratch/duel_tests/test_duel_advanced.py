@@ -439,3 +439,34 @@ class TestDuelAdvanced(TestDuelSystem):
         self.router.route_in_game_action(run, u1, "张三", ["使用", "1", "p0"])
         run = self.save_manager.load_duel_save(u1)
         self.assertTrue(any(b.id == "demon_form" for b in run.player.buffs))
+
+    def test_duel_overview_reader(self):
+        res, term, p1, dm1, p2, dm2 = self.router.handle_duel_cmd("user_duel_reader", "张三", ["总览"])
+        self.assertIn("对决卡牌总览", res)
+        self.assertIn("第 1 /", res)
+        stats = self.save_manager.load_stats("user_duel_reader")
+        self.assertTrue(stats.reader_active)
+        self.assertEqual(stats.reader_page, 1)
+        self.assertEqual(stats.reader_mode, "duel")
+        
+        u1 = "user_ov_1"
+        u2 = "user_ov_2"
+        self.router.handle_deck_cmd(u1, ["创建", "p1deck"])
+        cards = ["duel_warrior_strike", "duel_warrior_defend", "duel_warrior_bash", "duel_iron_wave", "duel_warrior_anger", "duel_body_slam", "duel_fireball"]
+        for c in cards:
+            self.router.handle_deck_cmd(u1, ["添加", c, "4"])
+        self.router.handle_deck_cmd(u2, ["创建", "p2deck"])
+        for c in cards:
+            self.router.handle_deck_cmd(u2, ["添加", c, "4"])
+            
+        self.router.handle_duel_cmd(u1, "张三", [f"@{u2}"])
+        self.router.handle_duel_cmd(u2, "李四", ["接受"])
+        
+        run = self.save_manager.load_duel_save(u1)
+        self.assertIsNotNone(run)
+        
+        res_in_game, term, p1, dm1, p2, dm2 = self.router.route_in_game_action(run, u1, "张三", ["overview"])
+        self.assertIn("对决卡牌总览", res_in_game)
+        self.assertIn("第 1 /", res_in_game)
+        
+        self.save_manager.delete_duel_save(u1)

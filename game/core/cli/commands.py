@@ -35,10 +35,22 @@ class DeckCommand(CommandHandler, names=["牌组", "deck"]):
 
 class OverviewCommand(CommandHandler, names=["总览", "overview"]):
     def execute(self, router, user_id: str, parts: list[str]) -> Generator[str, None, None]:
+        stats = router.save_manager.load_stats(user_id)
         if len(parts) > 1 and parts[1] in ("遗物", "relic", "relics"):
-            yield GameRenderer.render_relic_library()
+            from game.renderer.menu import get_rogue_relic_library_items
+            items = get_rogue_relic_library_items()
+            stats.reader_title = "🎒 魔法肉鸽遗物总览"
         else:
-            yield GameRenderer.render_card_library()
+            from game.renderer.menu import get_rogue_card_library_items
+            items = get_rogue_card_library_items()
+            stats.reader_title = "📜 魔法肉鸽卡牌总览"
+        stats.reader_items = items
+        stats.reader_page = 1
+        stats.reader_active = True
+        stats.reader_mode = "rogue"
+        router.save_manager.save_stats(user_id, stats)
+        from game.renderer.menu import render_reader_page
+        yield render_reader_page(stats)
 
 class HelpCommand(CommandHandler, names=["帮助", "help"]):
     def execute(self, router, user_id: str, parts: list[str]) -> Generator[str, None, None]:
@@ -277,13 +289,13 @@ class ClassCommand(CommandHandler, names=["职业", "class"]):
                     return
                 unlocked = getattr(stats, "unlocked_subclasses", [])
                 if subclass_name not in unlocked:
-                    yield f"❌ 你尚未解锁【{subclass_name}】。需要消耗 2888 GP 购买，请使用：/rogue 商店"
+                    yield f"❌ 你尚未解锁【{subclass_name}】。需要消耗 2888 GP 购买，请使用：/rogue 商店 或 /rogue shop"
                     return
                 stats.selected_subclass = subclass_name
                 router.save_manager.save_stats(user_id, stats)
                 yield f"🔮 已选择子职业为【{subclass_name}】。将在新的一局游戏中生效！"
             else:
-                yield "❌ 格式错误。请使用 /rogue 职业 或 /rogue 职业 选择/c <职业名|子职业序号>。"
+                yield "❌ 格式错误。请使用 /rogue 职业 (/rogue class) 或 /rogue 职业 选择/c (/rogue class select) <职业名|子职业序号>。"
 
 class SkillCommand(CommandHandler, names=["技能", "skill", "sk", "k"]):
     def execute(self, router, user_id: str, parts: list[str]) -> Generator[str, None, None]:
@@ -304,11 +316,16 @@ class SkillCommand(CommandHandler, names=["技能", "skill", "sk", "k"]):
         if uses <= 0:
             yield "❌ 动作如潮在一场战斗中只能使用两次，本场战斗的使用次数已用尽！"
             return
+        if run.node_data.get("action_surge_turn_used", False):
+            yield "❌ 动作如潮每回合只能使用一次！"
+            return
         run.node_data["action_surge_uses"] = uses - 1
+        run.node_data["action_surge_turn_used"] = True
         p = run.player
         p.actions += 2
+        p.bonus_actions += 1
         router.save_manager.save_save(user_id, run)
-        yield f"🔥 战士发动了【动作如潮】！获得了额外的 2A 动作点！(本场战斗还可使用 {uses - 1} 次)\n当前行动点: {p.actions}A, {p.bonus_actions}BA"
+        yield f"🔥 战士发动了【动作如潮】！获得了额外的 2A 1BA 动作点！(本场战斗还可使用 {uses - 1} 次)\n当前行动点: {p.actions}A, {p.bonus_actions}BA"
 
 class ShopCommand(CommandHandler, names=["商店", "shop"]):
     def execute(self, router, user_id: str, parts: list[str]) -> Generator[str, None, None]:
@@ -408,7 +425,7 @@ class ShopCommand(CommandHandler, names=["商店", "shop"]):
             quote = random.choice(success_quotes)
             yield f"🎉 购买成功！已成功解锁【{subclass_name if not is_gatekey else '门之钥匙'}】。已扣除 {price} GP。\n🔮 神秘店主说：\n  {quote}"
         else:
-            yield "❌ 格式错误。请使用 /rogue 商店 或 /rogue 商店 购买/buy <商品序号/商品名称>。"
+            yield "❌ 格式错误。请使用 /rogue 商店 (/rogue shop) 或 /rogue 商店 购买/buy (/rogue shop buy) <商品序号/商品名称>。"
 
 class FoldCommand(CommandHandler, names=["折叠", "f", "fold"]):
     def execute(self, router, user_id: str, parts: list[str]) -> Generator[str, None, None]:

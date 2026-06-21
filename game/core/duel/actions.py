@@ -320,7 +320,7 @@ class EndAction(DuelActionHandler, names=["结束", "end", "endturn", "结束回
         end_tip = DUEL_BROADCAST_TEMPLATES["end_turn_tip"].format(sender_name=sender_name)
         return router._save_and_render_state(run, user_id, end_tip)
 
-class StatusAction(DuelActionHandler, names=["状态", "status", "s", "查看", "overview"]):
+class StatusAction(DuelActionHandler, names=["状态", "status", "s", "查看"]):
     def execute(self, router, run, user_id: str, sender_name: str, args: list) -> Tuple[str, bool, Optional[str], Optional[str], Optional[str], Optional[str]]:
         return router._save_and_render_state(run, user_id, "")
 

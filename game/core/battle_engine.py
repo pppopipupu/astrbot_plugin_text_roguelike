@@ -93,8 +93,15 @@ class BattleEngine(BaseBattleEngine):
         p.bonus_actions = 1
         p.shield = 0
         run.node_data["cards_played_this_turn"] = 0
-        if getattr(p, "selected_class", "法师") == "战士":
+        selected_class = "法师"
+        stats = self.save_manager.load_stats(run.user_id) if hasattr(self, "save_manager") and self.save_manager else None
+        if stats:
+            selected_class = getattr(stats, "selected_class", "法师")
+        elif hasattr(p, "selected_class"):
+            selected_class = getattr(p, "selected_class", "法师")
+        if selected_class == "战士":
             run.node_data["action_surge_uses"] = 2
+            run.node_data["action_surge_turn_used"] = False
 
         from ..models.events import BattleStartEvent, TurnStartEvent
         evt_start = BattleStartEvent(run)

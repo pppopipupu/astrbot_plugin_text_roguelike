@@ -54,6 +54,149 @@ def get_card_cost_str(card) -> str:
             cost_str += f"{card.cost_ba}BA "
     return cost_str.strip() or "免费"
 
+def get_rogue_card_library_items() -> list:
+    from game.cards import ALL_CARDS
+    from game.models.manager import SaveManager
+    boss_cfg = SaveManager().load_admin_config()
+    icerainboww_enabled = boss_cfg.get("icerainboww_enabled", True)
+    neutrals = []
+    blue_spells = []
+    red_cards = []
+    curses = []
+    rarity_map = {
+        "common": "普通",
+        "rare": "稀有",
+        "epic": "珍奇",
+        "legendary": "传奇",
+        "mythic": "神话",
+        "artifact": "神器",
+        "curse": "诅咒"
+    }
+    for cid, card in ALL_CARDS.items():
+        if card.upgraded:
+            continue
+        if not icerainboww_enabled and cid in ("minion_icerainboww", "minion_icerainboww+"):
+            continue
+        cost_str = get_card_cost_str(card)
+        type_ch = ""
+        if card.type == "spell":
+            type_ch = "法术"
+        elif card.type == "amulet":
+            type_ch = f"护符(吟唱 {card.countdown})"
+        elif card.type == "ability":
+            type_ch = "能力"
+        elif card.type == "minion":
+            type_ch = "随从"
+        rname = rarity_map.get(getattr(card, "rarity", "common"), "普通")
+        info = f"• {card.name} [{type_ch}] <{rname}> 消耗: {cost_str} - {card.desc}"
+        
+        up_card = ALL_CARDS.get(cid + "+")
+        if up_card:
+            up_cost_str = get_card_cost_str(up_card)
+            info += f"\n  └─ 🔨 升级版：{up_card.name} | 消耗: {up_cost_str} | {up_card.desc}"
+            
+        if card.color == "curse":
+            curses.append(f"[诅咒] {info}")
+        elif card.color == "neutral":
+            neutrals.append(f"[中立] {info}")
+        elif card.color == "warrior":
+            red_cards.append(f"[战士] {info}")
+        else:
+            blue_spells.append(f"[法师] {info}")
+            
+    return neutrals + blue_spells + red_cards + curses
+
+def get_rogue_relic_library_items() -> list:
+    from game.data.relic_data import RELIC_CONFIG
+    items = []
+    rarity_map = {
+        "common": "普通",
+        "rare": "稀有",
+        "epic": "珍奇",
+        "legendary": "传奇",
+        "mythic": "神话",
+        "artifact": "神器",
+        "curse": "诅咒"
+    }
+    for rid, cfg in RELIC_CONFIG.items():
+        rname = cfg.get("name", rid)
+        rarity = cfg.get("rarity", "common")
+        rname_rarity = rarity_map.get(rarity, rarity)
+        desc = cfg.get("desc", "")
+        price = cfg.get("price", 0)
+        items.append(f"🎒 {rname} ({rname_rarity}) - {desc} | 售价: {price} 金币")
+    return items
+
+def get_duel_card_library_items() -> list:
+    from game.entities.cards.duel import ALL_DUEL_CARDS
+    neutrals = []
+    wizard_cards = []
+    warrior_cards = []
+    rarity_map = {
+        "common": "普通",
+        "rare": "稀有",
+        "epic": "珍奇",
+        "legendary": "传奇",
+        "mythic": "神话",
+        "artifact": "神器",
+        "curse": "诅咒"
+    }
+    for cid, card in ALL_DUEL_CARDS.items():
+        cost_a = getattr(card, "cost_a", 0)
+        cost_ba = getattr(card, "cost_ba", 0)
+        cost_strs = []
+        if cost_a > 0 or cost_ba > 0:
+            if cost_a > 0:
+                cost_strs.append(f"{cost_a}A")
+            if cost_ba > 0:
+                cost_strs.append(f"{cost_ba}BA")
+            cost_str = " ".join(cost_strs)
+        else:
+            cost_str = "0 消耗"
+            
+        type_ch = ""
+        if card.type == "spell":
+            type_ch = "法术"
+        elif card.type == "amulet":
+            type_ch = f"护符(吟唱 {card.countdown})"
+        elif card.type == "ability":
+            type_ch = "能力"
+        elif card.type == "minion":
+            type_ch = "随从"
+        rname = rarity_map.get(getattr(card, "rarity", "common"), "普通")
+        info = f"• {card.name} [{type_ch}] <{rname}> 消耗: {cost_str} - {card.desc}"
+        
+        if card.color == "neutral":
+            neutrals.append(f"[中立] {info}")
+        elif card.color == "warrior":
+            warrior_cards.append(f"[战士] {info}")
+        else:
+            wizard_cards.append(f"[法师] {info}")
+            
+    return neutrals + wizard_cards + warrior_cards
+
+def render_reader_page(stats: UserStats) -> str:
+    total_items = len(stats.reader_items)
+    page_size = 10
+    total_pages = (total_items + page_size - 1) // page_size
+    page = max(1, min(stats.reader_page, total_pages))
+    
+    start_idx = (page - 1) * page_size
+    end_idx = min(start_idx + page_size, total_items)
+    
+    lines = [
+        "━━━━━━━━━━━━━━━━━━━━",
+        f"{stats.reader_title} (第 {page} / {total_pages} 页)",
+        ""
+    ]
+    for i in range(start_idx, end_idx):
+        lines.append(f"{i + 1}. {stats.reader_items[i]}")
+        
+    lines.append("")
+    lines.append("💡 输入 n (下一页) | b (上一页) | q (退出)")
+    lines.append("━━━━━━━━━━━━━━━━━━━━")
+    return "\n".join(lines)
+
 def render_card_library() -> str:
     from ..models.manager import SaveManager
     boss_cfg = SaveManager().load_admin_config()

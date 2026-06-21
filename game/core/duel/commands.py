@@ -164,3 +164,18 @@ class DeckCommand(DuelCommandHandler, names=["牌组", "deck", "dk"]):
     def execute(self, router, user_id: str, sender_name: str, args: list) -> Tuple[str, bool, Optional[str], Optional[str], Optional[str], Optional[str]]:
         res, term = router.handle_deck_cmd(user_id, args[1:])
         return res, term, None, None, None, None
+
+class OverviewCommand(DuelCommandHandler, names=["总览", "overview"]):
+    def execute(self, router, user_id: str, sender_name: str, args: list) -> Tuple[str, bool, Optional[str], Optional[str], Optional[str], Optional[str]]:
+        stats = router.save_manager.load_stats(user_id)
+        from game.renderer.menu import get_duel_card_library_items
+        items = get_duel_card_library_items()
+        stats.reader_title = "⚔️ 对决卡牌总览"
+        stats.reader_items = items
+        stats.reader_page = 1
+        stats.reader_active = True
+        stats.reader_mode = "duel"
+        router.save_manager.save_stats(user_id, stats)
+        from game.renderer.menu import render_reader_page
+        res = render_reader_page(stats)
+        return res, False, None, None, None, None

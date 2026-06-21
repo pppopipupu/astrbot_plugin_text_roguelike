@@ -47,7 +47,12 @@ class SaveManager:
                 selected_subclass=d.get("selected_subclass", ""),
                 killed_icerainboww=d.get("killed_icerainboww", False),
                 unlocked_gatekey=d.get("unlocked_gatekey", False),
-                killed_yog_sothoth=d.get("killed_yog_sothoth", False)
+                killed_yog_sothoth=d.get("killed_yog_sothoth", False),
+                reader_active=d.get("reader_active", False),
+                reader_page=d.get("reader_page", 1),
+                reader_title=d.get("reader_title", ""),
+                reader_items=d.get("reader_items", []),
+                reader_mode=d.get("reader_mode", "rogue")
             )
         except:
             return UserStats()

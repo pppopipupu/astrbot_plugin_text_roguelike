@@ -51,6 +51,11 @@ class UserStats:
     killed_icerainboww: bool = False
     unlocked_gatekey: bool = False
     killed_yog_sothoth: bool = False
+    reader_active: bool = False
+    reader_page: int = 1
+    reader_title: str = ""
+    reader_items: List[str] = field(default_factory=list)
+    reader_mode: str = "rogue"
 
 
 if not hasattr(sys, "_rogue_stat_recorder"):

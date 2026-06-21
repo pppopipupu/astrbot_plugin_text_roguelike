@@ -589,6 +589,7 @@ class CardPlayer:
         self.draw_cards(p, draw_count, run, ignore_focus=True)
         self.engine._roll_enemy_intent(run)
         run.node_data["cards_played_this_turn"] = 0
+        run.node_data["action_surge_turn_used"] = False
         self._reindex_minions(p)
         self.engine.save_manager.save_save(run.user_id, run)
         return self.engine._append_logs_to_res(run, f"{enemy_actions}\n{decay_info}进入玩家回合。已重置动作并抽取手牌。")
