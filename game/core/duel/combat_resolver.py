@@ -69,10 +69,13 @@ class DuelCombatResolver:
 
     def recall_dead_minion(self, run: GameRun, hp_limit: int) -> str:
         p = run.player
-        from ...entities.cards.base import ALL_CARDS
+        try:
+            from ...entities.cards.duel import ALL_DUEL_CARDS
+        except ImportError:
+            from game.entities.cards.duel import ALL_DUEL_CARDS
         eligible = []
         for cid in p.minion_graveyard:
-            card = ALL_CARDS.get(cid)
+            card = ALL_DUEL_CARDS.get(cid)
             if card and card.type == "minion":
                 hp_val = getattr(card, "minion_hp", 999)
                 if hp_val < hp_limit:
@@ -81,7 +84,7 @@ class DuelCombatResolver:
             return "墓地中没有符合条件的随从。"
         chosen_cid = random.choice(eligible)
         p.minion_graveyard.remove(chosen_cid)
-        card = ALL_CARDS[chosen_cid]
+        card = ALL_DUEL_CARDS[chosen_cid]
         hp_val = getattr(card, "minion_hp", 10)
         atk_val = getattr(card, "minion_atk", 1)
         grid = self.summon_minion(run, chosen_cid, card.name, hp_val, atk_val, 0)

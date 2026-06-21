@@ -27,10 +27,7 @@ class PlayAction(DuelActionHandler, names=["使用", "use", "u", "play", "p"]):
         try:
             from ...entities.cards.duel import ALL_DUEL_CARDS
         except ImportError:
-            try:
-                from game.entities.cards.duel import ALL_DUEL_CARDS
-            except ImportError:
-                from game.entities.cards import ALL_CARDS as ALL_DUEL_CARDS
+            from game.entities.cards.duel import ALL_DUEL_CARDS
         card = ALL_DUEL_CARDS.get(cid)
         if not card:
             return DUEL_BROADCAST_TEMPLATES["play_no_card_entity"], False, None, None, None, None
@@ -289,10 +286,7 @@ class EvolveAction(DuelActionHandler, names=["进化", "evolve", "ev"]):
                 try:
                     from ...entities.cards.duel import ALL_DUEL_CARDS
                 except ImportError:
-                    try:
-                        from game.entities.cards.duel import ALL_DUEL_CARDS
-                    except ImportError:
-                        from game.entities.cards import ALL_CARDS as ALL_DUEL_CARDS
+                    from game.entities.cards.duel import ALL_DUEL_CARDS
                 cid = p.hand[idx]
                 card = ALL_DUEL_CARDS.get(cid)
                 if card:

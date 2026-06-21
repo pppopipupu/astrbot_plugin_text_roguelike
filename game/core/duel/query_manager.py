@@ -146,18 +146,7 @@ class QueryManager:
                 lines.append(DUEL_BROADCAST_TEMPLATES["query_quest_header"].format(name=name, rname=rname))
                 lines.append(DUEL_BROADCAST_TEMPLATES["query_quest_detail"].format(ctype=val.get('type', 'spell'), cost_str=cost_str, desc=val.get('desc', '')))
                 
-        try:
-            from ...renderer.query import render_query_info
-        except ImportError:
-            from game.renderer.query import render_query_info
-            
-        public_res = render_query_info(query_str)
-        if "🔍 查询结果：" in public_res:
-            parts = public_res.split("🔍 查询结果：" + query_str)[1].strip()
-            if parts:
-                found = True
-                lines.append(parts)
-                
+
         if not found:
             return DUEL_BROADCAST_TEMPLATES["query_no_match"].format(query_str=query_str)
             

@@ -115,7 +115,7 @@ class ChooseAction(ActionHandler, actions=["选择", "c"]):
                     router.save_manager.save_save(user_id, run)
                     return "🔨 已取消卡牌升级操作。", False
             if arg in ("wizard", "warrior", "wiz", "war", "法师", "战士", "选择", "时序法师", "塑能法师", "秘钥学者"):
-                return "❌ 切换职业请在局外使用 /rogue 职业 (或 /rogue class) 命令。\n💡 选择命令 c 仅用于局内选项选择，无法用于选择职业。", False
+                return "❌ 切换职业请在局外使用 /rogue class 命令。\n💡 选择命令 c 仅用于局内选项选择，无法用于选择职业。", False
             return "❌ 序号必须是数字。", False
         if run.node_data.get("pending_upgrade"):
             res = router.engine.upgrade_card_in_deck(run, idx)
@@ -134,18 +134,18 @@ class ChooseAction(ActionHandler, actions=["选择", "c"]):
             if res == "REMOVE_FLOW":
                 run.node_data["pending_remove"] = True
                 router.save_manager.save_save(user_id, run)
-                return "🧹 净化服务已启动。请查看你的卡组，并再次输入 选择 <卡牌序号> 来从卡组中移除该牌。可以通过 /rogue 牌组 查看卡牌序号。", False
+                return "🧹 净化服务已启动。请查看你的卡组，并再次输入 c <卡牌序号> 来从卡组中移除该牌。可以通过 /rogue deck 查看卡牌序号。", False
             elif res == "UPGRADE_FLOW":
                 run.node_data["pending_upgrade"] = True
                 router.save_manager.save_save(user_id, run)
-                return "🔨 卡牌升级强化已启动。请查看你的卡组，并输入 选择 <卡牌序号> 来使你的卡牌永久升级为带【+】的强力变体。可以通过 /rogue 牌组 查看卡牌序号。", False
+                return "🔨 卡牌升级强化已启动。请查看你的卡组，并输入 c <卡牌序号> 来使你的卡牌永久升级为带【+】的强力变体。可以通过 /rogue deck 查看卡牌序号。", False
             else:
                 return res, False
 
 class SpecialAction(ActionHandler, actions=["特殊", "sa"]):
     def execute(self, router, user_id: str, run, parts: list[str]) -> Tuple[str, bool]:
         if len(parts) < 2:
-            return "❌ 请提供手牌序号，例如：特殊 1", False
+            return "❌ 请提供手牌序号，例如：sa 1", False
         try:
             idx = int(parts[1])
         except ValueError:

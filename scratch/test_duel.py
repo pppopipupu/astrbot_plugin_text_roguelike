@@ -1036,5 +1036,16 @@ class TestDuelSystem(unittest.TestCase):
         private_view = render_duel_battle_private(run)
         self.assertIn("狂怒", private_view)
 
+    def test_duel_query_isolation(self):
+        u1 = "user1"
+        res, _, _, _, _, _ = self.router.handle_duel_cmd(u1, "张三", ["查询", "duel_warrior_strike"])
+        self.assertNotIn("未找到", res)
+        self.assertNotIn("未知", res)
+        self.assertIn("卡牌：", res)
+        
+        res_relic, _, _, _, _, _ = self.router.handle_duel_cmd(u1, "张三", ["查询", "ancient_eye"])
+        self.assertIn("未在对决模式中匹配到", res_relic)
+
 if __name__ == "__main__":
     unittest.main()
+

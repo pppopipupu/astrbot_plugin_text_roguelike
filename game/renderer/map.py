@@ -85,7 +85,7 @@ def render_map_select(run: GameRun) -> str:
     if p.fold_guide:
         lines.append("💬 提示：操作指南已折叠。输入 /rogue 折叠 可展开。")
     else:
-        lines.append("💬 选择路线指令：/rogue 选择 <分支序号>")
+        lines.append("💬 选择路线指令：/rogue c <分支序号>")
     lines.append("━━━━━━━━━━━━━━━━━━━━")
     return "\n".join(lines)
 
@@ -120,7 +120,7 @@ def render_start_ancient(run: GameRun) -> str:
             lines.append(f" [{idx}] 🕸️ {name_str}卡牌：【{cname}】 ➕ 代价遗物【{rname}】\n     效果：获得该强力卡牌 ({cdesc}) 同时获得其伴随的代价 ({rdesc})")
     lines.append("")
     lines.append("━━━━━━━━━━━━━━━━━━━━")
-    lines.append("💬 选择契约指令：/rogue 选择 <契约序号>")
+    lines.append("💬 选择契约指令：/rogue c <契约序号>")
     lines.append("━━━━━━━━━━━━━━━━━━━━")
     return "\n".join(lines)
 
@@ -152,6 +152,6 @@ def render_ancient(run: GameRun) -> str:
         lines.append(f" [{idx}] 🎁 赐福包：【{rname}】 ➕ 传奇卡牌【{cname}】\n     效果：获得被动遗物（{rdesc}）与卡牌（{cdesc}）")
     lines.append("")
     lines.append("━━━━━━━━━━━━━━━━━━━━")
-    lines.append("💬 选择赐福指令：/rogue 选择 <赐福序号>")
+    lines.append("💬 选择赐福指令：/rogue c <赐福序号>")
     lines.append("━━━━━━━━━━━━━━━━━━━━")
     return "\n".join(lines)

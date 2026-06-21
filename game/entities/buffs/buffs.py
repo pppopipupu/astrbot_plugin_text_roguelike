@@ -253,7 +253,7 @@ class GenericMinorVulnerableBuff(BuffImpl):
     def on_damage_calculate_defend(self, event, buff_state, entity):
         event.modified_damage = int(event.modified_damage * 1.5)
 
-    def on_turn_end(self, event, buff_state, entity):
+    def on_turn_start(self, event, buff_state, entity):
         if event.is_player == (entity == event.run.player):
             buff_state.stacks -= 1
             if buff_state.stacks <= 0:
@@ -264,7 +264,7 @@ class GenericVulnerableBuff(BuffImpl):
     def on_damage_calculate_defend(self, event, buff_state, entity):
         event.modified_damage = int(event.modified_damage * 2)
 
-    def on_turn_end(self, event, buff_state, entity):
+    def on_turn_start(self, event, buff_state, entity):
         if event.is_player == (entity == event.run.player):
             buff_state.stacks -= 1
             if buff_state.stacks <= 0:
@@ -300,7 +300,7 @@ class FlameBarrierBuff(BuffImpl):
             engine._damage_target(event.run, event.source, buff_state.stacks, damage_type="true")
             engine._log_event(event.run, f"🔥 [火焰屏障] 对攻击源造成了 {buff_state.stacks} 点反弹伤害。")
 
-    def on_turn_end(self, event, buff_state, entity):
+    def on_turn_start(self, event, buff_state, entity):
         if event.is_player == (entity == event.run.player):
             if buff_state in entity.buffs:
                 entity.buffs.remove(buff_state)
@@ -355,7 +355,7 @@ class MinorVulnerableBuff(BuffImpl):
         if dtype_str == self.damage_type:
             event.modified_damage = int(event.modified_damage * 1.5)
 
-    def on_turn_end(self, event, buff_state, entity):
+    def on_turn_start(self, event, buff_state, entity):
         if event.is_player == (entity == event.run.player):
             buff_state.stacks -= 1
             if buff_state.stacks <= 0:
@@ -372,7 +372,7 @@ class VulnerableBuff(BuffImpl):
         if dtype_str == self.damage_type:
             event.modified_damage = int(event.modified_damage * 2)
 
-    def on_turn_end(self, event, buff_state, entity):
+    def on_turn_start(self, event, buff_state, entity):
         if event.is_player == (entity == event.run.player):
             buff_state.stacks -= 1
             if buff_state.stacks <= 0:
@@ -421,7 +421,7 @@ class ShockBuff(BuffImpl):
         if dtype_str in ("lightning", "thunder"):
             event.modified_damage += buff_state.stacks * 1
 
-    def on_turn_end(self, event, buff_state, entity):
+    def on_turn_start(self, event, buff_state, entity):
         if event.is_player == (entity == event.run.player):
             buff_state.stacks -= 1
             if buff_state.stacks <= 0:
@@ -452,7 +452,7 @@ class ResistBuff(BuffImpl):
         if dtype_str == self.damage_type and dtype_str != "true":
             event.modified_damage = int(event.modified_damage * 0.5)
 
-    def on_turn_end(self, event, buff_state, entity):
+    def on_turn_start(self, event, buff_state, entity):
         if event.is_player == (entity == event.run.player):
             buff_state.stacks -= 1
             if buff_state.stacks <= 0:
@@ -470,7 +470,7 @@ class ImmuneBuff(BuffImpl):
         if dtype_str == self.damage_type and dtype_str != "true":
             event.modified_damage = 0
 
-    def on_turn_end(self, event, buff_state, entity):
+    def on_turn_start(self, event, buff_state, entity):
         if event.is_player == (entity == event.run.player):
             buff_state.stacks -= 1
             if buff_state.stacks <= 0:

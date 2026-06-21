@@ -25,7 +25,7 @@ def render_event(run: GameRun) -> str:
     if p.fold_guide:
         lines.append("💬 提示：操作指南已折叠。输入 /rogue 折叠 可展开。")
     else:
-        lines.append("💬 选择指令：/rogue 选择 <序号>")
+        lines.append("💬 选择指令：/rogue c <序号>")
     lines.append("━━━━━━━━━━━━━━━━━━━━")
     return "\n".join(lines)
 
@@ -70,7 +70,7 @@ def render_shop(run: GameRun) -> str:
     if p.fold_guide:
         lines.append("💬 提示：操作指南已折叠。输入 /rogue 折叠 可展开。")
     else:
-        lines.append("💬 购买/选择指令：/rogue 选择 <商品序号>")
+        lines.append("💬 购买/选择指令：/rogue c <商品序号>")
     lines.append("━━━━━━━━━━━━━━━━━━━━")
     return "\n".join(lines)
 
@@ -94,7 +94,7 @@ def render_rest(run: GameRun) -> str:
     if p.fold_guide:
         lines.append("💬 提示：操作指南已折叠。输入 /rogue 折叠 可展开。")
     else:
-        lines.append("💬 选择指令：/rogue 选择 <序号>")
+        lines.append("💬 选择指令：/rogue c <序号>")
     lines.append("━━━━━━━━━━━━━━━━━━━━")
     return "\n".join(lines)
 
@@ -123,7 +123,7 @@ def render_reward(run: GameRun) -> str:
     if p.fold_guide:
         lines.append("💬 提示：操作指南已折叠。输入 /rogue 折叠 可展开。")
     else:
-        lines.append("💬 选择指令：/rogue 选择 <序号>")
+        lines.append("💬 选择指令：/rogue c <序号>")
     lines.append("━━━━━━━━━━━━━━━━━━━━")
     return "\n".join(lines)
 
@@ -144,9 +144,9 @@ def render_treasure(run: GameRun) -> str:
         lines.append(" [1] 🚪 离开宝箱房，继续冒险")
     lines.append("━━━━━━━━━━━━━━━━━━━━")
     if state == "pending_remove":
-        lines.append("💬 选择要献祭（移除）的卡牌序号指令：/rogue 选择 <卡牌序号>")
+        lines.append("💬 选择要献祭（移除）的卡牌序号指令：/rogue c <卡牌序号>")
     else:
-        lines.append("💬 离开指令：/rogue 选择 1")
+        lines.append("💬 离开指令：/rogue c 1")
     lines.append("━━━━━━━━━━━━━━━━━━━━")
     return "\n".join(lines)
 
@@ -180,6 +180,6 @@ def render_card_select(run: GameRun) -> str:
     if p.fold_guide:
         lines.append("💬 提示：操作指南已折叠。输入 /rogue 折叠 可展开。")
     else:
-        lines.append("💬 选择指令：/rogue 选择 <序号>")
+        lines.append("💬 选择指令：/rogue c <序号>")
     lines.append("━━━━━━━━━━━━━━━━━━━━")
     return "\n".join(lines)

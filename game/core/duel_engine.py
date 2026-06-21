@@ -55,15 +55,7 @@ class DuelEngine:
         face_target = cfg.get("face_target", True)
         if card.type == "spell" and not face_target and not cfg.get("aoe", False) and run.enemies:
             run.enemies[0] = EnemyState(name="空", hp=0, max_hp=0, shield=0)
-        orig_id = card.id
-        is_custom = getattr(card, "is_duel_custom", False)
-        if not is_custom:
-            card.id = orig_id.replace("duel_", "")
-        try:
-            res = card.execute(run, target, self)
-        finally:
-            if not is_custom:
-                card.id = orig_id
+        res = card.execute(run, target, self)
         run.enemies = orig_enemies
         for p in (run.player, run.player2):
             for pile_name in ("hand", "draw_pile", "discard_pile", "exhaust_pile"):

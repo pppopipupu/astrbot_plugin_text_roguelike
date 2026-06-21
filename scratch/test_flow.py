@@ -927,11 +927,11 @@ class TestRoguePlugin(unittest.TestCase):
         self.assertEqual(mgr.stats.selected_subclass, "")
 
         res_conflict_wiz = list(router.handle_command("test_user", ["c", "wizard"]))
-        self.assertIn("如需切换职业，请使用 /rogue 职业 (或 /rogue class)", res_conflict_wiz[0])
+        self.assertIn("使用 /rogue class", res_conflict_wiz[0])
         self.assertIn("选择命令 c 仅用于局内选项选择", res_conflict_wiz[0])
 
         res_conflict_num = list(router.handle_command("test_user", ["c", "1"]))
-        self.assertIn("如需切换职业，请使用 /rogue 职业 (或 /rogue class)", res_conflict_num[0])
+        self.assertIn("使用 /rogue class", res_conflict_num[0])
 
         res_normal_c = list(router.handle_command("test_user", ["c"]))
         self.assertEqual("❌ 你当前没有正在进行的游戏。", res_normal_c[0])
@@ -951,7 +951,7 @@ class TestRoguePlugin(unittest.TestCase):
         mgr_with_save = DummySaveManagerWithSave()
         router_with_save = CLIRouter(mgr_with_save, None)
         res_in_game = list(router_with_save.handle_command("test_user", ["c", "wizard"]))
-        self.assertIn("切换职业请在局外使用 /rogue 职业 (或 /rogue class)", res_in_game[0])
+        self.assertIn("使用 /rogue class", res_in_game[0])
 
     def test_fragile_card_mechanism(self):
         player = PlayerState(
@@ -2744,5 +2744,30 @@ class TestRoguePlugin(unittest.TestCase):
         engine.play_card(run, 1)
         self.assertEqual(run.node_data["extra_turns_left"], 3)
 
+    def test_flame_barrier_timing(self):
+        from game.models.state import GameRun, PlayerState, EnemyState, EnemyIntentState
+        from game.core.battle_engine import BattleEngine
+        from game.models.manager import SaveManager
+        engine = BattleEngine(SaveManager())
+        player = PlayerState(hp=30, max_hp=30, shield=0, gold=100, stage=1, deck=[], hand=[], draw_pile=[], discard_pile=[], exhaust_pile=[], graveyard=[])
+        enemy = EnemyState(name="小鬼", hp=100, max_hp=100, shield=0, actions=1, max_actions=1, bonus_actions=0, max_bonus_actions=0, intent_type="attack", intent_val=10, intent_desc="攻击 10", intents=[])
+        enemy.intents = [EnemyIntentState(type="attack", val=10, desc="攻击 10", cost_a=1, cost_ba=0)]
+        run = GameRun(user_id="test_user", node_type="battle", player=player, enemies=[enemy], node_data={})
+        engine._add_buff_to(player, "flame_barrier_buff", "火焰屏障", "受到伤害时对攻击源反弹真实伤害", 8)
+        self.assertTrue(any(b.id == "flame_barrier_buff" for b in player.buffs))
+        engine.end_turn(run)
+        self.assertEqual(enemy.hp, 92)
+        self.assertFalse(any(b.id == "flame_barrier_buff" for b in player.buffs))
+
+    def test_rogue_query_isolation(self):
+        from game.renderer.query import render_query_info
+        res = render_query_info("ancient_eye")
+        self.assertNotIn("未找到", res)
+        self.assertIn("🎒 遗物", res)
+        
+        res_duel = render_query_info("duel_warrior_strike")
+        self.assertIn("未找到", res_duel)
+
 if __name__ == "__main__":
     unittest.main()
+

@@ -38,8 +38,11 @@ class DuelCardPlayer:
 
     def discard_card(self, run: GameRun, cid: str) -> str:
         p = run.player
-        from ...entities.cards.base import ALL_CARDS
-        card = ALL_CARDS.get(cid)
+        try:
+            from ...entities.cards.duel import ALL_DUEL_CARDS
+        except ImportError:
+            from game.entities.cards.duel import ALL_DUEL_CARDS
+        card = ALL_DUEL_CARDS.get(cid)
         discard_evt = CardDiscardEvent(run, cid, "manual")
         self.engine.event_bus.dispatch(discard_evt)
         if not card:

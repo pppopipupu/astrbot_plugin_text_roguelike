@@ -11,7 +11,7 @@ class StartCommand(CommandHandler, names=["开启", "start"]):
                 new_run = router.engine.start_new_game(user_id)
                 yield "已重新开始新的一局游戏。\n" + GameRenderer.render_game(new_run)
             else:
-                yield "⚠️ 你当前已有一局正在进行中的游戏。若要强制重新开始并覆盖存档，请输入：\n/rogue 开启 确认（或 /rogue start confirm）"
+                yield "⚠️ 你当前已有一局正在进行中的游戏。若要强制重新开始并覆盖存档，请输入：\n/rogue start confirm"
         else:
             new_run = router.engine.start_new_game(user_id)
             yield GameRenderer.render_game(new_run)
@@ -29,7 +29,7 @@ class DeckCommand(CommandHandler, names=["牌组", "deck"]):
     def execute(self, router, user_id: str, parts: list[str]) -> Generator[str, None, None]:
         run = router.save_manager.load_save(user_id)
         if not run:
-            yield "❌ 你当前没有正在进行的游戏。输入 /rogue 开启 开始新游戏。"
+            yield "❌ 你当前没有正在进行的游戏。输入 /rogue start 开始新游戏。"
         else:
             yield GameRenderer.render_deck(run)
 
@@ -150,7 +150,7 @@ class ChooseCommand(CommandHandler, names=["选择", "c"]):
             if len(parts) > 1:
                 arg = parts[1].lower()
                 if arg in ("wizard", "warrior", "wiz", "war", "法师", "战士", "1", "2", "3", "0", "选择", "时序法师", "塑能法师", "秘钥学者"):
-                    yield "❌ 你当前没有正在进行的游戏。如需切换职业，请使用 /rogue 职业 (或 /rogue class) 命令。\n💡 选择命令 c 仅用于局内选项选择，无法用于选择职业。"
+                    yield "❌ 你当前没有正在进行的游戏。如需切换职业，请使用 /rogue class 命令。\n💡 选择命令 c 仅用于局内选项选择，无法用于选择职业。"
                     return
             yield "❌ 你当前没有正在进行的游戏。"
             return
@@ -188,7 +188,7 @@ class AbandonCommand(CommandHandler, names=["放弃", "abandon"]):
             settle_msg = router.save_manager.settle_game_and_delete(user_id, run, is_victory=False)
             yield f"已放弃当前局内游戏，当前进度已清空。\n{settle_msg}"
         else:
-            yield "⚠️ 确认放弃当前游戏？放弃后进度将无法恢复。确认请输入：\n/rogue 放弃 确认（或 /rogue abandon confirm）"
+            yield "⚠️ 确认放弃当前游戏？放弃后进度将无法恢复。确认请输入：\n/rogue abandon confirm"
 
 class ClassCommand(CommandHandler, names=["职业", "class"]):
     def execute(self, router, user_id: str, parts: list[str]) -> Generator[str, None, None]:
@@ -212,7 +212,7 @@ class ClassCommand(CommandHandler, names=["职业", "class"]):
                 "1. 法师 (wizard)",
                 "   └─ 使用蓝色法术牌和护符。可以使用子职业。初始生命 45。",
                 "2. 战士 (warrior)",
-                "   └─ 使用红色物理牌。无子职业。拥有被动“动作如潮”（/rogue 技能 as 获得 2A，一场战斗限两次，初始生命 80）。",
+                "   └─ 使用红色物理牌。无子职业。拥有被动“动作如潮”（/rogue sk 获得 2A，或者 /rogue k 直接触发，一场战斗限两次，初始生命 80）。",
                 "",
                 "【可用的子职业（仅法师可用）】",
                 f"1. 时序法师 - 状态：[{status_time}]",
@@ -223,13 +223,13 @@ class ClassCommand(CommandHandler, names=["职业", "class"]):
                 "   └─ 门扉共鸣。打出护符时回复 3 生命且获得 4 护盾。抓取卡牌时 35% 几率将普通法术替换为“秘钥共鸣”。",
                 "",
                 "【职业选择命令】",
-                "👉 /rogue 职业 法师 (或 class wizard) -- 切换到法师职业",
-                "👉 /rogue 职业 战士 (或 class warrior) -- 切换到战士职业",
-                "👉 /rogue 职业 选择 1 (或 class 1) -- 装备时序法师子职业",
-                "👉 /rogue 职业 选择 2 (或 class 2) -- 装备塑能法师子职业",
-                "👉 /rogue 职业 选择 3 (或 class 3) -- 装备秘钥学者子职业",
-                "👉 /rogue 职业 选择 0 (或 class 0) -- 取消装备子职业",
-                "💡 如需购买子职业，请使用局外商店：/rogue 商店",
+                "👉 /rogue class wizard -- 切换到法师职业",
+                "👉 /rogue class warrior -- 切换到战士职业",
+                "👉 /rogue class 1 -- 装备时序法师子职业",
+                "👉 /rogue class 2 -- 装备塑能法师子职业",
+                "👉 /rogue class 3 -- 装备秘钥学者子职业",
+                "👉 /rogue class 0 -- 取消装备子职业",
+                "💡 如需购买子职业，请使用局外商店：/rogue shop",
                 "━━━━━━━━━━━━━━━━━━━━"
             ]
             yield "\n".join(lines)
@@ -243,7 +243,7 @@ class ClassCommand(CommandHandler, names=["职业", "class"]):
                 action = parts[1]
                 subclass_arg = parts[2]
             if action in ("购买", "buy"):
-                yield "💡 请使用商店命令前往局外商店进行商品购买：/rogue 商店"
+                yield "💡 请使用商店命令前往局外商店进行商品购买：/rogue shop"
             elif action in ("选择", "c", "choose", "select"):
                 if subclass_arg in ("战士", "warrior", "war"):
                     stats.selected_class = "战士"
@@ -485,9 +485,9 @@ class QueryCommand(CommandHandler, names=["查询", "query", "info", "i"]):
                 yield GameRenderer.render_query_info(" ".join(parts[1:]).strip())
         else:
             if not run:
-                yield "❌ 你当前没有正在进行的游戏。输入 /rogue 开启 开始新游戏。\n💡 提示：你可以通过 /rogue 查询 <名称>（如：/rogue 查询 力量）或 /rogue 查询 buff 来查看相关效果描述。"
+                yield "❌ 你当前没有正在进行的游戏。输入 /rogue start 开始新游戏。\n💡 提示：你可以通过 /rogue i <名称>（如：/rogue i 力量）或 /rogue i buff 来查看相关效果描述。"
             elif run.node_type != "battle":
-                yield "❌ 只有在战斗中才能查询详细战斗信息。请输入想要查询的随从、遗物、Buff名称。\n💡 提示：你可以通过 /rogue 查询 <名称>（如：/rogue 查询 力量）或 /rogue 查询 buff 来查看相关效果描述。"
+                yield "❌ 只有在战斗中才能查询详细战斗信息。请输入想要查询的随从、遗物、Buff名称。\n💡 提示：你可以通过 /rogue i <名称>（如：/rogue i 力量）或 /rogue i buff 来查看相关效果描述。"
             else:
                 yield GameRenderer.render_detailed_battle(run)
 
@@ -495,7 +495,7 @@ class DrawCommand(CommandHandler, names=["抽牌堆", "draw", "draw_pile"]):
     def execute(self, router, user_id: str, parts: list[str]) -> Generator[str, None, None]:
         run = router.save_manager.load_save(user_id)
         if not run:
-            yield "❌ 你当前没有正在进行的游戏。输入 /rogue 开启 开始新游戏。"
+            yield "❌ 你当前没有正在进行的游戏。输入 /rogue start 开始新游戏。"
         elif run.node_type != "battle":
             yield "❌ 只有在战斗中才能查询战斗牌堆。"
         else:
@@ -505,7 +505,7 @@ class DiscardCommand(CommandHandler, names=["弃牌堆", "discard", "discard_pil
     def execute(self, router, user_id: str, parts: list[str]) -> Generator[str, None, None]:
         run = router.save_manager.load_save(user_id)
         if not run:
-            yield "❌ 你当前没有正在进行的游戏。输入 /rogue 开启 开始新游戏。"
+            yield "❌ 你当前没有正在进行的游戏。输入 /rogue start 开始新游戏。"
         elif run.node_type != "battle":
             yield "❌ 只有在战斗中才能查询战斗牌堆。"
         else:
@@ -515,7 +515,7 @@ class ExhaustCommand(CommandHandler, names=["消耗堆", "exhaust", "exhaust_pil
     def execute(self, router, user_id: str, parts: list[str]) -> Generator[str, None, None]:
         run = router.save_manager.load_save(user_id)
         if not run:
-            yield "❌ 你当前没有正在进行的游戏。输入 /rogue 开启 开始新游戏。"
+            yield "❌ 你当前没有正在进行的游戏。输入 /rogue start 开始新游戏。"
         elif run.node_type != "battle":
             yield "❌ 只有在战斗中才能查询战斗牌堆。"
         else:
@@ -525,7 +525,7 @@ class MinionGraveyardCommand(CommandHandler, names=["随从墓地", "minion_grav
     def execute(self, router, user_id: str, parts: list[str]) -> Generator[str, None, None]:
         run = router.save_manager.load_save(user_id)
         if not run:
-            yield "❌ 你当前没有正在进行的游戏。输入 /rogue 开启 开始新游戏。"
+            yield "❌ 你当前没有正在进行的游戏。输入 /rogue start 开始新游戏。"
         elif run.node_type != "battle":
             yield "❌ 只有在战斗中才能查询战斗墓地。"
         else:
@@ -535,7 +535,7 @@ class EnemyGraveyardCommand(CommandHandler, names=["敌人墓地", "enemy_gravey
     def execute(self, router, user_id: str, parts: list[str]) -> Generator[str, None, None]:
         run = router.save_manager.load_save(user_id)
         if not run:
-            yield "❌ 你当前没有正在进行的游戏。输入 /rogue 开启 开始新游戏。"
+            yield "❌ 你当前没有正在进行的游戏。输入 /rogue start 开始新游戏。"
         elif run.node_type != "battle":
             yield "❌ 只有在战斗中才能查询战斗墓地。"
         else:
