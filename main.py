@@ -594,7 +594,8 @@ class MyPlugin(Star):
                         "退出", "quit", "exit", "q", "回城", "home", 
                         "拿取", "捡起", "take", "pick", "使用", "use", 
                         "交互", "talk", "interact", "inter", "talk_to",
-                        "帮助", "help", "统计", "stat", "stats", "查询", "query", "info", "i"
+                        "帮助", "help", "统计", "stat", "stats", "查询", "query", "info", "i",
+                        "地图", "map"
                     }
                     if first_word in town_cmds:
                         is_game_cmd = True
@@ -605,7 +606,7 @@ class MyPlugin(Star):
                         "结束", "e", "折叠", "f", "fold", "队列", "q", "queue", "统计", "stat", 
                         "stats", "查询", "query", "info", "i", "放弃", "abandon", "mode", "模式",
                         "职业", "class", "教程", "tutorial",
-                        "技能", "skill", "sk", "k", "主城", "town"
+                        "技能", "skill", "sk", "k", "主城", "town", "地图", "map"
                     }
                     if first_word in valid_cmds:
                         is_game_cmd = True

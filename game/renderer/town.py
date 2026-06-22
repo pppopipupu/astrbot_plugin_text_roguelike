@@ -15,44 +15,134 @@ def _load_zh_cn() -> Dict[str, Any]:
     except:
         return {}
 
-def get_map_symbol(room_id: str, current_id: str, name: str) -> str:
-    name_width = len(name) * 2
-    if room_id == current_id:
-        total_width = name_width + 6
-        pad_right = 16 - total_width
-        return f"【{name}★】" + " " * pad_right
-    else:
-        total_width = name_width + 3
-        pad_right = 16 - total_width
-        return " " + f"[{name}]" + " " * pad_right
+def get_display_width(s: str) -> int:
+    width = 0
+    for c in s:
+        if ord(c) > 127:
+            width += 2
+        else:
+            width += 1
+    return width
 
-def render_town_map(current_id: str, zh_cn: Dict[str, Any]) -> str:
+def render_town_map_classic(current_id: str) -> str:
+    names = {
+        "watch_tower": "哨塔",
+        "west_gate": "西门",
+        "range": "靶场",
+        "alley": "小巷",
+        "square": "广场",
+        "fountain": "喷泉",
+        "shop": "商店",
+        "market": "卖场",
+        "tavern": "酒馆",
+        "vip_room": "雅间",
+        "blacksmith": "铁匠"
+    }
+    
+    def get_sym(rid: str) -> str:
+        name = names.get(rid, "未知")
+        if rid == current_id:
+            return f"📍{name}"
+        return f"[{name}]"
+        
+    s_wt = get_sym("watch_tower")
+    s_wg = get_sym("west_gate")
+    s_rg = get_sym("range")
+    s_ay = get_sym("alley")
+    s_sq = get_sym("square")
+    s_ft = get_sym("fountain")
+    s_sp = get_sym("shop")
+    s_mk = get_sym("market")
+    s_tv = get_sym("tavern")
+    s_vr = get_sym("vip_room")
+    s_bs = get_sym("blacksmith")
+    
+    row0 = "     " + s_wt + " " * 34 + s_rg + " " * 34 + s_tv + "───────" + s_vr
+    row1 = " " * 7 + "│" + " " * 39 + "│" + " " * 39 + "│"
+    row2 = "     " + s_wg + "───────" + s_ay + "───────" + s_sq + "───────" + s_ft + "───────" + s_sp
+    row3 = " " * 47 + "│"
+    row4 = " " * 25 + s_bs + "───────" + s_mk
+    
+    return "\n".join([row0, row1, row2, row3, row4])
+
+def render_town_map_radar(current_id: str, zh_cn: Dict[str, Any], room_data: Dict[str, Any]) -> str:
+    exits = room_data.get("exits", {})
     rooms_loc = zh_cn.get("rooms", {})
-    t_wt = get_map_symbol("watch_tower", current_id, rooms_loc.get("watch_tower", {}).get("name", "Watch Tower"))
-    t_wg = get_map_symbol("west_gate", current_id, rooms_loc.get("west_gate", {}).get("name", "West Gate"))
-    t_rg = get_map_symbol("range", current_id, rooms_loc.get("range", {}).get("name", "Range"))
-    t_ay = get_map_symbol("alley", current_id, rooms_loc.get("alley", {}).get("name", "Alley"))
-    t_sq = get_map_symbol("square", current_id, rooms_loc.get("square", {}).get("name", "Square"))
-    t_ft = get_map_symbol("fountain", current_id, rooms_loc.get("fountain", {}).get("name", "Fountain"))
-    t_sp = get_map_symbol("shop", current_id, rooms_loc.get("shop", {}).get("name", "Shop"))
-    t_mk = get_map_symbol("market", current_id, rooms_loc.get("market", {}).get("name", "Market"))
-    t_tv = get_map_symbol("tavern", current_id, rooms_loc.get("tavern", {}).get("name", "Tavern"))
-    t_vr = get_map_symbol("vip_room", current_id, rooms_loc.get("vip_room", {}).get("name", "VIP Room"))
-    t_bs = get_map_symbol("blacksmith", current_id, rooms_loc.get("blacksmith", {}).get("name", "Blacksmith"))
-
-    lines = [
-        f"{t_wt}{' ' * 24}{t_rg}{' ' * 24}{t_tv} ── {t_vr}",
-        f"{' ' * 7}│{' ' * 38}│{' ' * 38}│",
-        f"{t_wg} ── {t_ay} ── {t_sq} ── {t_ft} ── {t_sp}",
-        f"{' ' * 47}│",
-        f"{' ' * 20}{t_bs} ── {t_mk}"
-    ]
+    
+    def get_room_name(rid: str) -> str:
+        if not rid:
+            return ""
+        return rooms_loc.get(rid, {}).get("name", rid)
+        
+    curr_name = get_room_name(current_id)
+    
+    north_id = exits.get("w")
+    south_id = exits.get("s")
+    west_id = exits.get("a")
+    east_id = exits.get("d")
+    
+    north_str = f"[{get_room_name(north_id)}]" if north_id else ""
+    south_str = f"[{get_room_name(south_id)}]" if south_id else ""
+    west_str = f"[{get_room_name(west_id)}]" if west_id else ""
+    east_str = f"[{get_room_name(east_id)}]" if east_id else ""
+    
+    curr_str = f"📍{curr_name}"
+    curr_len = get_display_width(curr_str)
+    
+    lines = []
+    
+    if north_str:
+        left_prefix_len = get_display_width(west_str) + 4 if west_str else 6
+        curr_center_offset = curr_len // 2
+        total_offset = left_prefix_len + curr_center_offset
+        
+        north_len = get_display_width(north_str)
+        north_start = total_offset - (north_len // 2)
+        if north_start < 0:
+            north_start = 0
+            
+        lines.append(" " * north_start + north_str)
+        lines.append(" " * total_offset + "▲")
+        lines.append(" " * total_offset + "│")
+        
+    mid_parts = []
+    if west_str:
+        mid_parts.append(f"{west_str} ◄─ ")
+    else:
+        mid_parts.append("      ")
+    mid_parts.append(curr_str)
+    if east_str:
+        mid_parts.append(f" ─► {east_str}")
+    lines.append("".join(mid_parts))
+    
+    if south_str:
+        left_prefix_len = get_display_width(west_str) + 4 if west_str else 6
+        curr_center_offset = curr_len // 2
+        total_offset = left_prefix_len + curr_center_offset
+        
+        south_len = get_display_width(south_str)
+        south_start = total_offset - (south_len // 2)
+        if south_start < 0:
+            south_start = 0
+            
+        lines.append(" " * total_offset + "│")
+        lines.append(" " * total_offset + "▼")
+        lines.append(" " * south_start + south_str)
+        
     return "\n".join(lines)
+
+def render_town_map(current_id: str, zh_cn: Dict[str, Any], room_data: Dict[str, Any] = None, stats: UserStats = None) -> str:
+    style = "classic"
+    if stats:
+        style = stats.town_flags.get("map_style", "classic")
+    if style == "radar" and room_data:
+        return render_town_map_radar(current_id, zh_cn, room_data)
+    return render_town_map_classic(current_id)
 
 def render_town(stats: UserStats, room_data: Dict[str, Any]) -> str:
     zh_cn = _load_zh_cn()
     current_id = stats.town_pos
-    map_str = render_town_map(current_id, zh_cn)
+    map_str = render_town_map(current_id, zh_cn, room_data, stats)
 
     name_key = room_data.get("name_key", current_id)
     room_loc = zh_cn.get("rooms", {}).get(name_key, {})
