@@ -137,6 +137,41 @@ class CLIRouter:
                         state_stack.pop()
                         self.save_manager.save_save(user_id, run)
                         return "❌ 取消使用操作。", False
+            elif stype == "discover_selection":
+                input_str = " ".join(parts).strip()
+                if input_str in ("取消", "cancel", "abandon", "放弃", "q"):
+                    state_stack.pop()
+                    self.save_manager.save_save(user_id, run)
+                    return "❌ 取消发掘操作。", False
+                sub = parts[0]
+                if sub.isdigit():
+                    parts = ["选择"] + parts
+                    sub = "选择"
+                if sub not in ("选择", "c"):
+                    return "❌ 你必须从消耗堆中选择卡牌。请输入：选择 <卡牌序号>（如：选择 1），或输入 取消/q 放弃发掘。", False
+                if len(parts) < 2:
+                    return "❌ 请提供卡牌序号，例如：选择 1", False
+                try:
+                    idx = int(parts[1])
+                except ValueError:
+                    return "❌ 序号必须是数字。", False
+                p = run.player
+                if idx < 1 or idx > len(p.exhaust_pile):
+                    return f"❌ 无效的消耗堆序号。当前消耗堆有 {len(p.exhaust_pile)} 张卡牌。", False
+                cid = p.exhaust_pile.pop(idx - 1)
+                p.hand.append(cid)
+                card_name = ALL_CARDS[cid].name if cid in ALL_CARDS else "未知卡牌"
+                top_state.setdefault("selected", []).append(cid)
+                req_count = top_state.get("count", 1)
+                if len(top_state["selected"]) < req_count and p.exhaust_pile:
+                    self.save_manager.save_save(user_id, run)
+                    exhaust_list = "\n".join(f"{i+1}. {ALL_CARDS[c].name}" for i, c in enumerate(p.exhaust_pile))
+                    return f"✨ 你发掘了【{card_name}】并加入手牌。请继续选择第 {len(top_state['selected']) + 1} 张发掘卡牌：\n{exhaust_list}", False
+                else:
+                    state_stack.pop()
+                    self.save_manager.save_save(user_id, run)
+                    selected_cards_str = "，".join(ALL_CARDS[c].name for c in top_state["selected"])
+                    return f"✨ 你完成了发掘，获得了【{selected_cards_str}】并加入手牌。", False
         if parts[0].isdigit():
             parts = ["选择"] + parts
         sub = parts[0]
@@ -178,6 +213,11 @@ class CLIRouter:
             else:
                 stats = self.save_manager.load_stats(user_id)
                 yield GameRenderer.render_menu(stats)
+            return
+        run = self.save_manager.load_save(user_id)
+        if run and run.node_data.get("state_stack"):
+            res, term = self._execute_sub_action(user_id, run, parts)
+            yield res
             return
         if parts[0].isdigit():
             parts = ["选择"] + parts

@@ -416,5 +416,8 @@ CARD_UPGRADE_CONFIG = {
     },
     "unmined_gem": {
         "desc": "随机给予手牌中的一张卡牌重放 4。消耗。"
+    },
+    "discover": {
+        "desc": "从消耗堆选择两张卡牌加入手牌。"
     }
 }

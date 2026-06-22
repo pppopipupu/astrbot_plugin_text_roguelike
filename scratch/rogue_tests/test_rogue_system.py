@@ -464,3 +464,126 @@ class TestRogueSystem(unittest.TestCase):
             save_manager.delete_save("test_user_warrior")
             
         asyncio.run(go())
+
+    def test_rogue_import_path_isolation(self):
+        import subprocess
+        import os
+        import sys
+        
+        cwd = os.getcwd()
+        parent_dir = os.path.dirname(cwd)
+        basename = os.path.basename(cwd)
+        
+        env = os.environ.copy()
+        if "PYTHONPATH" in env:
+            del env["PYTHONPATH"]
+            
+        script = "import sys; sys.path.append('" + basename + "'); from main import MyPlugin; plugin = MyPlugin(None); list(plugin.cli_router.handle_command('test_import', ['overview']))"
+        
+        res = subprocess.run(
+            [sys.executable, "-c", script],
+            cwd=parent_dir,
+            env=env,
+            capture_output=True,
+            text=True,
+            encoding="utf-8"
+        )
+        
+        self.assertEqual(res.returncode, 0, f"Import test failed: {res.stderr}")
+
+    def test_rogue_discover_card(self):
+        plugin = MyPlugin(DummyContext())
+        save_manager = plugin.save_manager
+        save_manager.delete_save("test_user_discover")
+        
+        async def go():
+            stats = save_manager.load_stats("test_user_discover")
+            stats.rogue_mode = True
+            save_manager.save_stats("test_user_discover", stats)
+            
+            player = PlayerState(
+                hp=80, max_hp=80, shield=0, gold=100, stage=1,
+                deck=["discover", "dagger_throw", "first_aid"],
+                hand=["discover", "dagger_throw"],
+                draw_pile=[], discard_pile=[],
+                exhaust_pile=[]
+            )
+            run = GameRun("test_user_discover", "battle", player=player, enemies=[EnemyState("测试怪物", 20, 20, 0)])
+            save_manager.save_save("test_user_discover", run)
+            
+            res_empty = await run_command(plugin, "使用 1", sender_id="test_user_discover")
+            self.assertIn("消耗堆中没有任何卡牌", res_empty)
+            
+            run = save_manager.load_save("test_user_discover")
+            run.player.exhaust_pile = ["dagger_throw", "first_aid", "adrenaline"]
+            run.player.hand = ["discover", "dagger_throw"]
+            run.player.actions = 2
+            run.player.bonus_actions = 1
+            save_manager.save_save("test_user_discover", run)
+            
+            res_param = await run_command(plugin, "使用 1 2", sender_id="test_user_discover")
+            self.assertIn("发掘了消耗堆中的【绷带包扎】", res_param)
+            run = save_manager.load_save("test_user_discover")
+            self.assertNotIn("discover", run.player.hand)
+            self.assertIn("first_aid", run.player.hand)
+            self.assertNotIn("first_aid", run.player.exhaust_pile)
+            self.assertEqual(run.player.actions, 1)
+            self.assertEqual(len(run.node_data.get("state_stack", [])), 0)
+            
+            run.player.hand = ["discover", "dagger_throw"]
+            run.player.exhaust_pile = ["dagger_throw", "first_aid", "adrenaline"]
+            run.player.actions = 2
+            save_manager.save_save("test_user_discover", run)
+            
+            res_no_param = await run_command(plugin, "使用 1", sender_id="test_user_discover")
+            self.assertIn("请选择一张卡牌发掘", res_no_param)
+            self.assertIn("1. 匕首投掷", res_no_param)
+            self.assertIn("2. 绷带包扎", res_no_param)
+            
+            res_invalid = await run_command(plugin, "使用 1", sender_id="test_user_discover")
+            self.assertIn("你必须从消耗堆中选择卡牌", res_invalid)
+            
+            res_choose = await run_command(plugin, "选择 2", sender_id="test_user_discover")
+            self.assertIn("你完成了发掘", res_choose)
+            self.assertIn("绷带包扎", res_choose)
+            
+            run = save_manager.load_save("test_user_discover")
+            self.assertIn("first_aid", run.player.hand)
+            self.assertNotIn("first_aid", run.player.exhaust_pile)
+            self.assertEqual(len(run.node_data.get("state_stack", [])), 0)
+            
+            run.player.hand = ["discover+", "dagger_throw"]
+            run.player.exhaust_pile = ["dagger_throw", "first_aid", "adrenaline"]
+            run.player.actions = 2
+            save_manager.save_save("test_user_discover", run)
+            
+            res_up = await run_command(plugin, "使用 1", sender_id="test_user_discover")
+            self.assertIn("请选择一张卡牌发掘", res_up)
+            
+            res_up_c1 = await run_command(plugin, "c 2", sender_id="test_user_discover")
+            self.assertIn("请继续选择第 2 张", res_up_c1)
+            
+            res_up_c2 = await run_command(plugin, "c 1", sender_id="test_user_discover")
+            self.assertIn("你完成了发掘", res_up_c2)
+            self.assertIn("匕首投掷", res_up_c2)
+            
+            run = save_manager.load_save("test_user_discover")
+            self.assertIn("first_aid", run.player.hand)
+            self.assertIn("dagger_throw", run.player.hand)
+            self.assertEqual(len(run.node_data.get("state_stack", [])), 0)
+            
+            run.player.hand = ["discover", "dagger_throw"]
+            run.player.exhaust_pile = ["dagger_throw", "first_aid"]
+            run.player.actions = 2
+            save_manager.save_save("test_user_discover", run)
+            
+            await run_command(plugin, "使用 1", sender_id="test_user_discover")
+            res_cancel = await run_command(plugin, "q", sender_id="test_user_discover")
+            self.assertIn("取消发掘操作", res_cancel)
+            run = save_manager.load_save("test_user_discover")
+            self.assertEqual(len(run.node_data.get("state_stack", [])), 0)
+            
+            save_manager.delete_save("test_user_discover")
+            
+        asyncio.run(go())
+

@@ -450,5 +450,15 @@ NEUTRAL_CARD_CONFIG = {
         "rarity": "legendary",
         "exhaust": True,
         "feedback": "使用了【未掘宝石】。"
+    },
+    "discover": {
+        "name": "发掘",
+        "color": "neutral",
+        "type": "spell",
+        "cost_a": 1,
+        "cost_ba": 0,
+        "desc": "从消耗堆选择一张卡牌加入手牌。",
+        "rarity": "rare",
+        "feedback": "使用了【发掘】。"
     }
 }

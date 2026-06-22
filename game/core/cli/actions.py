@@ -10,7 +10,7 @@ class UseAction(ActionHandler, actions=["使用", "p"]):
             idx = int(parts[1])
         except ValueError:
             return "❌ 序号必须是数字。", False
-        target = parts[2] if len(parts) > 2 else None
+        target = " ".join(parts[2:]) if len(parts) > 2 else None
         res = router.engine.play_card(run, idx, target)
         if run.player.hp <= 0:
             settle_msg = router.save_manager.settle_game_and_delete(user_id, run, is_victory=False)

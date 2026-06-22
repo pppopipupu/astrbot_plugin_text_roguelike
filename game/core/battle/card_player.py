@@ -158,36 +158,38 @@ class CardPlayer:
             return "❌ 卡牌不存在。"
         if getattr(card, "unplayable", False):
             return "❌ 该卡牌不能被打出。"
-        if target is None:
-            if card.type == "spell":
-                p0_spells = {"first_aid", "get_ready", "adrenaline", "mana_potion", "mass_healing_word", "refresh_spirit", "shield", "misty_step", "arcane_intellect", "calculated_gamble", "time_warp", "time_stop", "archmage_wish"}
-                if card.id.replace("+", "") in p0_spells:
-                    target = "p0"
-                else:
-                    target = self.engine._get_first_alive_enemy(run)
+        is_discover = card.id.replace("+", "") == "discover"
+        if not is_discover:
+            if target is None:
+                if card.type == "spell":
+                    p0_spells = {"first_aid", "get_ready", "adrenaline", "mana_potion", "mass_healing_word", "refresh_spirit", "shield", "misty_step", "arcane_intellect", "calculated_gamble", "time_warp", "time_stop", "archmage_wish"}
+                    if card.id.replace("+", "") in p0_spells:
+                        target = "p0"
+                    else:
+                        target = self.engine._get_first_alive_enemy(run)
 
-        if target is not None:
-            if isinstance(target, str) and target.isdigit():
-                target = f"e{target}"
-            if target == "0" or target == "e0":
-                target = "e1"
-            elif target == "p":
-                target = "p0"
-            if target.startswith("e"):
-                try:
-                    grid = int(target[1:]) - 1
-                except ValueError:
-                    grid = 0
-                if grid < 0 or grid >= len(run.enemies):
-                    return f"❌ 敌方格子 [{target}] 没有敌人。"
-            elif target == "p0":
-                pass
-            elif target.startswith("p"):
-                grid = target[1:]
-                if grid not in p.minions:
-                    return f"❌ 我方格子 [{grid}] 没有随从。"
-            else:
-                return "❌ 无效的目标选择。"
+            if target is not None:
+                if isinstance(target, str) and target.isdigit():
+                    target = f"e{target}"
+                if target == "0" or target == "e0":
+                    target = "e1"
+                elif target == "p":
+                    target = "p0"
+                if target.startswith("e"):
+                    try:
+                        grid = int(target[1:]) - 1
+                    except ValueError:
+                        grid = 0
+                    if grid < 0 or grid >= len(run.enemies):
+                        return f"❌ 敌方格子 [{target}] 没有敌人。"
+                elif target == "p0":
+                    pass
+                elif target.startswith("p"):
+                    grid = target[1:]
+                    if grid not in p.minions:
+                        return f"❌ 我方格子 [{grid}] 没有随从。"
+                else:
+                    return "❌ 无效的目标选择。"
         if card.type in ("minion", "amulet") and self.engine._get_free_grid(p) is None:
             return "❌ 你的战场格子已满，无法召唤随从或部署护符。"
         

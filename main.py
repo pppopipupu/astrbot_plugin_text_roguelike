@@ -1,3 +1,10 @@
+import os
+import sys
+
+_curr_dir = os.path.dirname(os.path.abspath(__file__))
+if _curr_dir not in sys.path:
+    sys.path.insert(0, _curr_dir)
+
 try:
     from astrbot.api.event import filter, AstrMessageEvent, MessageEventResult
     from astrbot.api.star import Context, Star, register
