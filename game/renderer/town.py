@@ -24,110 +24,66 @@ def get_display_width(s: str) -> int:
             width += 1
     return width
 
-def render_town_map_classic(current_id: str) -> str:
-    names = {
-        "watch_tower": "哨塔",
-        "west_gate": "西门",
-        "range": "靶场",
-        "alley": "小巷",
-        "square": "广场",
-        "fountain": "喷泉",
-        "shop": "商店",
-        "market": "卖场",
-        "tavern": "酒馆",
-        "vip_room": "雅间",
-        "blacksmith": "铁匠"
-    }
-    
-    def get_sym(rid: str) -> str:
-        name = names.get(rid, "未知")
-        if rid == current_id:
-            return f"📍{name}"
-        return f"[{name}]"
+def render_town_map_classic(current_id: str, zh_cn: Dict[str, Any]) -> str:
+    rooms_loc = zh_cn.get("rooms", {})
+    def get_name(rid: str) -> str:
+        return rooms_loc.get(rid, {}).get("name", rid)
         
-    s_wt = get_sym("watch_tower")
-    s_wg = get_sym("west_gate")
-    s_rg = get_sym("range")
-    s_ay = get_sym("alley")
-    s_sq = get_sym("square")
-    s_ft = get_sym("fountain")
-    s_sp = get_sym("shop")
-    s_mk = get_sym("market")
-    s_tv = get_sym("tavern")
-    s_vr = get_sym("vip_room")
-    s_bs = get_sym("blacksmith")
+    order = [
+        ("watch_tower", {"s": "west_gate"}),
+        ("west_gate", {"w": "watch_tower", "d": "alley"}),
+        ("range", {"s": "square"}),
+        ("alley", {"a": "west_gate", "d": "square"}),
+        ("square", {"w": "range", "s": "market", "a": "alley", "d": "fountain"}),
+        ("fountain", {"a": "square", "d": "shop"}),
+        ("shop", {"w": "tavern", "a": "fountain"}),
+        ("tavern", {"s": "shop", "d": "vip_room"}),
+        ("vip_room", {"a": "tavern"}),
+        ("blacksmith", {"d": "market"}),
+        ("market", {"w": "square", "a": "blacksmith"})
+    ]
     
-    row0 = "     " + s_wt + " " * 34 + s_rg + " " * 34 + s_tv + "───────" + s_vr
-    row1 = " " * 7 + "│" + " " * 39 + "│" + " " * 39 + "│"
-    row2 = "     " + s_wg + "───────" + s_ay + "───────" + s_sq + "───────" + s_ft + "───────" + s_sp
-    row3 = " " * 47 + "│"
-    row4 = " " * 25 + s_bs + "───────" + s_mk
+    dir_names = {"w": "北", "s": "南", "a": "西", "d": "东"}
     
-    return "\n".join([row0, row1, row2, row3, row4])
+    lines = ["🗺️ 【主城全局地图路线】"]
+    for rid, exits in order:
+        name = get_name(rid)
+        exit_strs = []
+        for d, target in exits.items():
+            dir_zh = dir_names.get(d, d.upper())
+            exit_strs.append(f"{dir_zh}➔{get_name(target)}")
+            
+        exit_desc = ", ".join(exit_strs)
+        if rid == current_id:
+            lines.append(f" 📍 ⬤ 【{name}】 ➔ {exit_desc}")
+        else:
+            lines.append(f"    ◯ {name} ➔ {exit_desc}")
+            
+    return "\n".join(lines)
 
 def render_town_map_radar(current_id: str, zh_cn: Dict[str, Any], room_data: Dict[str, Any]) -> str:
-    exits = room_data.get("exits", {})
     rooms_loc = zh_cn.get("rooms", {})
-    
-    def get_room_name(rid: str) -> str:
+    def get_name(rid: str) -> str:
         if not rid:
             return ""
         return rooms_loc.get(rid, {}).get("name", rid)
         
-    curr_name = get_room_name(current_id)
+    curr_name = get_name(current_id)
+    exits = room_data.get("exits", {})
     
-    north_id = exits.get("w")
-    south_id = exits.get("s")
-    west_id = exits.get("a")
-    east_id = exits.get("d")
+    lines = [f"📍 当前位置：【{curr_name}】"]
+    dir_names = {"w": "北(W)", "s": "南(S)", "a": "西(A)", "d": "东(D)"}
     
-    north_str = f"[{get_room_name(north_id)}]" if north_id else ""
-    south_str = f"[{get_room_name(south_id)}]" if south_id else ""
-    west_str = f"[{get_room_name(west_id)}]" if west_id else ""
-    east_str = f"[{get_room_name(east_id)}]" if east_id else ""
-    
-    curr_str = f"📍{curr_name}"
-    curr_len = get_display_width(curr_str)
-    
-    lines = []
-    
-    if north_str:
-        left_prefix_len = get_display_width(west_str) + 4 if west_str else 6
-        curr_center_offset = curr_len // 2
-        total_offset = left_prefix_len + curr_center_offset
+    has_exits = False
+    for d, target in exits.items():
+        dir_zh = dir_names.get(d, d.upper())
+        lines.append(f"  ├─ {dir_zh} ➔ {get_name(target)}")
+        has_exits = True
         
-        north_len = get_display_width(north_str)
-        north_start = total_offset - (north_len // 2)
-        if north_start < 0:
-            north_start = 0
-            
-        lines.append(" " * north_start + north_str)
-        lines.append(" " * total_offset + "▲")
-        lines.append(" " * total_offset + "│")
-        
-    mid_parts = []
-    if west_str:
-        mid_parts.append(f"{west_str} ◄─ ")
+    if not has_exits:
+        lines.append("  └─ [该房间没有其他出口]")
     else:
-        mid_parts.append("      ")
-    mid_parts.append(curr_str)
-    if east_str:
-        mid_parts.append(f" ─► {east_str}")
-    lines.append("".join(mid_parts))
-    
-    if south_str:
-        left_prefix_len = get_display_width(west_str) + 4 if west_str else 6
-        curr_center_offset = curr_len // 2
-        total_offset = left_prefix_len + curr_center_offset
-        
-        south_len = get_display_width(south_str)
-        south_start = total_offset - (south_len // 2)
-        if south_start < 0:
-            south_start = 0
-            
-        lines.append(" " * total_offset + "│")
-        lines.append(" " * total_offset + "▼")
-        lines.append(" " * south_start + south_str)
+        lines[-1] = lines[-1].replace("├─", "└─", 1)
         
     return "\n".join(lines)
 
@@ -137,7 +93,7 @@ def render_town_map(current_id: str, zh_cn: Dict[str, Any], room_data: Dict[str,
         style = stats.town_flags.get("map_style", "classic")
     if style == "radar" and room_data:
         return render_town_map_radar(current_id, zh_cn, room_data)
-    return render_town_map_classic(current_id)
+    return render_town_map_classic(current_id, zh_cn)
 
 def render_town(stats: UserStats, room_data: Dict[str, Any]) -> str:
     zh_cn = _load_zh_cn()
