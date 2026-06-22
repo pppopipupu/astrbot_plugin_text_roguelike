@@ -68,6 +68,22 @@ class TownEngine:
         elif npc_id == "Market_Merchant" and sub_menu == "lock":
             options.append(zh_cn.get("global", {}).get("lock_instructions", "ℹ️ 请直接输入你想锁定的卡牌名称（例如输入 痛击 ）进行绑定。"))
             options.append(zh_cn.get("global", {}).get("back_to_previous_1", "1. 返回上一级"))
+        elif npc_id == "Shopkeeper_Jack" and stats.town_flags.get("shop_sub_menu") == "buy_subclass":
+            unlocked = getattr(stats, "unlocked_subclasses", [])
+            has_gatekey = getattr(stats, "unlocked_gatekey", False)
+            items_list = [
+                ("时序法师", 2888, "时序法师" in unlocked),
+                ("塑能法师", 2888, "塑能法师" in unlocked),
+                ("秘钥学者", 2888, "秘钥学者" in unlocked),
+                ("门之钥匙", 3000, has_gatekey),
+                ("神秘物品", 66666, False)
+            ]
+            for idx, (name, price, is_unlocked) in enumerate(items_list):
+                if is_unlocked:
+                    options.append(f"{idx+1}. 购买 【{name}】 ({zh_cn.get('global', {}).get('unlocked_status', '已解锁')})")
+                else:
+                    options.append(f"{idx+1}. 购买 【{name}】 ({price} GP)")
+            options.append(f"{len(items_list)+1}. " + zh_cn.get("global", {}).get("back_to_previous", "返回上一级"))
         else:
             if npc_id not in ("Chest", "Fountain", "West_Gate"):
                 options.append(f"1. {npc_data.get('option_idle', zh_cn.get('global', {}).get('idle_talk_default', '闲聊'))}")
@@ -90,6 +106,8 @@ class TownEngine:
             elif npc_id == "Market_Merchant":
                 options.append(f"2. {npc_data.get('option_buy_shelf')}")
                 options.append(f"3. {npc_data.get('option_lock_card')}")
+            elif npc_id == "Shopkeeper_Jack":
+                options.append(f"2. {npc_data.get('option_buy_subclass', '购买新子职业/门之钥匙...')}")
             elif npc_id == "Chest":
                 if "rusty_key" in stats.town_inventory and not stats.town_flags.get("box_opened", 0):
                     options.append(f"1. {npc_data.get('option_open')}")
@@ -280,6 +298,41 @@ class TownEngine:
                 return res_msg + "\n\n" + self._render_dialog_window(stats, npc_id, zh_cn)
             return zh_cn.get("global", {}).get("invalid_option", "")
 
+        shop_sub = stats.town_flags.get("shop_sub_menu")
+        if npc_id == "Shopkeeper_Jack" and shop_sub == "buy_subclass":
+            if choice_lower == "6":
+                stats.town_flags.pop("shop_sub_menu", None)
+                self.save_manager.save_stats(user_id, stats)
+                return self._render_dialog_window(stats, npc_id, zh_cn)
+            if choice_lower in ("1", "2", "3", "4", "5"):
+                unlocked = getattr(stats, "unlocked_subclasses", [])
+                has_gatekey = getattr(stats, "unlocked_gatekey", False)
+                subclass_map = {
+                    "1": ("时序法师", 2888, False),
+                    "2": ("塑能法师", 2888, False),
+                    "3": ("秘钥学者", 2888, False),
+                    "4": ("门之钥匙", 3000, True),
+                    "5": ("神秘物品", 66666, False)
+                }
+                subclass_name, price, is_gatekey = subclass_map[choice_lower]
+                if is_gatekey:
+                    if has_gatekey:
+                        return zh_cn.get("global", {}).get("already_unlocked_error", "❌ 你已经解锁了【{name}】。").format(name=subclass_name)
+                else:
+                    if subclass_name in unlocked:
+                        return zh_cn.get("global", {}).get("already_unlocked_error", "❌ 你已经解锁了【{name}】。").format(name=subclass_name)
+                if stats.gp < price:
+                    return zh_cn.get("global", {}).get("gp_insufficient", "").format(req=price, owned=stats.gp)
+                stats.gp -= price
+                if is_gatekey:
+                    stats.unlocked_gatekey = True
+                else:
+                    stats.unlocked_subclasses.append(subclass_name)
+                self.save_manager.save_stats(user_id, stats)
+                success_msg = zh_cn.get("global", {}).get("shop_buy_success", "").format(name=subclass_name, price=price)
+                return success_msg + "\n\n" + self._render_dialog_window(stats, npc_id, zh_cn)
+            return zh_cn.get("global", {}).get("invalid_option", "")
+
         options_map = {}
         opt_idx = 1
         options_map[str(opt_idx)] = "idle"
@@ -309,6 +362,9 @@ class TownEngine:
             options_map[str(opt_idx)] = "buy_shelf"
             opt_idx += 1
             options_map[str(opt_idx)] = "lock_card"
+            opt_idx += 1
+        elif npc_id == "Shopkeeper_Jack":
+            options_map[str(opt_idx)] = "buy_subclass"
             opt_idx += 1
         elif npc_id == "Chest":
             options_map = {}
@@ -388,6 +444,11 @@ class TownEngine:
             self.save_manager.save_stats(user_id, stats)
             return self._render_dialog_window(stats, npc_id, zh_cn)
 
+        elif action == "buy_subclass":
+            stats.town_flags["shop_sub_menu"] = "buy_subclass"
+            self.save_manager.save_stats(user_id, stats)
+            return self._render_dialog_window(stats, npc_id, zh_cn)
+
         elif action == "open_box":
             stats.town_inventory.remove("rusty_key")
             stats.town_flags["box_opened"] = 1
@@ -433,7 +494,7 @@ class TownEngine:
             self.save_manager.save_stats(user_id, stats)
             return self.challenge_npc(user_id, npc_id)
 
-        return loc.get("global", {}).get("invalid_option", "")
+        return zh_cn.get("global", {}).get("invalid_option", "")
 
     def pick_item(self, user_id: str, item_name: str) -> str:
         stats = self.save_manager.load_stats(user_id)

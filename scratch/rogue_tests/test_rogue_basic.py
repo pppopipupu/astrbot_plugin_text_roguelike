@@ -187,13 +187,17 @@ class TestRogueBasic(unittest.TestCase):
         
         mgr.stats.gp = 99999
         mgr.stats.unlocked_subclasses = []
-        list(router.handle_command("test_user", ["shop", "buy", "chronomancer"]))
+        mgr.stats.town_pos = "shop"
+        list(router.handle_command("test_user", ["town"]))
+        list(router.handle_command("test_user", ["talk", "神秘店主"]))
+        list(router.handle_command("test_user", ["2"]))
+        list(router.handle_command("test_user", ["1"]))
         self.assertIn("时序法师", mgr.stats.unlocked_subclasses)
-        list(router.handle_command("test_user", ["shop", "buy", "evoker"]))
+        list(router.handle_command("test_user", ["2"]))
         self.assertIn("塑能法师", mgr.stats.unlocked_subclasses)
-        list(router.handle_command("test_user", ["shop", "buy", "arcanist"]))
+        list(router.handle_command("test_user", ["3"]))
         self.assertIn("秘钥学者", mgr.stats.unlocked_subclasses)
-        list(router.handle_command("test_user", ["shop", "buy", "gatekey"]))
+        list(router.handle_command("test_user", ["4"]))
         self.assertTrue(mgr.stats.unlocked_gatekey)
         
         player = PlayerState(

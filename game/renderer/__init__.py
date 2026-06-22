@@ -1,5 +1,5 @@
 from ..models.state import GameRun, UserStats
-from .menu import render_menu, render_card_library, render_relic_library, render_deck, render_stats, render_help, render_shop as render_outside_shop, render_tutorial
+from .menu import render_menu, render_card_library, render_relic_library, render_deck, render_stats, render_help, render_tutorial
 from .battle import render_battle, render_detailed_battle, render_draw_pile, render_discard_pile, render_exhaust_pile, render_minion_graveyard, render_enemy_graveyard
 
 from .map import render_map_select, render_start_ancient, render_ancient
@@ -79,9 +79,6 @@ class GameRenderer:
     def render_stats(stats: UserStats) -> str:
         return render_stats(stats)
 
-    @staticmethod
-    def render_shop(stats: UserStats) -> str:
-        return render_outside_shop(stats)
 
     @staticmethod
     def render_draw_pile(run: GameRun) -> str:

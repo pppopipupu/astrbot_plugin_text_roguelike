@@ -241,7 +241,7 @@ class ClassCommand(CommandHandler, names=["职业", "class"]):
                 "👉 /rogue class 2 -- 装备塑能法师子职业",
                 "👉 /rogue class 3 -- 装备秘钥学者子职业",
                 "👉 /rogue class 0 -- 取消装备子职业",
-                "💡 如需购买子职业，请使用局外商店：/rogue shop",
+                "💡 如需购买子职业，请前往主城商店与神秘店主对话。",
                 "━━━━━━━━━━━━━━━━━━━━"
             ]
             yield "\n".join(lines)
@@ -255,7 +255,7 @@ class ClassCommand(CommandHandler, names=["职业", "class"]):
                 action = parts[1]
                 subclass_arg = parts[2]
             if action in ("购买", "buy"):
-                yield "💡 请使用商店命令前往局外商店进行商品购买：/rogue shop"
+                yield "💡 请前往主城商店与神秘店主对话以进行商品购买。"
             elif action in ("选择", "c", "choose", "select"):
                 if subclass_arg in ("战士", "warrior", "war"):
                     stats.selected_class = "战士"
@@ -289,7 +289,7 @@ class ClassCommand(CommandHandler, names=["职业", "class"]):
                     return
                 unlocked = getattr(stats, "unlocked_subclasses", [])
                 if subclass_name not in unlocked:
-                    yield f"❌ 你尚未解锁【{subclass_name}】。需要消耗 2888 GP 购买，请使用：/rogue 商店 或 /rogue shop"
+                    yield f"❌ 你尚未解锁【{subclass_name}】。需要消耗 2888 GP，请前往主城商店与神秘店主对话购买。"
                     return
                 stats.selected_subclass = subclass_name
                 router.save_manager.save_stats(user_id, stats)
@@ -326,106 +326,6 @@ class SkillCommand(CommandHandler, names=["技能", "skill", "sk", "k"]):
         p.bonus_actions += 1
         router.save_manager.save_save(user_id, run)
         yield f"🔥 战士发动了【动作如潮】！获得了额外的 2A 1BA 动作点！(本场战斗还可使用 {uses - 1} 次)\n当前行动点: {p.actions}A, {p.bonus_actions}BA"
-
-class ShopCommand(CommandHandler, names=["商店", "shop"]):
-    def execute(self, router, user_id: str, parts: list[str]) -> Generator[str, None, None]:
-        stats = router.save_manager.load_stats(user_id)
-        if len(parts) == 1:
-            yield GameRenderer.render_shop(stats)
-        elif len(parts) >= 3 and parts[1] in ("购买", "buy"):
-            target = parts[2]
-            unlocked = getattr(stats, "unlocked_subclasses", [])
-            gp = getattr(stats, "gp", 0)
-            killed_icerainboww = getattr(stats, "killed_icerainboww", False)
-            if hasattr(router.save_manager, "load_admin_config"):
-                boss_cfg = router.save_manager.load_admin_config()
-            else:
-                boss_cfg = {}
-            icerainboww_enabled = boss_cfg.get("icerainboww_enabled", True)
-            is_gatekey = False
-            if target in ("1", "时序法师", "chronomancer", "time"):
-                subclass_name = "时序法师"
-                price = 2888
-            elif target in ("2", "塑能法师", "evoker", "elemental"):
-                subclass_name = "塑能法师"
-                price = 2888
-            elif target in ("3", "秘钥学者", "arcanist", "key"):
-                subclass_name = "秘钥学者"
-                price = 2888
-            elif target in ("4", "门之钥匙", "gatekey", "gate_key"):
-                subclass_name = "门之钥匙"
-                price = 3000
-                is_gatekey = True
-            elif target in ("5", "神秘物品", "mystery", "mystery_item"):
-                subclass_name = "神秘物品"
-                price = 66666
-            elif target in ("6", "Icerainboww"):
-                if not icerainboww_enabled:
-                    yield "❌ 该商品已由管理员禁用，不可使用。"
-                    return
-                if killed_icerainboww:
-                    yield "❌ 该商品已自动解锁，无需购买。"
-                else:
-                    yield "❌ 无法购买未知的隐藏商品。"
-                return
-            elif target in ("7", "尤格-索托斯", "Yog-Sothoth"):
-                if getattr(stats, "killed_yog_sothoth", False):
-                    yield "❌ 该商品已自动解锁，无需购买。"
-                else:
-                    yield "❌ 无法购买未知的隐藏商品。"
-                return
-            else:
-                valid_ids = ["1", "2", "3", "4", "5"]
-                if killed_icerainboww:
-                    valid_ids.append("6")
-                if getattr(stats, "killed_yog_sothoth", False):
-                    valid_ids.append("7")
-                valid_str = "、".join(valid_ids)
-                yield f"❌ 无效的商品。可选商品序号：{valid_str}。"
-                return
-
-            if is_gatekey:
-                if getattr(stats, "unlocked_gatekey", False):
-                    yield "❌ 你已经解锁了【门之钥匙】。"
-                    return
-            else:
-                if subclass_name in unlocked:
-                    yield f"❌ 你已经解锁了【{subclass_name}】。"
-                    return
-
-            if gp < price:
-                import random
-                fail_quotes = [
-                    "“呵呵，我的宝贝可概不赊账。多去地下城闯一闯，赚够了GP再来吧。”",
-                    "“看来你的钱包 and 你的雄心壮志并不相符，旅者。”",
-                    "“钱不够？那可不行。等你有了足够的GP，我随时在这儿等你。”",
-                    "“GP不够可是买不到虚空造物的，去多打败一些强大的怪兽吧。”",
-                    "“哦？想要空手套白狼？这可不是一个合格法师该有的行为。”",
-                    "“即使是至高法皇，没钱也得从我这里老老实实地退出去，懂吗？”"
-                ]
-                quote = random.choice(fail_quotes)
-                yield f"❌ 你的 GP 不足。购买【{subclass_name if not is_gatekey else '门之钥匙'}】需要 {price} GP，你当前只有 {gp} GP。\n🔮 神秘店主说：\n  {quote}"
-                return
-
-            stats.gp -= price
-            if is_gatekey:
-                stats.unlocked_gatekey = True
-            else:
-                stats.unlocked_subclasses.append(subclass_name)
-            router.save_manager.save_stats(user_id, stats)
-            import random
-            success_quotes = [
-                "“明智的选择，它现在属于你了。”",
-                "“收您对应GP，拿好它，祝您好运，勇敢的旅者。”",
-                "“呵呵，这股力量已经在虚空中沉睡了太久，希望你能配得上它。”",
-                "“拿去吧，它会指指引你在接下来的地下城里改写宿命。”",
-                "“噢……它离去时，连虚空的波动都微微震颤了一下。”",
-                "“成交。记住，有些契约一经签订，便无法回头。”"
-            ]
-            quote = random.choice(success_quotes)
-            yield f"🎉 购买成功！已成功解锁【{subclass_name if not is_gatekey else '门之钥匙'}】。已扣除 {price} GP。\n🔮 神秘店主说：\n  {quote}"
-        else:
-            yield "❌ 格式错误。请使用 /rogue 商店 (/rogue shop) 或 /rogue 商店 购买/buy (/rogue shop buy) <商品序号/商品名称>。"
 
 class FoldCommand(CommandHandler, names=["折叠", "f", "fold"]):
     def execute(self, router, user_id: str, parts: list[str]) -> Generator[str, None, None]:

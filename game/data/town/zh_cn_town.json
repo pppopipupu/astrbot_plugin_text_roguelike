@@ -75,7 +75,10 @@
     "take_missing_param": "❌ 请提供物品名字，例如：take 幸运硬币",
     "use_missing_param": "❌ 请指定使用的物品，例如：use 遗失的笔记本",
     "talk_missing_param": "❌ 请指定交互的目标，例如：talk 向导长老",
-    "town_help_prompt": "🔮 主城探索中。输入 退出/exit 回到主菜单，或输入 W/A/S/D 进行移动。输入 交互/talk <目标> 开启互动。"
+    "town_help_prompt": "🔮 主城探索中。输入 退出/exit 回到主菜单，或输入 W/A/S/D 进行移动。输入 交互/talk <目标> 开启互动。",
+    "unlocked_status": "已解锁",
+    "already_unlocked_error": "❌ 你已经解锁了【{name}】。",
+    "shop_buy_success": "🎉 购买成功！已成功解锁【{name}】。已扣除 {price} GP。"
   },
   "rooms": {
     "square": {
@@ -282,6 +285,18 @@
       "welcome": "👦 调皮的孩子：'啦啦啦，你抓不到我！'",
       "option_idle": "闲聊",
       "option_leave": "离开"
+    },
+    "Shopkeeper_Jack": {
+      "name": "神秘店主",
+      "welcome": "🔮 神秘店主：'欢迎来到主城商店。我这里只出售一些不属于凡间的虚空造物……'",
+      "idle_talk": [
+        "🔮 神秘店主：'你可以花 2888 GP 购买新的子职业以获得更强的开局。'",
+        "🔮 神秘店主：'时序法师能够操控时间，而塑能法师善于释放最纯粹的毁灭之力。'",
+        "🔮 神秘店主：'听说西大门里封印着什么危险的怪物，不过如果你有了“门之钥匙”，说不定能进得去？'"
+      ],
+      "option_idle": "与神秘店主闲聊",
+      "option_buy_subclass": "购买新子职业/门之钥匙...",
+      "option_leave": "离开交谈"
     }
   }
 }
