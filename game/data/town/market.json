@@ -1,0 +1,11 @@
+{
+  "id": "market",
+  "name_key": "market",
+  "exits": {
+    "w": "square",
+    "a": "blacksmith"
+  },
+  "npcs": ["Market_Merchant"],
+  "items": [],
+  "interactive": {}
+}

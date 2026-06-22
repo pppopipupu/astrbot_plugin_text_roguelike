@@ -1,0 +1,10 @@
+{
+  "id": "vip_room",
+  "name_key": "vip_room",
+  "exits": {
+    "a": "tavern"
+  },
+  "npcs": ["Chest"],
+  "items": ["lost_notebook"],
+  "interactive": {}
+}

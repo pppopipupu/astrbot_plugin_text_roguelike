@@ -584,20 +584,28 @@ class MyPlugin(Star):
             if parts:
                 first_word = parts[0].lower()
                 is_game_cmd = False
-                valid_cmds = {
-                    "开启", "start", "状态", "s", "牌组", "deck", "总览", "overview", 
-                    "帮助", "help", "使用", "p", "随从", "m", "选择", "c", "特殊", "sa", 
-                    "结束", "e", "折叠", "f", "fold", "队列", "q", "queue", "统计", "stat", 
-                    "stats", "查询", "query", "info", "i", "放弃", "abandon", "mode", "模式",
-                    "职业", "class", "商店", "shop", "教程", "tutorial",
-                    "技能", "skill", "sk", "k"
-                }
-                if first_word in valid_cmds:
+                run = self.save_manager.load_save(user_id)
+                stats = self.save_manager.load_stats(user_id)
+                if not run and stats.in_town and stats.town_flags.get("current_dialog"):
                     is_game_cmd = True
-                elif first_word.isdigit():
-                    run = self.save_manager.load_save(user_id)
-                    if run is not None and getattr(run, "node_type", "") != "duel":
+                elif not run and stats.in_town:
+                    town_cmds = {"w", "a", "s", "d", "up", "down", "left", "right", "退出", "quit", "exit", "q", "回城", "home", "拿取", "捡起", "take", "pick", "使用", "use", "交互", "talk", "interact", "inter", "talk_to"}
+                    if first_word in town_cmds:
                         is_game_cmd = True
+                else:
+                    valid_cmds = {
+                        "开启", "start", "状态", "s", "牌组", "deck", "总览", "overview", 
+                        "帮助", "help", "使用", "p", "随从", "m", "选择", "c", "特殊", "sa", 
+                        "结束", "e", "折叠", "f", "fold", "队列", "q", "queue", "统计", "stat", 
+                        "stats", "查询", "query", "info", "i", "放弃", "abandon", "mode", "模式",
+                        "职业", "class", "商店", "shop", "教程", "tutorial",
+                        "技能", "skill", "sk", "k"
+                    }
+                    if first_word in valid_cmds:
+                        is_game_cmd = True
+                    elif first_word.isdigit():
+                        if run is not None and getattr(run, "node_type", "") != "duel":
+                            is_game_cmd = True
 
                 if is_game_cmd:
                     event.stop_event()

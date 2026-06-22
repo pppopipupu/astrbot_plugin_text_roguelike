@@ -1,9 +1,10 @@
 from typing import Tuple, Generator
-from ..models.state import set_user_id
+from ..models.state import set_user_id, UserStats, GameRun
 from ..renderer import GameRenderer
 from ..entities import ALL_CARDS
 from .cli.base import ActionHandler, CommandHandler, split_by_comma_with_brackets
 from . import cli
+from .town_engine import TownEngine
 
 class CLIRouter:
     def __init__(self, save_manager, engine):
@@ -11,6 +12,7 @@ class CLIRouter:
         self.engine = engine
         self._action_handlers = ActionHandler.registry
         self._command_handlers = CommandHandler.registry
+        self.town_engine = TownEngine(save_manager, engine)
 
     def _execute_sub_action(self, user_id: str, run, parts: list[str]) -> Tuple[str, bool]:
         set_user_id(user_id)
@@ -204,26 +206,124 @@ class CLIRouter:
                     return True
         return False
 
+    def _handle_town_combat_settle(self, user_id: str, run: GameRun, original_res: str) -> str:
+        latest_run = self.save_manager.load_save(user_id)
+        zh_cn = self.town_engine._load_zh_cn()
+        if not latest_run:
+            stats = self.save_manager.load_stats(user_id)
+            stats.in_town = True
+            stats.town_pos = "range"
+            self.save_manager.save_stats(user_id, stats)
+            return original_res + "\n\n" + zh_cn.get("global", {}).get("combat_quit", "💀 你已退出了切磋，回到了靶场房间。") + "\n\n" + self.town_engine.render_current_room(user_id, stats)
+        p = latest_run.player
+        is_won = self.engine.is_battle_won(latest_run)
+        is_lost = p.hp <= 0
+        if is_won or is_lost:
+            self.save_manager.delete_save(user_id)
+            stats = self.save_manager.load_stats(user_id)
+            stats.in_town = True
+            if is_lost:
+                self.save_manager.save_stats(user_id, stats)
+                return f"{original_res}\n\n" + zh_cn.get("global", {}).get("combat_lost", "💀 你被击败了！不过别担心，在主城的切磋不影响你的局外进度。你已回到了靶场房间。") + "\n\n" + self.town_engine.render_current_room(user_id, stats)
+            npc_name = latest_run.node_data.get("npc_name", "")
+            gp_gained = 0
+            msg_bonus = ""
+            if npc_name == "训练假人":
+                msg_bonus = zh_cn.get("global", {}).get("combat_won_dummy", "训练假人已被摧毁！切磋完成。")
+            else:
+                if npc_name not in stats.defeated_town_npcs:
+                    stats.defeated_town_npcs.append(npc_name)
+                    if npc_name == "NoobSlayer99":
+                        gp_gained = 100
+                    elif npc_name == "xXx_SniperElite_xXx":
+                        gp_gained = 150
+                    elif npc_name == "Gate_Guardian":
+                        gp_gained = 500
+                    elif npc_name == "pppopipupu":
+                        gp_gained = 1000
+                    stats.gp += gp_gained
+                    msg_bonus = zh_cn.get("global", {}).get("combat_won_first", "").format(name=npc_name, gp=gp_gained)
+                else:
+                    msg_bonus = zh_cn.get("global", {}).get("combat_won_repeat", "").format(name=npc_name)
+            self.save_manager.save_stats(user_id, stats)
+            return f"{original_res}\n\n" + zh_cn.get("global", {}).get("combat_won_banner", "🎉 战斗胜利！{bonus}").format(bonus=msg_bonus) + "\n\n" + self.town_engine.render_current_room(user_id, stats)
+        return original_res
+
     def handle_command(self, user_id: str, parts: list[str]) -> Generator[str, None, None]:
         set_user_id(user_id)
+        run = self.save_manager.load_save(user_id)
+        is_town_combat = run is not None and run.node_data.get("is_town_combat", False)
         if not parts:
-            run = self.save_manager.load_save(user_id)
             if run:
                 yield GameRenderer.render_game(run)
             else:
                 stats = self.save_manager.load_stats(user_id)
-                yield GameRenderer.render_menu(stats)
+                if stats.in_town:
+                    yield self.town_engine.render_current_room(user_id, stats)
+                else:
+                    yield GameRenderer.render_menu(stats)
             return
-        run = self.save_manager.load_save(user_id)
+        if not run:
+            stats = self.save_manager.load_stats(user_id)
+            if stats.in_town:
+                active_dialog = stats.town_flags.get("current_dialog")
+                zh_cn = self.town_engine._load_zh_cn()
+                if active_dialog:
+                    input_str = " ".join(parts).strip()
+                    yield self.town_engine.handle_dialog_input(user_id, input_str)
+                    return
+                cmd = parts[0].lower()
+                if cmd in ("w", "a", "s", "d", "up", "down", "left", "right"):
+                    yield self.town_engine.move(user_id, cmd)
+                    return
+                elif cmd in ("退出", "quit", "exit", "q"):
+                    stats.in_town = False
+                    self.save_manager.save_stats(user_id, stats)
+                    yield zh_cn.get("global", {}).get("town_exit_success", "👋 你已退出主城，回到主菜单。") + "\n\n" + GameRenderer.render_menu(stats)
+                    return
+                elif cmd in ("回城", "home"):
+                    stats.town_pos = "square"
+                    self.save_manager.save_stats(user_id, stats)
+                    yield self.town_engine.render_current_room(user_id, stats)
+                    return
+                elif cmd in ("拿取", "捡起", "take", "pick"):
+                    if len(parts) < 2:
+                        yield zh_cn.get("global", {}).get("take_missing_param", "❌ 请提供物品名字，例如：take 幸运硬币")
+                    else:
+                        yield self.town_engine.pick_item(user_id, " ".join(parts[1:]))
+                    return
+                elif cmd in ("使用", "use"):
+                    if len(parts) < 2:
+                        yield zh_cn.get("global", {}).get("use_missing_param", "❌ 请指定使用的物品，例如：use 遗失的笔记本")
+                    else:
+                        yield self.town_engine.use_item(user_id, " ".join(parts[1:]))
+                    return
+                elif cmd in ("交互", "talk", "interact", "inter", "talk_to"):
+                    if len(parts) < 2:
+                        yield zh_cn.get("global", {}).get("talk_missing_param", "❌ 请指定交互的目标，例如：talk 向导长老")
+                    else:
+                        yield self.town_engine.talk_npc(user_id, " ".join(parts[1:]))
+                    return
+                else:
+                    yield zh_cn.get("global", {}).get("town_help_prompt", "🔮 主城探索中。输入 退出/exit 回到主菜单，或输入 W/A/S/D 进行移动。输入 交互/talk <目标> 开启互动。")
+                    return
         if run and run.node_data.get("state_stack"):
             res, term = self._execute_sub_action(user_id, run, parts)
-            yield res
+            if is_town_combat:
+                yield self._handle_town_combat_settle(user_id, run, res)
+            else:
+                yield res
             return
         if parts[0].isdigit():
             parts = ["选择"] + parts
         sub = parts[0]
         handler = self._command_handlers.get(sub)
         if handler:
-            yield from handler.execute(self, user_id, parts)
+            res_list = list(handler.execute(self, user_id, parts))
+            res_text = "\n".join(res_list)
+            if is_town_combat:
+                yield self._handle_town_combat_settle(user_id, run, res_text)
+            else:
+                yield res_text
         else:
             yield "🔮 未知子命令。输入 /rogue 帮助 或 /rogue help 获取帮助。"

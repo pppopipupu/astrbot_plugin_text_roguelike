@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 from contextvars import ContextVar
 from enum import Enum
 import sys
@@ -56,6 +56,14 @@ class UserStats:
     reader_title: str = ""
     reader_items: List[str] = field(default_factory=list)
     reader_mode: str = "rogue"
+    in_town: bool = False
+    town_pos: str = "square"
+    guaranteed_card: Optional[str] = None
+    purchased_pool: List[str] = field(default_factory=list)
+    defeated_town_npcs: List[str] = field(default_factory=list)
+    town_inventory: List[str] = field(default_factory=list)
+    town_flags: Dict[str, Any] = field(default_factory=dict)
+    town_health_bonus: int = 0
 
 
 if not hasattr(sys, "_rogue_stat_recorder"):

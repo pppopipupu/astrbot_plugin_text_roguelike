@@ -8,6 +8,12 @@ class TestRogueBasic(unittest.TestCase):
         plugin = MyPlugin(DummyContext())
         save_manager = SaveManager()
         save_manager.delete_save("test_user")
+        stats_path = save_manager.get_stats_path("test_user")
+        if os.path.exists(stats_path):
+            try:
+                os.remove(stats_path)
+            except:
+                pass
         
         async def go():
             res = await run_command(plugin, ".rogue 开启 确认")

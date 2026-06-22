@@ -1,0 +1,11 @@
+{
+  "id": "west_gate",
+  "name_key": "west_gate",
+  "exits": {
+    "d": "alley",
+    "w": "watch_tower"
+  },
+  "npcs": ["West_Gate"],
+  "items": [],
+  "interactive": {}
+}

@@ -1,0 +1,11 @@
+{
+  "id": "shop",
+  "name_key": "shop",
+  "exits": {
+    "a": "fountain",
+    "w": "tavern"
+  },
+  "npcs": ["Shopkeeper_Jack"],
+  "items": [],
+  "interactive": {}
+}

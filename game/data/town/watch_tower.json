@@ -1,0 +1,10 @@
+{
+  "id": "watch_tower",
+  "name_key": "watch_tower",
+  "exits": {
+    "s": "west_gate"
+  },
+  "npcs": [],
+  "items": ["rusty_key"],
+  "interactive": {}
+}

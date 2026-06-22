@@ -1,0 +1,10 @@
+{
+  "id": "blacksmith",
+  "name_key": "blacksmith",
+  "exits": {
+    "d": "market"
+  },
+  "npcs": ["Blacksmith_Ironclad"],
+  "items": ["strange_ore"],
+  "interactive": {}
+}

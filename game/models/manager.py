@@ -52,7 +52,15 @@ class SaveManager:
                 reader_page=d.get("reader_page", 1),
                 reader_title=d.get("reader_title", ""),
                 reader_items=d.get("reader_items", []),
-                reader_mode=d.get("reader_mode", "rogue")
+                reader_mode=d.get("reader_mode", "rogue"),
+                in_town=d.get("in_town", False),
+                town_pos=d.get("town_pos", "square"),
+                guaranteed_card=d.get("guaranteed_card", None),
+                purchased_pool=d.get("purchased_pool", []),
+                defeated_town_npcs=d.get("defeated_town_npcs", []),
+                town_inventory=d.get("town_inventory", []),
+                town_flags=d.get("town_flags", {}),
+                town_health_bonus=d.get("town_health_bonus", 0)
             )
         except:
             return UserStats()

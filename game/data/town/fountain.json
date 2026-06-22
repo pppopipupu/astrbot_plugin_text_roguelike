@@ -1,0 +1,11 @@
+{
+  "id": "fountain",
+  "name_key": "fountain",
+  "exits": {
+    "a": "square",
+    "d": "shop"
+  },
+  "npcs": ["Fountain"],
+  "items": ["lucky_coin"],
+  "interactive": {}
+}

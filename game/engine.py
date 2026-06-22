@@ -25,6 +25,9 @@ class GameEngine:
             allowed_colors = ("wizard", "neutral")
             hp = 45
             max_hp = 45
+        hp_bonus = getattr(stats, "town_health_bonus", 0)
+        hp += hp_bonus
+        max_hp += hp_bonus
         commons = [cid for cid, c in ALL_CARDS.items() if getattr(c, "rarity", "common") == "common" and getattr(c, "color", "") in allowed_colors and not cid.startswith("curse_") and not cid.startswith("duel_") and cid != "time_stop"]
         rares = [cid for cid, c in ALL_CARDS.items() if getattr(c, "rarity", "common") == "rare" and getattr(c, "color", "") in allowed_colors and not cid.startswith("curse_") and not cid.startswith("duel_") and cid != "time_stop"]
         epics = [cid for cid, c in ALL_CARDS.items() if getattr(c, "rarity", "common") == "epic" and getattr(c, "color", "") in allowed_colors and not cid.startswith("curse_") and not cid.startswith("duel_") and cid != "time_stop"]
@@ -37,6 +40,15 @@ class GameEngine:
             initial_deck.append(random.choice(epics))
         if selected_class == "法师" and selected_subclass == "时序法师":
             initial_deck.append("time_stop")
+        g_card = getattr(stats, "guaranteed_card", None)
+        if g_card:
+            initial_deck.append(g_card)
+            stats.guaranteed_card = None
+        p_pool = getattr(stats, "purchased_pool", [])
+        if p_pool:
+            initial_deck.extend(p_pool)
+            stats.purchased_pool = []
+        self.save_manager.save_stats(user_id, stats)
         player = PlayerState(
             hp=hp,
             max_hp=max_hp,

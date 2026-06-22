@@ -6,8 +6,14 @@ from .map import render_map_select, render_start_ancient, render_ancient
 from .explore import render_event, render_shop, render_rest, render_reward, render_treasure, render_card_select
 from .query import render_query_info
 
+from .town import render_town
+
 class GameRenderer:
 
+
+    @staticmethod
+    def render_town(stats: UserStats, room_data: dict) -> str:
+        return render_town(stats, room_data)
 
     @staticmethod
     def render_menu(stats: UserStats = None) -> str:

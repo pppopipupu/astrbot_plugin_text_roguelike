@@ -1,0 +1,287 @@
+{
+  "items": {
+    "wine_glass": ["精致的空酒杯", "wine_glass"],
+    "lucky_coin": ["幸运硬币", "lucky_coin"],
+    "rusty_key": ["rusty_key", "rusty_key", "锈蚀的钥匙"],
+    "strange_ore": ["奇异的矿石", "strange_ore"],
+    "lost_notebook": ["遗失的笔记本", "lost_notebook"]
+  },
+  "global": {
+    "interact_not_found": "❌ 房间里没有叫【{target}】的居民或交互物。",
+    "interact_success": "💬 你开启了与【{name}】的交互：",
+    "dialog_exit": "🚪 你结束了与【{name}】的交谈，回到了房间探索状态。",
+    "invalid_option": "❌ 无效的选项。请输入选项前对应的数字编号（或输入 离开/exit/quit 结束对话）。",
+    "gp_insufficient": "❌ GP 不足！你需要 {req} GP，当前仅有 {owned} GP。",
+    "take_not_found": "❌ 房间里没有【{target}】可以拾取。",
+    "take_already_taken": "❌ 【{target}】已经被捡走了。",
+    "take_success": "🎒 你成功拿取了【{target}】并存入你的背包中。",
+    "use_not_found": "❌ 背包里没有【{target}】该如何使用？",
+    "use_cannot_use": "❌ 【{target}】无法在主城内直接使用。",
+    "card_lock_success": "🔒 成功扣除 1000 GP，下局游戏开始初始牌组将必定带有【{name}】！",
+    "card_lock_failed_legendary": "❌ 卡牌大卖场无法锁定传奇稀有度卡牌。",
+    "card_lock_failed_not_found": "❌ 未能匹配到叫【{name}】的卡牌。",
+    "card_buy_success": "🛒 成功花费 {price} GP 购买了【{name}】。它会在你开启下一局新游戏时注入到你的初始牌组中！",
+    "card_buy_not_on_shelf": "❌ 今日货架上没有【{name}】卡牌在出售。",
+    "combat_lost": "💀 你被击败了！不过别担心，在主城的切磋不影响你的局外进度。你已回到了靶场房间。",
+    "combat_won_dummy": "训练假人已被摧毁！切磋完成。",
+    "combat_won_first": "🎉 你首次战胜了【{name}】！获得了 {gp} GP 奖励！",
+    "combat_won_repeat": "🎉 战胜了【{name}】！非首次战胜，无额外 GP 奖励。",
+    "rarities": ["普通", "稀有", "珍奇"],
+    "market_sold_out": "【已售罄】",
+    "market_buy_option": "{idx}. 购买 【{name}】 ({rarity} - {price} GP)",
+    "back_to_previous": "返回上一级",
+    "lock_instructions": "ℹ️ 请直接输入你想锁定的卡牌名称（例如输入 痛击 ）进行绑定。",
+    "back_to_previous_1": "1. 返回上一级",
+    "idle_talk_default": "闲聊",
+    "leave_default": "离开",
+    "dialog_title": "💬 与【{name}】对话中",
+    "dialog_help": "💡 输入选项编号(如 1, 2)进行互动，输入 离开/exit/quit 结束交谈。",
+    "move_no_way": "❌ 往这个方向没有路。你可以前往：{exits}",
+    "not_in_dialog": "❌ 没有处于交谈状态。",
+    "lost_notebook_use_desc": "📖 【先古冒险者秘籍】\n'火球术配回响形态是清场的绝活。另外，别在西大门乱敲门，要是敲够10次，被门卫揍了可别找我哭！'",
+    "cannot_challenge_unknown": "❌ 无法挑战未知角色【{name}】。",
+    "challenge_start_guardian": "🚪 黑铁大门剧烈晃动，灰尘四落。在一声怒吼中，西门守卫 Gate_Guardian 破门而出！开始战斗！\n{render_res}",
+    "challenge_start_normal": "⚔️ 开启与【{name}】的切磋战斗！\n{render_res}",
+    "unknown_room": "未知房间",
+    "title_format": "✨ 先古主城 ── {name} ✨",
+    "none": "无",
+    "directions": {
+      "w": "北",
+      "s": "南",
+      "a": "西",
+      "d": "东"
+    },
+    "market_shelf_header": "\n\n🏷️ 今日货架商品：\n",
+    "market_shelf_footer": "\n（输入 交互/talk 卡牌商人 即可开启选购或锁定必带卡）",
+    "market_shelf_option": "{idx}. 【{name}】({rarity} ─ {price} GP)",
+    "quest_tour_complete_ready": "\n📌 任务进度：向导的观光指引 (11/11) ─ 你已探索完全部区域！快回中心广场向向导长老交付任务吧！",
+    "quest_tour_progress": "\n📌 任务进度：向导的观光指引 ({visited}/11) ─ 请继续探索未访问的区域。",
+    "quest_tour_completed": "\n📌 任务进度：向导的观光指引 ─ 已完成（已获得 2000 GP）",
+    "quest_tour_none": "\n📌 任务进度：暂无活动任务（可前往中心广场找向导长老领取任务）",
+    "empty": "空",
+    "room_env": "环境：{desc}",
+    "room_exits": "出口：{exits}",
+    "room_npcs": "居民：{npcs}",
+    "room_items": "物品：{items}",
+    "room_inventory": "🎒 随身物品：{inv} | 💰 拥有 GP：{gp}",
+    "help_move": "💡 移动 (MOVE)：W(北/UP) / A(西/LEFT) / S(南/DOWN) / D(东/RIGHT)",
+    "help_take": "💡 拿取 (TAKE)：拿取/捡起/take/pick <物品>",
+    "help_use": "💡 使用 (USE)：使用/use <物品>",
+    "help_talk": "💡 交互 (TALK)：交互/talk/interact/talk_to <名字>",
+    "help_system": "💡 系统 (SYSTEM)：退出/exit/quit | 回城/home",
+    "combat_quit": "💀 你已退出了切磋，回到了靶场房间。",
+    "combat_won_banner": "🎉 战斗胜利！{bonus}",
+    "town_exit_success": "👋 你已退出主城，回到主菜单。",
+    "take_missing_param": "❌ 请提供物品名字，例如：take 幸运硬币",
+    "use_missing_param": "❌ 请指定使用的物品，例如：use 遗失的笔记本",
+    "talk_missing_param": "❌ 请指定交互的目标，例如：talk 向导长老",
+    "town_help_prompt": "🔮 主城探索中。输入 退出/exit 回到主菜单，或输入 W/A/S/D 进行移动。输入 交互/talk <目标> 开启互动。"
+  },
+  "rooms": {
+    "square": {
+      "name": "中心广场",
+      "desc": "这里是繁华的先古主城中心广场，阳光洒在青石板上。四周人声鼎沸，各色商贩在热情叫卖。北面(W)是训练靶场，南面(S)是卡牌大卖场，西面(A)通往偏僻小巷，东面(D)是清凉的许愿喷泉。"
+    },
+    "range": {
+      "name": "训练靶场",
+      "desc": "这里是冒险者们磨炼战斗技巧的训练靶场，地面铺满了沙土。几具粗糙的稻草假人立在中央，身上布满了刀痕与魔法灼烧的痕迹。几位高阶冒险者正在旁观指导。南面(S)是广场。"
+    },
+    "fountain": {
+      "name": "许愿喷泉",
+      "desc": "清澈的泉水从白石雕刻的飞龙口中喷涌而出，汇聚在宽阔 of 圆形石池中。阳光在水面上折射出七彩的光芒，池底隐约闪烁着无数反光的硬币。西边(A)是广场，东边(D)是主城商店。"
+    },
+    "shop": {
+      "name": "主城商店",
+      "desc": "主城商店里货架林立，摆满了各种奇异的冒险装备、未鉴定的卷轴和散发微光的药水。西边(A)是喷泉，北边(W)是酒馆大堂。"
+    },
+    "tavern": {
+      "name": "酒馆大堂",
+      "desc": "酒馆大堂里弥漫着麦芽酒和烤肉的香气，几张粗糙的橡木桌旁坐满了吹牛的冒险者。吟游诗人在角落里轻轻弹唱。南面(S)是商店，东面(D)通往幽静的酒馆雅间。"
+    },
+    "vip_room": {
+      "name": "酒馆雅间",
+      "desc": "这是酒馆大堂深处的一间僻静雅间，光线有些昏暗。高档的红木桌椅擦拭得一尘不染，墙角放置着一个古旧的铁宝箱，上面雕刻着奇异的符文。西面(A)连通酒馆大堂。"
+    },
+    "market": {
+      "name": "卡牌大卖场",
+      "desc": "这里是卡牌爱好者的天堂！无数珍稀的魔法卡牌悬浮在半空中展示。北面(W)是广场，西面(A)可以通往铁匠铺。"
+    },
+    "blacksmith": {
+      "name": "铁匠铺",
+      "desc": "铁匠铺熔炉通红，热浪扑面，大铁锤富有节奏地敲打。东面(D)通往卡牌大卖场。"
+    },
+    "alley": {
+      "name": "偏僻小巷",
+      "desc": "这是一条狭窄阴暗的巷子，四周堆放着空木桶和破旧的杂物。墙角生满了青苔。东面(D)连通广场，西面(A)直达西大门。"
+    },
+    "west_gate": {
+      "name": "西大门",
+      "desc": "这是先古主城的西侧城门，厚重的黑铁大门紧紧关闭着，上面布满了古老的封印法阵。东面(D)通往偏僻小巷，北面(W)有一道石阶通往守卫哨塔。"
+    },
+    "watch_tower": {
+      "name": "守卫哨塔",
+      "desc": "顺着石阶登上高耸的防守哨塔，这里可以俯瞰城墙外的荒野景象。风声呼啸。南面(S)可以走下西大门。"
+    }
+  },
+  "interactive_entities": {
+    "Guide_Elder": {
+      "name": "向导长老",
+      "welcome": "👴 向导长老：'年轻的冒险者，欢迎来到先古主城！这是一个熟悉这里的机会。'",
+      "idle_talk": [
+        "👴 向导长老：'记住，主城所有的假人训练和 NPC 挑战都是无损的，你可以放心尝试。'",
+        "👴 向导长老：'如果你的开局牌组缺乏防御，去卡牌大卖场锁定一张【防御】或【绷带包扎】是个好主意。'",
+        "👴 向导长老：'多和酒保杰克、铁匠艾恩克拉德聊聊，他们可能需要一些冒险者在巷子里捡到的“破烂”。'",
+        "👴 向导长老：'西大门被古老的先古封印紧锁。千万不要连续敲大门，尤其是连续敲10次，否则会惊醒可怕的东西！'",
+        "👴 向导长老：'许愿喷泉底部的幸运硬币不是摆设，若能找到并投进去，或许能获得神秘加持。'"
+      ],
+      "option_idle": "与向导长老闲聊",
+      "option_quest_accept": "接受新手任务：主城观光 (奖励 2000 GP)",
+      "option_quest_status": "查询新手任务进度",
+      "option_quest_complete": "交付新手任务 (领取 2000 GP)",
+      "option_leave": "离开交谈",
+      "quest_accepted": "👴 向导长老：'很好！请利用 WASD/UP/DOWN/LEFT/RIGHT 游览商业 A 区的全部 11 个房间。当你全部游览完后回来找我，我会赠予你 2000 GP 的启动资金！'",
+      "quest_doing": "👴 向导长老：'你还需要继续游览未访问的房间。当前进度：({progress}/11)。等你走完所有房间后，我会发放奖励！'",
+      "quest_completed_msg": "👴 向导长老：'非常出色！你已经走遍了主城的每一个房间。这是奖励你的 2000 GP 启动资金，祝你在肉鸽冒险中好运！'",
+      "quest_done_talk": "👴 向导长老：'你已经非常熟悉主城商业A区了。开启你的新肉鸽冒险吧！'"
+    },
+    "Bartender_Jack": {
+      "name": "酒保杰克",
+      "welcome": "🍺 酒保杰克：'欢迎光临先古酒馆！今天来杯冰镇黑麦酒吗？'",
+      "idle_talk": [
+        "🍺 酒保杰克：'你知道吗？有些法师喜欢叠【法术回响】，那样一发火球能喷两次，简直是怪物。'",
+        "🍺 酒保杰克：'如果你玩战士，别忘了【痛击】能给怪物挂易伤，伤害增幅很夸张的！'",
+        "🍺 酒保杰克：'隔壁雅间以前常有高玩在里面写日记，不过后来好像把日记本落在桌子底下了。'",
+        "🍺 酒保杰克：'铁匠艾恩克拉德的脾气跟他的熔炉一样火爆，不过他其实对稀有矿石非常感兴趣。'"
+      ],
+      "option_idle": "与酒保杰克闲聊",
+      "option_gift_glass": "赠送物品：【精致的空酒杯】 (奖励 150 GP)",
+      "option_leave": "离开交谈",
+      "gift_success": "🍺 酒保杰克大喜：'天哪，这正是我丢失的精致空酒杯！非常感谢你的帮助，这是给你的 150 GP 答谢金！'",
+      "gift_already_done": "🍺 酒保杰克：'老伙计，多亏了你送的精致酒杯，今晚的黑啤格外香甜！'"
+    },
+    "Blacksmith_Ironclad": {
+      "name": "铁匠艾恩克拉德",
+      "welcome": "🔨 铁匠艾恩克拉德：'呼！呼！我的大铁锤已经饥渴难耐了！要锻造什么？'",
+      "idle_talk": [
+        "🔨 铁匠艾恩克拉德：'叠甲才是最稳健的战术！只要我的盾比怪的血还厚，我就绝对不会输！'",
+        "🔨 铁匠艾恩克拉德：'听说虚空之门尤格-索托斯有极高的伤害反弹，如果不带护盾，很容易把自己弹死。'",
+        "🔨 铁匠艾恩克拉德：'哨塔上面经常堆放着一些生锈的守城器械，守卫们偶尔会把备用钥匙丢在上面。'"
+      ],
+      "option_idle": "与铁匠闲聊",
+      "option_gift_ore": "赠送物品：【奇异的矿石】 (奖励 200 GP)",
+      "option_leave": "离开交谈",
+      "gift_success": "🔨 铁匠艾恩克拉德满意地接过矿石：'好极了！极品奇异矿石！拿去，这是奖励你的 200 GP！'",
+      "gift_already_done": "🔨 铁匠艾恩克拉德：'这块奇异的矿石品质极高，我可以锻造出最坚固的盾牌！'"
+    },
+    "Market_Merchant": {
+      "name": "卡牌商人",
+      "welcome": "🃏 卡牌商人：'欢迎来到卡牌大卖场！我们提供定制开局牌组服务。'",
+      "idle_talk": [
+        "🃏 卡牌商人：'开局多带一张【发掘】，相当于你多了一次从消耗堆拿回核心卡的机会。'",
+        "🃏 卡牌商人：'我们的货架卡牌每次你开启游戏时都会重置，所以如果有心仪 of 卡牌，最好立刻买下！'",
+        "🃏 卡牌商人：'锁定珍奇等级 of 卡牌需要 1000 GP，这虽然贵，但能确保你的开局胡牌率！'"
+      ],
+      "option_idle": "与卡牌商人闲聊",
+      "option_buy_shelf": "购买今日货架上的卡牌...",
+      "option_lock_card": "锁定下一局的必带卡牌 (消耗 1000 GP)...",
+      "option_leave": "离开交谈",
+      "lock_prompt": "💬 请输入你要锁定的卡牌中文名（例如：输入 痛击）："
+    },
+    "Dummy": {
+      "name": "训练假人",
+      "welcome": "⚔️ 矗立在中央的粗糙稻草假人，可用于测试你的伤害爆发。",
+      "option_challenge": "开始假人输出练习",
+      "option_leave": "离开"
+    },
+    "NoobSlayer99": {
+      "name": "NoobSlayer99",
+      "welcome": "⚔️ NoobSlayer99：'嘿，又来一个想打靶的新手吗？我可是地精大军克星！'",
+      "idle_talk": [
+        "⚔️ NoobSlayer99：'上次在第二关，我手牌全是诅咒牌结果被怪活活戳死，简直太离谱了。'",
+        "⚔️ NoobSlayer99：'新手最容易犯的错误就是忘了动作点，每回合急着出完牌，根本不防守。'"
+      ],
+      "option_idle": "与NoobSlayer99闲聊",
+      "option_challenge": "发起切磋挑战",
+      "option_leave": "离开"
+    },
+    "xXx_SniperElite_xXx": {
+      "name": "xXx_SniperElite_xXx",
+      "welcome": "⚔️ xXx_SniperElite_xXx：'嘘，小声点，我正在瞄准靶心。'",
+      "idle_talk": [
+        "⚔️ xXx_SniperElite_xXx：'虽然这游戏没有弓箭卡，但雷鸣波的击退机制在某种意义上就是我的重炮！'",
+        "⚔️ xXx_SniperElite_xXx：'力量buff对多段伤害卡牌（比如魔法飞弹）增幅最大，一段加3力量，三段就加9伤害！'"
+      ],
+      "option_idle": "与xXx_SniperElite_xXx闲聊",
+      "option_challenge": "发起切磋挑战",
+      "option_leave": "离开"
+    },
+    "pppopipupu": {
+      "name": "pppopipupu",
+      "welcome": "🐟 pppopipupu：'啊……又钓上来一条虚空之鱼。'",
+      "idle_talk": [
+        "🐟 pppopipupu：'听说虚空之门尤格-索托斯临死时会吞噬虚空能量觉醒，二阶段有巨额反弹。'",
+        "🐟 pppopipupu：'我其实不太喜欢打架，钓鱼多舒服。你可千万别攻击我，我发起脾气来连我自己都怕。'"
+      ],
+      "option_idle": "与pppopipupu闲聊",
+      "option_challenge": "发起切磋挑战",
+      "option_leave": "离开"
+    },
+    "Chest": {
+      "name": "古老的铁宝箱",
+      "welcome": "🎁 墙角放置着一个雕刻了奇异符文的古旧铁宝箱，上面挂着一把锈蚀的铁锁。",
+      "option_open": "使用 【rusty_key】 开启宝箱 (奖励 300 GP & 锁定【发掘】)",
+      "option_leave": "离开",
+      "open_success": "🎁 咔哒！你使用锈蚀的钥匙开启了宝箱！获得 300 GP！并且成功锁定了下一局的开局必带卡牌【发掘】！",
+      "open_already": "❌ 宝箱已经被打开过了。"
+    },
+    "Fountain": {
+      "name": "许愿喷泉",
+      "welcome": "泉水自龙口倾泻而下，水花在阳光下闪烁，池底躺着不少亮闪闪的硬币。",
+      "option_wish": "投掷 【幸运硬币】 许愿",
+      "option_leave": "离开",
+      "wish_success_gp": "⛲ 许愿喷泉闪烁微光，你直接获得了 200 GP！",
+      "wish_success_card": "⛲ 许愿喷泉倒映出神秘符文，你锁定了下一局开局必带卡牌【发掘】！",
+      "wish_success_hp": "⛲ 泉水流过你的指尖，你的肉鸽初始生命上限永久 +5！",
+      "wish_no_coin": "⛲ 泉水欢快地流着。你需要在喷泉处投掷【幸运硬币】才能触发许愿彩蛋。"
+    },
+    "West_Gate": {
+      "name": "西大门",
+      "welcome": "🚪 冰冷厚重的黑铁大门紧紧关闭着，上面的封印法阵散发着微弱的红光。",
+      "option_knock": "用力敲打黑铁大门",
+      "option_leave": "离开",
+      "knock_bonus_3": "🚪 你咚咚咚敲了三下西大门。门底下悄悄塞出了一张百元面额的先古支票：'别敲了别敲了，拿上这 100 GP 去酒馆消费吧！'",
+      "knock_guardian_10": "🚪 黑铁大门剧烈晃动，灰尘四落。在一声怒吼中，西门守卫 Gate_Guardian 破门而出！",
+      "knock_normal": "🚪 你敲了敲紧闭的黑铁城门，大门纹丝不动，发出了沉闷的声响（当前累计敲门 {count} 次）。"
+    },
+    "Gamer_Boy": {
+      "name": "咸鱼玩家",
+      "welcome": "🐟 咸鱼玩家：'别卷了，快来跟我一起躺平。'",
+      "option_idle": "闲聊",
+      "option_leave": "离开"
+    },
+    "Crypto_Whale": {
+      "name": "推销员",
+      "welcome": "🪙 推销员：'朋友，有兴趣了解财富密码吗？'",
+      "option_idle": "闲聊",
+      "option_leave": "离开"
+    },
+    "Lost_Bard": {
+      "name": "迷路的诗人",
+      "welcome": "🎵 迷路的诗人：'啊，歌声在城墙间回荡……'",
+      "option_idle": "闲聊",
+      "option_leave": "离开"
+    },
+    "Town_Guard": {
+      "name": "巡逻卫兵",
+      "welcome": "🛡️ 巡逻卫兵：'主城重地，安全第一。'",
+      "option_idle": "闲聊",
+      "option_leave": "离开"
+    },
+    "Naughty_Child": {
+      "name": "调皮的孩子",
+      "welcome": "👦 调皮的孩子：'啦啦啦，你抓不到我！'",
+      "option_idle": "闲聊",
+      "option_leave": "离开"
+    }
+  }
+}

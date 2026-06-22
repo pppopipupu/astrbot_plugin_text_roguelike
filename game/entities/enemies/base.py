@@ -111,6 +111,7 @@ from .minions import (
     VoidWandererTemplate, AncientWardenTemplate, AstralHoundTemplate,
     VoidLurkerTemplate
 )
+from .town_enemies import DummyTemplate, NoobSlayer99Template, SniperEliteTemplate, PppopipupuTemplate, GateGuardianTemplate
 
 ALL_ENEMIES = {
     "远古红龙": BossRedDragonTemplate("远古红龙"),
@@ -135,7 +136,15 @@ ALL_ENEMIES = {
     "先古守卫": AncientWardenTemplate("先古守卫"),
     "星界猎犬": AstralHoundTemplate("星界猎犬"),
     "虚空潜伏者": VoidLurkerTemplate("虚空潜伏者"),
+    "训练假人": DummyTemplate("训练假人"),
+    "NoobSlayer99": NoobSlayer99Template("NoobSlayer99"),
+    "xXx_SniperElite_xXx": SniperEliteTemplate("xXx_SniperElite_xXx"),
+    "pppopipupu": PppopipupuTemplate("pppopipupu"),
+    "【觉醒】pppopipupu": PppopipupuTemplate("【觉醒】pppopipupu"),
+    "Gate_Guardian": GateGuardianTemplate("Gate_Guardian"),
 }
+
+from .town_enemies import DummyTemplate, NoobSlayer99Template, SniperEliteTemplate, PppopipupuTemplate, GateGuardianTemplate
 
 def get_enemy_template(name: str) -> EnemyTemplate:
     base_name = name.split(" ")[0] if name else ""

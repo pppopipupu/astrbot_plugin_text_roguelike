@@ -1,0 +1,13 @@
+{
+  "id": "square",
+  "name_key": "square",
+  "exits": {
+    "w": "range",
+    "s": "market",
+    "a": "alley",
+    "d": "fountain"
+  },
+  "npcs": ["Guide_Elder"],
+  "items": [],
+  "interactive": {}
+}

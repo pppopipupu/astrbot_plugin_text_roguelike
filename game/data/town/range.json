@@ -1,0 +1,10 @@
+{
+  "id": "range",
+  "name_key": "range",
+  "exits": {
+    "s": "square"
+  },
+  "npcs": ["NoobSlayer99", "xXx_SniperElite_xXx", "pppopipupu", "Dummy"],
+  "items": [],
+  "interactive": {}
+}

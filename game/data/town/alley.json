@@ -1,0 +1,11 @@
+{
+  "id": "alley",
+  "name_key": "alley",
+  "exits": {
+    "d": "square",
+    "a": "west_gate"
+  },
+  "npcs": [],
+  "items": ["wine_glass"],
+  "interactive": {}
+}

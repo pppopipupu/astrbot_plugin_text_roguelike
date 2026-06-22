@@ -1,0 +1,11 @@
+{
+  "id": "tavern",
+  "name_key": "tavern",
+  "exits": {
+    "s": "shop",
+    "d": "vip_room"
+  },
+  "npcs": ["Bartender_Jack"],
+  "items": [],
+  "interactive": {}
+}

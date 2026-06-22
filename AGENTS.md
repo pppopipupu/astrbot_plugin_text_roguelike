@@ -191,7 +191,11 @@
 ### 3.3 指令与动作扩展指引
 - 局外指令：若要为对决模式新增局外指令，必须在 game/core/duel/commands.py 中编写继承自 DuelCommandHandler 类的具体处理器类，并通过 names 参数传入其支持的指令名别名列表。
 - 局内动作：若要新增局内打牌动作，必须在 game/core/duel/actions.py 中编写继承自 DuelActionHandler 类的具体动作处理器，并通过 names 参数传入支持的动作名别名列表。
-- 装配机制：系统在运行初始化加载 commands.py 和 actions.py 时，会自动利用 __init_subclass__ 钩子将这些指令类和动作类实例化并挂载到全局路由中，无需手动在路由器中编写额外的 switch 分支。
+- 装配机制：系统在运行初始化加载 commands.py 和 actions.py 时，会自动利用 __init_subclass__ 钩子将 these 指令类和动作类实例化并挂载到全局路由中，无需手动在路由器中编写额外的 switch 分支。
+
+### 3.4 文字冒险（主城）模式本地化修改指引
+- 主城所有系统提示、菜单交互、物品及房间渲染、切磋胜负结算文案等均已实现完全的 I18N 本地化分离，统一定义在 game/data/town/zh_cn_town.json 中。
+- 逻辑代码（包括 town_engine.py, town.py 和 cli_router.py 等）严禁硬编码任何中文字符串，所有交互文本和渲染提示必须通过加载该 JSON 本地化配置文件并使用 zh_cn.get("global").get("key_name") 等方式进行动态回填或格式化渲染。
 
 ---
 
