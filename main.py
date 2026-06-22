@@ -589,7 +589,13 @@ class MyPlugin(Star):
                 if not run and stats.in_town and stats.town_flags.get("current_dialog"):
                     is_game_cmd = True
                 elif not run and stats.in_town:
-                    town_cmds = {"w", "a", "s", "d", "up", "down", "left", "right", "退出", "quit", "exit", "q", "回城", "home", "拿取", "捡起", "take", "pick", "使用", "use", "交互", "talk", "interact", "inter", "talk_to"}
+                    town_cmds = {
+                        "w", "a", "s", "d", "up", "down", "left", "right", 
+                        "退出", "quit", "exit", "q", "回城", "home", 
+                        "拿取", "捡起", "take", "pick", "使用", "use", 
+                        "交互", "talk", "interact", "inter", "talk_to",
+                        "帮助", "help", "统计", "stat", "stats", "查询", "query", "info", "i"
+                    }
                     if first_word in town_cmds:
                         is_game_cmd = True
                 else:

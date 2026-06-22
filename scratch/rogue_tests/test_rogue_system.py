@@ -211,17 +211,16 @@ class TestRogueSystem(unittest.TestCase):
         damage_up = engine.combat_resolver.get_modified_spell_damage(run, card_heavy_up, 18)
         self.assertEqual(damage_up, 18 + 3 * 5)
         
-        router = CLIRouter(sm, engine)
+        plugin = MyPlugin(DummyContext())
         run.node_data["action_surge_uses"] = 2
         
         class DummySaveManagerWithSave:
             def __init__(self, run):
                 self.run = run
-                class DummyStats:
-                    def __init__(self):
-                        self.selected_class = "战士"
-                        self.selected_subclass = ""
-                self.stats = DummyStats()
+                self.stats = UserStats()
+                self.stats.selected_class = "战士"
+                self.stats.selected_subclass = ""
+                self.stats.rogue_mode = True
             def load_save(self, user_id):
                 return self.run
             def save_save(self, user_id, run):
@@ -233,40 +232,43 @@ class TestRogueSystem(unittest.TestCase):
             def save_stats(self, user_id, stats):
                 pass
         
-        router.save_manager = DummySaveManagerWithSave(run)
-        run.node_data["action_surge_turn_used"] = False
-        generator = router.handle_command("test_warrior_user", ["技能", "as"])
-        res_list = list(generator)
-        res_text = "\n".join(res_list)
-        self.assertIn("额外", res_text)
-        self.assertEqual(run.player.actions, 4)
-        self.assertEqual(run.player.bonus_actions, 2)
-        self.assertEqual(run.node_data["action_surge_uses"], 1)
-        self.assertTrue(run.node_data["action_surge_turn_used"])
+        mgr = DummySaveManagerWithSave(run)
+        plugin.save_manager = mgr
+        plugin.cli_router.save_manager = mgr
+        plugin.cli_router.engine = engine
 
-        run.node_data["action_surge_uses"] = 2
-        run.node_data["action_surge_turn_used"] = False
-        run.player.actions = 2
-        run.player.bonus_actions = 1
-        generator_sk = router.handle_command("test_warrior_user", ["sk"])
-        res_text_sk = "\n".join(list(generator_sk))
-        self.assertIn("额外", res_text_sk)
-        self.assertEqual(run.player.actions, 4)
-        self.assertEqual(run.player.bonus_actions, 2)
-        self.assertEqual(run.node_data["action_surge_uses"], 1)
-        self.assertTrue(run.node_data["action_surge_turn_used"])
+        async def go():
+            run.node_data["action_surge_turn_used"] = False
+            res_text = await run_command(plugin, "技能 as", sender_id="test_warrior_user")
+            self.assertIn("额外", res_text)
+            self.assertEqual(run.player.actions, 4)
+            self.assertEqual(run.player.bonus_actions, 2)
+            self.assertEqual(run.node_data["action_surge_uses"], 1)
+            self.assertTrue(run.node_data["action_surge_turn_used"])
 
-        run.node_data["action_surge_uses"] = 2
-        run.node_data["action_surge_turn_used"] = False
-        run.player.actions = 2
-        run.player.bonus_actions = 1
-        generator_k = router.handle_command("test_warrior_user", ["k"])
-        res_text_k = "\n".join(list(generator_k))
-        self.assertIn("额外", res_text_k)
-        self.assertEqual(run.player.actions, 4)
-        self.assertEqual(run.player.bonus_actions, 2)
-        self.assertEqual(run.node_data["action_surge_uses"], 1)
-        self.assertTrue(run.node_data["action_surge_turn_used"])
+            run.node_data["action_surge_uses"] = 2
+            run.node_data["action_surge_turn_used"] = False
+            run.player.actions = 2
+            run.player.bonus_actions = 1
+            res_text_sk = await run_command(plugin, "sk", sender_id="test_warrior_user")
+            self.assertIn("额外", res_text_sk)
+            self.assertEqual(run.player.actions, 4)
+            self.assertEqual(run.player.bonus_actions, 2)
+            self.assertEqual(run.node_data["action_surge_uses"], 1)
+            self.assertTrue(run.node_data["action_surge_turn_used"])
+
+            run.node_data["action_surge_uses"] = 2
+            run.node_data["action_surge_turn_used"] = False
+            run.player.actions = 2
+            run.player.bonus_actions = 1
+            res_text_k = await run_command(plugin, "k", sender_id="test_warrior_user")
+            self.assertIn("额外", res_text_k)
+            self.assertEqual(run.player.actions, 4)
+            self.assertEqual(run.player.bonus_actions, 2)
+            self.assertEqual(run.node_data["action_surge_uses"], 1)
+            self.assertTrue(run.node_data["action_surge_turn_used"])
+
+        asyncio.run(go())
 
     def test_warrior_ward_and_rally(self):
         from game.core.battle_engine import BattleEngine
@@ -478,7 +480,7 @@ class TestRogueSystem(unittest.TestCase):
         if "PYTHONPATH" in env:
             del env["PYTHONPATH"]
             
-        script = "import sys; sys.path.append('" + basename + "'); from main import MyPlugin; plugin = MyPlugin(None); list(plugin.cli_router.handle_command('test_import', ['overview']))"
+        script = "import sys, asyncio; sys.path.append('" + basename + "'); from main import MyPlugin; from scratch.rogue_tests.base import run_command; plugin = MyPlugin(None); stats = plugin.save_manager.load_stats('test_import'); stats.rogue_mode = True; plugin.save_manager.save_stats('test_import', stats); asyncio.run(run_command(plugin, 'overview', 'test_import'))"
         
         res = subprocess.run(
             [sys.executable, "-c", script],

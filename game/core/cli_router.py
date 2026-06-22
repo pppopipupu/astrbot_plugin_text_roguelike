@@ -304,6 +304,8 @@ class CLIRouter:
                     else:
                         yield self.town_engine.talk_npc(user_id, " ".join(parts[1:]))
                     return
+                elif cmd in ("查询", "query", "info", "i", "统计", "stat", "stats", "帮助", "help"):
+                    pass
                 else:
                     yield zh_cn.get("global", {}).get("town_help_prompt", "🔮 主城探索中。输入 退出/exit 回到主菜单，或输入 W/A/S/D 进行移动。输入 交互/talk <目标> 开启互动。")
                     return

@@ -236,10 +236,20 @@ class TestRogueExplore(unittest.TestCase):
 
     def test_awaiting_target_cancel(self):
         save_manager = SaveManager()
-        engine = GameEngine(save_manager)
-        router = CLIRouter(save_manager, engine)
+        plugin = MyPlugin(DummyContext())
+        plugin.save_manager = save_manager
+        plugin.engine.save_manager = save_manager
+        plugin.cli_router.save_manager = save_manager
+        plugin.cli_router.engine.save_manager = save_manager
+        plugin.cli_router.town_engine.save_manager = save_manager
+        
         user_id = "test_user_awaiting_cancel"
         save_manager.delete_save(user_id)
+        
+        stats = save_manager.load_stats(user_id)
+        stats.rogue_mode = True
+        save_manager.save_stats(user_id, stats)
+        
         player = PlayerState(
             hp=45,
             max_hp=45,
@@ -289,15 +299,17 @@ class TestRogueExplore(unittest.TestCase):
             "hand_idx": 1
         }]
         save_manager.save_save(user_id, run)
-        generator = router.handle_command(user_id, ["p", "2"])
-        results = list(generator)
-        output_text = "\n".join(results)
-        loaded_run = save_manager.load_save(user_id)
-        state_stack = loaded_run.node_data.get("state_stack", [])
-        self.assertNotIn("❌ 取消使用操作。", output_text)
-        self.assertEqual(len(state_stack), 0)
-        self.assertIn("使用", output_text)
-        save_manager.delete_save(user_id)
+        
+        async def go():
+            output_text = await run_command(plugin, "p 2", sender_id=user_id)
+            loaded_run = save_manager.load_save(user_id)
+            state_stack = loaded_run.node_data.get("state_stack", [])
+            self.assertNotIn("❌ 取消使用操作。", output_text)
+            self.assertEqual(len(state_stack), 0)
+            self.assertIn("使用", output_text)
+            save_manager.delete_save(user_id)
+            
+        asyncio.run(go())
 
     def test_non_battle_play_card(self):
         class DummySaveManager:

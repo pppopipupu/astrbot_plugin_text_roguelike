@@ -21,6 +21,16 @@ class TestRogueTown(unittest.TestCase):
             self.assertIn("中心广场", res)
             self.assertIn("向导长老", res)
 
+            res_q = await run_command(plugin, ".rogue 查询 力量")
+            self.assertIn("查询结果", res_q)
+            self.assertIn("力量", res_q)
+
+            res_s = await run_command(plugin, ".rogue 统计")
+            self.assertIn("生涯统计", res_s)
+
+            res_h = await run_command(plugin, ".rogue 帮助")
+            self.assertIn("游戏指令帮助", res_h)
+
             res = await run_command(plugin, ".rogue talk Guide_Elder")
             self.assertIn("与向导长老闲聊", res)
 

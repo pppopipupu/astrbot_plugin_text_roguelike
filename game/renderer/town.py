@@ -16,9 +16,19 @@ def _load_zh_cn() -> Dict[str, Any]:
         return {}
 
 def get_map_symbol(room_id: str, current_id: str, name: str) -> str:
+    name_width = len(name) * 2
     if room_id == current_id:
-        return f"【{name}★】"
-    return f"[{name}]"
+        total_width = name_width + 6
+        pad = 16 - total_width
+        pad_left = pad // 2
+        pad_right = pad - pad_left
+        return " " * pad_left + f"【{name}★】" + " " * pad_right
+    else:
+        total_width = name_width + 2
+        pad = 16 - total_width
+        pad_left = pad // 2
+        pad_right = pad - pad_left
+        return " " * pad_left + f"[{name}]" + " " * pad_right
 
 def render_town_map(current_id: str, zh_cn: Dict[str, Any]) -> str:
     rooms_loc = zh_cn.get("rooms", {})
@@ -35,15 +45,11 @@ def render_town_map(current_id: str, zh_cn: Dict[str, Any]) -> str:
     t_bs = get_map_symbol("blacksmith", current_id, rooms_loc.get("blacksmith", {}).get("name", "Blacksmith"))
 
     lines = [
-        f"      {t_wt}",
-        "        │",
-        f"      {t_wg}",
-        "        │",
-        f"{t_rg} {t_ay} ── {t_sq} ── {t_ft} ── {t_sp}",
-        "                    │                   │",
-        f"                 {t_mk}            {t_tv} ── {t_vr}",
-        "                    │",
-        f"                 {t_bs}"
+        f"{t_wt}{' ' * 24}{t_rg}{' ' * 24}{t_tv} ── {t_vr}",
+        f"{' ' * 7}│{' ' * 38}│{' ' * 38}│",
+        f"{t_wg} ── {t_ay} ── {t_sq} ── {t_ft} ── {t_sp}",
+        f"{' ' * 47}│",
+        f"{' ' * 20}{t_bs} ── {t_mk}"
     ]
     return "\n".join(lines)
 

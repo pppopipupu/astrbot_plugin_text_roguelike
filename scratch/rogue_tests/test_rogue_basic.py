@@ -34,6 +34,7 @@ class TestRogueBasic(unittest.TestCase):
         class DummySaveManagerLocal:
             def __init__(self):
                 self.stats = UserStats()
+                self.stats.rogue_mode = True
                 self.stats.unlocked_subclasses = ["时序法师", "塑能法师"]
             def load_stats(self, user_id):
                 return self.stats
@@ -43,39 +44,46 @@ class TestRogueBasic(unittest.TestCase):
             def load_save(self, user_id):
                 return None
         mgr = DummySaveManagerLocal()
-        router = CLIRouter(mgr, None)
-        res = list(router.handle_command("test_user", ["class"]))
-        self.assertIn("魔法肉鸽卡牌职业系统", res[0])
-        list(router.handle_command("test_user", ["class", "c", "1"]))
-        self.assertEqual(mgr.stats.selected_subclass, "时序法师")
-        list(router.handle_command("test_user", ["class", "c", "2"]))
-        self.assertEqual(mgr.stats.selected_subclass, "塑能法师")
-        list(router.handle_command("test_user", ["class", "2"]))
-        self.assertEqual(mgr.stats.selected_subclass, "塑能法师")
-        list(router.handle_command("test_user", ["class", "0"]))
-        self.assertEqual(mgr.stats.selected_subclass, "")
-        list(router.handle_command("test_user", ["class", "c", "0"]))
-        self.assertEqual(mgr.stats.selected_subclass, "")
-        res = list(router.handle_command("test_user", ["class", "c", "4"]))
-        self.assertIn("无效的子职业", res[0])
-        list(router.handle_command("test_user", ["class", "c", "时序法师"]))
-        self.assertEqual(mgr.stats.selected_subclass, "时序法师")
-        list(router.handle_command("test_user", ["class", "无"]))
-        self.assertEqual(mgr.stats.selected_subclass, "")
+        plugin = MyPlugin(DummyContext())
+        plugin.save_manager = mgr
+        plugin.cli_router.save_manager = mgr
 
-        res_conflict_wiz = list(router.handle_command("test_user", ["c", "wizard"]))
-        self.assertIn("使用 /rogue class", res_conflict_wiz[0])
-        self.assertIn("选择命令 c 仅用于局内选项选择", res_conflict_wiz[0])
+        async def go():
+            res = await run_command(plugin, "class")
+            self.assertIn("魔法肉鸽卡牌职业系统", res)
+            await run_command(plugin, "class c 1")
+            self.assertEqual(mgr.stats.selected_subclass, "时序法师")
+            await run_command(plugin, "class c 2")
+            self.assertEqual(mgr.stats.selected_subclass, "塑能法师")
+            await run_command(plugin, "class 2")
+            self.assertEqual(mgr.stats.selected_subclass, "塑能法师")
+            await run_command(plugin, "class 0")
+            self.assertEqual(mgr.stats.selected_subclass, "")
+            await run_command(plugin, "class c 0")
+            self.assertEqual(mgr.stats.selected_subclass, "")
+            res = await run_command(plugin, "class c 4")
+            self.assertIn("无效的子职业", res)
+            await run_command(plugin, "class c 时序法师")
+            self.assertEqual(mgr.stats.selected_subclass, "时序法师")
+            await run_command(plugin, "class 无")
+            self.assertEqual(mgr.stats.selected_subclass, "")
 
-        res_conflict_num = list(router.handle_command("test_user", ["c", "1"]))
-        self.assertIn("使用 /rogue class", res_conflict_num[0])
+            res_conflict_wiz = await run_command(plugin, "c wizard")
+            self.assertIn("使用 /rogue class", res_conflict_wiz)
+            self.assertIn("选择命令 c 仅用于局内选项选择", res_conflict_wiz)
 
-        res_normal_c = list(router.handle_command("test_user", ["c"]))
-        self.assertEqual("❌ 你当前没有正在进行的游戏。", res_normal_c[0])
+            res_conflict_num = await run_command(plugin, "c 1")
+            self.assertIn("使用 /rogue class", res_conflict_num)
+
+            res_normal_c = await run_command(plugin, "c")
+            self.assertEqual("❌ 你当前没有正在进行的游戏。", res_normal_c)
+
+        asyncio.run(go())
 
         class DummySaveManagerWithSave:
             def __init__(self):
                 self.stats = UserStats()
+                self.stats.rogue_mode = True
                 self.stats.unlocked_subclasses = ["时序法师", "塑能法师"]
             def load_stats(self, user_id):
                 return self.stats
@@ -86,9 +94,15 @@ class TestRogueBasic(unittest.TestCase):
                 player = PlayerState(hp=30, max_hp=30, shield=0, gold=100, stage=2, deck=[], hand=[], draw_pile=[], discard_pile=[], exhaust_pile=[], graveyard=[])
                 return GameRun(user_id=user_id, node_type="event", player=player, enemies=[], node_data={"event_id": "test_event"})
         mgr_with_save = DummySaveManagerWithSave()
-        router_with_save = CLIRouter(mgr_with_save, None)
-        res_in_game = list(router_with_save.handle_command("test_user", ["c", "wizard"]))
-        self.assertIn("使用 /rogue class", res_in_game[0])
+        plugin_with_save = MyPlugin(DummyContext())
+        plugin_with_save.save_manager = mgr_with_save
+        plugin_with_save.cli_router.save_manager = mgr_with_save
+
+        async def go_save():
+            res_in_game = await run_command(plugin_with_save, "c wizard")
+            self.assertIn("使用 /rogue class", res_in_game)
+
+        asyncio.run(go_save())
 
     def test_rogue_mode_and_shortcut(self):
         plugin = MyPlugin(DummyContext())
@@ -162,6 +176,7 @@ class TestRogueBasic(unittest.TestCase):
         class DummySaveManager:
             def __init__(self):
                 self.stats = UserStats()
+                self.stats.rogue_mode = True
                 self.stats.unlocked_subclasses = ["时序法师", "塑能法师", "秘钥学者"]
                 self.saved_run = None
             def load_stats(self, user_id):
@@ -178,60 +193,67 @@ class TestRogueBasic(unittest.TestCase):
                 return "游戏已结算。"
         
         mgr = DummySaveManager()
-        engine = GameEngine(mgr)
-        router = CLIRouter(mgr, engine)
+        plugin = MyPlugin(DummyContext())
+        plugin.save_manager = mgr
+        plugin.engine.save_manager = mgr
+        plugin.cli_router.save_manager = mgr
+        plugin.cli_router.engine.save_manager = mgr
+        plugin.cli_router.town_engine.save_manager = mgr
         
-        player = PlayerState(hp=30, max_hp=30, shield=0, gold=100, stage=2, deck=[], hand=[], draw_pile=[], discard_pile=[], exhaust_pile=[], graveyard=[])
-        mgr.saved_run = GameRun(user_id="test_user", node_type="event", player=player, enemies=[], node_data={"event_id": "test_event"})
-        res = list(router.handle_command("test_user", ["start", "confirm"]))
-        self.assertIn("已重新开始新的一局游戏", res[0])
-        
-        mgr.saved_run = None
-        list(router.handle_command("test_user", ["class", "choose", "chronomancer"]))
-        self.assertEqual(mgr.stats.selected_subclass, "时序法师")
-        list(router.handle_command("test_user", ["class", "select", "evoker"]))
-        self.assertEqual(mgr.stats.selected_subclass, "塑能法师")
-        list(router.handle_command("test_user", ["class", "select", "arcanist"]))
-        self.assertEqual(mgr.stats.selected_subclass, "秘钥学者")
-        
-        mgr.stats.gp = 99999
-        mgr.stats.unlocked_subclasses = []
-        mgr.stats.town_pos = "shop"
-        list(router.handle_command("test_user", ["town"]))
-        list(router.handle_command("test_user", ["talk", "神秘店主"]))
-        list(router.handle_command("test_user", ["2"]))
-        list(router.handle_command("test_user", ["1"]))
-        self.assertIn("时序法师", mgr.stats.unlocked_subclasses)
-        list(router.handle_command("test_user", ["2"]))
-        self.assertIn("塑能法师", mgr.stats.unlocked_subclasses)
-        list(router.handle_command("test_user", ["3"]))
-        self.assertIn("秘钥学者", mgr.stats.unlocked_subclasses)
-        list(router.handle_command("test_user", ["4"]))
-        self.assertTrue(mgr.stats.unlocked_gatekey)
-        
-        player = PlayerState(
-            hp=30, max_hp=30, shield=0, gold=100, stage=2, deck=[], hand=[], draw_pile=[], discard_pile=[], exhaust_pile=[], graveyard=[],
-            minions={"1": MinionState("mercenary", "雇佣兵", 10, 10, 4, 2, 0)}
-        )
-        class MockEngine:
-            def __init__(self):
-                self.attack_called = False
-                self.skill_called = False
-            def minion_attack(self, run, g, opp):
-                self.attack_called = True
-                return "攻击成功"
-            def minion_skill(self, run, g, idx, target):
-                self.skill_called = True
-                return "技能成功"
-            def is_battle_won(self, run):
-                return False
-        mock_engine = MockEngine()
-        mgr.saved_run = GameRun(user_id="test_user", node_type="battle", player=player, enemies=[EnemyState("e1", 10, 10, 0)])
-        router_minion = CLIRouter(mgr, mock_engine)
-        res, term = router_minion._execute_sub_action("test_user", mgr.saved_run, ["m", "1", "attack", "e1"])
-        self.assertTrue(mock_engine.attack_called)
-        res, term = router_minion._execute_sub_action("test_user", mgr.saved_run, ["m", "1", "skill", "e1"])
-        self.assertTrue(mock_engine.skill_called)
+        async def go():
+            player = PlayerState(hp=30, max_hp=30, shield=0, gold=100, stage=2, deck=[], hand=[], draw_pile=[], discard_pile=[], exhaust_pile=[], graveyard=[])
+            mgr.saved_run = GameRun(user_id="test_user", node_type="event", player=player, enemies=[], node_data={"event_id": "test_event"})
+            res = await run_command(plugin, "start confirm")
+            self.assertIn("已重新开始新的一局游戏", res)
+            
+            mgr.saved_run = None
+            await run_command(plugin, "class choose chronomancer")
+            self.assertEqual(mgr.stats.selected_subclass, "时序法师")
+            await run_command(plugin, "class select evoker")
+            self.assertEqual(mgr.stats.selected_subclass, "塑能法师")
+            await run_command(plugin, "class select arcanist")
+            self.assertEqual(mgr.stats.selected_subclass, "秘钥学者")
+            
+            mgr.stats.gp = 99999
+            mgr.stats.unlocked_subclasses = []
+            mgr.stats.town_pos = "shop"
+            await run_command(plugin, "town")
+            await run_command(plugin, "talk 神秘店主")
+            await run_command(plugin, "2")
+            await run_command(plugin, "1")
+            self.assertIn("时序法师", mgr.stats.unlocked_subclasses)
+            await run_command(plugin, "2")
+            self.assertIn("塑能法师", mgr.stats.unlocked_subclasses)
+            await run_command(plugin, "3")
+            self.assertIn("秘钥学者", mgr.stats.unlocked_subclasses)
+            await run_command(plugin, "4")
+            self.assertTrue(mgr.stats.unlocked_gatekey)
+            
+            player_minion = PlayerState(
+                hp=30, max_hp=30, shield=0, gold=100, stage=2, deck=[], hand=[], draw_pile=[], discard_pile=[], exhaust_pile=[], graveyard=[],
+                minions={"1": MinionState("mercenary", "雇佣兵", 10, 10, 4, 2, 0)}
+            )
+            class MockEngine:
+                def __init__(self):
+                    self.attack_called = False
+                    self.skill_called = False
+                def minion_attack(self, run, g, opp):
+                    self.attack_called = True
+                    return "攻击成功"
+                def minion_skill(self, run, g, idx, target):
+                    self.skill_called = True
+                    return "技能成功"
+                def is_battle_won(self, run):
+                    return False
+            mock_engine = MockEngine()
+            mgr.saved_run = GameRun(user_id="test_user", node_type="battle", player=player_minion, enemies=[EnemyState("e1", 10, 10, 0)])
+            plugin.cli_router.engine = mock_engine
+            await run_command(plugin, "m 1 attack e1")
+            self.assertTrue(mock_engine.attack_called)
+            await run_command(plugin, "m 1 skill e1")
+            self.assertTrue(mock_engine.skill_called)
+
+        asyncio.run(go())
 
     def test_admin_jump_command(self):
         plugin = MyPlugin(DummyContext())
