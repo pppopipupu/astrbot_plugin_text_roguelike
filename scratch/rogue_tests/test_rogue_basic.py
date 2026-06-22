@@ -134,6 +134,15 @@ class TestRogueBasic(unittest.TestCase):
             self.assertTrue(event_alias_abandon.stopped)
             self.assertIn("已放弃当前局内游戏", "\n".join(event_alias_abandon.results))
             
+            event_town = DummyEvent("主城", sender_id="test_user_rogue")
+            await plugin.shortcut_rogue(event_town)
+            self.assertTrue(event_town.stopped)
+            self.assertIn("先古主城", "\n".join(event_town.results))
+            
+            event_town_exit = DummyEvent("退出", sender_id="test_user_rogue")
+            await plugin.shortcut_rogue(event_town_exit)
+            self.assertTrue(event_town_exit.stopped)
+            
             event_num_no_save = DummyEvent("1", sender_id="test_user_rogue")
             await plugin.shortcut_rogue(event_num_no_save)
             self.assertFalse(event_num_no_save.stopped)
