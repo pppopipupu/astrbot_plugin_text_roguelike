@@ -19,16 +19,12 @@ def get_map_symbol(room_id: str, current_id: str, name: str) -> str:
     name_width = len(name) * 2
     if room_id == current_id:
         total_width = name_width + 6
-        pad = 16 - total_width
-        pad_left = pad // 2
-        pad_right = pad - pad_left
-        return " " * pad_left + f"【{name}★】" + " " * pad_right
+        pad_right = 16 - total_width
+        return f"【{name}★】" + " " * pad_right
     else:
-        total_width = name_width + 2
-        pad = 16 - total_width
-        pad_left = pad // 2
-        pad_right = pad - pad_left
-        return " " * pad_left + f"[{name}]" + " " * pad_right
+        total_width = name_width + 3
+        pad_right = 16 - total_width
+        return " " + f"[{name}]" + " " * pad_right
 
 def render_town_map(current_id: str, zh_cn: Dict[str, Any]) -> str:
     rooms_loc = zh_cn.get("rooms", {})
