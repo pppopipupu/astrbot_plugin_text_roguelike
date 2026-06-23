@@ -88,8 +88,26 @@ class CardPlayer:
                     p.discard_pile.clear()
                     reshuffled = True
             if p.draw_pile:
+                cid = p.draw_pile.pop()
+                if run is not None and any(b.id == "hell_raider" for b in p.buffs):
+                    card_obj = ALL_CARDS.get(cid)
+                    if card_obj and getattr(card_obj, "cost_a", 0) == 1 and getattr(card_obj, "cost_ba", 0) == 0:
+                        self.engine._log_event(run, f"🔥 [地狱狂徒] 触发自动连携，免费打出刚抽到的 1A 卡牌【{card_obj.name}】！")
+                        p0_spells = {"first_aid", "get_ready", "adrenaline", "mana_potion", "mass_healing_word", "refresh_spirit", "shield", "misty_step", "arcane_intellect", "calculated_gamble", "time_warp", "time_stop", "archmage_wish", "wizard_magic_shield", "warrior_blood_fury", "wizard_prismatic_wall", "wizard_antimagic_field"}
+                        target = "p0"
+                        if card_obj.type == "spell" and card_obj.id.replace("+", "") not in p0_spells:
+                            target = self.engine._get_first_alive_enemy(run)
+                        elif card_obj.type == "minion" or card_obj.type == "amulet":
+                            target = self.engine._get_free_grid(run.player)
+                            if not target:
+                                target = "p1"
+                        res_action = self.engine._execute_card_effect(run, card_obj, target)
+                        played_evt = CardPlayedEvent(run, card_obj, target, res_action, is_extra=True)
+                        self.engine.event_bus.dispatch(played_evt)
+                        self.engine._log_event(run, f" 连携打出反馈：{played_evt.feedback}")
+                        self._handle_card_post_play(run, card_obj, cid, source="hell_raider")
+                        continue
                 if len(p.hand) < max_hand:
-                    cid = p.draw_pile.pop()
                     p.hand.append(cid)
                     drawn_cards.append(cid)
                 else:
@@ -602,6 +620,11 @@ class CardPlayer:
         p.hp = min(p.max_hp, p.hp)
         evt_win = BattleWinEvent(run)
         self.engine.event_bus.dispatch(evt_win)
+        if run.node_data.get("no_reward"):
+            run.node_type = "reward"
+            run.node_data = {"cards": [], "no_reward": True}
+            self.engine.save_manager.save_save(run.user_id, run)
+            return
         difficulty = run.node_data.get("difficulty", "normal")
         quest = run.node_data.get("quest")
         quest_bonus = ""

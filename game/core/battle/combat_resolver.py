@@ -156,6 +156,10 @@ class CombatResolver:
         self.engine.event_bus.dispatch(calc_evt)
         final_dmg = max(0, calc_evt.modified_damage)
         p = run.player
+        if target == "p0" and any(b.id == "antimagic_immune" for b in p.buffs):
+            dtype_str = damage_type.value if hasattr(damage_type, "value") else str(damage_type)
+            if dtype_str not in {"slashing", "piercing", "bludgeoning", "attack"}:
+                final_dmg = 0
         is_fatal = False
         is_true = False
         if damage_type == "true" or damage_type == "TRUE":
@@ -215,6 +219,18 @@ class CombatResolver:
                     p.shield = 0
             if p.hp <= 0:
                 is_fatal = True
+            if final_dmg > 0:
+                barrier_buff = next((b for b in p.buffs if b.id == "prismatic_barrier"), None)
+                if barrier_buff:
+                    barrier_buff.stacks -= 1
+                    if barrier_buff.stacks <= 0:
+                        p.buffs.remove(barrier_buff)
+                    if source.startswith("e"):
+                        self.engine._log_event(run, "🌈 [虹光屏障] 触发属性反射反击！")
+                        self.damage_target(run, source, 3, source="p0", damage_type="fire")
+                        self.damage_target(run, source, 3, source="p0", damage_type="cold")
+                        self.damage_target(run, source, 3, source="p0", damage_type="lightning")
+                        self.damage_target(run, source, 3, source="p0", damage_type="poison")
             take_evt = DamageTakeEvent(run, source, target, final_dmg, is_fatal, damage_type)
             self.engine.event_bus.dispatch(take_evt)
         elif target.startswith("p"):

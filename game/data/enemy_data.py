@@ -1,4 +1,42 @@
 ENEMY_CONFIG = {
+    "训练假人": {
+        "name": "训练假人",
+        "type": "normal",
+        "hp": "99999",
+        "actions": "1A 0BA",
+        "intents": []
+    },
+    "NoobSlayer99": {
+        "name": "NoobSlayer99",
+        "type": "normal",
+        "hp": "30",
+        "actions": "1A 0BA",
+        "intents": [
+            {"id": "fireball", "val": 8, "desc": "施法火球 (造成 8 点火焰伤害)"},
+            {"id": "ice_armor", "val": 8, "desc": "凝聚冰甲 (获得 8 点护盾)"}
+        ]
+    },
+    "xXx_SniperElite_xXx": {
+        "name": "xXx_SniperElite_xXx",
+        "type": "normal",
+        "hp": "50",
+        "actions": "1A 0BA",
+        "intents": [
+            {"id": "aim", "val": 0, "desc": "精准瞄准 (锁定目标，下回合伤害增加)"},
+            {"id": "piercing_shot", "val": 18, "desc": "穿甲射击 (造成 18 点穿刺伤害)"}
+        ]
+    },
+    "pppopipupu": {
+        "name": "pppopipupu",
+        "type": "boss",
+        "hp": "120",
+        "actions": "1A 0BA",
+        "passive": "觉醒形态 (受到致命伤害时将进入【觉醒】状态并拥有 9999 生命，行动变为猛击造成 100 点伤害)",
+        "intents": [
+            {"id": "fish", "val": 0, "desc": "钓鱼 (无所事事地在靶场旁钓鱼)"},
+            {"id": "force_strike", "val": 100, "desc": "猛击 (对玩家造成 100 点力场伤害)"}
+        ]
+    },
     "Icerainboww": {
         "name": "Icerainboww",
         "type": "boss",

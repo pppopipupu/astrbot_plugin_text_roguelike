@@ -173,6 +173,12 @@ class ExploreEngine:
                 return "宝箱开启成功。"
 
         elif run.node_type == "reward":
+            if run.node_data.get("no_reward"):
+                if option_idx != 1:
+                    return "❌ 无效的选择序号。你只有选择 1 继续前进。"
+                self.map_engine.enter_next_stage(run)
+                self.save_manager.save_save(run.user_id, run)
+                return "你确认了异界脱逃，空手离开了这片战场，开启下一关。"
             cards = run.node_data.get("cards", [])
             skip_idx = len(cards) + 1
             if option_idx < 1 or option_idx > skip_idx:

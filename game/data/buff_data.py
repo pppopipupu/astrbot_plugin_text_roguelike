@@ -1,4 +1,21 @@
 BUFF_CONFIG = {
+    "bleed": {
+        "name": "流血",
+        "desc": "每回合开始时，受到 4 点真实伤害，层数减少 1",
+        "is_debuff": True
+    },
+    "hell_raider": {
+        "name": "地狱狂徒",
+        "desc": "在此状态下，每当你抽到 1A 且不消耗 BA 的卡牌时，立即免费并自动将其打出"
+    },
+    "prismatic_barrier": {
+        "name": "虹光屏障",
+        "desc": "每次受到攻击时层数减少 1，并对攻击来源反射 12 点混合属性伤害"
+    },
+    "antimagic_immune": {
+        "name": "反魔法屏障",
+        "desc": "免疫本回合内除物理伤害外的所有非物理法术伤害"
+    },
     "tactical_focus": {
         "name": "无法抽牌",
         "desc": "本回合无法再抽牌",

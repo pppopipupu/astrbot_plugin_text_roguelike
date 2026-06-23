@@ -149,6 +149,60 @@ def render_town_map(current_id: str, zh_cn: Dict[str, Any], room_data: Dict[str,
         return render_town_map_radar(current_id, zh_cn, room_data)
     return render_town_map_classic(current_id)
 
+def get_npc_quest_indicator(npc_id: str, stats: UserStats) -> str:
+    q_tour = stats.town_flags.get("quest_town_tour_state", "unstarted")
+    q_brew = stats.town_flags.get("quest_brew_state", "unstarted")
+    q_ham = stats.town_flags.get("quest_hammer_state", "unstarted")
+
+    if npc_id == "Guide_Elder":
+        if q_tour == "unstarted":
+            return " ❗"
+        elif q_tour == "started":
+            visited = stats.town_flags.get("quest_town_tour_visited", [])
+            if len(visited) >= 11:
+                return " ✔"
+            else:
+                return " ❓"
+    elif npc_id == "Bartender_Jack":
+        if q_brew == "unstarted":
+            return " ❗"
+        elif q_brew == "started":
+            if "wishing_dew" in stats.town_inventory:
+                return " ✔"
+            else:
+                return " ❓"
+    elif npc_id == "Blacksmith_Ironclad":
+        if q_ham == "unstarted":
+            return " ❗"
+        elif q_ham == "started":
+            if "smith_hammer" in stats.town_inventory or "fake_hammer" in stats.town_inventory or stats.town_flags.get("noob_coerced_hammer"):
+                return " ✔"
+            else:
+                return " ❓"
+    elif npc_id == "Lost_Bard":
+        if q_ham == "started" and not stats.town_flags.get("taken_smith_hammer") and not stats.town_flags.get("noob_coerced_hammer"):
+            if "beer" in stats.town_inventory:
+                return " ✔"
+            else:
+                return " ❓"
+    elif npc_id == "Crypto_Whale":
+        if not stats.town_flags.get("reported_whale"):
+            need_herb = q_brew == "started" and "void_herb" not in stats.town_inventory and "wishing_dew" not in stats.town_inventory
+            need_hammer = q_ham == "started" and "smith_hammer" not in stats.town_inventory and "fake_hammer" not in stats.town_inventory
+            if need_herb or need_hammer:
+                return " ❓"
+    elif npc_id == "Town_Guard":
+        need_report = q_brew == "started" and "void_herb" not in stats.town_inventory and "wishing_dew" not in stats.town_inventory and not stats.town_flags.get("reported_whale")
+        if need_report:
+            return " ❓"
+    elif npc_id == "Fountain":
+        if q_brew == "started" and "void_herb" in stats.town_inventory:
+            return " ❗"
+    elif npc_id == "NoobSlayer99":
+        if q_ham == "started" and "smith_hammer" not in stats.town_inventory and "fake_hammer" not in stats.town_inventory and not stats.town_flags.get("noob_coerced_hammer"):
+            return " ❓"
+    return ""
+
 def render_town(stats: UserStats, room_data: Dict[str, Any]) -> str:
     zh_cn = _load_zh_cn()
     current_id = stats.town_pos
@@ -166,14 +220,16 @@ def render_town(stats: UserStats, room_data: Dict[str, Any]) -> str:
     visible_npcs = []
     for npc_id in room_data.get("npcs", []):
         npc_name = entities_loc.get(npc_id, {}).get("name", npc_id)
-        visible_npcs.append(npc_name)
+        ind = get_npc_quest_indicator(npc_id, stats)
+        visible_npcs.append(f"{npc_name}{ind}")
 
     wandering_npcs_config = ["Gamer_Boy", "Crypto_Whale", "Lost_Bard", "Town_Guard", "Naughty_Child"]
     for npc_id in wandering_npcs_config:
         npc_pos = stats.town_flags.get(f"pos_{npc_id}", "square")
         if npc_pos == current_id:
             npc_name = entities_loc.get(npc_id, {}).get("name", npc_id)
-            visible_npcs.append(npc_name)
+            ind = get_npc_quest_indicator(npc_id, stats)
+            visible_npcs.append(f"{npc_name}{ind}")
 
     none_label = zh_cn.get("global", {}).get("none", "无")
     npc_str = "、".join(visible_npcs) if visible_npcs else none_label

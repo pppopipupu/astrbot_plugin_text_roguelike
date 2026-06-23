@@ -659,6 +659,36 @@ class AuroraEmperorBuff(BuffImpl):
                 event.engine._draw_cards(event.run.player, 1, event.run)
                 msg = f"🛡️ [极光圣域+] 我方随从发起攻击，玩家获得 {shield} 点护盾并抽取 1 张牌。"
             event.engine._log_event(event.run, msg)
+class BleedBuff(BuffImpl):
+    def on_turn_start(self, event, buff_state, entity):
+        run = event.run
+        engine = event.engine
+        if entity == run.player:
+            target = "p0"
+        else:
+            try:
+                idx = run.enemies.index(entity)
+                target = f"e{idx+1}"
+            except ValueError:
+                return
+        damage = 4
+        engine._log_event(run, f"🩸 【{entity.name}】受到流血造成的 {damage} 点真实伤害！")
+        engine._damage_target(run, target, damage, source="bleed", damage_type="true")
+        buff_state.stacks -= 1
+        if buff_state.stacks <= 0:
+            if buff_state in entity.buffs:
+                entity.buffs.remove(buff_state)
+
+class HellRaiderBuff(BuffImpl):
+    pass
+
+class PrismaticBarrierBuff(BuffImpl):
+    pass
+
+class AntimagicImmuneBuff(BuffImpl):
+    def on_turn_end(self, event, buff_state, entity):
+        if buff_state in entity.buffs:
+            entity.buffs.remove(buff_state)
 
 for name, obj in list(globals().items()):
     if isinstance(obj, type) and issubclass(obj, BuffImpl) and obj is not BuffImpl:

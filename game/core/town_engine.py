@@ -231,10 +231,16 @@ class TownEngine:
         shelf = stats.town_flags.get("market_shelf")
         if shelf is not None:
             return shelf
+        added_cards = set(getattr(stats, "purchased_pool", []) or [])
+        g_card = getattr(stats, "guaranteed_card", None)
+        if g_card:
+            added_cards.add(g_card)
         commons = []
         rares = []
         epics = []
         for cid, c in ALL_CARDS.items():
+            if cid in added_cards:
+                continue
             rarity = getattr(c, "rarity", "common")
             color = getattr(c, "color", "")
             if rarity == "legendary" or color == "curse" or cid.startswith("curse_") or cid.startswith("duel_"):

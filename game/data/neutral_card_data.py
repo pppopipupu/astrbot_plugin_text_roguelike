@@ -460,5 +460,47 @@ NEUTRAL_CARD_CONFIG = {
         "desc": "从消耗堆选择一张卡牌加入手牌。",
         "rarity": "rare",
         "feedback": "使用了【发掘】。"
+    },
+    "neutral_power_word_kill": {
+        "name": "律令死亡",
+        "color": "neutral",
+        "type": "spell",
+        "cost_a": 2,
+        "cost_ba": 1,
+        "desc": "若目标生命低于 60 点则直接消灭；否则无效果。消耗。",
+        "rarity": "epic",
+        "exhaust": True,
+        "feedback": "你指着目标吐露死亡真言：【律令死亡】！"
+    },
+    "neutral_power_word_stun": {
+        "name": "律令震慑",
+        "color": "neutral",
+        "type": "spell",
+        "cost_a": 1,
+        "cost_ba": 1,
+        "desc": "若目标生命低于 100 点，使其【单体晕眩】1 回合；否则无效果。",
+        "rarity": "rare",
+        "feedback": "你吐露震慑真言：【律令震慑】！"
+    },
+    "neutral_power_word_pain": {
+        "name": "律令痛苦",
+        "color": "neutral",
+        "type": "spell",
+        "cost_a": 1,
+        "cost_ba": 0,
+        "desc": "若目标生命低于 120 点，使其获得 3 层【流血】与 2 层【虚弱】；否则无效果。",
+        "rarity": "common",
+        "feedback": "你吐露痛苦真言：【律令痛苦】！"
+    },
+    "neutral_plane_shift": {
+        "name": "异界传送",
+        "color": "neutral",
+        "type": "spell",
+        "cost_a": 1,
+        "cost_ba": 1,
+        "desc": "传送脱逃离开遭遇战，无任何战利品金币奖励。20层和25层BOSS战禁用。即逝。",
+        "rarity": "mythic",
+        "fleeting": True,
+        "feedback": "🔮 你咏唱了【异界传送】，张开空间裂缝使自己瞬间传送逃离战场！"
     }
 }

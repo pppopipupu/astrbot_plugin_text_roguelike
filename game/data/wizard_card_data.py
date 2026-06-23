@@ -346,5 +346,37 @@ WIZARD_CARD_CONFIG = {
         "desc": "获得X*6点护盾。若X>1，则获得1层缓冲。",
         "rarity": "common",
         "feedback": "凝聚了奥法屏障，获得了 {shield} 点护盾。"
+    },
+    "wizard_prismatic_wall": {
+        "name": "虹光法墙",
+        "color": "wizard",
+        "type": "spell",
+        "cost_a": 2,
+        "cost_ba": 0,
+        "desc": "获得 15 点护盾与 2 层【虹光屏障】。受击时反射 12 点混合属性伤害。",
+        "rarity": "epic",
+        "feedback": "你在身前铸起一道璀璨夺目的【虹光法墙】！"
+    },
+    "wizard_antimagic_field": {
+        "name": "反魔法力场",
+        "color": "wizard",
+        "type": "spell",
+        "cost_a": 1,
+        "cost_ba": 1,
+        "desc": "清除全场所有单位的 Buff 状态，摧毁全部护符，你本回合免疫非物理伤害。消耗。",
+        "rarity": "rare",
+        "exhaust": True,
+        "feedback": "你在战场中心展开了【反魔法力场】，清除了全场魔法流！"
+    },
+    "wizard_time_ravage": {
+        "name": "时光蹂躏",
+        "color": "wizard",
+        "type": "spell",
+        "cost_a": 2,
+        "cost_ba": 0,
+        "desc": "对目标造成 15 点真实伤害，并使其获得 2 层【虚弱】与 2 层【易伤】。消耗。",
+        "rarity": "epic",
+        "exhaust": True,
+        "feedback": "你咏唱了【时光蹂躏】，目标敌人的生命力在瞬息间迅速老去衰败！"
     }
 }

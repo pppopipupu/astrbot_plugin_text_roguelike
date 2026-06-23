@@ -101,6 +101,20 @@ def render_rest(run: GameRun) -> str:
 def render_reward(run: GameRun) -> str:
     p = run.player
     data = run.node_data
+    if data.get("no_reward"):
+        lines = [
+            "━━━━━━━━━━━━━━━━━━━━",
+            "🎁 【离开遭遇战】",
+            "",
+            "🔮 你咏唱了【异界传送】，狼狈地穿过传送门逃离了战场。",
+            "由于你半途脱逃，本场遭遇战你没有获得任何战利品与金币！",
+            "",
+            " [1] 🚪 确认并继续前进",
+            "━━━━━━━━━━━━━━━━━━━━",
+            "💬 继续指令：/rogue c 1",
+            "━━━━━━━━━━━━━━━━━━━━"
+        ]
+        return "\n".join(lines)
     quest_bonus = data.get("quest_bonus", "")
     lines = [
         "━━━━━━━━━━━━━━━━━━━━",

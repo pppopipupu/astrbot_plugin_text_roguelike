@@ -184,8 +184,39 @@ def render_query_info(query_str: str) -> str:
                 s_desc = summon_hound.get("intent_desc", "")
                 lines.append(f"  • {s_name} (生命值: {s_hp} | 动作资源: 1A 0BA) - {s_desc}")
             lines.append("")
+
+    from .town import _load_zh_cn
+    town_data = _load_zh_cn()
+    if town_data:
+        items_map = town_data.get("items", {})
+        item_descs = town_data.get("item_descs", {})
+        for item_id, aliases in items_map.items():
+            if q == item_id.lower() or any(q == alias.lower() or q in alias.lower() for alias in aliases):
+                found = True
+                ch_name = aliases[0]
+                desc = item_descs.get(item_id, "一件主城的特殊物品。")
+                lines.append(f"🎒 物品：{ch_name} ({item_id})")
+                lines.append(f"描述：{desc}")
+                lines.append("")
+
+        npcs_map = town_data.get("interactive_entities", {})
+        for npc_id, npc_cfg in npcs_map.items():
+            npc_name = npc_cfg.get("name", npc_id)
+            if q == npc_id.lower() or q == npc_name.lower() or q in npc_name.lower():
+                found = True
+                desc = npc_cfg.get("desc", "先古主城的一位普通居民。")
+                lines.append(f"👤 居民：{npc_name} ({npc_id})")
+                lines.append(f"介绍：{desc}")
+                
+                idle_talks = npc_cfg.get("idle_talk", [])
+                if idle_talks:
+                    lines.append("闲聊语录：")
+                    for t in idle_talks:
+                        lines.append(f"  • {t}")
+                lines.append("")
+
     if not found:
-        lines.append("❌ 未找到与该名称或 ID 匹配的随从、遗物、Buff、卡牌或怪物信息。")
+        lines.append("❌ 未找到与该名称或 ID 匹配的随从、遗物、Buff、卡牌、怪物、主城居民或物品信息。")
         lines.append("")
     lines.append("━━━━━━━━━━━━━━━━━━━━")
     return "\n".join(lines).strip()

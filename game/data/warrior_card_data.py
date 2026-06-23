@@ -444,5 +444,37 @@ WARRIOR_CARD_CONFIG = {
         "amulet_desc": "我方随从或你造成物理伤害时伤害 +3",
         "feedback_success": "将【白刃军团战旗】部署到了格子 [{grid}]。",
         "feedback_fail": "战场已满，部署失败。"
+    },
+    "warrior_hell_raider": {
+        "name": "地狱狂徒",
+        "color": "warrior",
+        "type": "spell",
+        "cost_a": 1,
+        "cost_ba": 1,
+        "desc": "你获得【地狱狂徒】状态。抽到 1A 且不消耗 BA 卡牌时免费自动打出。消耗。",
+        "rarity": "epic",
+        "exhaust": True,
+        "feedback": "你咏唱了【地狱狂徒】，进入了嗜血的战斗狂热状态！"
+    },
+    "warrior_shield_bash": {
+        "name": "盾牌猛击",
+        "color": "warrior",
+        "type": "spell",
+        "cost_a": 1,
+        "cost_ba": 0,
+        "desc": "对目标造成等同于当前护盾值的真实伤害。若目标生命低于 20 点则斩杀。",
+        "rarity": "rare",
+        "feedback": "你紧握重盾对【{target}】发起了【盾牌猛击】！"
+    },
+    "warrior_blood_fury": {
+        "name": "鲜血狂暴",
+        "color": "warrior",
+        "type": "spell",
+        "cost_a": 0,
+        "cost_ba": 1,
+        "desc": "失去 5 点生命值，获得 2 层【力量】。抽 2 张卡牌。保留。",
+        "rarity": "common",
+        "retain": True,
+        "feedback": "你点燃了自身的生命潜能，陷入【鲜血狂暴】状态！"
     }
 }

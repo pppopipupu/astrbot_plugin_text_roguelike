@@ -257,6 +257,19 @@ class CLIRouter:
 
     def _handle_command_raw(self, user_id: str, parts: list[str]) -> Generator[str, None, None]:
         set_user_id(user_id)
+        if parts:
+            first_cmd = parts[0].lower()
+            exempt_cmds = (
+                "查询", "query", "info", "i",
+                "背包", "bag", "inventory", "inv",
+                "任务", "quest", "quests"
+            )
+            if first_cmd in exempt_cmds:
+                handler = self._command_handlers.get(first_cmd)
+                if handler:
+                    res_list = list(handler.execute(self, user_id, parts))
+                    yield "\n".join(res_list)
+                    return
         run = self.save_manager.load_save(user_id)
         is_town_combat = run is not None and run.node_data.get("is_town_combat", False)
         if not parts:

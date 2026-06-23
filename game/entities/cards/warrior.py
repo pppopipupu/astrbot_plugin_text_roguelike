@@ -533,3 +533,41 @@ class DeployWarriorAmuletCard(Card):
             feedback_success = cfg.get("feedback_success", "将【{name}】部署到了格子 [{grid}]。")
             return feedback_success.format(name=self.name, grid=grid)
         return cfg.get("feedback_fail", "战场格子已满，部署失败。")
+
+@register_card("warrior_hell_raider")
+class WarriorHellRaiderCard(Card):
+    def execute(self, run, target, engine) -> str:
+        engine._add_buff_to(run.player, "hell_raider", "地狱狂徒", "抽到 1A 且不消耗 BA 卡牌时自动释放且免费", 1)
+        return "你咏唱了【地狱狂徒】，浑身散发出炽热的地狱火光！你将立刻对抽到的 1A 卡牌进行自动连携打出！"
+
+@register_card("warrior_shield_bash")
+class WarriorShieldBashCard(Card):
+    def execute(self, run, target, engine) -> str:
+        dmg = run.player.shield
+        name = engine._get_target_name(run, target)
+        engine._damage_target(run, target, dmg, damage_type="true", card=self)
+        
+        kill_msg = ""
+        target_enemy = None
+        if target.startswith("e"):
+            try:
+                idx = int(target[1:]) - 1
+                if 0 <= idx < len(run.enemies):
+                    target_enemy = run.enemies[idx]
+            except ValueError:
+                pass
+        if target_enemy and 0 < target_enemy.hp < 20:
+            engine._damage_target(run, target, target_enemy.hp, damage_type="true", card=self)
+            kill_msg = f" 💀 [斩杀成功] 裂伤将【{name}】瞬间抹杀！"
+            
+        return f"对【{name}】使用【盾牌猛击】，造成了 {dmg} 点盾值真实伤害。{kill_msg}"
+
+@register_card("warrior_blood_fury")
+class WarriorBloodFuryCard(Card):
+    def execute(self, run, target, engine) -> str:
+        loss = min(5, run.player.hp - 1)
+        if loss > 0:
+            run.player.hp -= loss
+        engine._add_buff_to(run.player, "strength", "力量", "造成伤害增加", 2)
+        engine._draw_cards(run.player, 2, run)
+        return f"你点燃了自身的生命潜能，失去了 {loss} 点生命值，获得了 2 层【力量】并抽了 2 张牌！"

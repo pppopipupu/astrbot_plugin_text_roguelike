@@ -7,9 +7,14 @@ from .explore import render_event, render_shop, render_rest, render_reward, rend
 from .query import render_query_info
 
 from .town import render_town
+from .bag import render_bag
 
 class GameRenderer:
 
+
+    @staticmethod
+    def render_bag(stats: UserStats) -> str:
+        return render_bag(stats)
 
     @staticmethod
     def render_town(stats: UserStats, room_data: dict) -> str:

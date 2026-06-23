@@ -531,3 +531,65 @@ class DiscoverCard(Card):
         exhaust_list = "\n".join(f"{i+1}. {ALL_CARDS[c].name}" for i, c in enumerate(p.exhaust_pile))
         return f"🔮 请选择一张卡牌发掘并加入手牌（使用 选择 <序号>）：\n{exhaust_list}"
 
+@register_card("neutral_power_word_kill")
+class NeutralPowerWordKillCard(Card):
+    def execute(self, run, target, engine) -> str:
+        name = engine._get_target_name(run, target)
+        target_enemy = None
+        if target and target.startswith("e"):
+            try:
+                idx = int(target[1:]) - 1
+                if 0 <= idx < len(run.enemies):
+                    target_enemy = run.enemies[idx]
+            except ValueError:
+                pass
+        if target_enemy and target_enemy.hp < 60:
+            engine._damage_target(run, target, target_enemy.hp, damage_type="true", card=self)
+            return f"你指着【{name}】吐露死亡真言：【律令死亡】！其身形瞬间枯萎，当场陨灭！"
+        return "❌ 律令失败：目标生命值不低于 60 点，无法将其即死！卡牌化作灰烬自毁。"
+
+@register_card("neutral_power_word_stun")
+class NeutralPowerWordStunCard(Card):
+    def execute(self, run, target, engine) -> str:
+        name = engine._get_target_name(run, target)
+        target_enemy = None
+        if target and target.startswith("e"):
+            try:
+                idx = int(target[1:]) - 1
+                if 0 <= idx < len(run.enemies):
+                    target_enemy = run.enemies[idx]
+            except ValueError:
+                pass
+        if target_enemy and target_enemy.hp < 100:
+            engine._add_buff_to(target_enemy, "stun", "单体晕眩", "下回合无法行动", 1)
+            return f"你吐露震慑真言：【律令震慑】！【{name}】脑部剧震，陷入深度晕眩！"
+        return "❌ 律令失败：目标生命值不低于 100 点，不受震慑干扰！"
+
+@register_card("neutral_power_word_pain")
+class NeutralPowerWordPainCard(Card):
+    def execute(self, run, target, engine) -> str:
+        name = engine._get_target_name(run, target)
+        target_enemy = None
+        if target and target.startswith("e"):
+            try:
+                idx = int(target[1:]) - 1
+                if 0 <= idx < len(run.enemies):
+                    target_enemy = run.enemies[idx]
+            except ValueError:
+                pass
+        if target_enemy and target_enemy.hp < 120:
+            engine._add_buff_to(target_enemy, "bleed", "流血", "每回合开始受到4点真实伤害", 3)
+            engine._add_buff_to(target_enemy, "weak", "虚弱", "造成的伤害减少50%", 2)
+            return f"你吐露痛苦真言：【律令痛苦】！【{name}】浑身皮肤崩裂，痛苦不堪，陷入流血与虚弱状态！"
+        return "❌ 律令失败：目标生命值不低于 120 点，顶住了痛苦折磨！"
+
+@register_card("neutral_plane_shift")
+class NeutralPlaneShiftCard(Card):
+    def execute(self, run, target, engine) -> str:
+        if run.player.stage in (20, 25):
+            return "❌ 异界传送在此强力领主战中被神秘结界屏蔽了，你无法在这里传送脱逃！"
+        run.node_data["no_reward"] = True
+        run.enemies.clear()
+        return "🔮 你咏唱了【异界传送】，张开空间裂缝使自己瞬间传送逃离战场！由于你半途脱逃，你将无法获得这场战斗的任何金币和卡牌奖励！"
+
+
