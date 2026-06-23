@@ -28,7 +28,7 @@ def render_battle(run: GameRun) -> str:
     lines = [
         "━━━━━━━━━━━━━━━━━━━━",
         f"⚔️ 【第 {p.stage} 关：战斗阶段】",
-        f"玩家：❤️ HP {p.hp}/{cur_max} | 🛡️ 护盾 {p.shield} | ⚡ 动作 {p.actions}A {p.bonus_actions}BA" + relics_str
+        f"{run.player.name}：❤️ HP {p.hp}/{cur_max} | 🛡️ 护盾 {p.shield} | ⚡ 动作 {p.actions}A {p.bonus_actions}BA" + relics_str
     ]
     if p.buffs:
         buff_strs = []
@@ -39,7 +39,7 @@ def render_battle(run: GameRun) -> str:
                 buff_strs.append(f"{b.name} x{b.stacks}")
             else:
                 buff_strs.append(f"{b.name}")
-        lines.append("玩家Buff：" + " | ".join(buff_strs))
+        lines.append(f"{run.player.name}Buff：" + " | ".join(buff_strs))
     lines.append("")
     lines.append("【我方战场】")
     if not p.minions and not p.amulets:
@@ -159,7 +159,7 @@ def render_detailed_battle(run: GameRun) -> str:
         "━━━━━━━━━━━━━━━━━━━━",
         "⚔️ 【实时战斗详细情报】",
         "",
-        "👤 【玩家领主】",
+        f"👤 【{run.player.name}领主】",
         f"  生命值：HP {p.hp}/{cur_max}",
         f"  护盾值：{p.shield}",
         f"  动作资源：{p.actions}A {p.bonus_actions}BA",

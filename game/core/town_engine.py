@@ -64,6 +64,8 @@ class TownEngine:
         npc_data = entities.get(npc_id, {})
         npc_name = npc_data.get("name", npc_id)
         welcome_text = npc_data.get("welcome", "")
+        player_name = getattr(stats, "player_name", "玩家")
+        welcome_text = welcome_text.replace("{player_name}", player_name)
 
         options = []
         sub_menu = stats.town_flags.get("market_sub_menu")
@@ -591,6 +593,7 @@ class TownEngine:
             shield=0,
             gold=0,
             stage=1,
+            name=getattr(stats, "player_name", "玩家"),
             deck=deck,
             draw_pile=list(deck),
             discard_pile=[],

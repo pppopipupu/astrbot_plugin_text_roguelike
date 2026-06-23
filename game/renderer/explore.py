@@ -12,7 +12,7 @@ def render_event(run: GameRun) -> str:
     lines = [
         "━━━━━━━━━━━━━━━━━━━━",
         f"✨ 【第 {p.stage} 关：随机事件】",
-        f"玩家：❤️ HP {p.hp}/{p.max_hp} | 🪙 金币 {p.gold}" + relics_str,
+        f"{run.player.name}：❤️ HP {p.hp}/{p.max_hp} | 🪙 金币 {p.gold}" + relics_str,
         "",
         data.get("description", "发生了一个神秘的事件。"),
         "",
@@ -38,7 +38,7 @@ def render_shop(run: GameRun) -> str:
     lines = [
         "━━━━━━━━━━━━━━━━━━━━",
         f"🛒 【第 {p.stage} 关：奇妙商店】",
-        f"玩家：❤️ HP {p.hp}/{p.max_hp} | 🪙 金币 {p.gold}" + relics_str,
+        f"{run.player.name}：❤️ HP {p.hp}/{p.max_hp} | 🪙 金币 {p.gold}" + relics_str,
         "",
         "一位旅商展示着他的精致收藏：",
         ""
@@ -82,7 +82,7 @@ def render_rest(run: GameRun) -> str:
     lines = [
         "━━━━━━━━━━━━━━━━━━━━",
         f"🔥 【第 {p.stage} 关：篝火营地】",
-        f"玩家：❤️ HP {p.hp}/{p.max_hp}" + relics_str,
+        f"{run.player.name}：❤️ HP {p.hp}/{p.max_hp}" + relics_str,
         "",
         "温暖的篝火跳跃着，你感到有些疲惫。你可以选择：",
         " [1] 🍖 休息：恢复 50% 最大生命值",
@@ -135,7 +135,7 @@ def render_treasure(run: GameRun) -> str:
     lines = [
         "━━━━━━━━━━━━━━━━━━━━",
         f"🎁 【第 {p.stage} 关：古老宝箱】",
-        f"玩家：❤️ HP {p.hp}/{p.max_hp} | 🪙 金币 {p.gold}",
+        f"{run.player.name}：❤️ HP {p.hp}/{p.max_hp} | 🪙 金币 {p.gold}",
         "",
         text,
         ""
@@ -160,7 +160,7 @@ def render_card_select(run: GameRun) -> str:
     lines = [
         "━━━━━━━━━━━━━━━━━━━━",
         f"🎁 【{title}】",
-        f"玩家：❤️ HP {p.hp}/{p.max_hp} | 🪙 金币 {p.gold}" + relics_str,
+        f"{run.player.name}：❤️ HP {p.hp}/{p.max_hp} | 🪙 金币 {p.gold}" + relics_str,
         ""
     ]
     desc = data.get("desc")

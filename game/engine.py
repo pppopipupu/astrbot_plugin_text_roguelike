@@ -71,6 +71,7 @@ class GameEngine:
             shield=0,
             gold=20,
             stage=0,
+            name=getattr(stats, "player_name", "玩家"),
             deck=initial_deck,
             draw_pile=[],
             discard_pile=[],

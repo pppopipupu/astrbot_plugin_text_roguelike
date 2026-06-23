@@ -11,7 +11,7 @@ def render_map_select(run: GameRun) -> str:
     lines = [
         "━━━━━━━━━━━━━━━━━━━━",
         f"🗺️ 【第 {p.stage} 关：请选择前进路线】",
-        f"玩家：❤️ HP {p.hp}/{p.max_hp} | 🪙 金币 {p.gold}" + relics_str,
+        f"{run.player.name}：❤️ HP {p.hp}/{p.max_hp} | 🪙 金币 {p.gold}" + relics_str,
         ""
     ]
     preview_lines = ["【树状路线预览】"]
@@ -102,7 +102,7 @@ def render_start_ancient(run: GameRun) -> str:
     lines = [
         "━━━━━━━━━━━━━━━━━━━━",
         f"🌌 【第 1 关：{name_str}契约】",
-        f"玩家：❤️ HP {p.hp}/{p.max_hp} | 🪙 金币 {p.gold}",
+        f"{run.player.name}：❤️ HP {p.hp}/{p.max_hp} | 🪙 金币 {p.gold}",
         "",
         f"在你面前浮现出了三座石碑，每座石碑上都铭刻着不同的{name_str}契约。选择其中的契约以获取力量，但命运总会索取它的代价：",
         ""
@@ -137,7 +137,7 @@ def render_ancient(run: GameRun) -> str:
     lines = [
         "━━━━━━━━━━━━━━━━━━━━",
         f"🌟 【第 {p.stage} 关：{name_str}赐福】",
-        f"玩家：❤️ HP {p.hp}/{p.max_hp} | 🪙 金币 {p.gold}",
+        f"{run.player.name}：❤️ HP {p.hp}/{p.max_hp} | 🪙 金币 {p.gold}",
         "",
         f"空气中浮现出纯净的奥术光辉。{name_str}的意志再次眷顾了你，向你降下丰厚的赐福礼包：",
         ""
