@@ -23,7 +23,25 @@ class ExploreEngine:
 
     def _init_shop_node(self, run: GameRun):
         allowed_colors = ("warrior", "neutral") if getattr(run.player, "selected_class", "法师") == "战士" else ("wizard", "neutral")
-        card_pool = [cid for cid, c in ALL_CARDS.items() if c.rarity not in ("legendary", "mythic", "artifact") and getattr(c, "color", "") in allowed_colors and not cid.startswith("curse_") and not cid.startswith("duel_")]
+        unlocked_new = set()
+        if hasattr(self.save_manager, "load_stats"):
+            stats = self.save_manager.load_stats(run.user_id)
+            if stats:
+                unlocked_new = set(getattr(stats, "unlocked_new_cards", []) or []) | set(getattr(stats, "purchased_pool", []) or [])
+        new_cards = {
+            "warrior_hell_raider", "warrior_shield_bash", "warrior_blood_fury",
+            "wizard_prismatic_wall", "wizard_antimagic_field", "wizard_time_ravage",
+            "neutral_power_word_kill", "neutral_power_word_stun", "neutral_power_word_pain",
+            "neutral_plane_shift"
+        }
+        card_pool = [
+            cid for cid, c in ALL_CARDS.items()
+            if c.rarity not in ("legendary", "mythic", "artifact")
+            and getattr(c, "color", "") in allowed_colors
+            and not cid.startswith("curse_")
+            and not cid.startswith("duel_")
+            and (cid not in new_cards or cid in unlocked_new)
+        ]
         shop_cards = random.sample(card_pool, 3)
         from ..models.state import check_and_replace_fireball
         shop_cards = [check_and_replace_fireball(run, cid) for cid in shop_cards]
@@ -156,7 +174,25 @@ class ExploreEngine:
                         p.hp += 5
                         
                 allowed_colors = ("warrior", "neutral") if getattr(p, "selected_class", "法师") == "战士" else ("wizard", "neutral")
-                card_pool = [cid for cid, c in ALL_CARDS.items() if c.rarity == "epic" and getattr(c, "color", "") in allowed_colors and not cid.startswith("curse_") and not cid.startswith("duel_")]
+                unlocked_new = set()
+                if hasattr(self.save_manager, "load_stats"):
+                    stats = self.save_manager.load_stats(run.user_id)
+                    if stats:
+                        unlocked_new = set(getattr(stats, "unlocked_new_cards", []) or []) | set(getattr(stats, "purchased_pool", []) or [])
+                new_cards = {
+                    "warrior_hell_raider", "warrior_shield_bash", "warrior_blood_fury",
+                    "wizard_prismatic_wall", "wizard_antimagic_field", "wizard_time_ravage",
+                    "neutral_power_word_kill", "neutral_power_word_stun", "neutral_power_word_pain",
+                    "neutral_plane_shift"
+                }
+                card_pool = [
+                    cid for cid, c in ALL_CARDS.items()
+                    if c.rarity == "epic"
+                    and getattr(c, "color", "") in allowed_colors
+                    and not cid.startswith("curse_")
+                    and not cid.startswith("duel_")
+                    and (cid not in new_cards or cid in unlocked_new)
+                ]
                 reward_cards = random.sample(card_pool, 3) if len(card_pool) >= 3 else card_pool
                 from ..models.state import check_and_replace_fireball
                 reward_cards = [check_and_replace_fireball(run, cid) for cid in reward_cards]
@@ -224,7 +260,26 @@ class ExploreEngine:
                 return f"你感到精力充沛，恢复了 {heal} 点生命值，开启下一关。"
             elif option_idx == 2:
                 class_color = "warrior" if getattr(p, "selected_class", "法师") == "战士" else "wizard"
-                class_cards = [cid for cid, c in ALL_CARDS.items() if c.color == class_color and c.type == "spell" and c.rarity not in ("legendary", "mythic", "artifact") and not cid.startswith("curse_") and not cid.startswith("duel_")]
+                unlocked_new = set()
+                if hasattr(self.save_manager, "load_stats"):
+                    stats = self.save_manager.load_stats(run.user_id)
+                    if stats:
+                        unlocked_new = set(getattr(stats, "unlocked_new_cards", []) or []) | set(getattr(stats, "purchased_pool", []) or [])
+                new_cards = {
+                    "warrior_hell_raider", "warrior_shield_bash", "warrior_blood_fury",
+                    "wizard_prismatic_wall", "wizard_antimagic_field", "wizard_time_ravage",
+                    "neutral_power_word_kill", "neutral_power_word_stun", "neutral_power_word_pain",
+                    "neutral_plane_shift"
+                }
+                class_cards = [
+                    cid for cid, c in ALL_CARDS.items()
+                    if c.color == class_color
+                    and c.type == "spell"
+                    and c.rarity not in ("legendary", "mythic", "artifact")
+                    and not cid.startswith("curse_")
+                    and not cid.startswith("duel_")
+                    and (cid not in new_cards or cid in unlocked_new)
+                ]
                 reward_cards = random.sample(class_cards, 3) if len(class_cards) >= 3 else class_cards
                 from ..models.state import check_and_replace_fireball
                 reward_cards = [check_and_replace_fireball(run, cid) for cid in reward_cards]

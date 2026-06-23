@@ -657,7 +657,21 @@ class CardPlayer:
             card_pool = list(ALL_CARDS.keys())
             p_class = getattr(stats, "selected_class", "法师")
             target_color = "warrior" if p_class == "战士" else "wizard"
-            normal_cards = [cid for cid in card_pool if ALL_CARDS[cid].rarity not in ("legendary", "mythic", "artifact") and not cid.startswith("curse_") and not cid.startswith("duel_") and ALL_CARDS[cid].color in (target_color, "neutral")]
+            new_cards = {
+                "warrior_hell_raider", "warrior_shield_bash", "warrior_blood_fury",
+                "wizard_prismatic_wall", "wizard_antimagic_field", "wizard_time_ravage",
+                "neutral_power_word_kill", "neutral_power_word_stun", "neutral_power_word_pain",
+                "neutral_plane_shift"
+            }
+            unlocked_new = set(getattr(stats, "unlocked_new_cards", []) or []) | set(getattr(stats, "purchased_pool", []) or [])
+            normal_cards = [
+                cid for cid in card_pool
+                if ALL_CARDS[cid].rarity not in ("legendary", "mythic", "artifact")
+                and not cid.startswith("curse_")
+                and not cid.startswith("duel_")
+                and ALL_CARDS[cid].color in (target_color, "neutral")
+                and (cid not in new_cards or cid in unlocked_new)
+            ]
             reward_cards = random.sample(normal_cards, 3)
             final_reward_cards = []
             for cid in reward_cards:

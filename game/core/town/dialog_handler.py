@@ -103,6 +103,10 @@ def handle_sub_dialog(town_engine, stats: UserStats, npc_id: str, choice_lower: 
             c_name = ALL_CARDS[cid].name if cid in ALL_CARDS else cid
             stats.gp -= price
             stats.purchased_pool.append(cid)
+            if not hasattr(stats, "unlocked_new_cards"):
+                stats.unlocked_new_cards = []
+            if cid not in stats.unlocked_new_cards:
+                stats.unlocked_new_cards.append(cid)
             shelf[idx] = ""
             stats.town_flags["market_shelf"] = shelf
             town_engine.save_manager.save_stats(user_id, stats)

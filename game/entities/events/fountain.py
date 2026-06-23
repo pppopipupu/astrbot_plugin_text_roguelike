@@ -17,7 +17,23 @@ class CoinFountainOption(EventOption, action="coin_fountain", text="投入金币
         if p.gold < 10:
             return "❌ 你的金币不足 10。"
         p.gold -= 10
-        wizards = [cid for cid, c in ALL_CARDS.items() if c.color == "wizard" and c.rarity not in ("legendary", "mythic", "artifact")]
+        unlocked_new = set()
+        if hasattr(engine.save_manager, "load_stats"):
+            stats = engine.save_manager.load_stats(run.user_id)
+            if stats:
+                unlocked_new = set(getattr(stats, "unlocked_new_cards", []) or []) | set(getattr(stats, "purchased_pool", []) or [])
+        new_cards = {
+            "warrior_hell_raider", "warrior_shield_bash", "warrior_blood_fury",
+            "wizard_prismatic_wall", "wizard_antimagic_field", "wizard_time_ravage",
+            "neutral_power_word_kill", "neutral_power_word_stun", "neutral_power_word_pain",
+            "neutral_plane_shift"
+        }
+        wizards = [
+            cid for cid, c in ALL_CARDS.items()
+            if c.color == "wizard"
+            and c.rarity not in ("legendary", "mythic", "artifact")
+            and (cid not in new_cards or cid in unlocked_new)
+        ]
         reward_cards = random.sample(wizards, 3) if len(wizards) >= 3 else wizards
         run.node_type = "card_select"
         run.node_data = {

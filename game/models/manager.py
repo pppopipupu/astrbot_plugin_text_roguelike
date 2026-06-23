@@ -61,7 +61,8 @@ class SaveManager:
                 town_inventory=d.get("town_inventory", []),
                 town_flags=d.get("town_flags", {}),
                 town_health_bonus=d.get("town_health_bonus", 0),
-                player_name=d.get("player_name", "玩家")
+                player_name=d.get("player_name", "玩家"),
+                unlocked_new_cards=d.get("unlocked_new_cards", [])
             )
         except:
             return UserStats()
@@ -430,6 +431,7 @@ class SaveManager:
                 if run.node_data.get("boss_name") == "Icerainboww":
                     stats.killed_icerainboww = True
                     unlock_msg = "\n\n🎉 特别提示：你成功击败了最终BOSS【Icerainboww】！在先古祭坛和先古赐福石碑中已永久解锁传奇随从卡【Icerainboww】！"
+        stats.town_flags.pop("market_shelf", None)
         stats.gp += gp_gained
         self.save_stats(user_id, stats)
         self.delete_save(user_id)

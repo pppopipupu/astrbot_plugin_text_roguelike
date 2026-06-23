@@ -231,29 +231,19 @@ class TownEngine:
         shelf = stats.town_flags.get("market_shelf")
         if shelf is not None:
             return shelf
-        added_cards = set(getattr(stats, "purchased_pool", []) or [])
+        already_bought = set(getattr(stats, "purchased_pool", []) or []) | set(getattr(stats, "unlocked_new_cards", []) or [])
         g_card = getattr(stats, "guaranteed_card", None)
         if g_card:
-            added_cards.add(g_card)
-        commons = []
-        rares = []
-        epics = []
-        for cid, c in ALL_CARDS.items():
-            if cid in added_cards:
-                continue
-            rarity = getattr(c, "rarity", "common")
-            color = getattr(c, "color", "")
-            if rarity == "legendary" or color == "curse" or cid.startswith("curse_") or cid.startswith("duel_"):
-                continue
-            if rarity == "common":
-                commons.append(cid)
-            elif rarity == "rare":
-                rares.append(cid)
-            elif rarity == "epic":
-                epics.append(cid)
-        c_sel = random.choice(commons) if commons else "strike"
-        r_sel = random.choice(rares) if rares else "first_aid"
-        e_sel = random.choice(epics) if epics else "fireball"
+            already_bought.add(g_card)
+        new_commons = ["warrior_blood_fury", "neutral_power_word_pain"]
+        new_rares = ["warrior_shield_bash", "wizard_antimagic_field", "neutral_power_word_stun"]
+        new_epics = ["warrior_hell_raider", "wizard_prismatic_wall", "wizard_time_ravage", "neutral_power_word_kill", "neutral_plane_shift"]
+        available_commons = [c for c in new_commons if c not in already_bought]
+        available_rares = [c for c in new_rares if c not in already_bought]
+        available_epics = [c for c in new_epics if c not in already_bought]
+        c_sel = random.choice(available_commons) if available_commons else ""
+        r_sel = random.choice(available_rares) if available_rares else ""
+        e_sel = random.choice(available_epics) if available_epics else ""
         shelf = [c_sel, r_sel, e_sel]
         stats.town_flags["market_shelf"] = shelf
         return shelf

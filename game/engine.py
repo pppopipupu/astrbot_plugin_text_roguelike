@@ -14,6 +14,7 @@ class GameEngine:
 
     def start_new_game(self, user_id: str) -> GameRun:
         stats = self.save_manager.load_stats(user_id)
+        stats.town_flags.pop("market_shelf", None)
         selected_class = getattr(stats, "selected_class", "法师")
         selected_subclass = getattr(stats, "selected_subclass", "")
         if selected_class == "战士":
