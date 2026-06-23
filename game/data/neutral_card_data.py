@@ -49,10 +49,10 @@ NEUTRAL_CARD_CONFIG = {
         "type": "amulet",
         "cost_a": 1,
         "cost_ba": 0,
-        "desc": "每回合结束时，玩家获得 3 金币。",
+        "desc": "每回合结束时，你获得 3 金币。",
         "rarity": "rare",
         "countdown": 3,
-        "amulet_desc": "每回合结束时，玩家获得 3 金币。",
+        "amulet_desc": "每回合结束时，你获得 3 金币。",
         "feedback_success": "将【{name}】部署到了格子 [{grid}]。",
         "feedback_fail": "战场格子已满，部署失败。"
     },
@@ -62,7 +62,7 @@ NEUTRAL_CARD_CONFIG = {
         "type": "amulet",
         "cost_a": 1,
         "cost_ba": 0,
-        "desc": "当玩家受到伤害时，对伤害来源造成 2 点伤害。",
+        "desc": "当你受到伤害时，对伤害来源造成 2 点伤害。",
         "rarity": "rare",
         "countdown": 2,
         "amulet_desc": "受到伤害时，向伤害源反弹 2 点伤害。",
@@ -85,7 +85,7 @@ NEUTRAL_CARD_CONFIG = {
         "type": "ability",
         "cost_a": 1,
         "cost_ba": 0,
-        "desc": "玩家最大生命值在本次战斗中 +10 并回复 10 生命。",
+        "desc": "你最大生命值在本次战斗中 +10 并回复 10 生命。",
         "rarity": "epic",
         "feedback": "使用了【钢铁意志】，获得了【钢铁意志】buff（最大生命上限增加 10 并回复 10 生命，可叠加）。"
     },
@@ -108,7 +108,7 @@ NEUTRAL_CARD_CONFIG = {
         "type": "minion",
         "cost_a": 1,
         "cost_ba": 0,
-        "desc": "生命 15，攻击 1。技能：重整防线（消耗 1BA，为玩家提供 2 点护盾）。",
+        "desc": "生命 15，攻击 1。技能：重整防线（消耗 1BA，为你提供 2 点护盾）。",
         "rarity": "rare",
         "minion_hp": 15,
         "minion_atk": 1,
@@ -248,7 +248,7 @@ NEUTRAL_CARD_CONFIG = {
         "type": "spell",
         "cost_a": 1,
         "cost_ba": 0,
-        "desc": "使玩家战场中所有护符的吟唱时间减少 2。",
+        "desc": "使你战场中所有护符的吟唱时间减少 2。",
         "rarity": "rare",
         "feedback": "使用了万能钥匙，所有护符的吟唱时间减少 2。"
     },
@@ -280,10 +280,10 @@ NEUTRAL_CARD_CONFIG = {
         "type": "spell",
         "cost_a": 0,
         "cost_ba": 0,
-        "desc": "不能被打出。回合结束时，如果仍在手牌中，则对玩家造成 3 点真实伤害并消耗自身。",
+        "desc": "不能被打出。回合结束时，如果仍在手牌中，则对你造成 3 点真实伤害并消耗自身。",
         "rarity": "curse",
         "unplayable": True,
-        "feedback": "手牌中的空间撕裂发生坍缩，对玩家造成 3 点真实伤害并自身消耗。"
+        "feedback": "手牌中的空间撕裂发生坍缩，对你造成 3 点真实伤害并自身消耗。"
     },
     "break_limits": {
         "name": "突破极限",
@@ -291,7 +291,7 @@ NEUTRAL_CARD_CONFIG = {
         "type": "spell",
         "cost_a": 2,
         "cost_ba": 1,
-        "desc": "使玩家的所有正面 Buff 计数器翻倍，并获得 1A。消耗。",
+        "desc": "使你的所有正面 Buff 计数器翻倍，并获得 1A。消耗。",
         "rarity": "legendary",
         "exhaust": True,
         "feedback": "突破了极限！使所有正面 Buff 层数翻倍，并获得了 1A。"
@@ -339,7 +339,7 @@ NEUTRAL_CARD_CONFIG = {
         "type": "ability",
         "cost_a": 1,
         "cost_ba": 1,
-        "desc": "获得 20 点护盾，且在本场战斗中，玩家回合结束时获得的护盾量增加 4 点。消耗。",
+        "desc": "获得 20 点护盾，且在本场战斗中，你在回合结束时获得的护盾量增加 4 点。消耗。",
         "rarity": "legendary",
         "exhaust": True,
         "feedback": "筑起了冰川壁垒！"
@@ -398,10 +398,10 @@ NEUTRAL_CARD_CONFIG = {
         "type": "amulet",
         "cost_a": 1,
         "cost_ba": 1,
-        "desc": "(消耗: 1A 1BA) 部署【终结的深渊祭坛】（吟唱 1）。谢幕曲对场上所有敌人造成 500 点真实伤害，玩家受到 10 点真实伤害。",
+        "desc": "(消耗: 1A 1BA) 部署【终结的深渊祭坛】（吟唱 1）。谢幕曲对场上所有敌人造成 500 点真实伤害，你受到 10 点真实伤害。",
         "rarity": "legendary",
         "countdown": 1,
-        "amulet_desc": "谢幕曲对场上所有敌人造成 500 点真实伤害，玩家受到 10 点真实伤害。",
+        "amulet_desc": "谢幕曲对场上所有敌人造成 500 点真实伤害，你受到 10 点真实伤害。",
         "feedback_success": "在格子 [{grid}] 部署了【{name}】。"
     },
     "abyss_erosion": {

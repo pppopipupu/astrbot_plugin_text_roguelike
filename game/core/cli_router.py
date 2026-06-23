@@ -266,8 +266,16 @@ class CLIRouter:
         return text
 
     def handle_command(self, user_id: str, parts: list[str]) -> Generator[str, None, None]:
+        skip_filter = False
+        if parts:
+            cmd = parts[0].lower()
+            if cmd in ("查询", "query", "info", "i", "牌组", "deck", "总览", "overview", "抽牌堆", "draw", "draw_pile", "弃牌堆", "discard", "discard_pile", "消耗堆", "exhaust", "exhaust_pile", "随从墓地", "mg", "minion_graveyard"):
+                skip_filter = True
         for res in self._handle_command_raw(user_id, parts):
-            yield self._filter_player_name(user_id, res)
+            if skip_filter:
+                yield res
+            else:
+                yield self._filter_player_name(user_id, res)
 
     def _handle_command_raw(self, user_id: str, parts: list[str]) -> Generator[str, None, None]:
         set_user_id(user_id)

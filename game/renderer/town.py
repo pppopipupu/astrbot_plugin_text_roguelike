@@ -6,12 +6,16 @@ from ..entities import ALL_CARDS
 
 def _load_zh_cn() -> Dict[str, Any]:
     current_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    zh_cn_path = os.path.join(current_dir, "data", "town", "zh_cn_town.json")
-    if not os.path.exists(zh_cn_path):
-        return {}
+    town_dir = os.path.join(current_dir, "data", "town")
+    global_path = os.path.join(town_dir, "zh_cn_global.json")
+    npcs_path = os.path.join(town_dir, "zh_cn_npcs.json")
     try:
-        with open(zh_cn_path, "r", encoding="utf-8") as f:
-            return json.load(f)
+        with open(global_path, "r", encoding="utf-8") as f:
+            zh_cn = json.load(f)
+        with open(npcs_path, "r", encoding="utf-8") as f:
+            npcs = json.load(f)
+        zh_cn["interactive_entities"] = npcs
+        return zh_cn
     except:
         return {}
 
@@ -58,7 +62,7 @@ def render_town_map_classic(current_id: str) -> str:
         lines.append("".join(row_strs))
         
     lines.append("")
-    lines.append("📖 【主城地标图例手册】")
+    lines.append("📖 【主城地标图例手册】 ( 📍 标识当前所在位置 )")
     
     def get_leg(rid: str, default_name: str) -> str:
         emo = "📍" if rid == current_id else emoji_map.get(rid, "🧱")

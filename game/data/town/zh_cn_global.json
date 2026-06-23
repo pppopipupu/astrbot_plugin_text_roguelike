@@ -1,0 +1,206 @@
+{
+  "items": {
+    "wine_glass": [
+      "精致的空酒杯",
+      "wine_glass"
+    ],
+    "lucky_coin": [
+      "幸运硬币",
+      "lucky_coin"
+    ],
+    "rusty_key": [
+      "rusty_key",
+      "rusty_key",
+      "锈蚀的钥匙"
+    ],
+    "strange_ore": [
+      "奇异的矿石",
+      "strange_ore"
+    ],
+    "lost_notebook": [
+      "遗失的笔记本",
+      "lost_notebook"
+    ],
+    "smith_hammer": [
+      "铁匠的精钢锤",
+      "smith_hammer",
+      "铁锤"
+    ],
+    "fake_hammer": [
+      "高仿铁锤",
+      "fake_hammer",
+      "仿制锤"
+    ],
+    "void_herb": [
+      "虚空草药",
+      "void_herb",
+      "草药"
+    ],
+    "wishing_dew": [
+      "天外甘露草",
+      "wishing_dew",
+      "甘露草"
+    ],
+    "promotional_agreement": [
+      "独家推广协议",
+      "promotional_agreement",
+      "推广协议",
+      "协议"
+    ],
+    "beer": [
+      "冰镇黑麦酒",
+      "beer",
+      "黑麦酒",
+      "啤酒"
+    ]
+  },
+  "global": {
+    "interact_not_found": "❌ 房间里没有叫【{target}】的居民或交互物。",
+    "interact_success": "💬 你开启了与【{name}】的交互：",
+    "dialog_exit": "🚪 你结束了与【{name}】的交谈，回到了房间探索状态。",
+    "invalid_option": "❌ 无效的选项。请输入选项前对应的数字编号（或输入 离开/exit/quit 结束对话）。",
+    "gp_insufficient": "❌ GP 不足！你需要 {req} GP，当前仅有 {owned} GP。",
+    "take_not_found": "❌ 房间里没有【{target}】可以拾取。",
+    "take_already_taken": "❌ 【{target}】已经被捡走了。",
+    "take_success": "🎒 你成功拿取了【{target}】并存入你的背包中。",
+    "use_not_found": "❌ 背包里没有【{target}】该如何使用？",
+    "use_cannot_use": "❌ 【{target}】无法在主城内直接使用。",
+    "card_lock_success": "🔒 成功扣除 300 GP，下局游戏开始初始牌组将必定带有【{name}】！",
+    "card_lock_failed_legendary": "❌ 卡牌大卖场无法锁定传奇稀有度卡牌。",
+    "card_lock_failed_not_found": "❌ 未能匹配到叫【{name}】的卡牌。",
+    "card_buy_success": "🛒 成功花费 {price} GP 购买了【{name}】。它会在你开启下一局新游戏时注入到你的初始牌组中！",
+    "card_buy_not_on_shelf": "❌ 今日货架上没有【{name}】卡牌在出售。",
+    "combat_lost": "💀 你被击败了！不过别担心，在主城的切磋不影响你的局外进度。你已回到了靶场房间。",
+    "combat_won_dummy": "训练假人已被摧毁！切磋完成。",
+    "combat_won_first": "🎉 你首次战胜了【{name}】！获得了 {gp} GP 奖励！",
+    "combat_won_repeat": "🎉 战胜了【{name}】！非首次战胜，无额外 GP 奖励。",
+    "rarities": [
+      "普通",
+      "稀有",
+      "珍奇"
+    ],
+    "market_sold_out": "【已售罄】",
+    "market_buy_option": "{idx}. 购买 【{name}】 ({rarity} - {price} GP)",
+    "back_to_previous": "返回上一级",
+    "lock_instructions": "ℹ️ 请直接输入你想锁定的卡牌名称（例如输入 痛击 ）进行绑定。",
+    "back_to_previous_1": "1. 返回上一级",
+    "idle_talk_default": "闲聊",
+    "leave_default": "离开",
+    "dialog_title": "💬 与【{name}】对话中",
+    "dialog_help": "💡 输入选项编号(如 1, 2)进行互动，输入 离开/exit/quit 结束交谈。",
+    "move_no_way": "❌ 往这个方向没有路。你可以前往：{exits}",
+    "not_in_dialog": "❌ 没有处于交谈状态。",
+    "lost_notebook_use_desc": "📖 【先古冒险者秘籍】\n'火球术配回响形态是清场的绝活。另外，别在西大门乱敲门，要是敲够10次，被门卫揍了可别找我哭！'",
+    "cannot_challenge_unknown": "❌ 无法挑战未知角色【{name}】。",
+    "challenge_start_guardian": "🚪 黑铁大门剧烈晃动，灰尘四落。在一声怒吼中，西门守卫 Gate_Guardian 破门而出！开始战斗！\n{render_res}",
+    "challenge_start_normal": "⚔️ 开启与【{name}】的切磋战斗！\n{render_res}",
+    "unknown_room": "未知房间",
+    "title_format": "✨ 先古主城 ── {name} ✨",
+    "none": "无",
+    "directions": {
+      "w": "北",
+      "s": "南",
+      "a": "西",
+      "d": "东"
+    },
+    "market_shelf_header": "\n\n🏷️ 今日货架商品：\n",
+    "market_shelf_footer": "\n（输入 交互/talk 卡牌商人 即可开启选购或锁定必带卡）",
+    "market_shelf_option": "{idx}. 【{name}】({rarity} ─ {price} GP)",
+    "quest_tour_complete_ready": "\n📌 任务进度：向导的观光指引 (11/11) ─ 你已探索完全部区域！快回中心广场向向导长老交付任务吧！",
+    "quest_tour_progress": "\n📌 任务进度：向导的观光指引 ({visited}/11) ─ 请继续探索未访问的区域。",
+    "quest_tour_completed": "\n📌 任务进度：向导的观光指引 ─ 已完成（已获得 2000 GP）",
+    "quest_tour_none": "\n📌 任务进度：暂无活动任务（可前往中心广场找向导长老领取任务）",
+    "empty": "空",
+    "room_env": "环境：{desc}",
+    "room_exits": "出口：{exits}",
+    "room_npcs": "居民：{npcs}",
+    "room_items": "物品：{items}",
+    "room_inventory": "🎒 随身物品：{inv} | 💰 拥有 GP：{gp}",
+    "help_move": "💡 移动 (MOVE)：W(北/UP) / A(西/LEFT) / S(南/DOWN) / D(东/RIGHT)",
+    "help_take": "💡 拿取 (TAKE)：拿取/捡起/take/pick <物品>",
+    "help_use": "💡 使用 (USE)：使用/use <物品>",
+    "help_talk": "💡 交互 (TALK)：交互/talk/interact/talk_to <名字>",
+    "help_system": "💡 系统 (SYSTEM)：退出/exit/quit | 回城/home",
+    "combat_quit": "💀 你已退出了切磋，回到了靶场房间。",
+    "combat_won_banner": "🎉 战斗胜利！{bonus}",
+    "town_exit_success": "👋 你已退出主城，回到主菜单。",
+    "take_missing_param": "❌ 请提供物品名字，例如：take 幸运硬币",
+    "use_missing_param": "❌ 请指定使用的物品，例如：use 遗失的笔记本",
+    "talk_missing_param": "❌ 请指定交互的目标，例如：talk 向导长老",
+    "town_help_prompt": "🔮 主城探索中。输入 退出/exit 回到主菜单，或输入 W/A/S/D 进行移动。输入 交互/talk <目标> 开启互动。",
+    "unlocked_status": "已解锁",
+    "already_unlocked_error": "❌ 你已经解锁了【{name}】。",
+    "shop_buy_success": "🎉 购买成功！已成功解锁【{name}】。已扣除 {price} GP。",
+    "beer_buy_success": "🍺 成功花费 50 GP 购买了一瓶【冰镇黑麦酒】！",
+    "beer_buy_insufficient": "❌ GP 不足，购买冰镇麦酒需要 50 GP。",
+    "quest_hammer_started": "🔨 铁匠艾恩克拉德向你诉苦，说他丢了祖传的精钢大铁锤，希望你能在小巷或者跟其他居民打听一下。任务【铁锤谜案】已接取！",
+    "quest_hammer_clue_msg": "🔨 铁匠艾恩克拉德回忆说：'前几天好像看到那个总是在城里乱转的迷路诗人鬼鬼祟祟的，你可以去找他问问。'",
+    "quest_brew_started": "🍺 酒保杰克叹了口气，说他最近想酿造秘制佳酿，但缺少了一味关键的主药【天外甘露草】。任务【秘密佳酿】已接取！",
+    "lost_bard_tell_clue": "🎵 迷路的诗人哼着歌：'你说大铁锤？哎呀，我确实在小巷里捡到了……不过这可是个好东西。如果你能请我喝一瓶酒保杰克酿造的【冰镇黑麦酒】，我就把它送给你！或者，你可以去找那个有钱的推销员，他手头有很多高仿货……当然，你要是能战胜靶场那个自大的 NoobSlayer99，让他来找我，我也会给他的。'",
+    "lost_bard_give_beer_success": "🎵 诗人欢快地喝下了冰镇黑麦酒：'啊！爽快！既然如此，这把铁锤就交给你了。'🎒 你获得了【铁匠的精钢锤】！",
+    "buy_fake_hammer_success": "🪙 推销员嘿嘿一笑：'识货！这把高仿铁锤足以以假乱真。'🎒 你花费 500 GP 购买了【高仿铁锤】！",
+    "buy_void_herb_success": "🪙 推销员收下了钱：'合作愉快！这株虚空草药是你的了。'🎒 你花费 800 GP 购买了【虚空草药】！",
+    "trade_void_herb_success": "🪙 推销员看到推广协议大喜：'太好了！有了这个我就可以在酒馆大赚一笔了！草药归你了！'🎒 你失去了【独家推广协议】，获得了【虚空草药】！",
+    "whale_reported_refuse": "🪙 推销员愤怒地瞪着你：'你这个卑鄙的告密者！我绝对不会和你做任何生意！滚开！'",
+    "report_whale_success": "🛡️ 卫兵严肃地点了点头：'干得好！我们早就盯上这个非法倒卖管制草药的家伙了。这是没收的赃物，就交给你处理了！'🎒 你获得了【虚空草药】！",
+    "report_whale_already": "🛡️ 卫兵：'我们已经查封了那名商贩，正在进行后续审理。'",
+    "wash_herb_success": "⛲ 你将【虚空草药】浸入泉水之中。清澈的泉水洗涤了草药上的虚空杂质，在一道荧光中，草药化为了流光溢彩的【天外甘露草】！🎒 获得了【天外甘露草】！",
+    "sell_dew_success": "🔮 神秘店主赞叹不已：'多么完美的甘露草！这可是稀世珍宝。合作愉快！'🎒 成功交付【天外甘露草】，获得了 2000 GP！",
+    "quest_hammer_real_success": "🔨 铁匠艾恩克拉德激动地抱住大铁锤：'我的大锤！你真的找回来了！太感谢你了！为了表达谢意，我会用秘法强化你的体魄！'🎉 成功交付【铁匠的精钢锤】！获得 1500 GP，局外初始生命上限永久增加 5 点！",
+    "quest_hammer_fake_success": "🔨 铁匠艾恩克拉德接过大铁锤，打量了一番：'唔……这手感有点不太对，不过能凑合着用。谢了，老伙计。'🎉 交付了【高仿铁锤】！获得 200 GP！",
+    "quest_hammer_force_success": "🔨 铁匠艾恩克拉德开心地大笑：'哈哈！NoobSlayer99 那家伙突然把我的大铁锤送了回来，原来是你在背后出力！太感谢了！'🎉 获得了 1200 GP！",
+    "quest_brew_real_success": "🍺 酒保杰克感激涕零：'太棒了！这就是天外甘露草！我终于可以酿造出最顶级的佳酿了！这一瓶酒馆特制朗姆酒送给你！'🎉 成功交付【天外甘露草】！获得 1500 GP，局外初始生命上限永久增加 5 点！",
+    "jack_riddle_intro": "🍺 酒保杰克摸了摸胡子：'想让我免费在你的协议上签字？除非你能答对我的两道谜题。准备好了吗？'",
+    "jack_riddle_1": "🍺 谜题一：'什么水不能喝？'\n1. 汽水\n2. 薪水\n3. 井水\n4. 泪水\n（请输入选项数字回答，如 2）",
+    "jack_riddle_2": "🍺 谜题二：'什么人最不怕冷？'\n1. 铁匠\n2. 雪人\n3. 卫兵\n4. 诗人\n（请输入选项数字回答，如 2）",
+    "jack_riddle_wrong": "🍺 酒保杰克摇了摇头：'不对不对，看来你还得再想想！'",
+    "jack_riddle_success": "🍺 酒保杰克惊叹：'全答对了！不愧是聪明的冒险者。既然如此，我就在这份独家推广协议上签字吧！'🎒 获得了【独家推广协议】！",
+    "jack_notebook_success": "🍺 酒保杰克看到笔记本大喜：'天哪，这正是我遗失的日记账本！非常感谢！我就在这份协议上签字吧！'🎒 你失去了【遗失的笔记本】，获得了【独家推广协议】！"
+  },
+  "rooms": {
+    "square": {
+      "name": "中心广场",
+      "desc": "这里是繁华的先古主城中心广场，阳光洒在青石板上。四周人声鼎沸，各色商贩在热情叫卖。北面(W)是训练靶场，南面(S)是卡牌大卖场，西面(A)通往偏僻小巷，东面(D)是清凉的许愿喷泉。"
+    },
+    "range": {
+      "name": "训练靶场",
+      "desc": "这里是冒险者们磨炼战斗技巧的训练靶场，地面铺满了沙土。几具粗糙的稻草假人立在中央，身上布满了刀痕与魔法灼烧的痕迹。几位高阶冒险者正在旁观指导。南面(S)是广场。"
+    },
+    "fountain": {
+      "name": "许愿喷泉",
+      "desc": "清澈的泉水从白石雕刻的飞龙口中喷涌而出，汇聚在宽阔的圆形石池中。阳光在水面上折射出七彩的光芒，池底隐约闪烁着无数反光的硬币。西边(A)是广场，东边(D)是主城商店。"
+    },
+    "shop": {
+      "name": "主城商店",
+      "desc": "主城商店里货架林立，摆满了各种奇异的冒险装备、未鉴定的卷轴和散发微光的药水。西边(A)是喷泉，北边(W)是酒馆大堂。"
+    },
+    "tavern": {
+      "name": "酒馆大堂",
+      "desc": "酒馆大堂里弥漫着麦芽酒和烤肉的香气，几张粗糙的橡木桌旁坐满了吹牛的冒险者。吟游诗人在角落里轻轻弹唱。南面(S)是商店，东面(D)通往幽静的酒馆雅间。"
+    },
+    "vip_room": {
+      "name": "酒馆雅间",
+      "desc": "这是酒馆大堂深处的一间僻静雅间，光线有些昏暗。高档的红木桌椅擦拭得一尘不染，墙角放置着一个古旧的铁宝箱，上面雕刻着奇异的符文。西面(A)连通酒馆大堂。"
+    },
+    "market": {
+      "name": "卡牌大卖场",
+      "desc": "这里是卡牌爱好者的天堂！无数珍稀的魔法卡牌悬浮在半空中展示。北面(W)是广场，西面(A)可以通往铁匠铺。"
+    },
+    "blacksmith": {
+      "name": "铁匠铺",
+      "desc": "铁匠铺熔炉通红，热浪扑面，大铁锤富有节奏地敲打。东面(D)通往卡牌大卖场。"
+    },
+    "alley": {
+      "name": "偏僻小巷",
+      "desc": "这是一条狭窄阴暗的巷子，四周堆放着空木桶和破旧的杂物。墙角生满了青苔。东面(D)连通广场，西面(A)直达西大门。"
+    },
+    "west_gate": {
+      "name": "西大门",
+      "desc": "这是先古主城的西侧城门，厚重的黑铁大门紧紧关闭着，上面布满了古老的封印法阵。东面(D)通往偏僻小巷，北面(W)有一道石阶通往守卫哨塔。"
+    },
+    "watch_tower": {
+      "name": "守卫哨塔",
+      "desc": "顺着石阶登上高耸的防守哨塔，这里可以俯瞰城墙外的荒野景象。风声呼啸。南面(S)可以走下西大门。"
+    }
+  }
+}

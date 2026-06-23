@@ -63,7 +63,7 @@ WARRIOR_CARD_CONFIG = {
         "type": "spell",
         "cost_a": 0,
         "cost_ba": 1,
-        "desc": "造成等同于玩家当前护盾值的钝击伤害。",
+        "desc": "造成等同于你当前护盾值的钝击伤害。",
         "rarity": "common",
         "damage_type": "bludgeoning",
         "feedback": "对【{target}】使用【全身撞击】。"
@@ -141,7 +141,7 @@ WARRIOR_CARD_CONFIG = {
         "type": "spell",
         "cost_a": 1,
         "cost_ba": 0,
-        "desc": "若目标敌人的意图包含攻击，玩家获得 3 层力量。",
+        "desc": "若目标敌人的意图包含攻击，你获得 3 层力量。",
         "rarity": "rare",
         "feedback": "对【{target}】使用【观察弱点】。"
     },
@@ -182,7 +182,7 @@ WARRIOR_CARD_CONFIG = {
         "type": "spell",
         "cost_a": 1,
         "cost_ba": 0,
-        "desc": "造成 10 点挥砍伤害。若击杀目标，则玩家最大生命值永久 +3 并回复 3 点生命。消耗。",
+        "desc": "造成 10 点挥砍伤害。若击杀目标，则你最大生命值永久 +3 并回复 3 点生命。消耗。",
         "rarity": "rare",
         "base_dmg": 10,
         "damage_type": "slashing",
@@ -195,7 +195,7 @@ WARRIOR_CARD_CONFIG = {
         "type": "ability",
         "cost_a": 1,
         "cost_ba": 0,
-        "desc": "玩家获得 2 层力量。",
+        "desc": "你获得 2 层力量。",
         "rarity": "epic",
         "feedback": "使用了【燃烧】，获得了 2 层力量。"
     },
@@ -205,7 +205,7 @@ WARRIOR_CARD_CONFIG = {
         "type": "ability",
         "cost_a": 2,
         "cost_ba": 0,
-        "desc": "获得 1 层缓冲。本场战斗中，玩家在回合开始时护盾不会流失一半。消耗。",
+        "desc": "获得 1 层缓冲。本场战斗中，你在回合开始时护盾不会流失一半。消耗。",
         "rarity": "epic",
         "exhaust": True,
         "feedback": "激活了【壁垒】形态！获得了 1 层缓冲，且护盾在每回合开始时不再流失一半。"
@@ -216,7 +216,7 @@ WARRIOR_CARD_CONFIG = {
         "type": "ability",
         "cost_a": 1,
         "cost_ba": 0,
-        "desc": "本场战斗中，玩家在每回合结束时获得 4 点护盾。",
+        "desc": "本场战斗中，你在每回合结束时获得 4 点护盾。",
         "rarity": "epic",
         "feedback": "激活了【金属化】形态！每回合结束时将获得 4 点护盾。"
     },
@@ -238,7 +238,7 @@ WARRIOR_CARD_CONFIG = {
         "type": "ability",
         "cost_a": 2,
         "cost_ba": 1,
-        "desc": "本场战斗中，玩家在回合开始时获得 3 层力量。",
+        "desc": "本场战斗中，你在回合开始时获得 3 层力量。",
         "rarity": "legendary",
         "feedback": "激活了【恶魔形态】！每回合开始时将获得力量。"
     },
@@ -259,7 +259,7 @@ WARRIOR_CARD_CONFIG = {
         "type": "spell",
         "cost_a": 0,
         "cost_ba": 1,
-        "desc": "玩家当前的护盾翻倍。",
+        "desc": "你当前的护盾翻倍。",
         "rarity": "rare",
         "feedback": "使用了【巩固】。"
     },
@@ -386,7 +386,7 @@ WARRIOR_CARD_CONFIG = {
         "type": "minion",
         "cost_a": 2,
         "cost_ba": 1,
-        "desc": "生命 14，攻击 6。技能：极光审判（消耗 3A，对群造成 8 光耀伤害，协作达到 15 以上转为 15 点真伤）。入场曲：使其他士兵 A +2 并立刻攻击。挂载极光圣域状态：随从普通攻击时玩家获得 2 护盾。",
+        "desc": "生命 14，攻击 6。技能：极光审判（消耗 3A，对群造成 8 光耀伤害，协作达到 15 以上转为 15 点真伤）。入场曲：使其他士兵 A +2 并立刻攻击。挂载极光圣域状态：随从普通攻击时你获得 2 护盾。",
         "rarity": "epic",
         "minion_hp": 14,
         "minion_atk": 6,
@@ -412,10 +412,10 @@ WARRIOR_CARD_CONFIG = {
         "type": "amulet",
         "cost_a": 1,
         "cost_ba": 1,
-        "desc": "部署吟唱：3。我方士兵进场时，玩家获得 3 护盾，且该随从最大生命 +2 并获得 1 层缓冲。谢幕曲：若协作达到 8 以上，获得 1 层缓冲。",
+        "desc": "部署吟唱：3。我方士兵进场时，你获得 3 护盾，且该随从最大生命 +2 并获得 1 层缓冲。谢幕曲：若协作达到 8 以上，获得 1 层缓冲。",
         "rarity": "rare",
         "countdown": 3,
-        "amulet_desc": "我方士兵进场时玩家获得 3 护盾且该随从最大生命 +2 并获得 1 层缓冲",
+        "amulet_desc": "我方士兵进场时你获得 3 护盾且该随从最大生命 +2 并获得 1 层缓冲",
         "feedback_success": "将【铁阵方盟】部署到了格子 [{grid}]。",
         "feedback_fail": "战场已满，部署失败。"
     },
@@ -438,10 +438,10 @@ WARRIOR_CARD_CONFIG = {
         "type": "amulet",
         "cost_a": 1,
         "cost_ba": 1,
-        "desc": "部署吟唱：4。我方随从或玩家造成物理伤害时伤害 +3。谢幕曲：若协作达到 12 以上，对敌方全体造成等同于协作数的真伤，并以其中 50% 治疗玩家（上限 15）。",
+        "desc": "部署吟唱：4。我方随从或你造成物理伤害时伤害 +3。谢幕曲：若协作达到 12 以上，对敌方全体造成等同于协作数的真伤，并以其中 50% 治疗你（上限 15）。",
         "rarity": "epic",
         "countdown": 4,
-        "amulet_desc": "我方随从或玩家造成物理伤害时伤害 +3",
+        "amulet_desc": "我方随从或你造成物理伤害时伤害 +3",
         "feedback_success": "将【白刃军团战旗】部署到了格子 [{grid}]。",
         "feedback_fail": "战场已满，部署失败。"
     }

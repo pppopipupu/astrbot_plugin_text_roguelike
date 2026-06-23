@@ -1,0 +1,192 @@
+{
+  "Guide_Elder": {
+    "name": "向导长老",
+    "welcome": "👴 向导长老：'年轻的冒险者，欢迎来到先古主城！这是一个熟悉这里的机会。'",
+    "idle_talk": [
+      "👴 向导长老：'记住，主城所有的假人训练和 NPC 挑战都是无损的，你可以放心尝试。'",
+      "👴 向导长老：'如果你的开局牌组缺乏防御，去卡牌大卖场锁定一张【防御】或【绷带包扎】是个好主意。'",
+      "👴 向导长老：'多和酒保杰克、铁匠艾恩克拉德聊聊，他们可能需要一些冒险者在巷子里捡到的“破烂”。'",
+      "👴 向导长老：'西大门被古老的先古封印紧锁。千万不要连续敲大门，尤其是连续敲10次，否则会惊醒可怕的东西！'",
+      "👴 向导长老：'许愿喷泉底部的幸运硬币不是摆设，若能找到并投进去，或许能获得神秘加持。'"
+    ],
+    "option_idle": "与向导长老闲聊",
+    "option_quest_accept": "接受新手任务：主城观光 (奖励 2000 GP)",
+    "option_quest_status": "查询新手任务进度",
+    "option_quest_complete": "交付新手任务 (领取 2000 GP)",
+    "option_leave": "离开交谈",
+    "quest_accepted": "👴 向导长老：'很好！请利用 WASD/UP/DOWN/LEFT/RIGHT 游览商业 A 区的全部 11 个房间。当你全部游览完后回来找我，我会赠予你 2000 GP 的启动资金！'",
+    "quest_doing": "👴 向导长老：'你还需要继续游览未访问的房间。当前进度：({progress}/11)。等你走完所有房间后，我会发放奖励！'",
+    "quest_completed_msg": "👴 向导长老：'非常出色！你已经走遍了主城的每一个房间。这是奖励你的 2000 GP 启动资金，祝你在肉鸽冒险中好运！'",
+    "quest_done_talk": "👴 向导长老：'你已经非常熟悉主城商业A区了。开启你的新肉鸽冒险吧！'"
+  },
+  "Bartender_Jack": {
+    "name": "酒保杰克",
+    "welcome": "🍺 酒保杰克：'欢迎光临先古酒馆！今天来杯冰镇黑麦酒吗？'",
+    "idle_talk": [
+      "🍺 酒保杰克：'你知道吗？有些法师喜欢叠【法术回响】，那样一发火球能喷两次，简直是怪物。'",
+      "🍺 酒保杰克：'如果你玩战士，别忘了【痛击】能给怪物挂易伤，伤害增幅很夸张的！'",
+      "🍺 酒保杰克：'隔壁雅间以前常有高玩在里面写日记，不过后来好像把日记本落在桌子底下了。'",
+      "🍺 酒保杰克：'铁匠艾恩克拉德的脾气跟他的熔炉一样火爆，不过他其实对稀有矿石非常感兴趣。'"
+    ],
+    "option_idle": "与酒保杰克闲聊",
+    "option_gift_glass": "赠送物品：【精致的空酒杯】 (奖励 150 GP)",
+    "option_buy_beer": "购买 【冰镇黑麦酒】 (消耗 50 GP)",
+    "option_brew_quest_accept": "询问酒保的烦恼 (开启任务：秘密佳酿)",
+    "option_give_wishing_dew": "交付 【天外甘露草】 (完成秘密佳酿任务)",
+    "option_dialog_sign_agreement": "商谈签署【独家推广协议】",
+    "option_sign_by_notebook": "使用 【遗失的笔记本】 抵押签署协议",
+    "option_sign_by_riddle": "参与竞答谜题以签署协议",
+    "option_leave": "离开交谈",
+    "gift_success": "🍺 酒保杰克大喜：'天哪，这正是我丢失的精致空酒杯！非常感谢你的帮助，这是给你的 150 GP 答谢金！'",
+    "gift_already_done": "🍺 酒保杰克：'老伙计，多亏了你送的精致酒杯，今晚的黑啤格外香甜！'"
+  },
+  "Blacksmith_Ironclad": {
+    "name": "铁匠艾恩克拉德",
+    "welcome": "🔨 铁匠艾恩克拉德：'呼！呼！玩家，我的大铁锤已经饥渴难耐了！要锻造什么？'",
+    "idle_talk": [
+      "🔨 铁匠艾恩克拉德：'叠甲才是最稳健的战术！只要我的盾比怪的血还厚，我就绝对不会输！'",
+      "🔨 铁匠艾恩克拉德：'听说虚空之门尤格-索托斯有极高的伤害反弹，如果不带护盾，很容易把自己弹死。'",
+      "🔨 铁匠艾恩克拉德：'哨塔上面经常堆放着一些生锈的守城器械，守卫们偶尔会把备用钥匙丢在上面。'"
+    ],
+    "option_idle": "与铁匠闲聊",
+    "option_gift_ore": "赠送物品：【奇异的矿石】 (奖励 200 GP)",
+    "option_quest_hammer_accept": "询问铁匠的烦恼 (开启任务：铁锤谜案)",
+    "option_return_hammer_real": "归还 【铁匠的精钢锤】 (完美结局)",
+    "option_return_hammer_fake": "交付 【高仿铁锤】 (欺骗结局)",
+    "option_return_hammer_force": "交付强行索回的精钢锤 (武力结局)",
+    "option_quest_hammer_clue": "询问铁锤的线索",
+    "option_leave": "离开交谈",
+    "gift_success": "🔨 铁匠艾恩克拉德满意地接过矿石：'好极了！极品奇异矿石！拿去，这是奖励你的 200 GP！'",
+    "gift_already_done": "🔨 铁匠艾恩克拉德：'这块奇异的矿石品质极高，我可以锻造出最坚固的盾牌！'"
+  },
+  "Market_Merchant": {
+    "name": "卡牌商人",
+    "welcome": "🃏 卡牌商人：'欢迎来到卡牌大卖场！我们提供定制开局牌组服务。'",
+    "idle_talk": [
+      "🃏 卡牌商人：'开局多带一张【发掘】，相当于你多了一次从消耗堆拿回核心卡的机会。'",
+      "🃏 卡牌商人：'我们的货架卡牌每次你开启游戏时都会重置，所以如果有心仪的卡牌，最好立刻买下！'",
+      "🃏 卡牌商人：'锁定珍奇等级的卡牌仅需 300 GP，这能极大确保你的开局胡牌率！'"
+    ],
+    "option_idle": "与卡牌商人闲聊",
+    "option_buy_shelf": "购买今日货架上的卡牌...",
+    "option_lock_card": "锁定下一局的必带卡牌 (消耗 300 GP)...",
+    "option_leave": "离开交谈",
+    "lock_prompt": "💬 请输入你要锁定的卡牌中文名（例如：输入 痛击）："
+  },
+  "Dummy": {
+    "name": "训练假人",
+    "welcome": "⚔️ 矗立在中央的粗糙稻草假人，可用于测试你的伤害爆发。",
+    "option_challenge": "开始假人输出练习",
+    "option_leave": "离开"
+  },
+  "NoobSlayer99": {
+    "name": "NoobSlayer99",
+    "welcome": "⚔️ NoobSlayer99：'嘿，又来一个想打靶的新手吗？我可是地精大军克星！'",
+    "idle_talk": [
+      "⚔️ NoobSlayer99：'上次在第二关，我手牌全是诅咒牌结果被怪活活戳死，简直太离谱了。'",
+      "⚔️ NoobSlayer99：'新手最容易犯的错误就是忘了动作点，每回合急着出完牌，根本不防守。'"
+    ],
+    "option_idle": "与NoobSlayer99闲聊",
+    "option_challenge": "发起切磋挑战",
+    "option_leave": "离开"
+  },
+  "xXx_SniperElite_xXx": {
+    "name": "xXx_SniperElite_xXx",
+    "welcome": "⚔️ xXx_SniperElite_xXx：'嘘，小声点，我正在瞄准靶心。'",
+    "idle_talk": [
+      "⚔️ xXx_SniperElite_xXx：'虽然这游戏没有弓箭卡，但雷鸣波的击退机制在某种意义上就是我的重炮！'",
+      "⚔️ xXx_SniperElite_xXx：'力量buff对多段伤害卡牌（比如魔法飞弹）增幅最大，一段加3力量，三段就加9伤害！'"
+    ],
+    "option_idle": "与xXx_SniperElite_xXx闲聊",
+    "option_challenge": "发起切磋挑战",
+    "option_leave": "离开"
+  },
+  "pppopipupu": {
+    "name": "pppopipupu",
+    "welcome": "🐟 pppopipupu：'啊……又钓上来一条虚空之鱼。'",
+    "idle_talk": [
+      "🐟 pppopipupu：'听说虚空之门尤格-索托斯临死时会吞噬虚空能量觉醒，二阶段有巨额反弹。'",
+      "🐟 pppopipupu：'我其实不太喜欢打架，钓鱼多舒服。你可千万别攻击我，我发起脾气来连我自己都怕。'"
+    ],
+    "option_idle": "与pppopipupu闲聊",
+    "option_challenge": "发起切磋挑战",
+    "option_leave": "离开"
+  },
+  "Chest": {
+    "name": "古老的铁宝箱",
+    "welcome": "🎁 墙角放置着一个雕刻了奇异符文的古旧铁宝箱，上面挂着一把锈蚀的铁锁。",
+    "option_open": "使用 【rusty_key】 开启宝箱 (奖励 300 GP & 锁定【发掘】)",
+    "option_leave": "离开",
+    "open_success": "🎁 咔哒！你使用锈蚀的钥匙开启了宝箱！获得 300 GP！并且成功锁定了下一局的开局必带卡牌【发掘】！",
+    "open_already": "❌ 宝箱已经被打开过了。"
+  },
+  "Fountain": {
+    "name": "许愿喷泉",
+    "welcome": "泉水自龙口倾泻而下，水花在阳光下闪烁，池底躺着不少亮闪闪的硬币。",
+    "option_wish": "投掷 【幸运硬币】 许愿",
+    "option_wash_herb": "在泉水中冲刷洗练 【虚空草药】",
+    "option_leave": "离开",
+    "wish_success_gp": "⛲ 许愿喷泉闪烁微光，你直接获得了 200 GP！",
+    "wish_success_card": "⛲ 许愿喷泉倒映出神秘符文，你锁定了下一局开局必带卡牌【发掘】！",
+    "wish_success_hp": "⛲ 泉水流过你的指尖，你的肉鸽初始生命上限永久 +5！",
+    "wish_no_coin": "⛲ 泉水欢快地流着。你需要在喷泉处投掷【幸运硬币】才能触发许愿彩蛋。"
+  },
+  "West_Gate": {
+    "name": "西大门",
+    "welcome": "🚪 冰冷厚重的黑铁大门紧紧关闭着，上面的封印法阵散发着微弱的红光。",
+    "option_knock": "用力敲打黑铁大门",
+    "option_leave": "离开",
+    "knock_bonus_3": "🚪 你咚咚咚敲了三下西大门。门底下悄悄塞出了一张百元面额的先古支票：'别敲了别敲了，拿上这 100 GP 去酒馆消费吧！'",
+    "knock_guardian_10": "🚪 黑铁大门剧烈晃动，灰尘四落。在一声怒吼中，西门守卫 Gate_Guardian 破门而出！",
+    "knock_normal": "🚪 你敲了敲紧闭的黑铁城门，大门纹丝不动，发出了沉闷的声响（当前累计敲门 {count} 次）。"
+  },
+  "Gamer_Boy": {
+    "name": "咸鱼玩家",
+    "welcome": "🐟 咸鱼玩家：'别卷了，快来跟我一起躺平。'",
+    "option_idle": "闲聊",
+    "option_leave": "离开"
+  },
+  "Crypto_Whale": {
+    "name": "推销员",
+    "welcome": "🪙 推销员：'朋友，有兴趣了解财富密码吗？'",
+    "option_idle": "闲聊",
+    "option_buy_fake_hammer": "购买 【高仿铁锤】 (花费 500 GP)",
+    "option_buy_void_herb": "高价购买 【虚空草药】 (花费 800 GP)",
+    "option_trade_void_herb": "以物易物：用 【独家推广协议】 交换 【虚空草药】",
+    "option_leave": "离开"
+  },
+  "Lost_Bard": {
+    "name": "迷路的诗人",
+    "welcome": "🎵 迷路的诗人：'啊，歌声在城墙间回荡……'",
+    "option_idle": "闲聊",
+    "option_ask_hammer": "询问关于铁匠大铁锤的下落",
+    "option_give_beer": "将 【冰镇黑麦酒】 赠予诗人以换取铁锤",
+    "option_leave": "离开"
+  },
+  "Town_Guard": {
+    "name": "巡逻卫兵",
+    "welcome": "🛡️ 巡逻卫兵：'主城重地，安全第一。'",
+    "option_idle": "闲聊",
+    "option_report_whale": "举报推销员非法倒卖管制药草 (获得没收的虚空草药)",
+    "option_leave": "离开"
+  },
+  "Naughty_Child": {
+    "name": "调皮的孩子",
+    "welcome": "👦 调皮的孩子：'啦啦啦，你抓不到我！'",
+    "option_idle": "闲聊",
+    "option_leave": "离开"
+  },
+  "Shopkeeper_Jack": {
+    "name": "神秘店主",
+    "welcome": "🔮 神秘店主：'欢迎来到主城商店。我这里只出售一些不属于凡间的虚空造物……'",
+    "idle_talk": [
+      "🔮 神秘店主：'你可以花 2888 GP 购买新的子职业以获得更强的开局。'",
+      "🔮 神秘店主：'时序法师能够操控时间，而塑能法师善于释放最纯粹的毁灭之力。'",
+      "🔮 神秘店主：'听说西大门里封印着什么危险的怪物，不过如果你有了“门之钥匙”，说不定能进得去？'"
+    ],
+    "option_idle": "与神秘店主闲聊",
+    "option_buy_subclass": "购买新子职业/门之钥匙...",
+    "option_sell_wishing_dew": "以 2000 GP 高价将 【天外甘露草】 卖给神秘店主",
+    "option_leave": "离开交谈"
+  }
+}
