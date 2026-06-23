@@ -216,7 +216,7 @@ class CLIRouter:
             self.save_manager.save_stats(user_id, stats)
             return original_res + "\n\n" + zh_cn.get("global", {}).get("combat_quit", "💀 你已退出了切磋，回到了靶场房间。") + "\n\n" + self.town_engine.render_current_room(user_id, stats)
         p = latest_run.player
-        is_won = self.engine.is_battle_won(latest_run)
+        is_won = self.engine.is_battle_won(latest_run) or latest_run.node_type in ("reward", "victory")
         is_lost = p.hp <= 0
         if is_won or is_lost:
             self.save_manager.delete_save(user_id)
@@ -225,7 +225,9 @@ class CLIRouter:
             if is_lost:
                 self.save_manager.save_stats(user_id, stats)
                 return f"{original_res}\n\n" + zh_cn.get("global", {}).get("combat_lost", "💀 你被击败了！不过别担心，在主城的切磋不影响你的局外进度。你已回到了靶场房间。") + "\n\n" + self.town_engine.render_current_room(user_id, stats)
-            npc_name = latest_run.node_data.get("npc_name", "")
+            npc_name = run.node_data.get("npc_name", "") or latest_run.node_data.get("npc_name", "")
+            if npc_name == "NoobSlayer99" and stats.town_flags.get("quest_hammer_state") == "started":
+                stats.town_flags["noob_coerced_hammer"] = True
             gp_gained = 0
             msg_bonus = ""
             if npc_name == "训练假人":
@@ -249,7 +251,25 @@ class CLIRouter:
             return f"{original_res}\n\n" + zh_cn.get("global", {}).get("combat_won_banner", "🎉 战斗胜利！{bonus}").format(bonus=msg_bonus) + "\n\n" + self.town_engine.render_current_room(user_id, stats)
         return original_res
 
+    def _filter_player_name(self, user_id: str, text: str) -> str:
+        if not text:
+            return text
+        stats = self.save_manager.load_stats(user_id)
+        if not stats:
+            return text
+        player_name = getattr(stats, "player_name", "玩家")
+        if player_name == "玩家":
+            return text
+        text = text.replace("咸鱼玩家", "__GAMER_BOY_PLACEHOLDER__")
+        text = text.replace("玩家", player_name)
+        text = text.replace("__GAMER_BOY_PLACEHOLDER__", "咸鱼玩家")
+        return text
+
     def handle_command(self, user_id: str, parts: list[str]) -> Generator[str, None, None]:
+        for res in self._handle_command_raw(user_id, parts):
+            yield self._filter_player_name(user_id, res)
+
+    def _handle_command_raw(self, user_id: str, parts: list[str]) -> Generator[str, None, None]:
         set_user_id(user_id)
         run = self.save_manager.load_save(user_id)
         is_town_combat = run is not None and run.node_data.get("is_town_combat", False)

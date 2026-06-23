@@ -64,6 +64,7 @@ class UserStats:
     town_inventory: List[str] = field(default_factory=list)
     town_flags: Dict[str, Any] = field(default_factory=dict)
     town_health_bonus: int = 0
+    player_name: str = "玩家"
 
 
 if not hasattr(sys, "_rogue_stat_recorder"):

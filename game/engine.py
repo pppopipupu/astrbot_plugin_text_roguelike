@@ -31,23 +31,39 @@ class GameEngine:
         commons = [cid for cid, c in ALL_CARDS.items() if getattr(c, "rarity", "common") == "common" and getattr(c, "color", "") in allowed_colors and not cid.startswith("curse_") and not cid.startswith("duel_") and cid != "time_stop"]
         rares = [cid for cid, c in ALL_CARDS.items() if getattr(c, "rarity", "common") == "rare" and getattr(c, "color", "") in allowed_colors and not cid.startswith("curse_") and not cid.startswith("duel_") and cid != "time_stop"]
         epics = [cid for cid, c in ALL_CARDS.items() if getattr(c, "rarity", "common") == "epic" and getattr(c, "color", "") in allowed_colors and not cid.startswith("curse_") and not cid.startswith("duel_") and cid != "time_stop"]
-        initial_deck = []
-        for _ in range(5):
-            initial_deck.append(random.choice(commons))
-        for _ in range(2):
-            initial_deck.append(random.choice(rares))
-        for _ in range(1):
-            initial_deck.append(random.choice(epics))
-        if selected_class == "法师" and selected_subclass == "时序法师":
-            initial_deck.append("time_stop")
+        locked_cards = []
         g_card = getattr(stats, "guaranteed_card", None)
         if g_card:
-            initial_deck.append(g_card)
+            locked_cards.append(g_card)
             stats.guaranteed_card = None
         p_pool = getattr(stats, "purchased_pool", [])
         if p_pool:
-            initial_deck.extend(p_pool)
+            locked_cards.extend(p_pool)
             stats.purchased_pool = []
+        target_counts = {"common": 5, "rare": 2, "epic": 1}
+        for cid in locked_cards:
+            c_obj = ALL_CARDS.get(cid)
+            r = getattr(c_obj, "rarity", "common") if c_obj else "common"
+            if r not in target_counts:
+                r = "common"
+            if target_counts[r] > 0:
+                target_counts[r] -= 1
+            else:
+                if target_counts["common"] > 0:
+                    target_counts["common"] -= 1
+                elif target_counts["rare"] > 0:
+                    target_counts["rare"] -= 1
+                elif target_counts["epic"] > 0:
+                    target_counts["epic"] -= 1
+        initial_deck = list(locked_cards)
+        for _ in range(target_counts["common"]):
+            initial_deck.append(random.choice(commons))
+        for _ in range(target_counts["rare"]):
+            initial_deck.append(random.choice(rares))
+        for _ in range(target_counts["epic"]):
+            initial_deck.append(random.choice(epics))
+        if selected_class == "法师" and selected_subclass == "时序法师":
+            initial_deck.append("time_stop")
         self.save_manager.save_stats(user_id, stats)
         player = PlayerState(
             hp=hp,

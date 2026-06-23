@@ -494,7 +494,7 @@ class CardPlayer:
                 temp_retains.remove(cid)
             elif card and (card.id == "curse_dimensional_tear" or card.id == "curse_dimensional_tear+"):
                 p.exhaust_pile.append(cid)
-                self.engine._log_event(run, f"💥 [空间撕裂] 手牌中的【{card.name}】在回合结束时发生坍缩，被消耗并对玩家造成 3 点真实伤害！")
+                self.engine._log_event(run, f"💥 [空间撕裂] 手牌中的【{card.name}】在回合结束时发生坍缩，被消耗并对【{run.player.name}】造成 3 点真实伤害！")
                 self.engine.combat_resolver.damage_target(run, "p0", 3, source="curse", damage_type="true")
                 exhaust_evt = CardExhaustEvent(run, cid, "curse_dimensional_tear")
                 self.engine.event_bus.dispatch(exhaust_evt)
@@ -543,7 +543,7 @@ class CardPlayer:
             lost = p.shield - (p.shield // 2)
             p.shield = p.shield // 2
             if lost > 0:
-                decay_msgs.append(f"玩家失去 {lost} 点护盾")
+                decay_msgs.append(f"【{p.name}】失去 {lost} 点护盾")
                 from ...models.events import ShieldDecayEvent
                 self.engine.event_bus.dispatch(ShieldDecayEvent(run, "p0", lost))
         elif p.shield > 0 and has_barricade:
@@ -594,7 +594,7 @@ class CardPlayer:
         run.node_data["action_surge_turn_used"] = False
         self._reindex_minions(p)
         self.engine.save_manager.save_save(run.user_id, run)
-        return self.engine._append_logs_to_res(run, f"{enemy_actions}\n{decay_info}进入玩家回合。已重置动作并抽取手牌。")
+        return self.engine._append_logs_to_res(run, f"{enemy_actions}\n{decay_info}进入【{p.name}】回合。已重置动作并抽取手牌。")
 
     def handle_battle_win(self, run: GameRun):
         p = run.player
@@ -643,7 +643,12 @@ class CardPlayer:
                     if random.random() < 0.35:
                         cid = "key_resonance"
                 final_reward_cards.append(cid)
+            is_town = run.node_data.get("is_town_combat", False)
+            npc_n = run.node_data.get("npc_name", "")
             run.node_data = {"cards": final_reward_cards, "quest_bonus": quest_bonus}
+            if is_town:
+                run.node_data["is_town_combat"] = True
+                run.node_data["npc_name"] = npc_n
             self.engine.save_manager.save_save(run.user_id, run)
 
     def _reindex_minions(self, p: PlayerState):

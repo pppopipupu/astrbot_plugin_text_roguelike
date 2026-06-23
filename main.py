@@ -106,6 +106,32 @@ class MyPlugin(Star):
         self.cli_router = CLIRouter(self.save_manager, self.engine)
         self.duel_router = DuelRouter(self.save_manager)
 
+    def _get_sender_name(self, event) -> str:
+        sender_name = "玩家"
+        try:
+            if event:
+                sender_name = event.get_sender_name()
+                if not sender_name and hasattr(event, "message_obj") and event.message_obj:
+                    sender_name = getattr(event.message_obj, "sender", {}).get("nickname", "玩家")
+                if not sender_name:
+                    sender_name = "玩家"
+        except:
+            pass
+        return sender_name
+
+    def _sync_player_name(self, user_id: str, sender_name: str):
+        stats = self.save_manager.load_stats(user_id)
+        if stats:
+            if sender_name != "玩家" and getattr(stats, "player_name", "玩家") != sender_name:
+                stats.player_name = sender_name
+                self.save_manager.save_stats(user_id, stats)
+        run = self.save_manager.load_save(user_id)
+        if run and run.player:
+            current_name = getattr(stats, "player_name", "玩家") if stats else sender_name
+            if run.player.name != current_name:
+                run.player.name = current_name
+                self.save_manager.save_save(user_id, run)
+
     def format_res(self, res: str, event: AstrMessageEvent) -> str:
         if not res:
             return res
@@ -285,6 +311,8 @@ class MyPlugin(Star):
         event.plain_result = patched_plain_result
 
         user_id = event.get_sender_id()
+        sender_name = self._get_sender_name(event)
+        self._sync_player_name(user_id, sender_name)
         message_str = event.message_str.strip()
         parts = message_str.split()
         if not parts:
@@ -453,6 +481,8 @@ class MyPlugin(Star):
         event.plain_result = patched_plain_result
         
         user_id = event.get_sender_id()
+        sender_name = self._get_sender_name(event)
+        self._sync_player_name(user_id, sender_name)
         stats = self.save_manager.load_stats(user_id)
         if stats and stats.reader_active:
             message_str = event.message_str.strip()

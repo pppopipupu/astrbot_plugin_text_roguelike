@@ -33,7 +33,7 @@ class CombatResolver:
         if not target:
             return "无"
         if target == "p0":
-            return "玩家"
+            return run.player.name
         if target.startswith("e"):
             try:
                 idx = int(target[1:]) - 1

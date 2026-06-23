@@ -4,7 +4,13 @@
     "lucky_coin": ["幸运硬币", "lucky_coin"],
     "rusty_key": ["rusty_key", "rusty_key", "锈蚀的钥匙"],
     "strange_ore": ["奇异的矿石", "strange_ore"],
-    "lost_notebook": ["遗失的笔记本", "lost_notebook"]
+    "lost_notebook": ["遗失的笔记本", "lost_notebook"],
+    "smith_hammer": ["铁匠的精钢锤", "smith_hammer", "铁锤"],
+    "fake_hammer": ["高仿铁锤", "fake_hammer", "仿制锤"],
+    "void_herb": ["虚空草药", "void_herb", "草药"],
+    "wishing_dew": ["天外甘露草", "wishing_dew", "甘露草"],
+    "promotional_agreement": ["独家推广协议", "promotional_agreement", "推广协议", "协议"],
+    "beer": ["冰镇黑麦酒", "beer", "黑麦酒", "啤酒"]
   },
   "global": {
     "interact_not_found": "❌ 房间里没有叫【{target}】的居民或交互物。",
@@ -17,7 +23,7 @@
     "take_success": "🎒 你成功拿取了【{target}】并存入你的背包中。",
     "use_not_found": "❌ 背包里没有【{target}】该如何使用？",
     "use_cannot_use": "❌ 【{target}】无法在主城内直接使用。",
-    "card_lock_success": "🔒 成功扣除 1000 GP，下局游戏开始初始牌组将必定带有【{name}】！",
+    "card_lock_success": "🔒 成功扣除 300 GP，下局游戏开始初始牌组将必定带有【{name}】！",
     "card_lock_failed_legendary": "❌ 卡牌大卖场无法锁定传奇稀有度卡牌。",
     "card_lock_failed_not_found": "❌ 未能匹配到叫【{name}】的卡牌。",
     "card_buy_success": "🛒 成功花费 {price} GP 购买了【{name}】。它会在你开启下一局新游戏时注入到你的初始牌组中！",
@@ -78,7 +84,32 @@
     "town_help_prompt": "🔮 主城探索中。输入 退出/exit 回到主菜单，或输入 W/A/S/D 进行移动。输入 交互/talk <目标> 开启互动。",
     "unlocked_status": "已解锁",
     "already_unlocked_error": "❌ 你已经解锁了【{name}】。",
-    "shop_buy_success": "🎉 购买成功！已成功解锁【{name}】。已扣除 {price} GP。"
+    "shop_buy_success": "🎉 购买成功！已成功解锁【{name}】。已扣除 {price} GP。",
+    "beer_buy_success": "🍺 成功花费 50 GP 购买了一瓶【冰镇黑麦酒】！",
+    "beer_buy_insufficient": "❌ GP 不足，购买冰镇麦酒需要 50 GP。",
+    "quest_hammer_started": "🔨 铁匠艾恩克拉德向你诉苦，说他丢了祖传的精钢大铁锤，希望你能在小巷或者跟其他居民打听一下。任务【铁锤谜案】已接取！",
+    "quest_hammer_clue_msg": "🔨 铁匠艾恩克拉德回忆说：'前几天好像看到那个总是在城里乱转的迷路诗人鬼鬼祟祟的，你可以去找他问问。'",
+    "quest_brew_started": "🍺 酒保杰克叹了口气，说他最近想酿造秘制佳酿，但缺少了一味关键的主药【天外甘露草】。任务【秘密佳酿】已接取！",
+    "lost_bard_tell_clue": "🎵 迷路的诗人哼着歌：'你说大铁锤？哎呀，我确实在小巷里捡到了……不过这可是个好东西。如果你能请我喝一瓶酒保杰克酿造的【冰镇黑麦酒】，我就把它送给你！或者，你可以去找那个有钱的推销员，他手头有很多高仿货……当然，你要是能战胜靶场那个自大的 NoobSlayer99，让他来找我，我也会给他的。'",
+    "lost_bard_give_beer_success": "🎵 诗人欢快地喝下了冰镇黑麦酒：'啊！爽快！既然如此，这把铁锤就交给你了。'🎒 你获得了【铁匠的精钢锤】！",
+    "buy_fake_hammer_success": "🪙 推销员嘿嘿一笑：'识货！这把高仿铁锤足以以假乱真。'🎒 你花费 500 GP 购买了【高仿铁锤】！",
+    "buy_void_herb_success": "🪙 推销员收下了钱：'合作愉快！这株虚空草药是你的了。'🎒 你花费 800 GP 购买了【虚空草药】！",
+    "trade_void_herb_success": "🪙 推销员看到推广协议大喜：'太好了！有了这个我就可以在酒馆大赚一笔了！草药归你了！'🎒 你失去了【独家推广协议】，获得了【虚空草药】！",
+    "whale_reported_refuse": "🪙 推销员愤怒地瞪着你：'你这个卑鄙的告密者！我绝对不会和你做任何生意！滚开！'",
+    "report_whale_success": "🛡️ 卫兵严肃地点了点头：'干得好！我们早就盯上这个非法倒卖管制草药的家伙了。这是没收的赃物，就交给你处理了！'🎒 你获得了【虚空草药】！",
+    "report_whale_already": "🛡️ 卫兵：'我们已经查封了那名商贩，正在进行后续审理。'",
+    "wash_herb_success": "⛲ 你将【虚空草药】浸入泉水之中。清澈的泉水洗涤了草药上的虚空杂质，在一道荧光中，草药化为了流光溢彩的【天外甘露草】！🎒 获得了【天外甘露草】！",
+    "sell_dew_success": "🔮 神秘店主赞叹不已：'多么完美的甘露草！这可是稀世珍宝。合作愉快！'🎒 成功交付【天外甘露草】，获得了 2000 GP！",
+    "quest_hammer_real_success": "🔨 铁匠艾恩克拉德激动地抱住大铁锤：'我的大锤！你真的找回来了！太感谢你了！为了表达谢意，我会用秘法强化你的体魄！'🎉 成功交付【铁匠的精钢锤】！获得 1500 GP，局外初始生命上限永久增加 5 点！",
+    "quest_hammer_fake_success": "🔨 铁匠艾恩克拉德接过大铁锤，打量了一番：'唔……这手感有点不太对，不过能凑合着用。谢了，老伙计。'🎉 交付了【高仿铁锤】！获得 200 GP！",
+    "quest_hammer_force_success": "🔨 铁匠艾恩克拉德开心地大笑：'哈哈！NoobSlayer99 那家伙突然把我的大铁锤送了回来，原来是你在背后出力！太感谢了！'🎉 获得了 1200 GP！",
+    "quest_brew_real_success": "🍺 酒保杰克感激涕零：'太棒了！这就是天外甘露草！我终于可以酿造出最顶级的佳酿了！这一瓶酒馆特制朗姆酒送给你！'🎉 成功交付【天外甘露草】！获得 1500 GP，局外初始生命上限永久增加 5 点！",
+    "jack_riddle_intro": "🍺 酒保杰克摸了摸胡子：'想让我免费在你的协议上签字？除非你能答对我的两道谜题。准备好了吗？'",
+    "jack_riddle_1": "🍺 谜题一：'什么水不能喝？'\n1. 汽水\n2. 薪水\n3. 井水\n4. 泪水\n（请输入选项数字回答，如 2）",
+    "jack_riddle_2": "🍺 谜题二：'什么人最不怕冷？'\n1. 铁匠\n2. 雪人\n3. 卫兵\n4. 诗人\n（请输入选项数字回答，如 2）",
+    "jack_riddle_wrong": "🍺 酒保杰克摇了摇头：'不对不对，看来你还得再想想！'",
+    "jack_riddle_success": "🍺 酒保杰克惊叹：'全答对了！不愧是聪明的冒险者。既然如此，我就在这份独家推广协议上签字吧！'🎒 获得了【独家推广协议】！",
+    "jack_notebook_success": "🍺 酒保杰克看到笔记本大喜：'天哪，这正是我遗失的日记账本！非常感谢！我就在这份协议上签字吧！'🎒 你失去了【遗失的笔记本】，获得了【独家推广协议】！"
   },
   "rooms": {
     "square": {
@@ -158,13 +189,19 @@
       ],
       "option_idle": "与酒保杰克闲聊",
       "option_gift_glass": "赠送物品：【精致的空酒杯】 (奖励 150 GP)",
+      "option_buy_beer": "购买 【冰镇黑麦酒】 (消耗 50 GP)",
+      "option_brew_quest_accept": "询问酒保的烦恼 (开启任务：秘密佳酿)",
+      "option_give_wishing_dew": "交付 【天外甘露草】 (完成秘密佳酿任务)",
+      "option_dialog_sign_agreement": "商谈签署【独家推广协议】",
+      "option_sign_by_notebook": "使用 【遗失的笔记本】 抵押签署协议",
+      "option_sign_by_riddle": "参与竞答谜题以签署协议",
       "option_leave": "离开交谈",
       "gift_success": "🍺 酒保杰克大喜：'天哪，这正是我丢失的精致空酒杯！非常感谢你的帮助，这是给你的 150 GP 答谢金！'",
       "gift_already_done": "🍺 酒保杰克：'老伙计，多亏了你送的精致酒杯，今晚的黑啤格外香甜！'"
     },
     "Blacksmith_Ironclad": {
       "name": "铁匠艾恩克拉德",
-      "welcome": "🔨 铁匠艾恩克拉德：'呼！呼！我的大铁锤已经饥渴难耐了！要锻造什么？'",
+      "welcome": "🔨 铁匠艾恩克拉德：'呼！呼！玩家，我的大铁锤已经饥渴难耐了！要锻造什么？'",
       "idle_talk": [
         "🔨 铁匠艾恩克拉德：'叠甲才是最稳健的战术！只要我的盾比怪的血还厚，我就绝对不会输！'",
         "🔨 铁匠艾恩克拉德：'听说虚空之门尤格-索托斯有极高的伤害反弹，如果不带护盾，很容易把自己弹死。'",
@@ -172,6 +209,11 @@
       ],
       "option_idle": "与铁匠闲聊",
       "option_gift_ore": "赠送物品：【奇异的矿石】 (奖励 200 GP)",
+      "option_quest_hammer_accept": "询问铁匠的烦恼 (开启任务：铁锤谜案)",
+      "option_return_hammer_real": "归还 【铁匠的精钢锤】 (完美结局)",
+      "option_return_hammer_fake": "交付 【高仿铁锤】 (欺骗结局)",
+      "option_return_hammer_force": "交付强行索回的精钢锤 (武力结局)",
+      "option_quest_hammer_clue": "询问铁锤的线索",
       "option_leave": "离开交谈",
       "gift_success": "🔨 铁匠艾恩克拉德满意地接过矿石：'好极了！极品奇异矿石！拿去，这是奖励你的 200 GP！'",
       "gift_already_done": "🔨 铁匠艾恩克拉德：'这块奇异的矿石品质极高，我可以锻造出最坚固的盾牌！'"
@@ -182,11 +224,11 @@
       "idle_talk": [
         "🃏 卡牌商人：'开局多带一张【发掘】，相当于你多了一次从消耗堆拿回核心卡的机会。'",
         "🃏 卡牌商人：'我们的货架卡牌每次你开启游戏时都会重置，所以如果有心仪 of 卡牌，最好立刻买下！'",
-        "🃏 卡牌商人：'锁定珍奇等级 of 卡牌需要 1000 GP，这虽然贵，但能确保你的开局胡牌率！'"
+        "🃏 卡牌商人：'锁定珍奇等级 of 卡牌仅需 300 GP，这能极大确保你的开局胡牌率！'"
       ],
       "option_idle": "与卡牌商人闲聊",
       "option_buy_shelf": "购买今日货架上的卡牌...",
-      "option_lock_card": "锁定下一局的必带卡牌 (消耗 1000 GP)...",
+      "option_lock_card": "锁定下一局的必带卡牌 (消耗 300 GP)...",
       "option_leave": "离开交谈",
       "lock_prompt": "💬 请输入你要锁定的卡牌中文名（例如：输入 痛击）："
     },
@@ -241,6 +283,7 @@
       "name": "许愿喷泉",
       "welcome": "泉水自龙口倾泻而下，水花在阳光下闪烁，池底躺着不少亮闪闪的硬币。",
       "option_wish": "投掷 【幸运硬币】 许愿",
+      "option_wash_herb": "在泉水中冲刷洗练 【虚空草药】",
       "option_leave": "离开",
       "wish_success_gp": "⛲ 许愿喷泉闪烁微光，你直接获得了 200 GP！",
       "wish_success_card": "⛲ 许愿喷泉倒映出神秘符文，你锁定了下一局开局必带卡牌【发掘】！",
@@ -266,18 +309,24 @@
       "name": "推销员",
       "welcome": "🪙 推销员：'朋友，有兴趣了解财富密码吗？'",
       "option_idle": "闲聊",
+      "option_buy_fake_hammer": "购买 【高仿铁锤】 (花费 500 GP)",
+      "option_buy_void_herb": "高价购买 【虚空草药】 (花费 800 GP)",
+      "option_trade_void_herb": "以物易物：用 【独家推广协议】 交换 【虚空草药】",
       "option_leave": "离开"
     },
     "Lost_Bard": {
       "name": "迷路的诗人",
       "welcome": "🎵 迷路的诗人：'啊，歌声在城墙间回荡……'",
       "option_idle": "闲聊",
+      "option_ask_hammer": "询问关于铁匠大铁锤的下落",
+      "option_give_beer": "将 【冰镇黑麦酒】 赠予诗人以换取铁锤",
       "option_leave": "离开"
     },
     "Town_Guard": {
       "name": "巡逻卫兵",
       "welcome": "🛡️ 巡逻卫兵：'主城重地，安全第一。'",
       "option_idle": "闲聊",
+      "option_report_whale": "举报推销员非法倒卖管制药草 (获得没收的虚空草药)",
       "option_leave": "离开"
     },
     "Naughty_Child": {
@@ -296,6 +345,7 @@
       ],
       "option_idle": "与神秘店主闲聊",
       "option_buy_subclass": "购买新子职业/门之钥匙...",
+      "option_sell_wishing_dew": "以 2000 GP 高价将 【天外甘露草】 卖给神秘店主",
       "option_leave": "离开交谈"
     }
   }

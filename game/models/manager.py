@@ -60,7 +60,8 @@ class SaveManager:
                 defeated_town_npcs=d.get("defeated_town_npcs", []),
                 town_inventory=d.get("town_inventory", []),
                 town_flags=d.get("town_flags", {}),
-                town_health_bonus=d.get("town_health_bonus", 0)
+                town_health_bonus=d.get("town_health_bonus", 0),
+                player_name=d.get("player_name", "玩家")
             )
         except:
             return UserStats()

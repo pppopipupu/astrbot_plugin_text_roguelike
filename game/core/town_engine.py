@@ -28,7 +28,16 @@ class TownEngine:
             return {"id": room_id, "name_key": room_id, "exits": {}, "npcs": [], "items": [], "interactive": {}}
         try:
             with open(data_path, "r", encoding="utf-8") as f:
-                return json.load(f)
+                data = json.load(f)
+            if room_id == "alley":
+                from ..models.state import get_user_id
+                uid = get_user_id()
+                if uid:
+                    stats = self.save_manager.load_stats(uid)
+                    if stats.town_flags.get("quest_hammer_state") == "started" and not stats.town_flags.get("taken_smith_hammer"):
+                        if "smith_hammer" not in data.get("items", []):
+                            data.setdefault("items", []).append("smith_hammer")
+            return data
         except:
             return {"id": room_id, "name_key": room_id, "exits": {}, "npcs": [], "items": [], "interactive": {}}
 
@@ -54,9 +63,33 @@ class TownEngine:
 
         options = []
         sub_menu = stats.town_flags.get("market_sub_menu")
-        if npc_id == "Market_Merchant" and sub_menu == "buy":
+        jack_riddle_step = stats.town_flags.get("jack_riddle_step")
+        jack_agreement_menu = stats.town_flags.get("jack_agreement_menu")
+
+        if npc_id == "Bartender_Jack" and jack_riddle_step:
+            welcome_text = zh_cn.get("global", {}).get("jack_riddle_intro", "")
+            if jack_riddle_step == 1:
+                welcome_text += "\n\n" + zh_cn.get("global", {}).get("jack_riddle_1", "")
+                options.append("1. 汽水")
+                options.append("2. 薪水")
+                options.append("3. 井水")
+                options.append("4. 泪水")
+            elif jack_riddle_step == 2:
+                welcome_text += "\n\n" + zh_cn.get("global", {}).get("jack_riddle_2", "")
+                options.append("1. 铁匠")
+                options.append("2. 雪人")
+                options.append("3. 卫兵")
+                options.append("4. 诗人")
+            options.append(f"{len(options)+1}. " + zh_cn.get("global", {}).get("back_to_previous", "返回上一级"))
+        elif npc_id == "Bartender_Jack" and jack_agreement_menu:
+            welcome_text = npc_data.get("welcome", "")
+            if "lost_notebook" in stats.town_inventory:
+                options.append(f"1. {npc_data.get('option_sign_by_notebook')}")
+            options.append(f"{len(options)+1}. {npc_data.get('option_sign_by_riddle')}")
+            options.append(f"{len(options)+1}. " + zh_cn.get("global", {}).get("back_to_previous", "返回上一级"))
+        elif npc_id == "Market_Merchant" and sub_menu == "buy":
             shelf = self._get_market_shelf(stats)
-            prices = [100, 300, 700]
+            prices = [50, 150, 350]
             rarities = zh_cn.get("global", {}).get("rarities", ["普通", "稀有", "珍奇"])
             for idx, cid in enumerate(shelf):
                 if not cid:
@@ -85,39 +118,91 @@ class TownEngine:
                     options.append(f"{idx+1}. 购买 【{name}】 ({price} GP)")
             options.append(f"{len(items_list)+1}. " + zh_cn.get("global", {}).get("back_to_previous", "返回上一级"))
         else:
+            if npc_id == "Crypto_Whale" and stats.town_flags.get("reported_whale"):
+                welcome_text = zh_cn.get("global", {}).get("whale_reported_refuse", "")
             if npc_id not in ("Chest", "Fountain", "West_Gate"):
-                options.append(f"1. {npc_data.get('option_idle', zh_cn.get('global', {}).get('idle_talk_default', '闲聊'))}")
+                if npc_id == "Crypto_Whale" and stats.town_flags.get("reported_whale"):
+                    pass
+                else:
+                    options.append(f"1. {npc_data.get('option_idle', zh_cn.get('global', {}).get('idle_talk_default', '闲聊'))}")
             if npc_id == "Guide_Elder":
                 quest_state = stats.town_flags.get("quest_town_tour_state", "unstarted")
                 if quest_state == "unstarted":
-                    options.append(f"2. {npc_data.get('option_quest_accept')}")
+                    options.append(f"{len(options)+1}. {npc_data.get('option_quest_accept')}")
                 elif quest_state == "started":
                     visited = stats.town_flags.get("quest_town_tour_visited", [])
                     if len(visited) >= 11:
-                        options.append(f"2. {npc_data.get('option_quest_complete')}")
+                        options.append(f"{len(options)+1}. {npc_data.get('option_quest_complete')}")
                     else:
-                        options.append(f"2. {npc_data.get('option_quest_status')}")
+                        options.append(f"{len(options)+1}. {npc_data.get('option_quest_status')}")
             elif npc_id == "Bartender_Jack":
                 if "wine_glass" in stats.town_inventory and not stats.town_flags.get("jack_gift_given", 0):
-                    options.append(f"2. {npc_data.get('option_gift_glass')}")
+                    options.append(f"{len(options)+1}. {npc_data.get('option_gift_glass')}")
+                options.append(f"{len(options)+1}. {npc_data.get('option_buy_beer')}")
+                q_brew = stats.town_flags.get("quest_brew_state", "unstarted")
+                if q_brew == "unstarted":
+                    options.append(f"{len(options)+1}. {npc_data.get('option_brew_quest_accept')}")
+                elif q_brew == "started":
+                    if "wishing_dew" in stats.town_inventory:
+                        options.append(f"{len(options)+1}. {npc_data.get('option_give_wishing_dew')}")
+                    if "promotional_agreement" not in stats.town_inventory and "void_herb" not in stats.town_inventory and "wishing_dew" not in stats.town_inventory:
+                        options.append(f"{len(options)+1}. {npc_data.get('option_dialog_sign_agreement')}")
             elif npc_id == "Blacksmith_Ironclad":
                 if "strange_ore" in stats.town_inventory and not stats.town_flags.get("ironclad_gift_given", 0):
-                    options.append(f"2. {npc_data.get('option_gift_ore')}")
+                    options.append(f"{len(options)+1}. {npc_data.get('option_gift_ore')}")
+                q_ham = stats.town_flags.get("quest_hammer_state", "unstarted")
+                if q_ham == "unstarted":
+                    options.append(f"{len(options)+1}. {npc_data.get('option_quest_hammer_accept')}")
+                elif q_ham == "started":
+                    if stats.town_flags.get("noob_coerced_hammer"):
+                        options.append(f"{len(options)+1}. {npc_data.get('option_return_hammer_force')}")
+                    elif "smith_hammer" in stats.town_inventory:
+                        options.append(f"{len(options)+1}. {npc_data.get('option_return_hammer_real')}")
+                    if "fake_hammer" in stats.town_inventory:
+                        options.append(f"{len(options)+1}. {npc_data.get('option_return_hammer_fake')}")
+                    options.append(f"{len(options)+1}. {npc_data.get('option_quest_hammer_clue')}")
             elif npc_id == "Market_Merchant":
-                options.append(f"2. {npc_data.get('option_buy_shelf')}")
-                options.append(f"3. {npc_data.get('option_lock_card')}")
+                options.append(f"{len(options)+1}. {npc_data.get('option_buy_shelf')}")
+                options.append(f"{len(options)+1}. {npc_data.get('option_lock_card')}")
             elif npc_id == "Shopkeeper_Jack":
-                options.append(f"2. {npc_data.get('option_buy_subclass', '购买新子职业/门之钥匙...')}")
+                options.append(f"{len(options)+1}. {npc_data.get('option_buy_subclass', '购买新子职业/门之钥匙...')}")
+                q_brew = stats.town_flags.get("quest_brew_state", "unstarted")
+                if q_brew == "started" and "wishing_dew" in stats.town_inventory:
+                    options.append(f"{len(options)+1}. {npc_data.get('option_sell_wishing_dew')}")
+            elif npc_id == "Lost_Bard":
+                q_ham = stats.town_flags.get("quest_hammer_state", "unstarted")
+                if q_ham == "started" and not stats.town_flags.get("taken_smith_hammer") and not stats.town_flags.get("noob_coerced_hammer"):
+                    options.append(f"{len(options)+1}. {npc_data.get('option_ask_hammer')}")
+                    if "beer" in stats.town_inventory:
+                        options.append(f"{len(options)+1}. {npc_data.get('option_give_beer')}")
+            elif npc_id == "Crypto_Whale":
+                if not stats.town_flags.get("reported_whale"):
+                    q_ham = stats.town_flags.get("quest_hammer_state", "unstarted")
+                    if q_ham == "started" and "smith_hammer" not in stats.town_inventory and "fake_hammer" not in stats.town_inventory and not stats.town_flags.get("noob_coerced_hammer"):
+                        options.append(f"{len(options)+1}. {npc_data.get('option_buy_fake_hammer')}")
+                    q_brew = stats.town_flags.get("quest_brew_state", "unstarted")
+                    if q_brew == "started" and "void_herb" not in stats.town_inventory and "wishing_dew" not in stats.town_inventory:
+                        options.append(f"{len(options)+1}. {npc_data.get('option_buy_void_herb')}")
+                        if "promotional_agreement" in stats.town_inventory:
+                            options.append(f"{len(options)+1}. {npc_data.get('option_trade_void_herb')}")
+            elif npc_id == "Town_Guard":
+                q_brew = stats.town_flags.get("quest_brew_state", "unstarted")
+                if q_brew == "started" and "void_herb" not in stats.town_inventory and "wishing_dew" not in stats.town_inventory:
+                    if not stats.town_flags.get("reported_whale"):
+                        options.append(f"{len(options)+1}. {npc_data.get('option_report_whale')}")
             elif npc_id == "Chest":
                 if "rusty_key" in stats.town_inventory and not stats.town_flags.get("box_opened", 0):
-                    options.append(f"1. {npc_data.get('option_open')}")
+                    options.append(f"{len(options)+1}. {npc_data.get('option_open')}")
             elif npc_id == "Fountain":
                 if "lucky_coin" in stats.town_inventory:
-                    options.append(f"1. {npc_data.get('option_wish')}")
+                    options.append(f"{len(options)+1}. {npc_data.get('option_wish')}")
+                q_brew = stats.town_flags.get("quest_brew_state", "unstarted")
+                if q_brew == "started" and "void_herb" in stats.town_inventory:
+                    options.append(f"{len(options)+1}. {npc_data.get('option_wash_herb')}")
             elif npc_id == "West_Gate":
-                options.append(f"1. {npc_data.get('option_knock')}")
+                options.append(f"{len(options)+1}. {npc_data.get('option_knock')}")
             elif npc_id in ("Dummy", "NoobSlayer99", "xXx_SniperElite_xXx", "pppopipupu"):
-                options.append(f"2. {npc_data.get('option_challenge')}")
+                options.append(f"{len(options)+1}. {npc_data.get('option_challenge')}")
 
             leave_label = npc_data.get("option_leave", zh_cn.get("global", {}).get("leave_default", "离开"))
             options.append(f"{len(options)+1}. {leave_label}")
@@ -242,8 +327,65 @@ class TownEngine:
         if choice_lower in ("离开", "退出", "返回", "exit", "quit", "q"):
             stats.town_flags.pop("current_dialog", None)
             stats.town_flags.pop("market_sub_menu", None)
+            stats.town_flags.pop("shop_sub_menu", None)
+            stats.town_flags.pop("jack_agreement_menu", None)
+            stats.town_flags.pop("jack_riddle_step", None)
             self.save_manager.save_stats(user_id, stats)
             return zh_cn.get("global", {}).get("dialog_exit", "").format(name=npc_data.get("name", npc_id)) + "\n\n" + self.render_current_room(user_id, stats)
+
+        jack_riddle_step = stats.town_flags.get("jack_riddle_step")
+        if npc_id == "Bartender_Jack" and jack_riddle_step:
+            if choice_lower == "5":
+                stats.town_flags.pop("jack_riddle_step", None)
+                self.save_manager.save_stats(user_id, stats)
+                return self._render_dialog_window(stats, npc_id, zh_cn)
+            if jack_riddle_step == 1:
+                if choice_lower == "2":
+                    stats.town_flags["jack_riddle_step"] = 2
+                    self.save_manager.save_stats(user_id, stats)
+                    return self._render_dialog_window(stats, npc_id, zh_cn)
+                elif choice_lower in ("1", "3", "4"):
+                    stats.town_flags.pop("jack_riddle_step", None)
+                    self.save_manager.save_stats(user_id, stats)
+                    return zh_cn.get("global", {}).get("jack_riddle_wrong", "") + "\n\n" + self._render_dialog_window(stats, npc_id, zh_cn)
+            elif jack_riddle_step == 2:
+                if choice_lower == "2":
+                    stats.town_flags.pop("jack_riddle_step", None)
+                    stats.town_inventory.append("promotional_agreement")
+                    self.save_manager.save_stats(user_id, stats)
+                    return zh_cn.get("global", {}).get("jack_riddle_success", "") + "\n\n" + self._render_dialog_window(stats, npc_id, zh_cn)
+                elif choice_lower in ("1", "3", "4"):
+                    stats.town_flags.pop("jack_riddle_step", None)
+                    self.save_manager.save_stats(user_id, stats)
+                    return zh_cn.get("global", {}).get("jack_riddle_wrong", "") + "\n\n" + self._render_dialog_window(stats, npc_id, zh_cn)
+            return zh_cn.get("global", {}).get("invalid_option", "")
+
+        jack_agreement_menu = stats.town_flags.get("jack_agreement_menu")
+        if npc_id == "Bartender_Jack" and jack_agreement_menu:
+            options_count = 2 if "lost_notebook" in stats.town_inventory else 1
+            if choice_lower == str(options_count + 1):
+                stats.town_flags.pop("jack_agreement_menu", None)
+                self.save_manager.save_stats(user_id, stats)
+                return self._render_dialog_window(stats, npc_id, zh_cn)
+            if "lost_notebook" in stats.town_inventory:
+                if choice_lower == "1":
+                    stats.town_flags.pop("jack_agreement_menu", None)
+                    stats.town_inventory.remove("lost_notebook")
+                    stats.town_inventory.append("promotional_agreement")
+                    self.save_manager.save_stats(user_id, stats)
+                    return zh_cn.get("global", {}).get("jack_notebook_success", "") + "\n\n" + self._render_dialog_window(stats, npc_id, zh_cn)
+                elif choice_lower == "2":
+                    stats.town_flags.pop("jack_agreement_menu", None)
+                    stats.town_flags["jack_riddle_step"] = 1
+                    self.save_manager.save_stats(user_id, stats)
+                    return self._render_dialog_window(stats, npc_id, zh_cn)
+            else:
+                if choice_lower == "1":
+                    stats.town_flags.pop("jack_agreement_menu", None)
+                    stats.town_flags["jack_riddle_step"] = 1
+                    self.save_manager.save_stats(user_id, stats)
+                    return self._render_dialog_window(stats, npc_id, zh_cn)
+            return zh_cn.get("global", {}).get("invalid_option", "")
 
         sub_menu = stats.town_flags.get("market_sub_menu")
 
@@ -262,10 +404,9 @@ class TownEngine:
             c_obj = ALL_CARDS[target_cid]
             if getattr(c_obj, "rarity", "common") == "legendary":
                 return zh_cn.get("global", {}).get("card_lock_failed_legendary", "")
-            if stats.gp < 1000:
-                return zh_cn.get("global", {}).get("gp_insufficient", "").format(req=1000, owned=stats.gp)
-
-            stats.gp -= 1000
+            if stats.gp < 300:
+                return zh_cn.get("global", {}).get("gp_insufficient", "").format(req=300, owned=stats.gp)
+            stats.gp -= 300
             stats.guaranteed_card = target_cid
             stats.town_flags.pop("market_sub_menu", None)
             self.save_manager.save_stats(user_id, stats)
@@ -274,12 +415,14 @@ class TownEngine:
 
         if npc_id == "Market_Merchant" and sub_menu == "buy":
             shelf = self._get_market_shelf(stats)
-            prices = [100, 300, 700]
+            prices = [50, 150, 350]
             if choice_lower == "4":
                 stats.town_flags.pop("market_sub_menu", None)
                 self.save_manager.save_stats(user_id, stats)
                 return self._render_dialog_window(stats, npc_id, zh_cn)
             if choice_lower in ("1", "2", "3"):
+                if len(stats.purchased_pool) >= 2:
+                    return "❌ 你当前已锁定了最大数量的卡牌（最多 2 张），无法购买更多货架卡牌。请先开启一局新游戏来消耗掉它们。"
                 idx = int(choice_lower) - 1
                 cid = shelf[idx]
                 if not cid:
@@ -287,7 +430,6 @@ class TownEngine:
                 price = prices[idx]
                 if stats.gp < price:
                     return zh_cn.get("global", {}).get("gp_insufficient", "").format(req=price, owned=stats.gp)
-                
                 c_name = ALL_CARDS[cid].name if cid in ALL_CARDS else cid
                 stats.gp -= price
                 stats.purchased_pool.append(cid)
@@ -335,8 +477,11 @@ class TownEngine:
 
         options_map = {}
         opt_idx = 1
-        options_map[str(opt_idx)] = "idle"
-        opt_idx += 1
+        if npc_id == "Crypto_Whale" and stats.town_flags.get("reported_whale"):
+            pass
+        else:
+            options_map[str(opt_idx)] = "idle"
+            opt_idx += 1
 
         if npc_id == "Guide_Elder":
             quest_state = stats.town_flags.get("quest_town_tour_state", "unstarted")
@@ -354,9 +499,38 @@ class TownEngine:
             if "wine_glass" in stats.town_inventory and not stats.town_flags.get("jack_gift_given", 0):
                 options_map[str(opt_idx)] = "gift_glass"
                 opt_idx += 1
+            options_map[str(opt_idx)] = "buy_beer"
+            opt_idx += 1
+            q_brew = stats.town_flags.get("quest_brew_state", "unstarted")
+            if q_brew == "unstarted":
+                options_map[str(opt_idx)] = "brew_quest_accept"
+                opt_idx += 1
+            elif q_brew == "started":
+                if "wishing_dew" in stats.town_inventory:
+                    options_map[str(opt_idx)] = "give_wishing_dew"
+                    opt_idx += 1
+                if "promotional_agreement" not in stats.town_inventory and "void_herb" not in stats.town_inventory and "wishing_dew" not in stats.town_inventory:
+                    options_map[str(opt_idx)] = "dialog_sign_agreement"
+                    opt_idx += 1
         elif npc_id == "Blacksmith_Ironclad":
             if "strange_ore" in stats.town_inventory and not stats.town_flags.get("ironclad_gift_given", 0):
                 options_map[str(opt_idx)] = "gift_ore"
+                opt_idx += 1
+            q_ham = stats.town_flags.get("quest_hammer_state", "unstarted")
+            if q_ham == "unstarted":
+                options_map[str(opt_idx)] = "quest_hammer_accept"
+                opt_idx += 1
+            elif q_ham == "started":
+                if stats.town_flags.get("noob_coerced_hammer"):
+                    options_map[str(opt_idx)] = "quest_hammer_return_force"
+                    opt_idx += 1
+                elif "smith_hammer" in stats.town_inventory:
+                    options_map[str(opt_idx)] = "quest_hammer_return_real"
+                    opt_idx += 1
+                if "fake_hammer" in stats.town_inventory:
+                    options_map[str(opt_idx)] = "quest_hammer_return_fake"
+                    opt_idx += 1
+                options_map[str(opt_idx)] = "quest_hammer_clue"
                 opt_idx += 1
         elif npc_id == "Market_Merchant":
             options_map[str(opt_idx)] = "buy_shelf"
@@ -366,6 +540,37 @@ class TownEngine:
         elif npc_id == "Shopkeeper_Jack":
             options_map[str(opt_idx)] = "buy_subclass"
             opt_idx += 1
+            q_brew = stats.town_flags.get("quest_brew_state", "unstarted")
+            if q_brew == "started" and "wishing_dew" in stats.town_inventory:
+                options_map[str(opt_idx)] = "sell_wishing_dew"
+                opt_idx += 1
+        elif npc_id == "Lost_Bard":
+            q_ham = stats.town_flags.get("quest_hammer_state", "unstarted")
+            if q_ham == "started" and not stats.town_flags.get("taken_smith_hammer") and not stats.town_flags.get("noob_coerced_hammer"):
+                options_map[str(opt_idx)] = "ask_hammer"
+                opt_idx += 1
+                if "beer" in stats.town_inventory:
+                    options_map[str(opt_idx)] = "give_beer"
+                    opt_idx += 1
+        elif npc_id == "Crypto_Whale":
+            if not stats.town_flags.get("reported_whale"):
+                q_ham = stats.town_flags.get("quest_hammer_state", "unstarted")
+                if q_ham == "started" and "smith_hammer" not in stats.town_inventory and "fake_hammer" not in stats.town_inventory and not stats.town_flags.get("noob_coerced_hammer"):
+                    options_map[str(opt_idx)] = "buy_fake_hammer"
+                    opt_idx += 1
+                q_brew = stats.town_flags.get("quest_brew_state", "unstarted")
+                if q_brew == "started" and "void_herb" not in stats.town_inventory and "wishing_dew" not in stats.town_inventory:
+                    options_map[str(opt_idx)] = "buy_void_herb"
+                    opt_idx += 1
+                    if "promotional_agreement" in stats.town_inventory:
+                        options_map[str(opt_idx)] = "trade_void_herb"
+                        opt_idx += 1
+        elif npc_id == "Town_Guard":
+            q_brew = stats.town_flags.get("quest_brew_state", "unstarted")
+            if q_brew == "started" and "void_herb" not in stats.town_inventory and "wishing_dew" not in stats.town_inventory:
+                if not stats.town_flags.get("reported_whale"):
+                    options_map[str(opt_idx)] = "report_whale"
+                    opt_idx += 1
         elif npc_id == "Chest":
             options_map = {}
             opt_idx = 1
@@ -377,6 +582,10 @@ class TownEngine:
             opt_idx = 1
             if "lucky_coin" in stats.town_inventory:
                 options_map[str(opt_idx)] = "wish"
+                opt_idx += 1
+            q_brew = stats.town_flags.get("quest_brew_state", "unstarted")
+            if q_brew == "started" and "void_herb" in stats.town_inventory:
+                options_map[str(opt_idx)] = "wash_herb"
                 opt_idx += 1
         elif npc_id == "West_Gate":
             options_map = {}
@@ -396,6 +605,9 @@ class TownEngine:
         if action == "leave":
             stats.town_flags.pop("current_dialog", None)
             stats.town_flags.pop("market_sub_menu", None)
+            stats.town_flags.pop("shop_sub_menu", None)
+            stats.town_flags.pop("jack_agreement_menu", None)
+            stats.town_flags.pop("jack_riddle_step", None)
             self.save_manager.save_stats(user_id, stats)
             return zh_cn.get("global", {}).get("dialog_exit", "").format(name=npc_data.get("name", npc_id)) + "\n\n" + self.render_current_room(user_id, stats)
 
@@ -494,6 +706,132 @@ class TownEngine:
             self.save_manager.save_stats(user_id, stats)
             return self.challenge_npc(user_id, npc_id)
 
+        elif action == "buy_beer":
+            if stats.gp < 50:
+                return zh_cn.get("global", {}).get("beer_buy_insufficient", "")
+            stats.gp -= 50
+            stats.town_inventory.append("beer")
+            self.save_manager.save_stats(user_id, stats)
+            return zh_cn.get("global", {}).get("beer_buy_success", "") + "\n\n" + self._render_dialog_window(stats, npc_id, zh_cn)
+
+        elif action == "brew_quest_accept":
+            stats.town_flags["quest_brew_state"] = "started"
+            self.save_manager.save_stats(user_id, stats)
+            return zh_cn.get("global", {}).get("quest_brew_started", "") + "\n\n" + self._render_dialog_window(stats, npc_id, zh_cn)
+
+        elif action == "give_wishing_dew":
+            stats.town_flags["quest_brew_state"] = "completed"
+            stats.town_inventory.remove("wishing_dew")
+            stats.gp += 1500
+            stats.town_health_bonus = getattr(stats, "town_health_bonus", 0) + 5
+            self.save_manager.save_stats(user_id, stats)
+            return zh_cn.get("global", {}).get("quest_brew_real_success", "") + "\n\n" + self._render_dialog_window(stats, npc_id, zh_cn)
+
+        elif action == "dialog_sign_agreement":
+            stats.town_flags["jack_agreement_menu"] = True
+            self.save_manager.save_stats(user_id, stats)
+            return self._render_dialog_window(stats, npc_id, zh_cn)
+
+        elif action == "quest_hammer_accept":
+            stats.town_flags["quest_hammer_state"] = "started"
+            self.save_manager.save_stats(user_id, stats)
+            return zh_cn.get("global", {}).get("quest_hammer_started", "") + "\n\n" + self._render_dialog_window(stats, npc_id, zh_cn)
+
+        elif action == "quest_hammer_clue":
+            return zh_cn.get("global", {}).get("quest_hammer_clue_msg", "") + "\n\n" + self._render_dialog_window(stats, npc_id, zh_cn)
+
+        elif action == "quest_hammer_return_real":
+            stats.town_flags["quest_hammer_state"] = "completed"
+            stats.town_inventory.remove("smith_hammer")
+            stats.gp += 1500
+            stats.town_health_bonus = getattr(stats, "town_health_bonus", 0) + 5
+            self.save_manager.save_stats(user_id, stats)
+            return zh_cn.get("global", {}).get("quest_hammer_real_success", "") + "\n\n" + self._render_dialog_window(stats, npc_id, zh_cn)
+
+        elif action == "quest_hammer_return_fake":
+            stats.town_flags["quest_hammer_state"] = "completed"
+            stats.town_inventory.remove("fake_hammer")
+            stats.gp += 200
+            self.save_manager.save_stats(user_id, stats)
+            return zh_cn.get("global", {}).get("quest_hammer_fake_success", "") + "\n\n" + self._render_dialog_window(stats, npc_id, zh_cn)
+
+        elif action == "quest_hammer_return_force":
+            stats.town_flags["quest_hammer_state"] = "completed"
+            stats.gp += 1200
+            self.save_manager.save_stats(user_id, stats)
+            return zh_cn.get("global", {}).get("quest_hammer_force_success", "") + "\n\n" + self._render_dialog_window(stats, npc_id, zh_cn)
+
+        elif action == "ask_hammer":
+            return zh_cn.get("global", {}).get("lost_bard_tell_clue", "") + "\n\n" + self._render_dialog_window(stats, npc_id, zh_cn)
+
+        elif action == "give_beer":
+            stats.town_inventory.remove("beer")
+            stats.town_inventory.append("smith_hammer")
+            self.save_manager.save_stats(user_id, stats)
+            return zh_cn.get("global", {}).get("lost_bard_give_beer_success", "") + "\n\n" + self._render_dialog_window(stats, npc_id, zh_cn)
+
+        elif action == "buy_fake_hammer":
+            if stats.gp < 500:
+                return zh_cn.get("global", {}).get("gp_insufficient", "").format(req=500, owned=stats.gp)
+            stats.gp -= 500
+            stats.town_inventory.append("fake_hammer")
+            self.save_manager.save_stats(user_id, stats)
+            return zh_cn.get("global", {}).get("buy_fake_hammer_success", "") + "\n\n" + self._render_dialog_window(stats, npc_id, zh_cn)
+
+        elif action == "buy_void_herb":
+            if stats.gp < 800:
+                return zh_cn.get("global", {}).get("gp_insufficient", "").format(req=800, owned=stats.gp)
+            stats.gp -= 800
+            stats.town_inventory.append("void_herb")
+            self.save_manager.save_stats(user_id, stats)
+            return zh_cn.get("global", {}).get("buy_void_herb_success", "") + "\n\n" + self._render_dialog_window(stats, npc_id, zh_cn)
+
+        elif action == "trade_void_herb":
+            stats.town_inventory.remove("promotional_agreement")
+            stats.town_inventory.append("void_herb")
+            self.save_manager.save_stats(user_id, stats)
+            return zh_cn.get("global", {}).get("trade_void_herb_success", "") + "\n\n" + self._render_dialog_window(stats, npc_id, zh_cn)
+
+        elif action == "report_whale":
+            stats.town_flags["reported_whale"] = True
+            stats.town_inventory.append("void_herb")
+            self.save_manager.save_stats(user_id, stats)
+            return zh_cn.get("global", {}).get("report_whale_success", "") + "\n\n" + self._render_dialog_window(stats, npc_id, zh_cn)
+
+        elif action == "wash_herb":
+            stats.town_inventory.remove("void_herb")
+            stats.town_inventory.append("wishing_dew")
+            self.save_manager.save_stats(user_id, stats)
+            return zh_cn.get("global", {}).get("wash_herb_success", "") + "\n\n" + self._render_dialog_window(stats, npc_id, zh_cn)
+
+        elif action == "sell_wishing_dew":
+            stats.town_flags["quest_brew_state"] = "completed"
+            stats.town_inventory.remove("wishing_dew")
+            stats.gp += 2000
+            self.save_manager.save_stats(user_id, stats)
+            return zh_cn.get("global", {}).get("sell_dew_success", "") + "\n\n" + self._render_dialog_window(stats, npc_id, zh_cn)
+
+        elif action == "knock":
+            count = stats.town_flags.get("knock_count", 0) + 1
+            stats.town_flags["knock_count"] = count
+            self.save_manager.save_stats(user_id, stats)
+            if count == 3:
+                if not stats.town_flags.get("west_gate_bonus_claimed", 0):
+                    stats.town_flags["west_gate_bonus_claimed"] = 1
+                    stats.gp += 100
+                    self.save_manager.save_stats(user_id, stats)
+                return npc_data.get("knock_bonus_3", "") + "\n\n" + self._render_dialog_window(stats, npc_id, zh_cn)
+            elif count == 10:
+                stats.town_flags.pop("current_dialog", None)
+                self.save_manager.save_stats(user_id, stats)
+                return self.challenge_npc(user_id, "Gate_Guardian")
+            return npc_data.get("knock_normal", "").format(count=count) + "\n\n" + self._render_dialog_window(stats, npc_id, zh_cn)
+
+        elif action == "challenge":
+            stats.town_flags.pop("current_dialog", None)
+            self.save_manager.save_stats(user_id, stats)
+            return self.challenge_npc(user_id, npc_id)
+
         return zh_cn.get("global", {}).get("invalid_option", "")
 
     def pick_item(self, user_id: str, item_name: str) -> str:
@@ -550,19 +888,53 @@ class TownEngine:
         npc_name = zh_cn.get("interactive_entities", {}).get(npc_id, {}).get("name", npc_id)
 
         selected_class = getattr(stats, "selected_class", "法师")
+        selected_subclass = getattr(stats, "selected_subclass", "")
         if selected_class == "战士":
+            selected_subclass = ""
+            allowed_colors = ("warrior", "neutral")
             hp = 80
             max_hp = 80
-            deck = ["warrior_strike", "warrior_strike", "warrior_strike", "warrior_strike", "warrior_strike", "warrior_defend", "warrior_defend", "warrior_defend"]
         else:
+            allowed_colors = ("wizard", "neutral")
             hp = 45
             max_hp = 45
-            deck = ["fire_bolt", "fire_bolt", "fire_bolt", "fire_bolt", "fire_bolt", "first_aid", "first_aid", "first_aid"]
-            
-        if stats.guaranteed_card:
-            deck.append(stats.guaranteed_card)
-        if stats.purchased_pool:
-            deck.extend(stats.purchased_pool)
+        hp_bonus = getattr(stats, "town_health_bonus", 0)
+        hp += hp_bonus
+        max_hp += hp_bonus
+        commons = [cid for cid, c in ALL_CARDS.items() if getattr(c, "rarity", "common") == "common" and getattr(c, "color", "") in allowed_colors and not cid.startswith("curse_") and not cid.startswith("duel_") and cid != "time_stop"]
+        rares = [cid for cid, c in ALL_CARDS.items() if getattr(c, "rarity", "common") == "rare" and getattr(c, "color", "") in allowed_colors and not cid.startswith("curse_") and not cid.startswith("duel_") and cid != "time_stop"]
+        epics = [cid for cid, c in ALL_CARDS.items() if getattr(c, "rarity", "common") == "epic" and getattr(c, "color", "") in allowed_colors and not cid.startswith("curse_") and not cid.startswith("duel_") and cid != "time_stop"]
+        locked_cards = []
+        g_card = getattr(stats, "guaranteed_card", None)
+        if g_card:
+            locked_cards.append(g_card)
+        p_pool = getattr(stats, "purchased_pool", [])
+        if p_pool:
+            locked_cards.extend(p_pool)
+        target_counts = {"common": 5, "rare": 2, "epic": 1}
+        for cid in locked_cards:
+            c_obj = ALL_CARDS.get(cid)
+            r = getattr(c_obj, "rarity", "common") if c_obj else "common"
+            if r not in target_counts:
+                r = "common"
+            if target_counts[r] > 0:
+                target_counts[r] -= 1
+            else:
+                if target_counts["common"] > 0:
+                    target_counts["common"] -= 1
+                elif target_counts["rare"] > 0:
+                    target_counts["rare"] -= 1
+                elif target_counts["epic"] > 0:
+                    target_counts["epic"] -= 1
+        deck = list(locked_cards)
+        for _ in range(target_counts["common"]):
+            deck.append(random.choice(commons))
+        for _ in range(target_counts["rare"]):
+            deck.append(random.choice(rares))
+        for _ in range(target_counts["epic"]):
+            deck.append(random.choice(epics))
+        if selected_class == "法师" and selected_subclass == "时序法师":
+            deck.append("time_stop")
             
         p_state = PlayerState(
             hp=hp,

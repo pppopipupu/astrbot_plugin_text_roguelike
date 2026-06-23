@@ -59,11 +59,16 @@ def render_town_map_classic(current_id: str) -> str:
         
     lines.append("")
     lines.append("📖 【主城地标图例手册】")
-    lines.append("📍 当前位置　　🧱 墙壁障碍")
-    lines.append("🗼 守卫哨塔　　⛩️ 西大门　　　🎯 训练靶场")
-    lines.append("🛣️ 偏僻小巷　　🏟️ 中心广场　　⛲ 许愿喷泉")
-    lines.append("🏪 主城商店　　🍺 酒馆大堂　　🛋️ 酒馆雅间")
-    lines.append("⚒️ 铁匠铺　　　🪙 卡牌大卖场")
+    
+    def get_leg(rid: str, default_name: str) -> str:
+        emo = "📍" if rid == current_id else emoji_map.get(rid, "🧱")
+        return f"{emo} {default_name}"
+        
+    lines.append(f"{get_leg('watch_tower', '守卫哨塔')}　　{get_leg('west_gate', '西大门')}　　　{get_leg('range', '训练靶场')}")
+    lines.append(f"{get_leg('alley', '偏僻小巷')}　　{get_leg('square', '中心广场')}　　{get_leg('fountain', '许愿喷泉')}")
+    lines.append(f"{get_leg('shop', '主城商店')}　　{get_leg('tavern', '酒馆大堂')}　　{get_leg('vip_room', '酒馆雅间')}")
+    lines.append(f"{get_leg('blacksmith', '铁匠铺')}　　　{get_leg('market', '卡牌大卖场')}　　🧱 墙壁障碍")
+    
     return "\n".join(lines)
 
 def render_town_map_radar(current_id: str, zh_cn: Dict[str, Any], room_data: Dict[str, Any]) -> str:
@@ -193,7 +198,7 @@ def render_town(stats: UserStats, room_data: Dict[str, Any]) -> str:
     if current_id == "market":
         shelf = stats.town_flags.get("market_shelf", [])
         shelf_strs = []
-        prices = [100, 300, 700]
+        prices = [50, 150, 350]
         rarities = zh_cn.get("global", {}).get("rarities", ["普通", "稀有", "珍奇"])
         for idx, cid in enumerate(shelf):
             if not cid:
