@@ -255,6 +255,42 @@ def render_town(stats: UserStats, room_data: Dict[str, Any]) -> str:
             exit_list.append(f"{dir_names[d]}({d.upper()})")
     exit_str = "、".join(exit_list) if exit_list else none_label
 
+    if current_id == "market":
+        shelf = stats.town_flags.get("market_shelf", [])
+        if not shelf or len(shelf) != 10:
+            fixed_cards = [
+                "warrior_blood_fury", "neutral_power_word_pain",
+                "warrior_shield_bash", "wizard_antimagic_field", "neutral_power_word_stun",
+                "warrior_hell_raider", "wizard_prismatic_wall", "wizard_time_ravage", "neutral_power_word_kill", "neutral_plane_shift"
+            ]
+            already_bought = set(getattr(stats, "purchased_pool", []) or []) | set(getattr(stats, "unlocked_new_cards", []) or [])
+            shelf = [c if c not in already_bought else "" for c in fixed_cards]
+            stats.town_flags["market_shelf"] = shelf
+        
+        shelf_strs = []
+        for idx, cid in enumerate(shelf):
+            if not cid:
+                shelf_strs.append(f"{idx+1}. " + zh_cn.get("global", {}).get("market_sold_out", "【已售罄】"))
+            else:
+                c_name = ALL_CARDS[cid].name if cid in ALL_CARDS else cid
+                card_obj = ALL_CARDS.get(cid)
+                rarity_str = "普通"
+                price = 100
+                if card_obj:
+                    r = getattr(card_obj, "rarity", "common")
+                    if r == "common":
+                        rarity_str = "普通"
+                        price = 100
+                    elif r == "rare":
+                        rarity_str = "稀有"
+                        price = 300
+                    else:
+                        rarity_str = "珍奇"
+                        price = 700
+                shelf_strs.append(f"{idx+1}. 【{c_name}】({rarity_str} ─ {price} GP)")
+        desc += zh_cn.get("global", {}).get("market_shelf_header", "\n\n🏷️ 今日货架商品：\n") + "\n".join(shelf_strs)
+        desc += zh_cn.get("global", {}).get("market_shelf_footer", "\n（输入 交互/talk 卡牌商人 即可开启选购或锁定必带卡）")
+
     quest_str = ""
     quest_state = stats.town_flags.get("quest_town_tour_state", "unstarted")
     if quest_state == "started":

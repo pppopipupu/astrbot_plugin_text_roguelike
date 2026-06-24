@@ -95,14 +95,26 @@ class TownEngine:
             options.append(f"{len(options)+1}. " + zh_cn.get("global", {}).get("back_to_previous", "返回上一级"))
         elif npc_id == "Market_Merchant" and sub_menu == "buy":
             shelf = self._get_market_shelf(stats)
-            prices = [50, 150, 350]
-            rarities = zh_cn.get("global", {}).get("rarities", ["普通", "稀有", "珍奇"])
             for idx, cid in enumerate(shelf):
                 if not cid:
                     options.append(f"{idx+1}. " + zh_cn.get("global", {}).get("market_sold_out", "【已售罄】"))
                 else:
                     c_name = ALL_CARDS[cid].name if cid in ALL_CARDS else cid
-                    options.append(zh_cn.get("global", {}).get("market_buy_option", "").format(idx=idx+1, name=c_name, rarity=rarities[idx], price=prices[idx]))
+                    card_obj = ALL_CARDS.get(cid)
+                    rarity_str = "普通"
+                    price = 100
+                    if card_obj:
+                        r = getattr(card_obj, "rarity", "common")
+                        if r == "common":
+                            rarity_str = "普通"
+                            price = 100
+                        elif r == "rare":
+                            rarity_str = "稀有"
+                            price = 300
+                        else:
+                            rarity_str = "珍奇"
+                            price = 700
+                    options.append(zh_cn.get("global", {}).get("market_buy_option", "").format(idx=idx+1, name=c_name, rarity=rarity_str, price=price))
             options.append(f"{len(shelf)+1}. " + zh_cn.get("global", {}).get("back_to_previous", "返回上一级"))
         elif npc_id == "Market_Merchant" and sub_menu == "lock":
             options.append(zh_cn.get("global", {}).get("lock_instructions", "ℹ️ 请直接输入你想锁定的卡牌名称（例如输入 痛击 ）进行绑定。"))
@@ -229,23 +241,16 @@ class TownEngine:
 
     def _get_market_shelf(self, stats: UserStats) -> List[str]:
         shelf = stats.town_flags.get("market_shelf")
-        if shelf is not None:
-            return shelf
-        already_bought = set(getattr(stats, "purchased_pool", []) or []) | set(getattr(stats, "unlocked_new_cards", []) or [])
-        g_card = getattr(stats, "guaranteed_card", None)
-        if g_card:
-            already_bought.add(g_card)
-        new_commons = ["warrior_blood_fury", "neutral_power_word_pain"]
-        new_rares = ["warrior_shield_bash", "wizard_antimagic_field", "neutral_power_word_stun"]
-        new_epics = ["warrior_hell_raider", "wizard_prismatic_wall", "wizard_time_ravage", "neutral_power_word_kill", "neutral_plane_shift"]
-        available_commons = [c for c in new_commons if c not in already_bought]
-        available_rares = [c for c in new_rares if c not in already_bought]
-        available_epics = [c for c in new_epics if c not in already_bought]
-        c_sel = random.choice(available_commons) if available_commons else ""
-        r_sel = random.choice(available_rares) if available_rares else ""
-        e_sel = random.choice(available_epics) if available_epics else ""
-        shelf = [c_sel, r_sel, e_sel]
-        stats.town_flags["market_shelf"] = shelf
+        from game.entities.cards.market import MARKET_CARDS
+        fixed_cards = [
+            "warrior_blood_fury", "neutral_power_word_pain",
+            "warrior_shield_bash", "wizard_antimagic_field", "neutral_power_word_stun",
+            "warrior_hell_raider", "wizard_prismatic_wall", "wizard_time_ravage", "neutral_power_word_kill", "neutral_plane_shift"
+        ]
+        if shelf is None or len(shelf) != 10:
+            already_bought = set(getattr(stats, "purchased_pool", []) or []) | set(getattr(stats, "unlocked_new_cards", []) or [])
+            shelf = [c if c not in already_bought else "" for c in fixed_cards]
+            stats.town_flags["market_shelf"] = shelf
         return shelf
 
     def move(self, user_id: str, direction: str) -> str:

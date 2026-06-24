@@ -1,4 +1,3 @@
-from ...data.card_data import CARD_CONFIG
 from .registry import CARD_CLASS_REGISTRY
 import inspect
 
@@ -10,11 +9,21 @@ from . import warrior
 
 import copy
 
+def _get_card_config():
+    from ...data.neutral_card_data import NEUTRAL_CARD_CONFIG
+    from ...data.wizard_card_data import WIZARD_CARD_CONFIG
+    from ...data.warrior_card_data import WARRIOR_CARD_CONFIG
+    cfg = {}
+    cfg.update(NEUTRAL_CARD_CONFIG)
+    cfg.update(WIZARD_CARD_CONFIG)
+    cfg.update(WARRIOR_CARD_CONFIG)
+    return cfg
+
 class CardRegistryDict(dict):
     def _lazy_load_card(self, key):
-        from ...data.card_data import CARD_CONFIG
-        if key in CARD_CONFIG:
-            cfg = CARD_CONFIG[key]
+        card_config = _get_card_config()
+        if key in card_config:
+            cfg = card_config[key]
             name = cfg["name"]
             color = cfg["color"]
             ctype = cfg["type"]
@@ -78,36 +87,36 @@ class CardRegistryDict(dict):
         return None
 
     def __iter__(self):
-        from ...data.card_data import CARD_CONFIG
-        for k in CARD_CONFIG.keys():
+        card_config = _get_card_config()
+        for k in card_config.keys():
             if k not in self:
                 self._lazy_load_card(k)
         return super().__iter__()
 
     def keys(self):
-        from ...data.card_data import CARD_CONFIG
-        for k in CARD_CONFIG.keys():
+        card_config = _get_card_config()
+        for k in card_config.keys():
             if k not in self:
                 self._lazy_load_card(k)
         return super().keys()
 
     def values(self):
-        from ...data.card_data import CARD_CONFIG
-        for k in CARD_CONFIG.keys():
+        card_config = _get_card_config()
+        for k in card_config.keys():
             if k not in self:
                 self._lazy_load_card(k)
         return super().values()
 
     def items(self):
-        from ...data.card_data import CARD_CONFIG
-        for k in CARD_CONFIG.keys():
+        card_config = _get_card_config()
+        for k in card_config.keys():
             if k not in self:
                 self._lazy_load_card(k)
         return super().items()
 
     def __len__(self):
-        from ...data.card_data import CARD_CONFIG
-        for k in CARD_CONFIG.keys():
+        card_config = _get_card_config()
+        for k in card_config.keys():
             if k not in self:
                 self._lazy_load_card(k)
         return super().__len__()
@@ -203,17 +212,17 @@ class CardRegistryDict(dict):
                 base_key = clean_key[:-1]
                 if super().__contains__(base_key):
                     return True
-                from ...data.card_data import CARD_CONFIG
-                return base_key in CARD_CONFIG
+                card_config = _get_card_config()
+                return base_key in card_config
             if super().__contains__(clean_key):
                 return True
-            from ...data.card_data import CARD_CONFIG
-            return clean_key in CARD_CONFIG
+            card_config = _get_card_config()
+            return clean_key in card_config
         return super().__contains__(key)
 
 ALL_CARDS = CardRegistryDict()
 
-for cid, cfg in CARD_CONFIG.items():
+for cid, cfg in _get_card_config().items():
     name = cfg["name"]
     color = cfg["color"]
     ctype = cfg["type"]

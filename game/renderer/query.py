@@ -48,7 +48,7 @@ def render_query_info(query_str: str) -> str:
             rname_rarity = rarity_map.get(rarity, rarity)
             desc = cfg.get("desc", "")
             price = cfg.get("price", 0)
-            lines.append(f"🎒 遗物：{rname} ({rname_rarity})")
+            lines.append(f"🎒 遗物：{rname} (ID: {rid}) ({rname_rarity})")
             lines.append(f"效果：{desc}")
             lines.append(f"售价：{price} 金币")
             lines.append("")
@@ -57,7 +57,7 @@ def render_query_info(query_str: str) -> str:
             found = True
             bname = cfg.get("name", bid)
             desc = cfg.get("desc", "")
-            lines.append(f"✨ 战斗效果 (Buff)：{bname}")
+            lines.append(f"✨ 战斗效果 (Buff)：{bname} (ID: {bid})")
             lines.append(f"描述：{desc}")
             lines.append("")
     for kid, cfg in KEYWORD_CONFIG.items():
@@ -65,7 +65,7 @@ def render_query_info(query_str: str) -> str:
             found = True
             kname = cfg.get("name", kid)
             desc = cfg.get("desc", "")
-            lines.append(f"🧩 词条/机制：{kname}")
+            lines.append(f"🧩 词条/机制：{kname} (ID: {kid})")
             lines.append(f"描述：{desc}")
             lines.append("")
     for mid, cfg in MINION_CONFIG.items():
@@ -74,7 +74,7 @@ def render_query_info(query_str: str) -> str:
         if q == mid.lower() or q in cfg.get("name", "").lower():
             found = True
             mname = cfg.get("name", mid)
-            lines.append(f"🦁 随从：{mname}")
+            lines.append(f"🦁 随从：{mname} (ID: {mid})")
             card_cfg = CARD_CONFIG.get(mid)
             if card_cfg:
                 hp = card_cfg.get("minion_hp", 0)
@@ -124,7 +124,7 @@ def render_query_info(query_str: str) -> str:
             card_obj = ALL_CARDS.get(cid)
             cost_str = get_card_cost_str(card_obj) if card_obj else "免费"
             desc = cfg.get("desc", "")
-            lines.append(f"📜 卡牌：{cname} ({ctype_ch} | {rname_rarity})")
+            lines.append(f"📜 卡牌：{cname} (ID: {cid}) ({ctype_ch} | {rname_rarity})")
             lines.append(f"消耗：{cost_str}")
             lines.append(f"效果：{desc}")
             lines.append("")
@@ -134,7 +134,7 @@ def render_query_info(query_str: str) -> str:
                 up_card = ALL_CARDS.get(cid + "+")
                 if up_card:
                     up_cost_str = get_card_cost_str(up_card)
-                    lines.append(f"🔨 升级变体：{up_card.name} ({ctype_ch} | {rname_rarity})")
+                    lines.append(f"🔨 升级变体：{up_card.name} (ID: {cid}+) ({ctype_ch} | {rname_rarity})")
                     lines.append(f"升级消耗：{up_cost_str}")
                     lines.append(f"升级效果：{up_card.desc}")
                     lines.append("")
@@ -154,7 +154,7 @@ def render_query_info(query_str: str) -> str:
             etype_ch = type_map.get(etype, etype)
             ehp = cfg.get("hp", "未知")
             eact = cfg.get("actions", "1A 0BA")
-            lines.append(f"👾 怪物：{ename} ({etype_ch})")
+            lines.append(f"👾 怪物：{ename} (ID: {eid}) ({etype_ch})")
             lines.append(f"基础属性：生命值 {ehp} | 动作资源 {eact}")
             passive = cfg.get("passive")
             if passive:

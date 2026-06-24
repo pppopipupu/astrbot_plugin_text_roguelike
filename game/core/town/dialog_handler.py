@@ -65,8 +65,10 @@ def handle_sub_dialog(town_engine, stats: UserStats, npc_id: str, choice_lower: 
             town_engine.save_manager.save_stats(user_id, stats)
             return town_engine._render_dialog_window(stats, npc_id, zh_cn)
         target_cid = None
-        for cid, cfg in ALL_CARDS.items():
-            if cfg.name == choice:
+        from game.entities.cards.base import _get_card_config
+        card_config = _get_card_config()
+        for cid, cfg in card_config.items():
+            if cfg.get("name") == choice:
                 target_cid = cid
                 break
         if not target_cid:
@@ -85,19 +87,29 @@ def handle_sub_dialog(town_engine, stats: UserStats, npc_id: str, choice_lower: 
 
     if npc_id == "Market_Merchant" and sub_menu == "buy":
         shelf = town_engine._get_market_shelf(stats)
-        prices = [50, 150, 350]
-        if choice_lower == "4":
+        if choice_lower == "11":
             stats.town_flags.pop("market_sub_menu", None)
             town_engine.save_manager.save_stats(user_id, stats)
             return town_engine._render_dialog_window(stats, npc_id, zh_cn)
-        if choice_lower in ("1", "2", "3"):
+        if choice_lower in ("1", "2", "3", "4", "5", "6", "7", "8", "9", "10"):
             if len(stats.purchased_pool) >= 2:
                 return "❌ 你当前已锁定了最大数量的卡牌（最多 2 张），无法购买更多货架卡牌。请先开启一局新游戏来消耗掉它们。"
             idx = int(choice_lower) - 1
             cid = shelf[idx]
             if not cid:
                 return zh_cn.get("global", {}).get("card_buy_not_on_shelf", "").format(name="")
-            price = prices[idx]
+            
+            card_obj = ALL_CARDS.get(cid)
+            price = 100
+            if card_obj:
+                r = getattr(card_obj, "rarity", "common")
+                if r == "common":
+                    price = 100
+                elif r == "rare":
+                    price = 300
+                else:
+                    price = 700
+
             if stats.gp < price:
                 return zh_cn.get("global", {}).get("gp_insufficient", "").format(req=price, owned=stats.gp)
             c_name = ALL_CARDS[cid].name if cid in ALL_CARDS else cid
