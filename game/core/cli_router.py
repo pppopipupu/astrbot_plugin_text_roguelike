@@ -255,8 +255,23 @@ class CLIRouter:
         for res in self._handle_command_raw(user_id, parts):
             yield res
 
+    def _get_current_state(self, user_id: str, run) -> str:
+        if run is not None:
+            if getattr(run, "node_type", "") == "battle":
+                return "battle"
+            return "explore"
+        stats = self.save_manager.load_stats(user_id)
+        if stats is not None:
+            if getattr(stats, "in_town", False):
+                if stats.town_flags.get("current_dialog"):
+                    return "dialog"
+                return "town"
+        return "menu"
+
     def _handle_command_raw(self, user_id: str, parts: list[str]) -> Generator[str, None, None]:
         set_user_id(user_id)
+        run = self.save_manager.load_save(user_id)
+        curr_state = self._get_current_state(user_id, run)
         if parts:
             first_cmd = parts[0].lower()
             exempt_cmds = (
@@ -267,10 +282,13 @@ class CLIRouter:
             if first_cmd in exempt_cmds:
                 handler = self._command_handlers.get(first_cmd)
                 if handler:
-                    res_list = list(handler.execute(self, user_id, parts))
-                    yield "\n".join(res_list)
-                    return
-        run = self.save_manager.load_save(user_id)
+                    if curr_state in getattr(handler, "allowed_states", []):
+                        res_list = list(handler.execute(self, user_id, parts))
+                        yield "\n".join(res_list)
+                        return
+                    else:
+                        yield f"❌ 指令【{first_cmd}】在当前状态下不可用。"
+                        return
         is_town_combat = run is not None and run.node_data.get("is_town_combat", False)
         if not parts:
             if run:
@@ -340,11 +358,14 @@ class CLIRouter:
         sub = parts[0]
         handler = self._command_handlers.get(sub)
         if handler:
-            res_list = list(handler.execute(self, user_id, parts))
-            res_text = "\n".join(res_list)
-            if is_town_combat:
-                yield self._handle_town_combat_settle(user_id, run, res_text)
+            if curr_state in getattr(handler, "allowed_states", []):
+                res_list = list(handler.execute(self, user_id, parts))
+                res_text = "\n".join(res_list)
+                if is_town_combat:
+                    yield self._handle_town_combat_settle(user_id, run, res_text)
+                else:
+                    yield res_text
             else:
-                yield res_text
+                yield f"❌ 指令【{sub}】在当前状态下不可用。"
         else:
             yield "🔮 未知子命令。输入 /rogue 帮助 或 /rogue help 获取帮助。"

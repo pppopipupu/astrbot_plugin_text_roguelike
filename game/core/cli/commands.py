@@ -3,7 +3,7 @@ from .base import CommandHandler, split_by_comma_with_brackets
 from ...renderer import GameRenderer
 from ...entities import ALL_CARDS
 
-class StartCommand(CommandHandler, names=["开启", "start"]):
+class StartCommand(CommandHandler, names=["开启", "start"], allowed_states=["menu", "town", "explore", "battle"]):
     def execute(self, router, user_id: str, parts: list[str]) -> Generator[str, None, None]:
         run = router.save_manager.load_save(user_id)
         if run:
@@ -16,7 +16,7 @@ class StartCommand(CommandHandler, names=["开启", "start"]):
             new_run = router.engine.start_new_game(user_id)
             yield GameRenderer.render_game(new_run)
 
-class StatusCommand(CommandHandler, names=["状态", "s"]):
+class StatusCommand(CommandHandler, names=["状态", "s"], allowed_states=["battle", "explore", "town"]):
     def execute(self, router, user_id: str, parts: list[str]) -> Generator[str, None, None]:
         run = router.save_manager.load_save(user_id)
         if not run:
@@ -25,7 +25,7 @@ class StatusCommand(CommandHandler, names=["状态", "s"]):
         else:
             yield GameRenderer.render_game(run)
 
-class DeckCommand(CommandHandler, names=["牌组", "deck"]):
+class DeckCommand(CommandHandler, names=["牌组", "deck"], allowed_states=["menu", "town", "explore", "battle"]):
     def execute(self, router, user_id: str, parts: list[str]) -> Generator[str, None, None]:
         run = router.save_manager.load_save(user_id)
         if not run:
@@ -33,7 +33,7 @@ class DeckCommand(CommandHandler, names=["牌组", "deck"]):
         else:
             yield GameRenderer.render_deck(run)
 
-class OverviewCommand(CommandHandler, names=["总览", "overview"]):
+class OverviewCommand(CommandHandler, names=["总览", "overview"], allowed_states=["menu", "town", "explore", "battle"]):
     def execute(self, router, user_id: str, parts: list[str]) -> Generator[str, None, None]:
         stats = router.save_manager.load_stats(user_id)
         if len(parts) > 1 and parts[1] in ("遗物", "relic", "relics"):
@@ -61,7 +61,7 @@ class TutorialCommand(CommandHandler, names=["教程", "tutorial"]):
         yield GameRenderer.render_tutorial()
 
 
-class ModeCommand(CommandHandler, names=["mode", "模式"]):
+class ModeCommand(CommandHandler, names=["mode", "模式"], allowed_states=["menu", "town"]):
     def execute(self, router, user_id: str, parts: list[str]) -> Generator[str, None, None]:
         stats = router.save_manager.load_stats(user_id)
         stats.rogue_mode = not stats.rogue_mode
@@ -71,7 +71,7 @@ class ModeCommand(CommandHandler, names=["mode", "模式"]):
         status_str = "开启" if stats.rogue_mode else "关闭"
         yield f"✨ 免前缀肉鸽模式已{status_str}！此设置仅对你个人生效。"
 
-class UseCommand(CommandHandler, names=["使用", "p"]):
+class UseCommand(CommandHandler, names=["使用", "p"], allowed_states=["battle"]):
     def execute(self, router, user_id: str, parts: list[str]) -> Generator[str, None, None]:
         run = router.save_manager.load_save(user_id)
         if not run:
@@ -107,7 +107,7 @@ class UseCommand(CommandHandler, names=["使用", "p"]):
             else:
                 yield res + "\n" + GameRenderer.render_game(run)
 
-class MinionCommand(CommandHandler, names=["随从", "m"]):
+class MinionCommand(CommandHandler, names=["随从", "m"], allowed_states=["battle"]):
     def execute(self, router, user_id: str, parts: list[str]) -> Generator[str, None, None]:
         run = router.save_manager.load_save(user_id)
         if not run:
@@ -155,7 +155,7 @@ class MinionCommand(CommandHandler, names=["随从", "m"]):
             else:
                 yield res + "\n" + GameRenderer.render_game(run)
 
-class ChooseCommand(CommandHandler, names=["选择", "c"]):
+class ChooseCommand(CommandHandler, names=["选择", "c"], allowed_states=["menu", "explore", "battle"]):
     def execute(self, router, user_id: str, parts: list[str]) -> Generator[str, None, None]:
         run = router.save_manager.load_save(user_id)
         if not run:
@@ -169,7 +169,7 @@ class ChooseCommand(CommandHandler, names=["选择", "c"]):
         res, term = router._execute_sub_action(user_id, run, parts)
         yield res + "\n" + GameRenderer.render_game(run)
 
-class SpecialCommand(CommandHandler, names=["特殊", "sa"]):
+class SpecialCommand(CommandHandler, names=["特殊", "sa"], allowed_states=["battle"]):
     def execute(self, router, user_id: str, parts: list[str]) -> Generator[str, None, None]:
         run = router.save_manager.load_save(user_id)
         if not run:
@@ -178,7 +178,7 @@ class SpecialCommand(CommandHandler, names=["特殊", "sa"]):
         res, term = router._execute_sub_action(user_id, run, parts)
         yield res + "\n" + GameRenderer.render_game(run)
 
-class EndTurnCommand(CommandHandler, names=["结束", "e"]):
+class EndTurnCommand(CommandHandler, names=["结束", "e"], allowed_states=["battle"]):
     def execute(self, router, user_id: str, parts: list[str]) -> Generator[str, None, None]:
         run = router.save_manager.load_save(user_id)
         if not run:
@@ -190,7 +190,7 @@ class EndTurnCommand(CommandHandler, names=["结束", "e"]):
         else:
             yield res + "\n" + GameRenderer.render_game(run)
 
-class AbandonCommand(CommandHandler, names=["放弃", "abandon"]):
+class AbandonCommand(CommandHandler, names=["放弃", "abandon"], allowed_states=["explore", "battle"]):
     def execute(self, router, user_id: str, parts: list[str]) -> Generator[str, None, None]:
         run = router.save_manager.load_save(user_id)
         if not run:
@@ -202,7 +202,7 @@ class AbandonCommand(CommandHandler, names=["放弃", "abandon"]):
         else:
             yield "⚠️ 确认放弃当前游戏？放弃后进度将无法恢复。确认请输入：\n/rogue abandon confirm"
 
-class ClassCommand(CommandHandler, names=["职业", "class"]):
+class ClassCommand(CommandHandler, names=["职业", "class"], allowed_states=["menu", "town"]):
     def execute(self, router, user_id: str, parts: list[str]) -> Generator[str, None, None]:
         stats = router.save_manager.load_stats(user_id)
         selected_class = getattr(stats, "selected_class", "法师")
@@ -297,7 +297,7 @@ class ClassCommand(CommandHandler, names=["职业", "class"]):
             else:
                 yield "❌ 格式错误。请使用 /rogue 职业 (/rogue class) 或 /rogue 职业 选择/c (/rogue class select) <职业名|子职业序号>。"
 
-class SkillCommand(CommandHandler, names=["技能", "skill", "sk", "k"]):
+class SkillCommand(CommandHandler, names=["技能", "skill", "sk", "k"], allowed_states=["battle"]):
     def execute(self, router, user_id: str, parts: list[str]) -> Generator[str, None, None]:
         run = router.save_manager.load_save(user_id)
         if not run or run.node_type != "battle":
@@ -327,7 +327,7 @@ class SkillCommand(CommandHandler, names=["技能", "skill", "sk", "k"]):
         router.save_manager.save_save(user_id, run)
         yield f"🔥 战士发动了【动作如潮】！获得了额外的 2A 1BA 动作点！(本场战斗还可使用 {uses - 1} 次)\n当前行动点: {p.actions}A, {p.bonus_actions}BA"
 
-class FoldCommand(CommandHandler, names=["折叠", "f", "fold"]):
+class FoldCommand(CommandHandler, names=["折叠", "f", "fold"], allowed_states=["battle"]):
     def execute(self, router, user_id: str, parts: list[str]) -> Generator[str, None, None]:
         run = router.save_manager.load_save(user_id)
         if not run:
@@ -336,7 +336,7 @@ class FoldCommand(CommandHandler, names=["折叠", "f", "fold"]):
         res, term = router._execute_sub_action(user_id, run, parts)
         yield res + "\n" + GameRenderer.render_game(run)
 
-class QueueCommand(CommandHandler, names=["队列", "q", "queue"]):
+class QueueCommand(CommandHandler, names=["队列", "q", "queue"], allowed_states=["battle"]):
     def execute(self, router, user_id: str, parts: list[str]) -> Generator[str, None, None]:
         run = router.save_manager.load_save(user_id)
         if not run:
@@ -353,7 +353,7 @@ class QueueCommand(CommandHandler, names=["队列", "q", "queue"]):
         else:
             yield "\n".join(results) + "\n" + GameRenderer.render_game(run)
 
-class StatsCommand(CommandHandler, names=["统计", "stat", "stats"]):
+class StatsCommand(CommandHandler, names=["统计", "stat", "stats"], allowed_states=["menu", "town"]):
     def execute(self, router, user_id: str, parts: list[str]) -> Generator[str, None, None]:
         stats = router.save_manager.load_stats(user_id)
         yield GameRenderer.render_stats(stats)
@@ -408,7 +408,7 @@ class QueryCommand(CommandHandler, names=["查询", "query", "info", "i"]):
             else:
                 yield GameRenderer.render_detailed_battle(run)
 
-class DrawCommand(CommandHandler, names=["抽牌堆", "draw", "draw_pile"]):
+class DrawCommand(CommandHandler, names=["抽牌堆", "draw", "draw_pile"], allowed_states=["battle"]):
     def execute(self, router, user_id: str, parts: list[str]) -> Generator[str, None, None]:
         run = router.save_manager.load_save(user_id)
         if not run:
@@ -418,7 +418,7 @@ class DrawCommand(CommandHandler, names=["抽牌堆", "draw", "draw_pile"]):
         else:
             yield GameRenderer.render_draw_pile(run)
 
-class DiscardCommand(CommandHandler, names=["弃牌堆", "discard", "discard_pile"]):
+class DiscardCommand(CommandHandler, names=["弃牌堆", "discard", "discard_pile"], allowed_states=["battle"]):
     def execute(self, router, user_id: str, parts: list[str]) -> Generator[str, None, None]:
         run = router.save_manager.load_save(user_id)
         if not run:
@@ -428,7 +428,7 @@ class DiscardCommand(CommandHandler, names=["弃牌堆", "discard", "discard_pil
         else:
             yield GameRenderer.render_discard_pile(run)
 
-class ExhaustCommand(CommandHandler, names=["消耗堆", "exhaust", "exhaust_pile"]):
+class ExhaustCommand(CommandHandler, names=["消耗堆", "exhaust", "exhaust_pile"], allowed_states=["battle"]):
     def execute(self, router, user_id: str, parts: list[str]) -> Generator[str, None, None]:
         run = router.save_manager.load_save(user_id)
         if not run:
@@ -438,7 +438,7 @@ class ExhaustCommand(CommandHandler, names=["消耗堆", "exhaust", "exhaust_pil
         else:
             yield GameRenderer.render_exhaust_pile(run)
 
-class MinionGraveyardCommand(CommandHandler, names=["随从墓地", "minion_graveyard", "mg"]):
+class MinionGraveyardCommand(CommandHandler, names=["随从墓地", "minion_graveyard", "mg"], allowed_states=["battle"]):
     def execute(self, router, user_id: str, parts: list[str]) -> Generator[str, None, None]:
         run = router.save_manager.load_save(user_id)
         if not run:
@@ -448,7 +448,7 @@ class MinionGraveyardCommand(CommandHandler, names=["随从墓地", "minion_grav
         else:
             yield GameRenderer.render_minion_graveyard(run)
 
-class EnemyGraveyardCommand(CommandHandler, names=["敌人墓地", "enemy_graveyard", "eg"]):
+class EnemyGraveyardCommand(CommandHandler, names=["敌人墓地", "enemy_graveyard", "eg"], allowed_states=["battle"]):
     def execute(self, router, user_id: str, parts: list[str]) -> Generator[str, None, None]:
         run = router.save_manager.load_save(user_id)
         if not run:
@@ -458,7 +458,7 @@ class EnemyGraveyardCommand(CommandHandler, names=["敌人墓地", "enemy_gravey
         else:
             yield GameRenderer.render_enemy_graveyard(run)
 
-class TownCommand(CommandHandler, names=["主城", "town"]):
+class TownCommand(CommandHandler, names=["主城", "town"], allowed_states=["menu"]):
     def execute(self, router, user_id: str, parts: list[str]) -> Generator[str, None, None]:
         run = router.save_manager.load_save(user_id)
         if run:
@@ -469,7 +469,7 @@ class TownCommand(CommandHandler, names=["主城", "town"]):
         router.save_manager.save_stats(user_id, stats)
         yield router.town_engine.render_current_room(user_id, stats)
 
-class MapStyleCommand(CommandHandler, names=["地图", "map"]):
+class MapStyleCommand(CommandHandler, names=["地图", "map"], allowed_states=["menu", "town", "explore", "battle"]):
     def execute(self, router, user_id: str, parts: list[str]) -> Generator[str, None, None]:
         stats = router.save_manager.load_stats(user_id)
         if not stats.in_town:

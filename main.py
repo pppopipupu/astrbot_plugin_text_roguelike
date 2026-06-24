@@ -171,6 +171,18 @@ class MyPlugin(Star):
     def _execute_sub_action(self, user_id: str, run, parts: list[str]):
         return self.cli_router._execute_sub_action(user_id, run, parts)
 
+    def _get_current_state(self, user_id: str, run, stats) -> str:
+        if run is not None:
+            if getattr(run, "node_type", "") == "battle":
+                return "battle"
+            return "explore"
+        if stats is not None:
+            if getattr(stats, "in_town", False):
+                if stats.town_flags.get("current_dialog"):
+                    return "dialog"
+                return "town"
+        return "menu"
+
     async def send_dm(self, event, target_id: str, text: str):
         if not target_id or not text:
             return
@@ -622,20 +634,27 @@ class MyPlugin(Star):
                 is_game_cmd = False
                 run = self.save_manager.load_save(user_id)
                 stats = self.save_manager.load_stats(user_id)
-                if not run and stats.in_town and stats.town_flags.get("current_dialog"):
+                curr_state = self._get_current_state(user_id, run, stats)
+                if curr_state == "dialog":
                     is_game_cmd = True
-                elif not run and stats.in_town:
+                elif curr_state == "town":
                     town_nav_cmds = {
                         "w", "a", "s", "d", "up", "down", "left", "right", 
                         "退出", "quit", "exit", "q", "回城", "home", 
                         "拿取", "捡起", "take", "pick", "使用", "use", 
                         "交互", "talk", "interact", "inter", "talk_to"
                     }
-                    if first_word in town_nav_cmds or (self.cli_router and first_word in self.cli_router._command_handlers):
+                    if first_word in town_nav_cmds:
                         is_game_cmd = True
+                    elif self.cli_router and first_word in self.cli_router._command_handlers:
+                        handler = self.cli_router._command_handlers[first_word]
+                        if curr_state in getattr(handler, "allowed_states", []):
+                            is_game_cmd = True
                 else:
                     if self.cli_router and first_word in self.cli_router._command_handlers:
-                        is_game_cmd = True
+                        handler = self.cli_router._command_handlers[first_word]
+                        if curr_state in getattr(handler, "allowed_states", []):
+                            is_game_cmd = True
                     elif first_word.isdigit():
                         if run is not None and getattr(run, "node_type", "") != "duel":
                             is_game_cmd = True
