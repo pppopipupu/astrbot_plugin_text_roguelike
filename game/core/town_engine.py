@@ -240,17 +240,18 @@ class TownEngine:
         return "\n".join(lines)
 
     def _get_market_shelf(self, stats: UserStats) -> List[str]:
-        shelf = stats.town_flags.get("market_shelf")
-        from game.entities.cards.market import MARKET_CARDS
         fixed_cards = [
             "warrior_blood_fury", "neutral_power_word_pain",
             "warrior_shield_bash", "wizard_antimagic_field", "neutral_power_word_stun",
             "warrior_hell_raider", "wizard_prismatic_wall", "wizard_time_ravage", "neutral_power_word_kill", "neutral_plane_shift"
         ]
-        if shelf is None or len(shelf) != 10:
-            already_bought = set(getattr(stats, "purchased_pool", []) or []) | set(getattr(stats, "unlocked_new_cards", []) or [])
+        already_bought = set(getattr(stats, "purchased_pool", []) or []) | set(getattr(stats, "unlocked_new_cards", []) or [])
+        shelf = stats.town_flags.get("market_shelf")
+        if not isinstance(shelf, list) or len(shelf) != 10 or any(c and c not in fixed_cards for c in shelf):
             shelf = [c if c not in already_bought else "" for c in fixed_cards]
-            stats.town_flags["market_shelf"] = shelf
+        else:
+            shelf = [c if (c and c not in already_bought) else "" for c in shelf]
+        stats.town_flags["market_shelf"] = shelf
         return shelf
 
     def move(self, user_id: str, direction: str) -> str:

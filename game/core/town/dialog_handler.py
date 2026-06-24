@@ -92,8 +92,6 @@ def handle_sub_dialog(town_engine, stats: UserStats, npc_id: str, choice_lower: 
             town_engine.save_manager.save_stats(user_id, stats)
             return town_engine._render_dialog_window(stats, npc_id, zh_cn)
         if choice_lower in ("1", "2", "3", "4", "5", "6", "7", "8", "9", "10"):
-            if len(stats.purchased_pool) >= 2:
-                return "❌ 你当前已锁定了最大数量的卡牌（最多 2 张），无法购买更多货架卡牌。请先开启一局新游戏来消耗掉它们。"
             idx = int(choice_lower) - 1
             cid = shelf[idx]
             if not cid:

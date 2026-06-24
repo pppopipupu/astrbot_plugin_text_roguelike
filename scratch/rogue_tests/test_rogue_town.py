@@ -320,10 +320,25 @@ class TestRogueTown(unittest.TestCase):
             await run_command(plugin, ".rogue 2")
             res_buy = await run_command(plugin, ".rogue 1")
             self.assertIn("成功", res_buy)
+            res_buy2 = await run_command(plugin, ".rogue 2")
+            self.assertIn("成功", res_buy2)
+            res_buy3 = await run_command(plugin, ".rogue 3")
+            self.assertIn("成功", res_buy3)
             await run_command(plugin, ".rogue exit")
 
             stats = save_manager.load_stats("test_user")
-            self.assertEqual(len(stats.purchased_pool), 1)
+            self.assertEqual(len(stats.purchased_pool), 3)
+
+            stats.town_flags["market_shelf"] = ["invalid_card"]
+            save_manager.save_stats("test_user", stats)
+            from game.core.town_engine import TownEngine
+            town_eng = TownEngine(save_manager, None)
+            shelf = town_eng._get_market_shelf(stats)
+            self.assertEqual(len(shelf), 10)
+            self.assertEqual(shelf[0], "")
+            self.assertEqual(shelf[1], "")
+            self.assertEqual(shelf[2], "")
+            self.assertEqual(shelf[3], "wizard_antimagic_field")
 
             await run_command(plugin, ".rogue quit")
             res_new = await run_command(plugin, ".rogue 开启")
