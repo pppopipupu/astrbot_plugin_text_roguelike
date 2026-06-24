@@ -56,8 +56,8 @@ def get_card_cost_str(card) -> str:
     return cost_str.strip() or "免费"
 
 def get_rogue_card_library_items() -> list:
-    from game.cards import ALL_CARDS
-    from game.models.manager import SaveManager
+    from ..cards import ALL_CARDS
+    from ..models.manager import SaveManager
     boss_cfg = SaveManager().load_admin_config()
     icerainboww_enabled = boss_cfg.get("icerainboww_enabled", True)
     neutrals = []
@@ -108,7 +108,7 @@ def get_rogue_card_library_items() -> list:
     return neutrals + blue_spells + red_cards + curses
 
 def get_rogue_relic_library_items() -> list:
-    from game.data.relic_data import RELIC_CONFIG
+    from ..data.relic_data import RELIC_CONFIG
     items = []
     rarity_map = {
         "common": "普通",

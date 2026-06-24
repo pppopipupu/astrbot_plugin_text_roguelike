@@ -4,7 +4,6 @@ import shutil
 import tempfile
 import sys
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from game.models.manager import SaveManager
 from game.core.duel_router import DuelRouter
