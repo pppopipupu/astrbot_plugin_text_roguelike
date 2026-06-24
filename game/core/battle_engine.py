@@ -115,7 +115,7 @@ class BattleEngine(BaseBattleEngine):
             self._add_buff_to(p, "key_scholar_passive", "门扉共鸣", "打出或部署护符卡牌时，玩家回复 3 点生命值并获得 4 点护盾")
         init_draw = 6
         for r in p.relics:
-            from ..entities.relics.relics import get_relic_impl
+            from ..entities.relics import get_relic_impl
             impl = get_relic_impl(r)
             if impl:
                 init_draw = impl.modify_initial_draw(run, init_draw, self)

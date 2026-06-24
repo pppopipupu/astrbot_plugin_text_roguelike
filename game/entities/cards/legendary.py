@@ -103,7 +103,7 @@ class TimeStopCard(Card):
 @register_card("break_limits")
 class BreakLimitsCard(Card):
     def execute(self, run, target, engine) -> str:
-        from ..buffs.buffs import is_debuff
+        from ..buffs import is_debuff
         p = run.player
         doubled_count = 0
         for b in p.buffs:

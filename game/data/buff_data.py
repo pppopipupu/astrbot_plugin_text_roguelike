@@ -202,7 +202,7 @@ BUFF_CONFIG = {
     },
     "immune_bludgeoning": {
         "name": "钝击免疫",
-        "desc": "受到的钝击伤害减少 100%"
+        "desc": "受is_debuff到的钝击伤害减少 100%"
     },
     "resist_cold": {
         "name": "寒冷抗性",

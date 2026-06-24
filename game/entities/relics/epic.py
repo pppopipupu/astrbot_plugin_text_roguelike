@@ -1,26 +1,6 @@
-from typing import Dict, List, Optional
-from ...data.relic_data import RELIC_CONFIG
-from .registry import register_relic, RELIC_CLASS_REGISTRY
 import re
-
-class RelicImpl:
-    def __init__(self, relic_id: str):
-        self.id = relic_id
-
-    def on_battle_start(self, run, engine):
-        pass
-
-    def on_battle_win(self, run, engine):
-        pass
-
-    def modify_initial_draw(self, run, draw_count: int, engine) -> int:
-        return draw_count
-
-    def on_damage_take(self, event, run, engine):
-        pass
-
-    def on_shield_decay(self, event, run, engine):
-        pass
+from .base import RelicImpl
+from .registry import register_relic
 
 class AncientPageRelic(RelicImpl):
     def __init__(self, relic_id: str):
@@ -51,26 +31,6 @@ class HeavyArmorRelic(RelicImpl):
         p.shield += self.shield_gain
         engine._log_event(run, f"🛡️ [重装甲片] 触发：获得 {self.shield_gain} 点初始护盾。")
 
-class LeatherArmorRelic(RelicImpl):
-    def __init__(self, relic_id: str):
-        super().__init__(relic_id)
-        self.shield_gain = 4
-
-    def on_battle_start(self, run, engine):
-        p = run.player
-        p.shield += self.shield_gain
-        engine._log_event(run, f"🛡️ [坚固皮革] 触发：获得 {self.shield_gain} 点初始护盾。")
-
-class RustShackleRelic(RelicImpl):
-    def __init__(self, relic_id: str):
-        super().__init__(relic_id)
-        self.hp_loss = 4
-
-    def on_battle_start(self, run, engine):
-        p = run.player
-        p.hp = max(1, p.hp - self.hp_loss)
-        engine._log_event(run, f"🔒 [铁锈之锁] 触发：失去 {self.hp_loss} 点生命值。")
-
 class GreedyContractRelic(RelicImpl):
     def __init__(self, relic_id: str):
         super().__init__(relic_id)
@@ -80,18 +40,6 @@ class GreedyContractRelic(RelicImpl):
         p = run.player
         p.hp = max(1, p.hp - self.hp_loss)
         engine._log_event(run, f"🪙 [贪婪契约] 触发：失去 {self.hp_loss} 点生命值。")
-
-class ReadyPackRelic(RelicImpl):
-    def __init__(self, relic_id: str):
-        super().__init__(relic_id)
-        self.draw_bonus = 1
-        self.ba_bonus = 1
-
-    def on_battle_start(self, run, engine):
-        engine._log_event(run, f"🎒 [准备背包] 触发：本场战斗初始附赠动作（BA）+{self.ba_bonus}。")
-
-    def modify_initial_draw(self, run, draw_count: int, engine) -> int:
-        return draw_count + self.draw_bonus
 
 class AncientEyeRelic(RelicImpl):
     def __init__(self, relic_id: str):
@@ -103,17 +51,6 @@ class AncientEyeRelic(RelicImpl):
 
     def modify_initial_draw(self, run, draw_count: int, engine) -> int:
         return draw_count + self.draw_bonus
-
-class BlindSpotRelic(RelicImpl):
-    def __init__(self, relic_id: str):
-        super().__init__(relic_id)
-        self.draw_penalty = 2
-
-    def on_battle_start(self, run, engine):
-        engine._log_event(run, f"👁️ [盲目之障] 触发：首回合少抽 {self.draw_penalty} 张牌。")
-
-    def modify_initial_draw(self, run, draw_count: int, engine) -> int:
-        return max(0, draw_count - self.draw_penalty)
 
 class DragonBloodRelic(RelicImpl):
     def __init__(self, relic_id: str):
@@ -160,42 +97,6 @@ class VampiricTouchRelic(RelicImpl):
             if run.player.hp > old_hp:
                 engine._log_event(run, f"❤️ [吸血之触] 回复了 {self.heal_amount} 点生命值。")
 
-class FoolOathRelic(RelicImpl):
-    def __init__(self, relic_id: str):
-        super().__init__(relic_id)
-        self.hp_reduction = 3
-
-    def on_minion_summon(self, event, run, engine):
-        m = event.minion_state
-        m.hp = max(1, m.hp - self.hp_reduction)
-        m.max_hp = max(1, m.max_hp - self.hp_reduction)
-
-class WitherSeedRelic(RelicImpl):
-    def __init__(self, relic_id: str):
-        super().__init__(relic_id)
-
-    def on_heal(self, event, run, engine):
-        if event.target == "p0":
-            event.cancel()
-
-class WhetstoneRelic(RelicImpl):
-    def __init__(self, relic_id: str):
-        super().__init__(relic_id)
-        self.attack_bonus = 1
-
-    def on_damage_calculate(self, event, run, engine):
-        if event.source.startswith("p") and event.source != "p0" and event.damage_type == "attack":
-            event.modified_damage += self.attack_bonus
-
-class ArcaneRuneRelic(RelicImpl):
-    def __init__(self, relic_id: str):
-        super().__init__(relic_id)
-        self.spell_bonus = 1
-
-    def on_damage_calculate(self, event, run, engine):
-        if event.damage_type == "spell" and event.source == "p0":
-            event.modified_damage += self.spell_bonus
-
 class MarkOfFuryRelic(RelicImpl):
     def __init__(self, relic_id: str):
         super().__init__(relic_id)
@@ -214,15 +115,6 @@ class EnergyCoreRelic(RelicImpl):
         if event.is_player:
             run.player.actions += self.action_bonus
 
-class ChemicalXRelic(RelicImpl):
-    pass
-
-class AncientCompassRelic(RelicImpl):
-    def on_battle_start(self, run, engine):
-        for e in run.enemies:
-            e.actions = max(0, e.actions - 1)
-        engine._log_event(run, "🧭 [古老罗盘] 触发：所有敌人首回合动作点（A）减少 1。")
-
 class PortalFragmentRelic(RelicImpl):
     def on_battle_start(self, run, engine):
         import random
@@ -234,30 +126,6 @@ class PortalFragmentRelic(RelicImpl):
             from ...data.card_data import CARD_CONFIG
             name = CARD_CONFIG.get(chosen, {}).get("name", chosen)
             engine._log_event(run, f"🌀 [门扉碎片] 触发：随机将一张中立牌【{name}】加入手牌。")
-
-class AncientSigilRelic(RelicImpl):
-    def on_card_played(self, event, run, engine):
-        if getattr(event.card, "exhaust", False):
-            import random
-            if random.random() < 0.5:
-                engine._heal_target(run, "p0", 3)
-                engine._log_event(run, "✨ [先古印记] 触发：为玩家恢复 3 点生命值。")
-            else:
-                engine._gain_shield(run, "p0", 5)
-                engine._log_event(run, "✨ [先古印记] 触发：为玩家获得 5 点护盾。")
-
-class VoidLensRelic(RelicImpl):
-    def on_damage_calculate(self, event, run, engine):
-        if event.card and event.card.color == "neutral" and event.source == "p0":
-            event.modified_damage += 2
-
-    def on_shield_gain(self, event, run, engine):
-        curr_cid = run.node_data.get("current_playing_card_id", "")
-        if curr_cid:
-            from ..cards.base import ALL_CARDS
-            card = ALL_CARDS.get(curr_cid)
-            if card and card.color == "neutral":
-                event.modified_amount += 2
 
 class AncientKeyringRelic(RelicImpl):
     pass
@@ -291,18 +159,6 @@ class FrostBladeRelic(RelicImpl):
         if dtype_str == "cold" and event.source == "p0":
             event.modified_damage += 4
 
-class ShadowCurseRelic(RelicImpl):
-    def on_card_played(self, event, run, engine):
-        if event.card.type == "spell" and not event.card.id.startswith("demon_contract"):
-            engine._damage_target(run, "p0", 2, source="shadow_curse", damage_type="true")
-            engine._log_event(run, "🕸️ [影之诅咒] 触发：失去 2 点生命值。")
-
-class GlacierChillRelic(RelicImpl):
-    def on_turn_start(self, event, run, engine):
-        if event.is_player:
-            run.player.actions = max(0, run.player.actions - 1)
-            engine._log_event(run, "❄️ [严寒侵袭] 触发：玩家本回合动作点 A 减少 1。")
-
 class AbyssContractRelic(RelicImpl):
     def on_damage_take(self, event, run, engine):
         dtype_str = event.damage_type.value if hasattr(event.damage_type, "value") else str(event.damage_type)
@@ -324,26 +180,10 @@ class GlacierCoreRelic(RelicImpl):
                 if feedback_parts:
                     engine._log_event(run, "🏔️ [极寒之核] 触发：" + "，".join(feedback_parts) + "。")
 
+
 for name, obj in list(globals().items()):
     if isinstance(obj, type) and issubclass(obj, RelicImpl) and obj is not RelicImpl:
         snake = re.sub(r'(?<!^)(?=[A-Z])', '_', name).lower()
         if snake.endswith('_relic'):
             relic_id = snake[:-6]
             register_relic(relic_id)(obj)
-
-def get_relic_impl(relic_id: str) -> Optional[RelicImpl]:
-    cls = RELIC_CLASS_REGISTRY.get(relic_id)
-    if cls:
-        return cls(relic_id)
-    return None
-
-def get_relic_name(relic_id: str) -> str:
-    return RELIC_CONFIG.get(relic_id, {}).get("name", relic_id)
-
-def get_relic_desc(relic_id: str) -> str:
-    return RELIC_CONFIG.get(relic_id, {}).get("desc", "")
-
-def get_relic_rarity(relic_id: str) -> str:
-    return RELIC_CONFIG.get(relic_id, {}).get("rarity", "common")
-
-ALL_RELIC_IDS = list(RELIC_CONFIG.keys())

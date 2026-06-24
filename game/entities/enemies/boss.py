@@ -510,7 +510,7 @@ class BossYogSothothTemplate(EnemyTemplate):
             logs = []
         p = run.player
         import random
-        from ..buffs.buffs import is_debuff
+        from ..buffs import is_debuff
 
         strength = 0
         for b in enemy.buffs:

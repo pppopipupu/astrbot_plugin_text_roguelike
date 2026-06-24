@@ -1,0 +1,51 @@
+from typing import Generator
+from ...base import CommandHandler, split_by_comma_with_brackets
+from .....renderer import GameRenderer
+
+class MinionCommand(CommandHandler, names=["随从", "m"], allowed_states=["battle"]):
+    def execute(self, router, user_id: str, parts: list[str]) -> Generator[str, None, None]:
+        run = router.save_manager.load_save(user_id)
+        if not run:
+            yield "❌ 你当前没有正在进行的游戏。"
+            return
+        if len(parts) < 2:
+            yield "❌ 请提供随从指令，例如：/rogue 随从 1 攻击 e1"
+            return
+        full_arg = " ".join(parts[1:])
+        is_queue = False
+        if "," in full_arg:
+            sub_parts = split_by_comma_with_brackets(full_arg)
+            is_queue = True
+            valid_parts_count = 0
+            for sp in sub_parts:
+                sp_clean = sp.strip()
+                if not sp_clean:
+                    continue
+                valid_parts_count += 1
+                words = sp_clean.split()
+                if len(words) < 2:
+                    is_queue = False
+                    break
+            if valid_parts_count <= 1:
+                is_queue = False
+        if is_queue:
+            items = split_by_comma_with_brackets(full_arg)
+            converted_items = []
+            for item in items:
+                item_str = item.strip()
+                if not item_str:
+                    continue
+                if item_str.startswith("随从 ") or item_str.startswith("m "):
+                    converted_items.append(item_str)
+                else:
+                    converted_items.append(f"随从 {item_str}")
+            queue_str = "[" + ", ".join(converted_items) + "]"
+            results = []
+            router._execute_queue(user_id, run, queue_str, results)
+            yield "\n".join(results) + "\n" + GameRenderer.render_game(run)
+        else:
+            res, term = router._execute_sub_action(user_id, run, parts)
+            if term:
+                yield res
+            else:
+                yield res + "\n" + GameRenderer.render_game(run)

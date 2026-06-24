@@ -21,21 +21,21 @@ class RelicTriggerHandler:
         event_bus.subscribe(ShieldDecayEvent, self.on_shield_decay)
 
     def on_battle_start(self, event):
-        from ...entities.relics.relics import get_relic_impl
+        from ...entities.relics import get_relic_impl
         for r in list(event.run.player.relics):
             impl = get_relic_impl(r)
             if impl and hasattr(impl, "on_battle_start"):
                 impl.on_battle_start(event.run, self.engine)
 
     def on_battle_win(self, event):
-        from ...entities.relics.relics import get_relic_impl
+        from ...entities.relics import get_relic_impl
         for r in list(event.run.player.relics):
             impl = get_relic_impl(r)
             if impl and hasattr(impl, "on_battle_win"):
                 impl.on_battle_win(event.run, self.engine)
 
     def on_turn_start(self, event):
-        from ...entities.relics.relics import get_relic_impl
+        from ...entities.relics import get_relic_impl
         if event.is_player:
             event.run.node_data["player_damaged_this_turn"] = False
             for r in list(event.run.player.relics):
@@ -44,14 +44,14 @@ class RelicTriggerHandler:
                     impl.on_turn_start(event, event.run, self.engine)
 
     def on_card_played(self, event):
-        from ...entities.relics.relics import get_relic_impl
+        from ...entities.relics import get_relic_impl
         for r in list(event.run.player.relics):
             impl = get_relic_impl(r)
             if impl and hasattr(impl, "on_card_played"):
                 impl.on_card_played(event, event.run, self.engine)
 
     def on_damage_calculate(self, event):
-        from ...entities.relics.relics import get_relic_impl
+        from ...entities.relics import get_relic_impl
         if event.source == "p0":
             for r in list(event.run.player.relics):
                 impl = get_relic_impl(r)
@@ -59,14 +59,14 @@ class RelicTriggerHandler:
                     impl.on_damage_calculate(event, event.run, self.engine)
 
     def on_minion_summon(self, event):
-        from ...entities.relics.relics import get_relic_impl
+        from ...entities.relics import get_relic_impl
         for r in list(event.run.player.relics):
             impl = get_relic_impl(r)
             if impl and hasattr(impl, "on_minion_summon"):
                 impl.on_minion_summon(event, event.run, self.engine)
 
     def on_shield_gain(self, event):
-        from ...entities.relics.relics import get_relic_impl
+        from ...entities.relics import get_relic_impl
         if event.target == "p0":
             for r in list(event.run.player.relics):
                 impl = get_relic_impl(r)
@@ -74,7 +74,7 @@ class RelicTriggerHandler:
                     impl.on_shield_gain(event, event.run, self.engine)
 
     def on_heal(self, event):
-        from ...entities.relics.relics import get_relic_impl
+        from ...entities.relics import get_relic_impl
         if event.target == "p0":
             for r in list(event.run.player.relics):
                 impl = get_relic_impl(r)
@@ -82,14 +82,14 @@ class RelicTriggerHandler:
                     impl.on_heal(event, event.run, self.engine)
 
     def on_damage_take(self, event):
-        from ...entities.relics.relics import get_relic_impl
+        from ...entities.relics import get_relic_impl
         for r in list(event.run.player.relics):
             impl = get_relic_impl(r)
             if impl and hasattr(impl, "on_damage_take"):
                 impl.on_damage_take(event, event.run, self.engine)
 
     def on_shield_decay(self, event):
-        from ...entities.relics.relics import get_relic_impl
+        from ...entities.relics import get_relic_impl
         for r in list(event.run.player.relics):
             impl = get_relic_impl(r)
             if impl and hasattr(impl, "on_shield_decay"):
@@ -110,7 +110,7 @@ class BuffTriggerHandler:
         event_bus.subscribe(EnemySyncIntentsEvent, self.on_enemy_sync_intents)
 
     def on_turn_start(self, event):
-        from ...entities.buffs.buffs import get_buff_impl
+        from ...entities.buffs import get_buff_impl
         entities_with_buffs = []
         if event.is_player:
             entities_with_buffs.append((event.run.player, event.run.player))
@@ -124,7 +124,7 @@ class BuffTriggerHandler:
                     impl.on_turn_start(event, b, entity)
 
     def on_turn_end(self, event):
-        from ...entities.buffs.buffs import get_buff_impl
+        from ...entities.buffs import get_buff_impl
         entities_with_buffs = []
         if event.is_player:
             entities_with_buffs.append((event.run.player, event.run.player))
@@ -138,14 +138,14 @@ class BuffTriggerHandler:
                     impl.on_turn_end(event, b, entity)
 
     def on_card_play(self, event):
-        from ...entities.buffs.buffs import get_buff_impl
+        from ...entities.buffs import get_buff_impl
         for b in list(event.run.player.buffs):
             impl = get_buff_impl(b.id, b.stacks, getattr(b, "stacks2", None))
             if impl and hasattr(impl, "on_card_play"):
                 impl.on_card_play(event, b, event.run.player)
 
     def on_card_played(self, event):
-        from ...entities.buffs.buffs import get_buff_impl
+        from ...entities.buffs import get_buff_impl
         for b in list(event.run.player.buffs):
             impl = get_buff_impl(b.id, b.stacks, getattr(b, "stacks2", None))
             if impl and hasattr(impl, "on_card_played"):
@@ -157,7 +157,7 @@ class BuffTriggerHandler:
                     impl.on_card_played(event, b, enemy)
 
     def on_damage_calculate(self, event):
-        from ...entities.buffs.buffs import get_buff_impl
+        from ...entities.buffs import get_buff_impl
         if event.source.startswith("p"):
             for b in list(event.run.player.buffs):
                 impl = get_buff_impl(b.id, b.stacks, getattr(b, "stacks2", None))
@@ -195,7 +195,7 @@ class BuffTriggerHandler:
                         impl.on_damage_calculate_defend(event, b, enemy)
 
     def on_heal(self, event):
-        from ...entities.buffs.buffs import get_buff_impl
+        from ...entities.buffs import get_buff_impl
         if event.target == "p0":
             for b in list(event.run.player.buffs):
                 impl = get_buff_impl(b.id, b.stacks, getattr(b, "stacks2", None))
@@ -203,7 +203,7 @@ class BuffTriggerHandler:
                     impl.on_heal(event, b, event.run.player)
 
     def on_heal_calculate(self, event):
-        from ...entities.buffs.buffs import get_buff_impl
+        from ...entities.buffs import get_buff_impl
         if event.target == "p0":
             for b in list(event.run.player.buffs):
                 impl = get_buff_impl(b.id, b.stacks, getattr(b, "stacks2", None))
@@ -211,14 +211,14 @@ class BuffTriggerHandler:
                     impl.on_heal_calculate(event, b, event.run.player)
 
     def on_enemy_sync_intents(self, event):
-        from ...entities.buffs.buffs import get_buff_impl
+        from ...entities.buffs import get_buff_impl
         for b in list(event.enemy.buffs):
             impl = get_buff_impl(b.id, b.stacks, getattr(b, "stacks2", None))
             if impl and hasattr(impl, "on_enemy_sync_intents"):
                 impl.on_enemy_sync_intents(event, b, event.enemy)
 
     def on_shield_gain(self, event):
-        from ...entities.buffs.buffs import get_buff_impl
+        from ...entities.buffs import get_buff_impl
         if event.target == "p0":
             for b in list(event.run.player.buffs):
                 impl = get_buff_impl(b.id, b.stacks, getattr(b, "stacks2", None))
@@ -226,7 +226,7 @@ class BuffTriggerHandler:
                     impl.on_shield_gain(event, b, event.run.player)
 
     def on_damage_take(self, event):
-        from ...entities.buffs.buffs import get_buff_impl
+        from ...entities.buffs import get_buff_impl
         if event.target == "p0":
             for b in list(event.run.player.buffs):
                 impl = get_buff_impl(b.id, b.stacks, getattr(b, "stacks2", None))

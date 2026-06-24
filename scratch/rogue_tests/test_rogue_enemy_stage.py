@@ -70,7 +70,7 @@ class TestRogueEnemyStage(unittest.TestCase):
         self.assertEqual(len(fiend_logs), 1)
         self.assertIn("对【玩家】造成 6 点真实伤害，对生命造成 6 伤害", fiend_logs[0])
 
-        from game.entities.buffs.buffs import BeatOfDeathBuff
+        from game.entities.buffs.debuffs import BeatOfDeathBuff
         beat_buff = BeatOfDeathBuff(2)
         class FakeEvent:
             def __init__(self, run, engine):
