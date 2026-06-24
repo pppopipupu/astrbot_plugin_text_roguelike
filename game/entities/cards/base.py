@@ -77,6 +77,41 @@ class CardRegistryDict(dict):
             return inst
         return None
 
+    def __iter__(self):
+        from ...data.card_data import CARD_CONFIG
+        for k in CARD_CONFIG.keys():
+            if k not in self:
+                self._lazy_load_card(k)
+        return super().__iter__()
+
+    def keys(self):
+        from ...data.card_data import CARD_CONFIG
+        for k in CARD_CONFIG.keys():
+            if k not in self:
+                self._lazy_load_card(k)
+        return super().keys()
+
+    def values(self):
+        from ...data.card_data import CARD_CONFIG
+        for k in CARD_CONFIG.keys():
+            if k not in self:
+                self._lazy_load_card(k)
+        return super().values()
+
+    def items(self):
+        from ...data.card_data import CARD_CONFIG
+        for k in CARD_CONFIG.keys():
+            if k not in self:
+                self._lazy_load_card(k)
+        return super().items()
+
+    def __len__(self):
+        from ...data.card_data import CARD_CONFIG
+        for k in CARD_CONFIG.keys():
+            if k not in self:
+                self._lazy_load_card(k)
+        return super().__len__()
+
     def __getitem__(self, key):
         if isinstance(key, str) and ":replay:" in key:
             parts = key.rsplit(":replay:", 1)

@@ -255,20 +255,6 @@ def render_town(stats: UserStats, room_data: Dict[str, Any]) -> str:
             exit_list.append(f"{dir_names[d]}({d.upper()})")
     exit_str = "、".join(exit_list) if exit_list else none_label
 
-    if current_id == "market":
-        shelf = stats.town_flags.get("market_shelf", [])
-        shelf_strs = []
-        prices = [50, 150, 350]
-        rarities = zh_cn.get("global", {}).get("rarities", ["普通", "稀有", "珍奇"])
-        for idx, cid in enumerate(shelf):
-            if not cid:
-                shelf_strs.append(f"{idx+1}. " + zh_cn.get("global", {}).get("market_sold_out", "【已售罄】"))
-            else:
-                c_name = ALL_CARDS[cid].name if cid in ALL_CARDS else cid
-                shelf_strs.append(zh_cn.get("global", {}).get("market_shelf_option", "").format(idx=idx+1, name=c_name, rarity=rarities[idx], price=prices[idx]))
-        desc += zh_cn.get("global", {}).get("market_shelf_header", "\n\n🏷️ 今日货架商品：\n") + "\n".join(shelf_strs)
-        desc += zh_cn.get("global", {}).get("market_shelf_footer", "\n（输入 交互/talk 卡牌商人 即可开启选购或锁定必带卡）")
-
     quest_str = ""
     quest_state = stats.town_flags.get("quest_town_tour_state", "unstarted")
     if quest_state == "started":
