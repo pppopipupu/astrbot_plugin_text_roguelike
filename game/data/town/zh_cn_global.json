@@ -82,7 +82,7 @@
     "card_lock_failed_legendary": "❌ 卡牌大卖场无法锁定传奇稀有度卡牌。",
     "card_lock_failed_not_found": "❌ 未能匹配到叫【{name}】的卡牌。",
     "card_buy_success": "🛒 成功花费 {price} GP 购买了【{name}】。它会在你开启下一局新游戏时注入到你的初始牌组中！",
-    "card_buy_not_on_shelf": "❌ 今日货架上没有【{name}】卡牌在出售。",
+    "card_buy_not_on_shelf": "❌ 大卖场货架上没有【{name}】卡牌在出售。",
     "combat_lost": "💀 你被击败了！不过别担心，在主城的切磋不影响你的局外进度。你已回到了靶场房间。",
     "combat_won_dummy": "训练假人已被摧毁！切磋完成。",
     "combat_won_first": "🎉 你首次战胜了【{name}】！获得了 {gp} GP 奖励！",
@@ -116,7 +116,7 @@
       "a": "西",
       "d": "东"
     },
-    "market_shelf_header": "\n\n🏷️ 今日货架商品：\n",
+    "market_shelf_header": "\n\n🏷️ 专属货架商品：\n",
     "market_shelf_footer": "\n（输入 交互/talk 卡牌商人 即可开启选购或锁定必带卡）",
     "market_shelf_option": "{idx}. 【{name}】({rarity} ─ {price} GP)",
     "quest_tour_complete_ready": "\n📌 任务进度：向导的观光指引 (11/11) ─ 你已探索完全部区域！快回中心广场向向导长老交付任务吧！",
