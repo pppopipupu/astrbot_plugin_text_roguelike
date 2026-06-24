@@ -588,11 +588,17 @@ class MyPlugin(Star):
             if parts:
                 first_word = parts[0].lower()
                 is_duel_cmd = False
-                valid_duel_cmds = {
+                try:
+                    from game.core.duel.base import DuelCommandHandler, DuelActionHandler
+                    registry_cmds = set(DuelCommandHandler.registry.keys()) | set(DuelActionHandler.registry.keys())
+                except ImportError:
+                    registry_cmds = set()
+                valid_duel_cmds = registry_cmds | {
                     "帮助", "help", "hp", "牌组", "deck", "dk", "接受", "accept",
                     "放弃", "abandon", "confirm", "邀请", "invite", "iv", "模式", "mode",
                     "使用", "use", "u", "play", "p", "随从", "minion", "atk", "m", "结束", "end",
-                    "进化", "evolve", "ev", "幸运币", "coin", "cn", "状态", "status", "s", "e", "查看", "overview", "总览"
+                    "进化", "evolve", "ev", "幸运币", "coin", "cn", "状态", "status", "s", "e", "查看", "overview", "总览",
+                    "i", "info", "query", "查询", "抽牌堆", "draw", "draw_pile", "弃牌堆", "discard", "discard_pile", "消耗堆", "exhaust", "exhaust_pile", "随从墓地", "minion_graveyard", "mg", "minion_grave"
                 }
                 if first_word in valid_duel_cmds:
                     is_duel_cmd = True
@@ -619,27 +625,16 @@ class MyPlugin(Star):
                 if not run and stats.in_town and stats.town_flags.get("current_dialog"):
                     is_game_cmd = True
                 elif not run and stats.in_town:
-                    town_cmds = {
+                    town_nav_cmds = {
                         "w", "a", "s", "d", "up", "down", "left", "right", 
                         "退出", "quit", "exit", "q", "回城", "home", 
                         "拿取", "捡起", "take", "pick", "使用", "use", 
-                        "交互", "talk", "interact", "inter", "talk_to",
-                        "帮助", "help", "统计", "stat", "stats", "查询", "query", "info", "i",
-                        "地图", "map", "任务", "quest", "quests", "背包", "bag", "inventory", "inv"
+                        "交互", "talk", "interact", "inter", "talk_to"
                     }
-                    if first_word in town_cmds:
+                    if first_word in town_nav_cmds or (self.cli_router and first_word in self.cli_router._command_handlers):
                         is_game_cmd = True
                 else:
-                    valid_cmds = {
-                        "开启", "start", "状态", "s", "牌组", "deck", "总览", "overview", 
-                        "帮助", "help", "使用", "p", "随从", "m", "选择", "c", "特殊", "sa", 
-                        "结束", "e", "折叠", "f", "fold", "队列", "q", "queue", "统计", "stat", 
-                        "stats", "查询", "query", "info", "i", "放弃", "abandon", "mode", "模式",
-                        "职业", "class", "教程", "tutorial",
-                        "技能", "skill", "sk", "k", "主城", "town", "地图", "map",
-                        "任务", "quest", "quests", "背包", "bag", "inventory", "inv"
-                    }
-                    if first_word in valid_cmds:
+                    if self.cli_router and first_word in self.cli_router._command_handlers:
                         is_game_cmd = True
                     elif first_word.isdigit():
                         if run is not None and getattr(run, "node_type", "") != "duel":
