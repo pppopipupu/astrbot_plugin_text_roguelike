@@ -102,49 +102,13 @@ class EnemyTemplate:
             enemy.shield += intent.val
             logs.append(f"敌人【{enemy.name}】进行防守，获得 {intent.val} 点护盾。")
 
-from .boss import BossRedDragonTemplate, BossCorruptedHeartTemplate, BossIcerainbowwTemplate, BossThunderLordTemplate, BossYogSothothTemplate
-from .minions import (
-    GoblinCenturionTemplate, GargoylePriestTemplate, BeastMasterTemplate,
-    ObsidianDjinnTemplate, GhostArchmageTemplate, ShadowFiendTemplate,
-    DoomguardTemplate, NecromancerTemplate, PortalGuardianTemplate,
-    FireGuardTemplate, DemonServantTemplate, LightningOrbTemplate,
-    VoidWandererTemplate, AncientWardenTemplate, AstralHoundTemplate,
-    VoidLurkerTemplate
-)
-from .town_enemies import DummyTemplate, NoobSlayer99Template, SniperEliteTemplate, PppopipupuTemplate, GateGuardianTemplate
+ALL_ENEMIES = {}
 
-ALL_ENEMIES = {
-    "远古红龙": BossRedDragonTemplate("远古红龙"),
-    "腐化之心": BossCorruptedHeartTemplate("腐化之心"),
-    "Icerainboww": BossIcerainbowwTemplate("Icerainboww"),
-    "地精百夫长": GoblinCenturionTemplate("地精百夫长"),
-    "石像鬼祭司": GargoylePriestTemplate("石像鬼祭司"),
-    "狂暴兽王": BeastMasterTemplate("狂暴兽王"),
-    "黑曜石巨灵": ObsidianDjinnTemplate("黑曜石巨灵"),
-    "幽灵大魔法师": GhostArchmageTemplate("幽灵大魔法师"),
-    "暗影影魔": ShadowFiendTemplate("暗影影魔"),
-    "雷霆领主": BossThunderLordTemplate("雷霆领主"),
-    "末日守卫": DoomguardTemplate("末日守卫"),
-    "亡灵巫师": NecromancerTemplate("亡灵巫师"),
-    "传送门守卫者": PortalGuardianTemplate("传送门守卫者"),
-    "火元素守卫": FireGuardTemplate("火元素守卫"),
-    "狂暴魔仆": DemonServantTemplate("狂暴魔仆"),
-    "雷影魔仆": LightningOrbTemplate("雷影魔仆"),
-    "虚空之门·尤格-索托斯": BossYogSothothTemplate("虚空之门·尤格-索托斯"),
-    "【觉醒】虚空之门·尤格-索托斯": BossYogSothothTemplate("【觉醒】虚空之门·尤格-索托斯"),
-    "虚空游荡者": VoidWandererTemplate("虚空游荡者"),
-    "先古守卫": AncientWardenTemplate("先古守卫"),
-    "星界猎犬": AstralHoundTemplate("星界猎犬"),
-    "虚空潜伏者": VoidLurkerTemplate("虚空潜伏者"),
-    "训练假人": DummyTemplate("训练假人"),
-    "NoobSlayer99": NoobSlayer99Template("NoobSlayer99"),
-    "xXx_SniperElite_xXx": SniperEliteTemplate("xXx_SniperElite_xXx"),
-    "pppopipupu": PppopipupuTemplate("pppopipupu"),
-    "【觉醒】pppopipupu": PppopipupuTemplate("【觉醒】pppopipupu"),
-    "Gate_Guardian": GateGuardianTemplate("Gate_Guardian"),
-}
-
-from .town_enemies import DummyTemplate, NoobSlayer99Template, SniperEliteTemplate, PppopipupuTemplate, GateGuardianTemplate
+def register_enemy(name: str):
+    def decorator(cls):
+        ALL_ENEMIES[name] = cls(name)
+        return cls
+    return decorator
 
 def get_enemy_template(name: str) -> EnemyTemplate:
     base_name = name.split(" ")[0] if name else ""

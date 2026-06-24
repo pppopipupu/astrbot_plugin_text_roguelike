@@ -416,6 +416,26 @@ class AntimagicImmuneBuff(BuffImpl):
             entity.buffs.remove(buff_state)
 
 
+class RitualBuff(BuffImpl):
+    def on_turn_start(self, event, buff_state, entity):
+        if not event.is_player:
+            event.engine._add_buff_to(entity, "strength", "力量", "造成的伤害增加", buff_state.stacks)
+            event.engine._log_event(event.run, f"[仪式] 触发：【{entity.name}】获得了 {buff_state.stacks} 点力量。")
+
+
+class GrappledBuff(BuffImpl):
+    def on_turn_end(self, event, buff_state, entity):
+        if event.is_player and entity == event.run.player:
+            buff_state.stacks -= 1
+            if buff_state.stacks <= 0:
+                if buff_state in entity.buffs:
+                    entity.buffs.remove(buff_state)
+
+
+class AstralSpeedBuff(BuffImpl):
+    pass
+
+
 for name, obj in list(globals().items()):
     if isinstance(obj, type) and issubclass(obj, BuffImpl) and obj is not BuffImpl:
         if not getattr(obj, "auto_register", True):

@@ -445,5 +445,79 @@ ENEMY_CONFIG = {
         "intents": [
             {"id": "void_strike", "val": 6, "desc": "虚空打击 (造成 6 点黯蚀伤害)"}
         ]
+    },
+    "夺心魔": {
+        "name": "夺心魔",
+        "type": "elite",
+        "hp": "48 (+ 3 * 关卡数)",
+        "actions": "1A 1BA",
+        "intents": [
+            {"id": "tentacles", "val": 6, "desc": "触须缠绕 (造成 6 心灵伤害并使你受擒)"},
+            {"id": "mind_blast", "val": 8, "desc": "心灵震爆 (造成 8 心灵伤害并使你眩晕)"},
+            {"id": "extract_brain", "val": 25, "desc": "采脑 (对受擒的你造成 25 穿刺伤害)"},
+            {"id": "defend", "val": 8, "desc": "心灵屏障 (获得 8 护盾)"}
+        ]
+    },
+    "夺心魔奥术师": {
+        "name": "夺心魔奥术师",
+        "type": "elite",
+        "hp": "52 (+ 3 * 关卡数)",
+        "actions": "1A 1BA",
+        "intents": [
+            {"id": "tentacles", "val": 6, "desc": "触须缠绕 (造成 6 心灵伤害并使你受擒)"},
+            {"id": "mind_blast", "val": 8, "desc": "心灵震爆 (造成 8 心灵伤害并使你眩晕)"},
+            {"id": "extract_brain", "val": 25, "desc": "采脑 (对受擒的你造成 25 穿刺伤害)"},
+            {"id": "magic_missile", "val": 3, "desc": "奥术飞弹 (造成 3 魔法伤害，重复 3 次)"},
+            {"id": "shield_spell", "val": 12, "desc": "护盾术 (获得 12 护盾并净化 1 负面状态)"}
+        ]
+    },
+    "吉斯洋基海盗": {
+        "name": "吉斯洋基海盗",
+        "type": "normal",
+        "hp": "18 (+ 2 * 关卡数)",
+        "actions": "1A 0BA",
+        "intents": [
+            {"id": "silver_sword", "val": 7, "desc": "银剑横扫 (造成 7 挥砍伤害，若你有盾额外造成 4 力场伤害)"},
+            {"id": "astral_step", "val": 6, "desc": "星界跃迁 (获得 6 护盾，且下回合多 1 个动作点)"},
+            {"id": "parry", "val": 8, "desc": "招架防御 (获得 8 护盾)"}
+        ]
+    },
+    "吉斯洋基至高指挥官": {
+        "name": "吉斯洋基至高指挥官",
+        "type": "elite",
+        "hp": "55 (+ 3 * 关卡数)",
+        "actions": "1A 1BA",
+        "intents": [
+            {"id": "silver_greatsword", "val": 12, "desc": "银光大剑 (造成 12 挥砍伤害，施加挥砍易伤)"},
+            {"id": "commanding_presence", "val": 2, "desc": "战术指挥 (所有盟友获得 2 层力量)"},
+            {"id": "psionic_barrier", "val": 14, "desc": "灵能屏障 (获得 14 护盾并获得 1 层力量)"},
+            {"id": "summon_hound", "val": 0, "desc": "星界呼唤 (召唤一只星界幼犬)"}
+        ],
+        "summon_hound": {
+            "name": "星界幼犬",
+            "hp": 15,
+            "max_hp": 15,
+            "intent_val": 3,
+            "intent_desc": "星光撕咬 (造成 3 力场伤害)"
+        }
+    },
+    "邪教徒咔咔": {
+        "name": "邪教徒咔咔",
+        "type": "normal",
+        "hp": "15 (+ 2 * 关卡数)",
+        "actions": "1A 0BA",
+        "intents": [
+            {"id": "caw", "val": 0, "desc": "咔咔！ (第一回合必定施展仪式，此后每回合获得 1 层力量)"},
+            {"id": "peck", "val": 6, "desc": "啄击 (造成 6 物理伤害)"}
+        ]
+    },
+    "星界幼犬": {
+        "name": "星界幼犬",
+        "type": "summon",
+        "hp": "15",
+        "actions": "1A 0BA",
+        "intents": [
+            {"id": "star_bite", "val": 3, "desc": "星光撕咬 (造成 3 力场伤害)"}
+        ]
     }
 }

@@ -1,7 +1,8 @@
 from typing import Tuple, List
-from .base import EnemyTemplate
+from .base import EnemyTemplate, register_enemy
 from ...data.enemy_data import ENEMY_CONFIG
 
+@register_enemy("远古红龙")
 class BossRedDragonTemplate(EnemyTemplate):
     def roll_intents(self, run, engine, enemy) -> List['EnemyIntentState']:
         from ...models.state import EnemyIntentState
@@ -98,7 +99,9 @@ class BossRedDragonTemplate(EnemyTemplate):
                 if len(after_logs) > before_len:
                     dmg_msg = after_logs.pop()
                     logs.append(f"我方随从【{m_name}】受到扫尾波及。{dmg_msg}")
+        return "\n".join(logs)
 
+@register_enemy("腐化之心")
 class BossCorruptedHeartTemplate(EnemyTemplate):
     def roll_intents(self, run, engine, enemy) -> List['EnemyIntentState']:
         from ...models.state import EnemyIntentState
@@ -141,6 +144,14 @@ class BossCorruptedHeartTemplate(EnemyTemplate):
     def execute_intent(self, run, engine, enemy, intent, logs: List[str] = None):
         if logs is None:
             logs = intent
+            from game.models.state import EnemyIntentState
+            intent = EnemyIntentState(
+                type=getattr(enemy, "intent_type", ""),
+                val=getattr(enemy, "intent_val", 0),
+                desc=getattr(enemy, "intent_desc", ""),
+                cost_a=1,
+                cost_ba=0
+            )
             from ...models.state import EnemyIntentState
             intent = EnemyIntentState(
                 type=getattr(enemy, "intent_type", ""),
@@ -206,7 +217,9 @@ class BossCorruptedHeartTemplate(EnemyTemplate):
         elif intent.type == "heart_heal":
             enemy.hp = min(enemy.max_hp, enemy.hp + intent.val)
             logs.append(f"【{enemy.name}】自我回潮，恢复了 {intent.val} 点生命值。")
+        return "\n".join(logs)
 
+@register_enemy("Icerainboww")
 class BossIcerainbowwTemplate(EnemyTemplate):
     def roll_intents(self, run, engine, enemy) -> List['EnemyIntentState']:
         from ...models.state import EnemyIntentState
@@ -239,6 +252,14 @@ class BossIcerainbowwTemplate(EnemyTemplate):
     def execute_intent(self, run, engine, enemy, intent, logs: List[str] = None):
         if logs is None:
             logs = intent
+            from game.models.state import EnemyIntentState
+            intent = EnemyIntentState(
+                type=getattr(enemy, "intent_type", ""),
+                val=getattr(enemy, "intent_val", 0),
+                desc=getattr(enemy, "intent_desc", ""),
+                cost_a=1,
+                cost_ba=0
+            )
             from ...models.state import EnemyIntentState
             intent = EnemyIntentState(
                 type=getattr(enemy, "intent_type", ""),
@@ -343,7 +364,9 @@ class BossIcerainbowwTemplate(EnemyTemplate):
                 if len(after_logs) > before_len:
                     dmg_msg = after_logs.pop()
                     logs.append(f"我方随从【{m_name}】受到冰霜爆震波及。{dmg_msg}")
+        return "\n".join(logs)
 
+@register_enemy("雷霆领主")
 class BossThunderLordTemplate(EnemyTemplate):
     def roll_intents(self, run, engine, enemy) -> List['EnemyIntentState']:
         from ...models.state import EnemyIntentState
@@ -386,7 +409,15 @@ class BossThunderLordTemplate(EnemyTemplate):
 
     def execute_intent(self, run, engine, enemy, intent, logs: List[str] = None):
         if logs is None:
-            logs = []
+            logs = intent
+            from game.models.state import EnemyIntentState
+            intent = EnemyIntentState(
+                type=getattr(enemy, "intent_type", ""),
+                val=getattr(enemy, "intent_val", 0),
+                desc=getattr(enemy, "intent_desc", ""),
+                cost_a=1,
+                cost_ba=0
+            )
         strength = 0
         for b in enemy.buffs:
             if b.id == "strength":
@@ -437,7 +468,9 @@ class BossThunderLordTemplate(EnemyTemplate):
         elif intent.type == "defend":
             enemy.shield += intent.val
             logs.append(f"【{enemy.name}】凝聚雷电防护，获得 {intent.val} 点护盾。")
+        return "\n".join(logs)
 
+@register_enemy("虚空之门·尤格-索托斯")
 class BossYogSothothTemplate(EnemyTemplate):
     def on_enemy_before_death(self, run, enemy, event, engine):
         if enemy.name == "虚空之门·尤格-索托斯":
@@ -507,7 +540,15 @@ class BossYogSothothTemplate(EnemyTemplate):
 
     def execute_intent(self, run, engine, enemy, intent, logs: List[str] = None):
         if logs is None:
-            logs = []
+            logs = intent
+            from game.models.state import EnemyIntentState
+            intent = EnemyIntentState(
+                type=getattr(enemy, "intent_type", ""),
+                val=getattr(enemy, "intent_val", 0),
+                desc=getattr(enemy, "intent_desc", ""),
+                cost_a=1,
+                cost_ba=0
+            )
         p = run.player
         import random
         from ..buffs import is_debuff
@@ -724,3 +765,6 @@ class BossYogSothothTemplate(EnemyTemplate):
             after_logs = run.node_data.get("battle_logs", [])
             dmg_msg = after_logs.pop() if len(after_logs) > before_len else ""
             logs.append(f"【{enemy.name}】引爆现实碎裂，对玩家造成真实伤害。{dmg_msg}")
+        return "\n".join(logs)
+
+register_enemy("【觉醒】虚空之门·尤格-索托斯")(BossYogSothothTemplate)

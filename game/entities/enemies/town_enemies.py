@@ -1,11 +1,13 @@
 from typing import Tuple, List
-from .base import EnemyTemplate
+from .base import EnemyTemplate, register_enemy
 from ...models.state import EnemyIntentState, BuffState
 
+@register_enemy("训练假人")
 class DummyTemplate(EnemyTemplate):
     def roll_intents(self, run, engine, enemy) -> List[EnemyIntentState]:
         return []
 
+@register_enemy("NoobSlayer99")
 class NoobSlayer99Template(EnemyTemplate):
     def roll_intents(self, run, engine, enemy) -> List[EnemyIntentState]:
         turn = run.node_data.get("noob_turn", 1)
@@ -29,6 +31,7 @@ class NoobSlayer99Template(EnemyTemplate):
             ))
         return intents_list
 
+@register_enemy("xXx_SniperElite_xXx")
 class SniperEliteTemplate(EnemyTemplate):
     def roll_intents(self, run, engine, enemy) -> List[EnemyIntentState]:
         turn = run.node_data.get("sniper_turn", 1)
@@ -54,7 +57,15 @@ class SniperEliteTemplate(EnemyTemplate):
 
     def execute_intent(self, run, engine, enemy, intent, logs: List[str] = None):
         if logs is None:
-            logs = []
+            logs = intent
+            from game.models.state import EnemyIntentState
+            intent = EnemyIntentState(
+                type=getattr(enemy, "intent_type", ""),
+                val=getattr(enemy, "intent_val", 0),
+                desc=getattr(enemy, "intent_desc", ""),
+                cost_a=1,
+                cost_ba=0
+            )
         if intent.type == "aim":
             enemy.buffs.append(BuffState(id="strength", name="力量", stacks=3, desc="造成伤害增加 3"))
             logs.append(f"敌人【{enemy.name}】进入了瞄准状态，获得了 3 层力量。")
@@ -64,6 +75,7 @@ class SniperEliteTemplate(EnemyTemplate):
                     enemy.buffs.remove(b)
             super().execute_intent(run, engine, enemy, intent, logs)
 
+@register_enemy("pppopipupu")
 class PppopipupuTemplate(EnemyTemplate):
     def on_enemy_before_death(self, run, enemy, event, engine):
         if enemy.name == "pppopipupu":
@@ -104,13 +116,24 @@ class PppopipupuTemplate(EnemyTemplate):
 
     def execute_intent(self, run, engine, enemy, intent, logs: List[str] = None):
         if logs is None:
-            logs = []
+            logs = intent
+            from game.models.state import EnemyIntentState
+            intent = EnemyIntentState(
+                type=getattr(enemy, "intent_type", ""),
+                val=getattr(enemy, "intent_val", 0),
+                desc=getattr(enemy, "intent_desc", ""),
+                cost_a=1,
+                cost_ba=0
+            )
         if intent.type == "force_strike":
             engine._damage_target(run, "p0", 100, source=f"enemy:{enemy.name}", damage_type="force")
             logs.append(f"敌人【{enemy.name}】发出了撕裂空间的猛击，对玩家造成了 100 点真实力场伤害！")
         else:
             logs.append(f"敌人【{enemy.name}】在一旁悠闲地钓鱼。")
 
+register_enemy("【觉醒】pppopipupu")(PppopipupuTemplate)
+
+@register_enemy("Gate_Guardian")
 class GateGuardianTemplate(EnemyTemplate):
     def roll_intents(self, run, engine, enemy) -> List[EnemyIntentState]:
         turn = run.node_data.get("guardian_turn", 1)

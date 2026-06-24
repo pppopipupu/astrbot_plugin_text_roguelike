@@ -26,6 +26,13 @@ class StunBuff(BuffImpl):
             entity.actions = 0
             entity.bonus_actions = 0
             event.engine._log_event(event.run, f"⚠️ 【{entity.name}】处于眩晕状态，本回合无法行动。")
+        elif event.is_player and entity == event.run.player:
+            buff_state.stacks -= 1
+            if buff_state.stacks <= 0:
+                entity.buffs.remove(buff_state)
+            entity.actions = 0
+            entity.bonus_actions = 0
+            event.engine._log_event(event.run, f"⚠️ 你处于眩晕状态，本回合无法行动。")
 
     def on_enemy_sync_intents(self, event, buff_state, entity):
         from ...models.state import EnemyIntentState

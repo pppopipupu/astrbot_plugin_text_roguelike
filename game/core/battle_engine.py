@@ -209,7 +209,8 @@ class BattleEngine(BaseBattleEngine):
             elite_pool = [
                 "地精百夫长", "石像鬼祭司", "狂暴兽王",
                 "黑曜石巨灵", "幽灵大魔法师", "暗影影魔",
-                "末日守卫", "亡灵巫师"
+                "末日守卫", "亡灵巫师", "夺心魔", "夺心魔奥术师",
+                "吉斯洋基至高指挥官"
             ]
             run.enemies = []
             base_name = random.choice(elite_pool)
@@ -243,7 +244,7 @@ class BattleEngine(BaseBattleEngine):
             normal_pool = [
                 "地精突袭者", "石像鬼守卫", "堕落学徒", "狂暴野兽",
                 "幽灵法师", "冰霜史莱姆", "骷髅弓箭手", "剧毒蜘蛛",
-                "黑曜石巨人", "暗影刺客"
+                "黑曜石巨人", "暗影刺客", "吉斯洋基海盗", "邪教徒咔咔"
             ]
             run.enemies = []
             num_enemies = random.randint(1, 3)

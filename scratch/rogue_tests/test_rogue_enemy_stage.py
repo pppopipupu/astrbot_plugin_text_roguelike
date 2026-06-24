@@ -58,7 +58,7 @@ class TestRogueEnemyStage(unittest.TestCase):
         self.assertIn("对生命造成", last_log)
         self.assertNotIn("（", last_log)
 
-        from game.entities.enemies.minions import ShadowFiendTemplate
+        from game.entities.enemies.elite.shadow_fiend import ShadowFiendTemplate
         fiend_template = ShadowFiendTemplate("暗影影魔")
         fiend_enemy = EnemyState("暗影影魔", 30, 30, 0, intent_type="shadow_strike", intent_val=6)
         fiend_logs = []
@@ -231,3 +231,143 @@ class TestRogueEnemyStage(unittest.TestCase):
             self.assertEqual(enemy.hp, 500 - 3 * 13)
         finally:
             card.replay = old_replay
+
+    def test_expanded_monsters_and_mechanics(self):
+        class DummySaveManager:
+            def save_save(self, user_id, run):
+                pass
+            def delete_save(self, user_id):
+                pass
+        sm = DummySaveManager()
+        engine = BattleEngine(sm)
+
+        cultist = EnemyState("邪教徒咔咔", 15, 15, 0)
+        p_state = PlayerState(hp=50, max_hp=50, shield=0, gold=10, stage=1)
+        run = GameRun(user_id="test_exp", node_type="battle", player=p_state, enemies=[cultist])
+
+        from game.entities.enemies.normal.cultist_kaka import CultistKakaTemplate
+        c_temp = CultistKakaTemplate("邪教徒咔咔")
+
+        intents_1 = c_temp.roll_intents(run, engine, cultist)
+        self.assertEqual(len(intents_1), 1)
+        self.assertEqual(intents_1[0].type, "caw")
+
+        c_logs_1 = []
+        c_temp.execute_intent(run, engine, cultist, intents_1[0], c_logs_1)
+        self.assertTrue(any(b.id == "ritual" for b in cultist.buffs))
+        self.assertIn("咔咔", "".join(c_logs_1))
+
+        from game.models.events import TurnStartEvent
+        evt_start = TurnStartEvent(run, is_player=False)
+        engine.event_bus.dispatch(evt_start)
+        self.assertTrue(any(b.id == "strength" and b.stacks == 1 for b in cultist.buffs))
+
+        intents_2 = c_temp.roll_intents(run, engine, cultist)
+        self.assertEqual(intents_2[0].type, "peck")
+
+        run.player.hp = 50
+        c_logs_2 = []
+        c_temp.execute_intent(run, engine, cultist, intents_2[0], c_logs_2)
+        self.assertEqual(run.player.hp, 43)
+
+        flayer = EnemyState("夺心魔", 48, 48, 0, max_actions=1, max_bonus_actions=1)
+        run.enemies = [flayer]
+
+        from game.entities.enemies.elite.mind_flayer import MindFlayerTemplate
+        f_temp = MindFlayerTemplate("夺心魔")
+
+        run.player.buffs.clear()
+        intents_f1 = f_temp.roll_intents(run, engine, flayer)
+        self.assertEqual(len(intents_f1), 2)
+
+        tentacles_intent = next((it for it in intents_f1 if it.type == "tentacles"), None)
+        if not tentacles_intent:
+            from game.models.state import EnemyIntentState
+            tentacles_intent = EnemyIntentState(type="tentacles", val=8, desc="触须袭击")
+        f_logs_1 = []
+        f_temp.execute_intent(run, engine, flayer, tentacles_intent, f_logs_1)
+        self.assertTrue(any(b.id == "grappled" for b in run.player.buffs))
+
+        import random
+        old_random = random.random
+        random.random = lambda: 0.0
+        try:
+            intents_f2 = f_temp.roll_intents(run, engine, flayer)
+        finally:
+            random.random = old_random
+        self.assertTrue(any(it.type == "extract_brain" for it in intents_f2))
+
+        eb_intent = next(it for it in intents_f2 if it.type == "extract_brain")
+        run.player.hp = 50
+        f_logs_2 = []
+        f_temp.execute_intent(run, engine, flayer, eb_intent, f_logs_2)
+        self.assertEqual(run.player.hp, 25)
+
+        blast_intent = next((it for it in intents_f1 if it.type == "mind_blast"), None)
+        if not blast_intent:
+            from game.models.state import EnemyIntentState
+            blast_intent = EnemyIntentState(type="mind_blast", val=8, desc="心灵震爆")
+        f_logs_3 = []
+        f_temp.execute_intent(run, engine, flayer, blast_intent, f_logs_3)
+        self.assertTrue(any(b.id == "stun" for b in run.player.buffs))
+
+        run.player.actions = 2
+        run.player.bonus_actions = 1
+        evt_p_start = TurnStartEvent(run, is_player=True)
+        engine.event_bus.dispatch(evt_p_start)
+        self.assertEqual(run.player.actions, 0)
+        self.assertEqual(run.player.bonus_actions, 0)
+        self.assertFalse(any(b.id == "stun" for b in run.player.buffs))
+
+        pirate = EnemyState("吉斯洋基海盗", 18, 18, 0, max_actions=1, max_bonus_actions=0)
+        run.enemies = [pirate]
+
+        from game.entities.enemies.normal.githyanki_pirate import GithyankiPirateTemplate
+        p_temp = GithyankiPirateTemplate("吉斯洋基海盗")
+
+        run.player.shield = 10
+        run.player.hp = 50
+        slash_intent = next((it for it in p_temp.roll_intents(run, engine, pirate) if it.type == "silver_sword"), None)
+        if not slash_intent:
+            from game.models.state import EnemyIntentState
+            slash_intent = EnemyIntentState(type="silver_sword", val=7, desc="银剑")
+        p_logs_1 = []
+        p_temp.execute_intent(run, engine, pirate, slash_intent, p_logs_1)
+        self.assertEqual(run.player.shield, 0)
+        self.assertEqual(run.player.hp, 49)
+
+        step_intent = next((it for it in p_temp.roll_intents(run, engine, pirate) if it.type == "astral_step"), None)
+        if not step_intent:
+            from game.models.state import EnemyIntentState
+            step_intent = EnemyIntentState(type="astral_step", val=6, desc="跃迁")
+        p_logs_2 = []
+        p_temp.execute_intent(run, engine, pirate, step_intent, p_logs_2)
+        self.assertTrue(any(b.id == "astral_speed" for b in pirate.buffs))
+
+        intents_p3 = p_temp.roll_intents(run, engine, pirate)
+        self.assertEqual(len(intents_p3), 2)
+        self.assertFalse(any(b.id == "astral_speed" for b in pirate.buffs))
+
+        commander = EnemyState("吉斯洋基至高指挥官", 55, 55, 0, max_actions=1, max_bonus_actions=1)
+        run.enemies = [commander]
+
+        from game.entities.enemies.elite.githyanki_supreme_commander import GithyankiSupremeCommanderTemplate
+        cmd_temp = GithyankiSupremeCommanderTemplate("吉斯洋基至高指挥官")
+
+        cmd_logs_1 = []
+        sh_intent = next((it for it in cmd_temp.roll_intents(run, engine, commander) if it.type == "summon_hound"), None)
+        if not sh_intent:
+            from game.models.state import EnemyIntentState
+            sh_intent = EnemyIntentState(type="summon_hound", val=0, desc="星界呼唤")
+        cmd_temp.execute_intent(run, engine, commander, sh_intent, cmd_logs_1)
+        self.assertEqual(len(run.enemies), 2)
+        self.assertEqual(run.enemies[1].name, "星界幼犬")
+
+        cmd_logs_2 = []
+        cp_intent = next((it for it in cmd_temp.roll_intents(run, engine, commander) if it.type == "commanding_presence"), None)
+        if not cp_intent:
+            from game.models.state import EnemyIntentState
+            cp_intent = EnemyIntentState(type="commanding_presence", val=2, desc="指挥")
+        cmd_temp.execute_intent(run, engine, commander, cp_intent, cmd_logs_2)
+        self.assertTrue(any(b.id == "strength" and b.stacks == 2 for b in commander.buffs))
+        self.assertTrue(any(b.id == "strength" and b.stacks == 2 for b in run.enemies[1].buffs))

@@ -374,5 +374,18 @@ BUFF_CONFIG = {
     "barricade": {
         "name": "壁垒",
         "desc": "护盾回合开始时不衰减一半"
+    },
+    "ritual": {
+        "name": "仪式",
+        "desc": "每回合开始时，获得等同于此状态层数的力量"
+    },
+    "grappled": {
+        "name": "受擒",
+        "desc": "你被夺心魔擒抱，每回合结束时层数减少 1",
+        "is_debuff": True
+    },
+    "astral_speed": {
+        "name": "星界加速",
+        "desc": "下回合开始时，获得 1 个额外动作点"
     }
 }
