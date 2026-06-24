@@ -245,6 +245,7 @@ class CombatResolver:
                     del p.minions[grid]
                     death_evt = MinionDeathEvent(run, m.id, target, m.name, False)
                     self.engine.event_bus.dispatch(death_evt)
+                    self.engine._reindex_minions(p)
                 take_evt = DamageTakeEvent(run, source, target, final_dmg, is_fatal, damage_type)
                 self.engine.event_bus.dispatch(take_evt)
         damage_type_str = damage_type.value if hasattr(damage_type, "value") else str(damage_type)

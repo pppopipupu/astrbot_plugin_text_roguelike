@@ -414,3 +414,39 @@ class TestRogueBasic(unittest.TestCase):
             plugin.save_manager.delete_save("user_other")
 
         asyncio.run(go())
+
+    def test_battle_turn_count(self):
+        plugin = MyPlugin(DummyContext())
+        user_id = "test_user_turn_count"
+        plugin.save_manager.delete_save(user_id)
+
+        async def go():
+            await run_command(plugin, ".rogue 开启", sender_id=user_id)
+            await run_command(plugin, ".rogue 选择 1", sender_id=user_id)
+            run = plugin.save_manager.load_save(user_id)
+            run.node_type = "battle"
+            run.node_data["turn_count"] = 1
+            run.enemies = [EnemyState("dummy_enemy", 20, 20, 0)]
+            plugin.save_manager.save_save(user_id, run)
+
+            res = await run_command(plugin, ".rogue 状态", sender_id=user_id)
+            self.assertIn("战斗阶段 (第 1 回合)", res)
+
+            res_detailed = await run_command(plugin, ".rogue 查询", sender_id=user_id)
+            self.assertIn("实时战斗详细情报 (第 1 回合)", res_detailed)
+
+            await run_command(plugin, ".rogue 结束", sender_id=user_id)
+            run = plugin.save_manager.load_save(user_id)
+            self.assertEqual(run.node_data.get("turn_count"), 2)
+
+            res2 = await run_command(plugin, ".rogue 状态", sender_id=user_id)
+            self.assertIn("战斗阶段 (第 2 回合)", res2)
+
+            res_detailed2 = await run_command(plugin, ".rogue 查询", sender_id=user_id)
+            self.assertIn("实时战斗详细情报 (第 2 回合)", res_detailed2)
+
+            plugin.save_manager.delete_save(user_id)
+
+        asyncio.run(go())
+
+

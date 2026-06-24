@@ -83,6 +83,17 @@ class BuffState:
     desc: str = ""
 
 @dataclass
+class CardTag:
+    name: str
+    value: int = 0
+
+    def execute(self, card: 'Card', run: 'GameRun', target: Optional[str], engine) -> Optional[str]:
+        return None
+
+    def handle_post_play(self, card: 'Card', run: 'GameRun', cid: str, source: str, engine) -> bool:
+        return False
+
+@dataclass
 class Card:
     id: str
     name: str
@@ -102,14 +113,79 @@ class Card:
     unplayable: bool = False
     damage_type: str = "effect"
     upgraded: bool = False
-    fragile: int = 0
-    replay: int = 0
+    tags: List[CardTag] = field(default_factory=list)
+
+    @property
+    def replay(self) -> int:
+        return self.get_tag_value("replay")
+
+    @replay.setter
+    def replay(self, val: int):
+        from game.entities.tags import ReplayTag
+        if val > 0:
+            self.add_tag(ReplayTag("replay", val))
+        else:
+            self.remove_tag("replay")
+
+    @property
+    def fragile(self) -> int:
+        return self.get_tag_value("fragile")
+
+    @fragile.setter
+    def fragile(self, val: int):
+        from game.entities.tags import FragileTag
+        if val > 0:
+            self.add_tag(FragileTag("fragile", val))
+        else:
+            self.remove_tag("fragile")
 
     def execute(self, run: 'GameRun', target: Optional[str] = None, engine = None) -> str:
         return ""
 
     def special_action(self, run: 'GameRun', target: Optional[str] = None) -> str:
         return f"激活了【{self.name}】的特殊行动！"
+
+    def add_tag(self, tag: CardTag):
+        if not hasattr(self, "tags") or self.tags is None:
+            self.tags = []
+        self.tags = [t for t in self.tags if t.name != tag.name]
+        self.tags.append(tag)
+
+    def has_tag(self, name: str) -> bool:
+        if not hasattr(self, "tags") or self.tags is None:
+            return False
+        return any(t.name == name for t in self.tags)
+
+    def get_tag_value(self, name: str) -> int:
+        if not hasattr(self, "tags") or self.tags is None:
+            return 0
+        for t in self.tags:
+            if t.name == name:
+                return t.value
+        return 0
+
+    def remove_tag(self, name: str):
+        if hasattr(self, "tags") and self.tags is not None:
+            self.tags = [t for t in self.tags if t.name != name]
+
+    def execute_tags(self, run: 'GameRun', target: Optional[str], engine) -> Optional[str]:
+        if not hasattr(self, "tags") or not self.tags:
+            return None
+        logs = []
+        for tag in self.tags:
+            res = tag.execute(self, run, target, engine)
+            if res:
+                logs.append(res)
+        return "\n".join(logs) if logs else None
+
+    def handle_post_play(self, run: 'GameRun', cid: str, source: str, engine) -> bool:
+        if not hasattr(self, "tags") or not self.tags:
+            return False
+        for tag in self.tags:
+            if tag.handle_post_play(self, run, cid, source, engine):
+                return True
+        return False
+
 
 @dataclass
 class MinionState:

@@ -67,10 +67,12 @@ class CardRegistryDict(dict):
             inst.ethereal = cfg.get("ethereal", False)
             inst.unplayable = cfg.get("unplayable", False)
             inst.damage_type = cfg.get("damage_type", "effect")
-            inst.fragile = cfg.get("fragile", 0)
-            if inst.fragile > 0:
+            fragile_val = cfg.get("fragile", 0)
+            if fragile_val > 0:
+                from ...entities.tags import FragileTag
+                inst.add_tag(FragileTag("fragile", fragile_val))
                 if " (易碎 " not in inst.name:
-                    inst.name = f"{inst.name} (易碎 {inst.fragile})"
+                    inst.name = f"{inst.name} (易碎 {fragile_val})"
             self[key] = inst
             return inst
         return None
@@ -82,8 +84,9 @@ class CardRegistryDict(dict):
             replay_val = int(parts[1])
             base_card = self[base_key]
             replay_card = copy.copy(base_card)
-            replay_card.id = key
-            replay_card.replay = replay_val
+            replay_card.id = base_key
+            from ...entities.tags import ReplayTag
+            replay_card.add_tag(ReplayTag("replay", replay_val))
             replay_card.name = base_card.name
             import re
             clean_desc = re.sub(r"重放 \d+。", "", base_card.desc)
@@ -99,8 +102,9 @@ class CardRegistryDict(dict):
             fragile_val = int(parts[1])
             base_card = self[base_key]
             fragile_card = copy.copy(base_card)
-            fragile_card.id = key
-            fragile_card.fragile = fragile_val
+            fragile_card.id = base_key
+            from ...entities.tags import FragileTag
+            fragile_card.add_tag(FragileTag("fragile", fragile_val))
             clean_name = base_card.name
             if " (易碎 " in clean_name:
                 clean_name = clean_name.split(" (易碎 ")[0]
@@ -158,16 +162,19 @@ class CardRegistryDict(dict):
             return default
 
     def __contains__(self, key):
-        if isinstance(key, str) and key.endswith("+"):
-            base_key = key[:-1]
-            if super().__contains__(base_key):
+        if isinstance(key, str):
+            clean_key = key.split(":replay:")[0].split(":fragile:")[0]
+            if clean_key.endswith("+"):
+                base_key = clean_key[:-1]
+                if super().__contains__(base_key):
+                    return True
+                from ...data.card_data import CARD_CONFIG
+                return base_key in CARD_CONFIG
+            if super().__contains__(clean_key):
                 return True
             from ...data.card_data import CARD_CONFIG
-            return base_key in CARD_CONFIG
-        if super().__contains__(key):
-            return True
-        from ...data.card_data import CARD_CONFIG
-        return key in CARD_CONFIG
+            return clean_key in CARD_CONFIG
+        return super().__contains__(key)
 
 ALL_CARDS = CardRegistryDict()
 
@@ -223,7 +230,9 @@ for cid, cfg in CARD_CONFIG.items():
         ALL_CARDS[cid].ethereal = cfg.get("ethereal", False)
         ALL_CARDS[cid].unplayable = cfg.get("unplayable", False)
         ALL_CARDS[cid].damage_type = cfg.get("damage_type", "effect")
-        ALL_CARDS[cid].fragile = cfg.get("fragile", 0)
-        if ALL_CARDS[cid].fragile > 0:
+        fragile_val = cfg.get("fragile", 0)
+        if fragile_val > 0:
+            from ...entities.tags import FragileTag
+            ALL_CARDS[cid].add_tag(FragileTag("fragile", fragile_val))
             if " (易碎 " not in ALL_CARDS[cid].name:
-                ALL_CARDS[cid].name = f"{ALL_CARDS[cid].name} (易碎 {ALL_CARDS[cid].fragile})"
+                ALL_CARDS[cid].name = f"{ALL_CARDS[cid].name} (易碎 {fragile_val})"

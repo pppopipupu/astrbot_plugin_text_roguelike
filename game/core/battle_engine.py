@@ -93,6 +93,7 @@ class BattleEngine(BaseBattleEngine):
         p.bonus_actions = 1
         p.shield = 0
         run.node_data["cards_played_this_turn"] = 0
+        run.node_data["turn_count"] = 1
         selected_class = "法师"
         stats = self.save_manager.load_stats(run.user_id) if hasattr(self, "save_manager") and self.save_manager else None
         if stats:
@@ -315,3 +316,12 @@ class BattleEngine(BaseBattleEngine):
 
     def _roll_enemy_intent(self, run: GameRun):
         self.enemy_controller.roll_enemy_intent(run)
+
+    def _reindex_minions(self, p: PlayerState):
+        active = [p.minions[k] for k in sorted(p.minions.keys(), key=int)]
+        available = [str(i) for i in range(1, 7) if str(i) not in p.amulets]
+        new_minions = {}
+        for idx, m in enumerate(active):
+            if idx < len(available):
+                new_minions[available[idx]] = m
+        p.minions = new_minions

@@ -115,7 +115,12 @@ class PlayAction(DuelActionHandler, names=["使用", "use", "u", "play", "p"]):
             p.bonus_actions += cost_ba
             return err_msg, False, None, None, None, None
             
-        if card.type in ("minion", "amulet"):
+        if hasattr(card, "execute_tags"):
+            card.execute_tags(run, target, router.engine)
+
+        if hasattr(card, "handle_post_play") and card.handle_post_play(run, cid, "played", router.engine):
+            pass
+        elif card.type in ("minion", "amulet"):
             router.engine.event_bus.dispatch(CardExhaustEvent(run, cid, "played"))
         elif card.exhaust:
             p.exhaust_pile.append(cid)

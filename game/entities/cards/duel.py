@@ -563,10 +563,12 @@ class DuelCardRegistryDict(dict):
             inst.ethereal = cfg.get("ethereal", False)
             inst.unplayable = cfg.get("unplayable", False)
             inst.damage_type = cfg.get("damage_type", "effect")
-            inst.fragile = cfg.get("fragile", 0)
-            if inst.fragile > 0:
+            fragile_val = cfg.get("fragile", 0)
+            if fragile_val > 0:
+                from ...entities.tags import FragileTag
+                inst.add_tag(FragileTag("fragile", fragile_val))
                 if " (易碎 " not in inst.name:
-                    inst.name = f"{inst.name} (易碎 {inst.fragile})"
+                    inst.name = f"{inst.name} (易碎 {fragile_val})"
             self[key] = inst
             return inst
         return None
@@ -579,8 +581,9 @@ class DuelCardRegistryDict(dict):
             base_card = self[base_key]
             import copy
             replay_card = copy.copy(base_card)
-            replay_card.id = key
-            replay_card.replay = replay_val
+            replay_card.id = base_key
+            from ...entities.tags import ReplayTag
+            replay_card.add_tag(ReplayTag("replay", replay_val))
             replay_card.name = base_card.name
             import re
             clean_desc = re.sub(r"重放 \d+。", "", base_card.desc)
@@ -597,8 +600,9 @@ class DuelCardRegistryDict(dict):
             base_card = self[base_key]
             import copy
             fragile_card = copy.copy(base_card)
-            fragile_card.id = key
-            fragile_card.fragile = fragile_val
+            fragile_card.id = base_key
+            from ...entities.tags import FragileTag
+            fragile_card.add_tag(FragileTag("fragile", fragile_val))
             clean_name = base_card.name
             if " (易碎 " in clean_name:
                 clean_name = clean_name.split(" (易碎 ")[0]

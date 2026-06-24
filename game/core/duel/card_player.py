@@ -60,15 +60,8 @@ class DuelCardPlayer:
                     target = "e1"
             run.node_data["extra_play_msgs"] = []
             res = self.engine._execute_card_effect(run, card, target)
-            replay_val = getattr(card, "replay", 0)
-            if replay_val > 0:
-                for _ in range(replay_val):
-                    if self.engine.is_battle_won(run):
-                        break
-                    extra_res = self.engine._execute_card_effect(run, card, target)
-                    played_evt_rep = CardPlayedEvent(run, card, target, extra_res, is_extra=True)
-                    self.engine.event_bus.dispatch(played_evt_rep)
-                    run.node_data.setdefault("extra_play_msgs", []).append(f" 🔁 [重放触发] {played_evt_rep.feedback}")
+            if hasattr(card, "execute_tags"):
+                card.execute_tags(run, target, self.engine)
             played_evt = CardPlayedEvent(run, card, target, res)
             self.engine.event_bus.dispatch(played_evt)
             res = played_evt.feedback
@@ -85,6 +78,8 @@ class DuelCardPlayer:
 
     def _handle_card_post_play(self, run: GameRun, card: Card, card_id: str, source: str):
         p = run.player
+        if hasattr(card, "handle_post_play") and card.handle_post_play(run, card_id, source, self.engine):
+            return
         if card.exhaust or source == "agile":
             from ...models.events import CardExhaustEvent
             p.exhaust_pile.append(card_id)

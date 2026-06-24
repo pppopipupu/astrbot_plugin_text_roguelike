@@ -33,13 +33,57 @@ class TestRogueMinions(unittest.TestCase):
             enemies=[EnemyState("测试敌人", 30, 30, 0)]
         )
         engine._damage_target(run, "p2", 10, damage_type="true")
-        self.assertNotIn("2", player.minions)
-        self.assertIn("3", player.minions)
+        self.assertEqual(len(player.minions), 2)
+        self.assertEqual(player.minions["1"].name, "雇佣兵 1")
+        self.assertEqual(player.minions["2"].name, "雇佣兵 3")
+        self.assertNotIn("3", player.minions)
         engine.play_card(run, 1, None)
         self.assertEqual(len(player.minions), 2)
         self.assertEqual(player.minions["1"].name, "雇佣兵 1")
         self.assertEqual(player.minions["2"].name, "雇佣兵 3")
         self.assertNotIn("3", player.minions)
+
+    def test_minion_reindexing_with_amulet(self):
+        class DummySaveManager:
+            def save_save(self, user_id, run):
+                pass
+            def delete_save(self, user_id):
+                pass
+        sm = DummySaveManager()
+        engine = BattleEngine(sm)
+        from game.models.state import AmuletState
+        player = PlayerState(
+            hp=50,
+            max_hp=100,
+            shield=0,
+            gold=100,
+            stage=1,
+            deck=["quick_strike"],
+            hand=["quick_strike"],
+            actions=5,
+            bonus_actions=5,
+            minions={
+                "1": MinionState("mercenary", "雇佣兵 1", 20, 20, 4, 1, 0),
+                "2": MinionState("mercenary", "雇佣兵 2", 10, 10, 4, 1, 0),
+                "4": MinionState("mercenary", "雇佣兵 4", 30, 30, 4, 1, 0)
+            },
+            amulets={
+                "3": AmuletState("white_blade_banner", "白刃军团战旗", 4, "白刃军团战旗")
+            }
+        )
+        run = GameRun(
+            user_id="test_user_reindexing_amulet",
+            node_type="battle",
+            player=player,
+            enemies=[EnemyState("测试敌人", 30, 30, 0)]
+        )
+        engine._damage_target(run, "p2", 10, damage_type="true")
+        self.assertEqual(len(player.minions), 2)
+        self.assertEqual(player.minions["1"].name, "雇佣兵 1")
+        self.assertEqual(player.minions["2"].name, "雇佣兵 4")
+        self.assertNotIn("3", player.minions)
+        self.assertNotIn("4", player.minions)
+        self.assertIn("3", player.amulets)
 
     def test_minion_attack_digit_target(self):
         class DummySaveManager:

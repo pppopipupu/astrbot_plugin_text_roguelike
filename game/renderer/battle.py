@@ -25,9 +25,10 @@ def render_battle(run: GameRun) -> str:
     relics_str = ""
     if p.relics:
         relics_str = "\n🎒 遗物：" + " ".join([f"【{get_relic_name(r)}】" for r in p.relics])
+    turn_count = run.node_data.get("turn_count", 1)
     lines = [
         "━━━━━━━━━━━━━━━━━━━━",
-        f"⚔️ 【第 {p.stage} 关：战斗阶段】",
+        f"⚔️ 【第 {p.stage} 关：战斗阶段 (第 {turn_count} 回合)】",
         f"{run.player.name}：❤️ HP {p.hp}/{cur_max} | 🛡️ 护盾 {p.shield} | ⚡ 动作 {p.actions}A {p.bonus_actions}BA" + relics_str
     ]
     if p.buffs:
@@ -157,9 +158,10 @@ def render_detailed_battle(run: GameRun) -> str:
     will_buff = next((b for b in p.buffs if b.id == "iron_will"), None)
     will_stacks = will_buff.stacks if will_buff else 0
     cur_max = p.max_hp + will_stacks * 10
+    turn_count = run.node_data.get("turn_count", 1)
     lines = [
         "━━━━━━━━━━━━━━━━━━━━",
-        "⚔️ 【实时战斗详细情报】",
+        f"⚔️ 【实时战斗详细情报 (第 {turn_count} 回合)】",
         "",
         f"👤 【{run.player.name}领主】",
         f"  生命值：HP {p.hp}/{cur_max}",

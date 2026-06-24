@@ -105,6 +105,13 @@ class MyPlugin(Star):
         self.engine = GameEngine(self.save_manager)
         self.cli_router = CLIRouter(self.save_manager, self.engine)
         self.duel_router = DuelRouter(self.save_manager)
+        self.user_locks = {}
+
+    def _get_user_lock(self, user_id: str):
+        if user_id not in self.user_locks:
+            import asyncio
+            self.user_locks[user_id] = asyncio.Lock()
+        return self.user_locks[user_id]
 
     def _get_sender_name(self, event) -> str:
         sender_name = "玩家"
@@ -336,12 +343,15 @@ class MyPlugin(Star):
         if first in ("rogue", "/rogue"):
             parts = parts[1:]
 
-        for res in self.cli_router.handle_command(user_id, parts):
-            yield event.plain_result(res)
+        lock = self._get_user_lock(user_id)
+        async with lock:
+            for res in self.cli_router.handle_command(user_id, parts):
+                yield event.plain_result(res)
 
     @filter.command("rogueadmin")
     @filter.permission_type(filter.PermissionType.ADMIN)
     async def rogueadmin(self, event: AstrMessageEvent):
+        event.stop_event()
         original_plain_result = event.plain_result
         def patched_plain_result(res: str, *args, **kwargs):
             return original_plain_result(self.format_res(res, event), *args, **kwargs)
@@ -424,12 +434,14 @@ class MyPlugin(Star):
             if not (1 <= target_stage <= 25):
                 yield event.plain_result("❌ 错误：层数范围必须在 1 到 25 之间")
                 return
-            run = self.save_manager.load_save(target_user_id)
-            if not run:
-                yield event.plain_result("❌ 错误：未找到该玩家的活跃游戏存档。")
-                return
-            msg = self.engine.jump_to_stage(run, target_stage)
-            yield event.plain_result(f"⚙️ {msg}\n\n{GameRenderer.render_game(run)}")
+            lock = self._get_user_lock(target_user_id)
+            async with lock:
+                run = self.save_manager.load_save(target_user_id)
+                if not run:
+                    yield event.plain_result("❌ 错误：未找到该玩家的活跃游戏存档。")
+                    return
+                msg = self.engine.jump_to_stage(run, target_stage)
+                yield event.plain_result(f"⚙️ {msg}\n\n{GameRenderer.render_game(run)}")
         elif cmd == "add_card":
             if len(parts) == 2:
                 card_input = parts[1]
@@ -452,32 +464,34 @@ class MyPlugin(Star):
                 yield event.plain_result(f"❌ 错误：未找到卡牌【{card_input}】")
                 return
             
-            run = self.save_manager.load_save(target_user_id)
-            if not run:
-                yield event.plain_result("❌ 错误：未找到该玩家的活跃游戏存档。")
-                return
-            
-            try:
-                from .game.cards import ALL_CARDS
-            except ImportError:
-                from game.cards import ALL_CARDS
-            
-            card_obj = ALL_CARDS.get(card_id)
-            card_name = card_obj.name if card_obj else card_id
-            
-            run.player.deck.append(card_id)
-            in_battle = (run.node_type == "battle")
-            if in_battle:
-                run.player.hand.append(card_id)
+            lock = self._get_user_lock(target_user_id)
+            async with lock:
+                run = self.save_manager.load_save(target_user_id)
+                if not run:
+                    yield event.plain_result("❌ 错误：未找到该玩家的活跃游戏存档。")
+                    return
                 
-            self.save_manager.save_save(target_user_id, run)
-            
-            if in_battle:
-                msg = f"已成功将卡牌【{card_name}】添加到玩家【{target_user_id}】的牌组，且由于处于战斗中，该牌已直接加入手牌！"
-            else:
-                msg = f"已成功将卡牌【{card_name}】添加到玩家【{target_user_id}】的牌组！"
+                try:
+                    from .game.cards import ALL_CARDS
+                except ImportError:
+                    from game.cards import ALL_CARDS
                 
-            yield event.plain_result(f"⚙️ {msg}\n\n{GameRenderer.render_game(run)}")
+                card_obj = ALL_CARDS.get(card_id)
+                card_name = card_obj.name if card_obj else card_id
+                
+                run.player.deck.append(card_id)
+                in_battle = (run.node_type == "battle")
+                if in_battle:
+                    run.player.hand.append(card_id)
+                    
+                self.save_manager.save_save(target_user_id, run)
+                
+                if in_battle:
+                    msg = f"已成功将卡牌【{card_name}】添加到玩家【{target_user_id}】的牌组，且由于处于战斗中，该牌已直接加入手牌！"
+                else:
+                    msg = f"已成功将卡牌【{card_name}】添加到玩家【{target_user_id}】的牌组！"
+                    
+                yield event.plain_result(f"⚙️ {msg}\n\n{GameRenderer.render_game(run)}")
         else:
             yield event.plain_result("❌ 错误：未知管理命令，请输入 /rogueadmin 查看帮助。")
 
@@ -661,6 +675,8 @@ class MyPlugin(Star):
 
                 if is_game_cmd:
                     event.stop_event()
-                    res_list = list(self.cli_router.handle_command(user_id, parts))
-                    if res_list:
-                        return event.plain_result("\n".join(res_list))
+                    lock = self._get_user_lock(user_id)
+                    async with lock:
+                        res_list = list(self.cli_router.handle_command(user_id, parts))
+                        if res_list:
+                            return event.plain_result("\n".join(res_list))
