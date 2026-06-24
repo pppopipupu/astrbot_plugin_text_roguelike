@@ -29,7 +29,7 @@ ENEMY_CONFIG = {
     "pppopipupu": {
         "name": "pppopipupu",
         "type": "boss",
-        "hp": "120",
+        "hp": "1",
         "actions": "1A 0BA",
         "passive": "觉醒形态 (受到致命伤害时将进入【觉醒】状态并拥有 9999 生命，行动变为猛击造成 100 点伤害)",
         "intents": [
