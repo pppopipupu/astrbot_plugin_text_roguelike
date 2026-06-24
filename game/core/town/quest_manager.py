@@ -15,6 +15,7 @@ class QuestManager:
         ]
         
         has_any_quest = False
+        inventory = getattr(stats, "town_inventory", []) or []
 
         q_tour = stats.town_flags.get("quest_town_tour_state", "unstarted")
         if q_tour != "unstarted":
@@ -24,7 +25,7 @@ class QuestManager:
             lines.append("   介绍：向导长老希望你游览主城商业区的全部11个地标以熟悉环境。")
             lines.append("   任务目标：")
             
-            visited = stats.town_flags.get("quest_town_tour_visited", [])
+            visited = stats.town_flags.get("quest_town_tour_visited", []) or []
             visited_cnt = len(visited)
             goal_text = f"探索先古主城的全部 11 个地标 (当前进度: {visited_cnt}/11)"
             if q_tour == "completed" or visited_cnt >= 11:
@@ -41,8 +42,8 @@ class QuestManager:
             lines.append("   介绍：酒保杰克急需天外甘露草来酿造传说中的秘密佳酿。")
             lines.append("   任务目标：")
             
-            has_void = "void_herb" in stats.town_inventory
-            has_dew = "wishing_dew" in stats.town_inventory
+            has_void = "void_herb" in inventory
+            has_dew = "wishing_dew" in inventory
             is_comp = q_brew == "completed"
             
             goal1 = "获取虚空草药"
@@ -72,8 +73,8 @@ class QuestManager:
             lines.append("   介绍：帮铁匠艾恩克拉德找回他失窃的精钢锤，或用高仿锤子交差。")
             lines.append("   任务目标：")
             
-            has_real = "smith_hammer" in stats.town_inventory
-            has_fake = "fake_hammer" in stats.town_inventory
+            has_real = "smith_hammer" in inventory
+            has_fake = "fake_hammer" in inventory
             coerced = stats.town_flags.get("noob_coerced_hammer")
             taken_bard = stats.town_flags.get("taken_smith_hammer")
             is_comp = q_ham == "completed"

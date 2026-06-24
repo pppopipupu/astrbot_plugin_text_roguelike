@@ -38,7 +38,8 @@ class TestRogueTown(unittest.TestCase):
             self.assertIn("游览商业 A 区", res)
             stats = save_manager.load_stats("test_user")
             self.assertEqual(stats.town_flags.get("quest_town_tour_state"), "started")
-            
+            res_quest = await run_command(plugin, ".rogue 任务")
+            self.assertIn("任务：向导的观光指引", res_quest)
             res = await run_command(plugin, ".rogue exit")
             self.assertIn("你结束了与【向导长老】的交谈", res)
 
