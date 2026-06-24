@@ -38,8 +38,7 @@ class TestRogueTown(unittest.TestCase):
             self.assertIn("游览商业 A 区", res)
             stats = save_manager.load_stats("test_user")
             self.assertEqual(stats.town_flags.get("quest_town_tour_state"), "started")
-            res_quest = await run_command(plugin, ".rogue 任务")
-            self.assertIn("任务：向导的观光指引", res_quest)
+            
             res = await run_command(plugin, ".rogue exit")
             self.assertIn("你结束了与【向导长老】的交谈", res)
 
@@ -679,3 +678,41 @@ class TestRogueTown(unittest.TestCase):
             save_manager.delete_save("test_user")
 
         asyncio.run(run_brew_test())
+
+    def test_quest_command_log(self):
+        plugin = MyPlugin(DummyContext())
+        save_manager = SaveManager()
+
+        async def run_quest_test():
+            save_manager.delete_save("test_user")
+            stats_path = save_manager.get_stats_path("test_user")
+            if os.path.exists(stats_path):
+                try:
+                    os.remove(stats_path)
+                except:
+                    pass
+
+            await run_command(plugin, ".rogue 主城")
+            stats = save_manager.load_stats("test_user")
+            stats.town_flags["quest_town_tour_state"] = "started"
+            stats.town_flags["quest_hammer_state"] = "started"
+            save_manager.save_stats("test_user", stats)
+
+            res = await run_command(plugin, ".rogue 任务")
+            self.assertIn("冒险者任务日志", res)
+            self.assertIn("向导的观光指引", res)
+            self.assertIn("铁锤谜案", res)
+
+            res2 = await run_command(plugin, ".rogue quest")
+            self.assertIn("冒险者任务日志", res2)
+
+            save_manager.delete_save("test_user")
+            stats_path = save_manager.get_stats_path("test_user")
+            if os.path.exists(stats_path):
+                try:
+                    os.remove(stats_path)
+                except:
+                    pass
+
+        asyncio.run(run_quest_test())
+
