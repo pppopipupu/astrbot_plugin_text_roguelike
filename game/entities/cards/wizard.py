@@ -300,6 +300,8 @@ class SunburstCard(Card):
             engine._damage_target(run, f"e{idx+1}", dmg, damage_type="radiant", card=self)
             
         for grid in list(run.player.minions.keys()):
+            if grid not in run.player.minions:
+                continue
             engine._damage_target(run, f"p{grid}", dmg, damage_type="radiant", card=self)
             
         bonus_msg = ""

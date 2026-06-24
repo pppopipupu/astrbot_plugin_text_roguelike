@@ -92,6 +92,8 @@ class BossRedDragonTemplate(EnemyTemplate):
                 dmg_msg = after_logs.pop()
                 logs.append(f"敌方领主【{enemy.name}】扫尾攻击玩家。{dmg_msg}")
             for mk in list(p.minions.keys()):
+                if mk not in p.minions:
+                    continue
                 m_name = p.minions[mk].name
                 before_len = len(run.node_data.get("battle_logs", []))
                 engine._damage_target(run, f"p{mk}", dmg, source=f"enemy:{enemy.name}", damage_type="bludgeoning")
@@ -349,6 +351,8 @@ class BossIcerainbowwTemplate(EnemyTemplate):
                 dmg_msg = after_logs.pop()
                 logs.append(f"【{enemy.name}】释放【冰霜爆震】对玩家造成伤害。{dmg_msg}")
             for mk in list(p.minions.keys()):
+                if mk not in p.minions:
+                    continue
                 m_name = p.minions[mk].name
                 before_len = len(run.node_data.get("battle_logs", []))
                 engine._damage_target(run, f"p{mk}", val, source=f"enemy:{enemy.name}", damage_type="cold")
@@ -575,6 +579,8 @@ class BossYogSothothTemplate(EnemyTemplate):
             dmg_msg = after_logs.pop() if len(after_logs) > before_len else ""
             logs.append(f"【{enemy.name}】引发虚空风暴。{dmg_msg}")
             for mk in list(p.minions.keys()):
+                if mk not in p.minions:
+                    continue
                 m_name = p.minions[mk].name
                 before_len = len(run.node_data.get("battle_logs", []))
                 engine._damage_target(run, f"p{mk}", val, source=f"enemy:{enemy.name}", damage_type="force")
@@ -651,6 +657,8 @@ class BossYogSothothTemplate(EnemyTemplate):
             dmg_msg = after_logs.pop() if len(after_logs) > before_len else ""
             logs.append(f"【{enemy.name}】射出混乱光束。{dmg_msg}")
             for mk in list(p.minions.keys()):
+                if mk not in p.minions:
+                    continue
                 m_name = p.minions[mk].name
                 before_len = len(run.node_data.get("battle_logs", []))
                 engine._damage_target(run, f"p{mk}", 6, source=f"enemy:{enemy.name}", damage_type="radiant")
@@ -733,6 +741,8 @@ class BossYogSothothTemplate(EnemyTemplate):
             dmg_msg = after_logs.pop() if len(after_logs) > before_len else ""
             logs.append(f"【{enemy.name}】释放了灭世之潮！造成真实伤害。{dmg_msg}")
             for mk in list(p.minions.keys()):
+                if mk not in p.minions:
+                    continue
                 m_name = p.minions[mk].name
                 before_len = len(run.node_data.get("battle_logs", []))
                 engine._damage_target(run, f"p{mk}", val, source=f"enemy:{enemy.name}", damage_type="true")
