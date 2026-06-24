@@ -327,6 +327,14 @@ class EndGatePassiveBuff(BuffImpl):
                 event.engine._damage_target(event.run, "p0", 4, source=f"buff:{entity.name}", damage_type="true")
                 event.engine._log_event(event.run, f"⚡ 【{entity.name}】的终焉结界触发，对玩家反弹了 4 点真实伤害！")
 
+class DoomsdayGatePassiveBuff(BuffImpl):
+    def on_turn_start(self, event, buff_state, entity):
+        if not event.is_player:
+            entity.shield += 20
+            event.engine._add_buff_to(entity, "strength", "力量", "造成的伤害增加", 2)
+            event.engine._log_event(event.run, f"🌌 【{entity.name}】触发【终焉庇护】：获得了 20 点护盾与 2 层力量！")
+
+
 class AncientWisdomBuff(BuffImpl):
     def on_card_played(self, event, buff_state, entity):
         if entity == event.run.player and event.card.color == "neutral":
@@ -423,6 +431,13 @@ class GrappledBuff(BuffImpl):
 
 class AstralSpeedBuff(BuffImpl):
     pass
+
+class SourceOfCinderBuff(BuffImpl):
+    def on_turn_start(self, event, buff_state, entity):
+        if entity == event.run.player and event.is_player:
+            event.run.player.actions += 1
+            event.run.player.bonus_actions += 1
+            event.engine._log_event(event.run, "🔥 [薪火之源] 触发！本回合额外获得 1A 1BA！")
 
 
 for name, obj in list(globals().items()):

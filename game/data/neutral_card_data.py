@@ -498,9 +498,66 @@ NEUTRAL_CARD_CONFIG = {
         "type": "spell",
         "cost_a": 1,
         "cost_ba": 1,
-        "desc": "传送脱逃离开遭遇战，无任何战利品金币奖励。20层和25层BOSS战禁用。即逝。",
+        "desc": "传送脱逃离开遭遇战，无任何战利品金币奖励。20层 and 25层BOSS战禁用。即逝。",
         "rarity": "mythic",
         "fleeting": True,
         "feedback": "🔮 你咏唱了【异界传送】，张开空间裂缝使自己瞬间传送逃离战场！"
+    },
+    "neutral_emperor_eye": {
+        "name": "霸瞳天星",
+        "color": "neutral",
+        "type": "spell",
+        "cost_a": 1,
+        "cost_ba": 0,
+        "desc": "选择手牌中的一张手牌，消耗除选择牌以外的所有牌，获得等同于消耗牌数量的随机除对决模式外的卡牌。消耗。",
+        "rarity": "legendary",
+        "exhaust": True,
+        "feedback": "使用了【霸瞳天星】！"
+    },
+    "neutral_astral_strike": {
+        "name": "星界坠击",
+        "color": "neutral",
+        "type": "attack",
+        "cost_a": 1,
+        "cost_ba": 0,
+        "desc": "造成 30 点力场伤害。消耗。",
+        "rarity": "rare",
+        "base_dmg": 30,
+        "damage_type": "force",
+        "exhaust": True,
+        "feedback": "引导漫天星辰砸落，对【{target}】使用【星界坠击】！"
+    },
+    "neutral_hero_anthem": {
+        "name": "英雄赞歌",
+        "color": "neutral",
+        "type": "spell",
+        "cost_a": 0,
+        "cost_ba": 0,
+        "desc": "获得 6 点护盾，抽 1 张牌。消耗。",
+        "rarity": "rare",
+        "exhaust": True,
+        "feedback": "唱响【英雄赞歌】！获得 6 点护盾并抽了一张牌！"
+    },
+    "curse_indigestion": {
+        "name": "消化不良",
+        "color": "neutral",
+        "type": "curse",
+        "cost_a": 0,
+        "cost_ba": 0,
+        "desc": "打出时失去 1BA。消耗。",
+        "rarity": "curse",
+        "exhaust": True,
+        "feedback": "你感觉胃部翻江倒海，消化不良！"
+    },
+    "curse_mana_backflow": {
+        "name": "法力逆流",
+        "color": "neutral",
+        "type": "curse",
+        "cost_a": 0,
+        "cost_ba": 0,
+        "desc": "打出时流失 8 点生命。消耗。",
+        "rarity": "curse",
+        "exhaust": True,
+        "feedback": "狂暴的魔力在经络中逆流！"
     }
 }

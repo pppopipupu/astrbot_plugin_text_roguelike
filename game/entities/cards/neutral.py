@@ -592,4 +592,62 @@ class NeutralPlaneShiftCard(Card):
         run.enemies.clear()
         return "🔮 你咏唱了【异界传送】，张开空间裂缝使自己瞬间传送逃离战场！由于你半途脱逃，你将无法获得这场战斗的任何金币和卡牌奖励！"
 
+@register_card("neutral_emperor_eye")
+class NeutralEmperorEyeCard(Card):
+    def execute(self, run, target, engine) -> str:
+        p = run.player
+        if target is not None:
+            try:
+                keep_idx = int(target)
+                hand_idx = run.node_data.get("current_playing_card_hand_idx", 0) + 1
+                if keep_idx == hand_idx:
+                    return "❌ 不能选择正在被打出的霸瞳天星作为保留卡牌。"
+                if keep_idx < hand_idx:
+                    remaining_idx = keep_idx - 1
+                else:
+                    remaining_idx = keep_idx - 2
+                if 0 <= remaining_idx < len(p.hand):
+                    return engine.execute_emperor_eye_resolve(run, remaining_idx, self.upgraded)
+                else:
+                    return f"❌ 提供的手牌序号 {keep_idx} 超出范围。打出霸瞳天星前你共有 {len(p.hand) + 1} 张手牌。"
+            except ValueError:
+                return "❌ 参数必须为数字代表的手牌序号。"
+        if not p.hand:
+            return engine.execute_emperor_eye_resolve(run, -1, self.upgraded)
+        run.node_data.setdefault("state_stack", []).append({
+            "type": "overload_star_select",
+            "upgraded": self.upgraded
+        })
+        from .base import ALL_CARDS
+        hand_list = "\n".join(f"{i+1}. {ALL_CARDS[c].name}" for i, c in enumerate(p.hand))
+        return f"👁️ 【霸瞳天星】已发动。请选择你要保留的手牌（输入 c <序号>，除此牌外的所有手牌都将被消耗）：\n{hand_list}"
+
+@register_card("neutral_astral_strike")
+class AstralStrikeCard(Card):
+    def execute(self, run, target, engine) -> str:
+        p = run.player
+        dmg = 36 if self.upgraded else 30
+        if not target or not target.startswith("e"):
+            return "❌ 请指定敌方目标（例如：p 卡牌序号 e1）。"
+        res = engine.combat_resolver.damage_target(run, target, dmg, source="p0", damage_type="force")
+        gem_msg = ""
+        if self.upgraded:
+            from ...data.gem_data import GEM_CONFIG
+            import random
+            gem_id = random.choice(list(GEM_CONFIG.keys()))
+            gem_name = GEM_CONFIG[gem_id]["name"]
+            run.node_data.setdefault("pending_gems", []).append(gem_id)
+            gem_msg = f"\n💎 【星界坠击+】额外共鸣！你额外收获了一颗被虚空能量包裹的宝石【{gem_name}】，它将在战斗结束后供你进行镶嵌！"
+        return f"你引导星辰砸落！{res}{gem_msg}"
+
+@register_card("neutral_hero_anthem")
+class HeroAnthemCard(Card):
+    def execute(self, run, target, engine) -> str:
+        p = run.player
+        shield = 10 if self.upgraded else 6
+        p.shield += shield
+        engine._draw_cards(p, 1, run)
+        return f"你唱响了【英雄赞歌】，身体洋溢着金色的气场（获得了 {shield} 点护盾，并抽了 1 张牌）！"
+
+
 

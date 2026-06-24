@@ -422,5 +422,21 @@ CARD_UPGRADE_CONFIG = {
     },
     "warrior_shield_bash": {
         "desc": "获得 24 点护盾，造成当前护盾值一半的钝击伤害。如果此卡牌被消耗，则你获得 2A 2BA。"
+    },
+    "warrior_source_of_cinder": {
+        "cost_a": 1,
+        "cost_ba": 1,
+        "exhaust": True,
+        "desc": "获得薪火之源buff，回合开始时额外获得 1A 1BA。消耗。"
+    },
+    "neutral_emperor_eye": {
+        "desc": "选择手牌中的一张手牌，消耗除选择牌以外的所有牌，获得等同于消耗牌数量的随机除对决模式外的卡牌。额外对一个随机敌人造成 49 点力场伤害。消耗。"
+    },
+    "neutral_astral_strike": {
+        "base_dmg": 36,
+        "desc": "造成 36 点力场伤害。额外随机将 1 颗随机宝石放入你的行囊。消耗。"
+    },
+    "neutral_hero_anthem": {
+        "desc": "获得 10 点护盾，抽 1 张牌。消耗。"
     }
 }

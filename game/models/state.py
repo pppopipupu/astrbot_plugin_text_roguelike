@@ -114,6 +114,18 @@ class Card:
     damage_type: str = "effect"
     upgraded: bool = False
     tags: List[CardTag] = field(default_factory=list)
+    gems: List[str] = field(default_factory=list)
+
+    def get_gem_slots_count(self) -> int:
+        rarities = {
+            "common": 1,
+            "rare": 2,
+            "epic": 3,
+            "legendary": 4,
+            "mythic": 5,
+            "artifact": 8
+        }
+        return rarities.get(self.rarity, 1)
 
     @property
     def replay(self) -> int:

@@ -74,6 +74,19 @@ class ExploreEngine:
                 "sold": False
             })
             
+        from ..data.gem_data import GEM_CONFIG
+        gem_pool = list(GEM_CONFIG.keys())
+        shop_gems = random.sample(gem_pool, min(2, len(gem_pool)))
+        for gid in shop_gems:
+            g_cfg = GEM_CONFIG[gid]
+            g_price = int(g_cfg["price"] * discount)
+            items.append({
+                "type": "gem",
+                "gem_id": gid,
+                "price": g_price,
+                "sold": False
+            })
+
         items.append({
             "type": "remove",
             "price": int(30 * discount),
@@ -186,19 +199,33 @@ class ExploreEngine:
                 
                 relic_msg = f"与遗物【{get_relic_name(got_relic)}】" if got_relic else ""
                 
-                run.node_type = "card_select"
-                run.node_data = {
+                from ..data.gem_data import GEM_CONFIG
+                gift_gem_id = random.choice(list(GEM_CONFIG.keys()))
+                gem_name = GEM_CONFIG[gift_gem_id]["name"]
+                
+                relic_msg = f"与遗物【{get_relic_name(got_relic)}】" if got_relic else ""
+                
+                next_node_data = {
                     "title": "古老宝箱：请选择你的秘宝",
-                    "desc": f"🔓 宝箱上的锁链崩解脱落！你成功献祭了【{removed_name}】。\n宝箱缓缓开启，你获得了 🪙 {gold_gain}金币{relic_msg}！同时宝箱中露出了三张珍奇卡牌：",
+                    "desc": f"🔓 宝箱上的锁链崩解脱落！你成功献祭了【{removed_name}】。\n宝箱缓缓开启，你获得了 🪙 {gold_gain}金币{relic_msg}，以及附赠的宝石【{gem_name}】！同时宝箱中露出了三张珍奇卡牌：",
                     "cards": reward_cards
                 }
-                self.save_manager.save_save(run.user_id, run)
+                
+                self.start_gem_insert_flow(run, gift_gem_id, "card_select", next_node_data)
                 return "宝箱开启成功。"
 
         elif run.node_type == "reward":
             if run.node_data.get("no_reward"):
                 if option_idx != 1:
                     return "❌ 无效的选择序号。你只有选择 1 继续前进。"
+                pending_gems = run.node_data.get("pending_gems", [])
+                if pending_gems:
+                    gem_id = pending_gems.pop(0)
+                    run.node_data["pending_gems"] = pending_gems
+                    self.start_gem_insert_flow(run, gem_id, "reward", {"no_reward": True, "pending_gems": pending_gems})
+                    self.save_manager.save_save(run.user_id, run)
+                    from ..entities import get_gem_name
+                    return f"你开启了战斗中额外收获的宝石【{get_gem_name(gem_id)}】的强制镶嵌流程。"
                 self.map_engine.enter_next_stage(run)
                 self.save_manager.save_save(run.user_id, run)
                 return "你确认了异界脱逃，空手离开了这片战场，开启下一关。"
@@ -208,16 +235,23 @@ class ExploreEngine:
                 return "❌ 无效的选择序号。"
             if option_idx == skip_idx:
                 p.gold += 15
-                self.map_engine.enter_next_stage(run)
-                self.save_manager.save_save(run.user_id, run)
-                return "获得了 15 金币，开启下一关。"
+                msg = "获得了 15 金币。"
             else:
                 cid = cards[option_idx - 1]
                 card = ALL_CARDS.get(cid)
                 p.deck.append(cid)
-                self.map_engine.enter_next_stage(run)
+                msg = f"已将卡牌【{card.name}】加入你的卡组。"
+            pending_gems = run.node_data.get("pending_gems", [])
+            if pending_gems:
+                gem_id = pending_gems.pop(0)
+                run.node_data["pending_gems"] = pending_gems
+                self.start_gem_insert_flow(run, gem_id, "reward", {"no_reward": True, "pending_gems": pending_gems})
                 self.save_manager.save_save(run.user_id, run)
-                return f"已将卡牌【{card.name}】加入你的卡组，开启下一关。"
+                from ..entities import get_gem_name
+                return f"{msg}\n💎 另外，你开启了战斗中额外收获的宝石【{get_gem_name(gem_id)}】的强制镶嵌流程。"
+            self.map_engine.enter_next_stage(run)
+            self.save_manager.save_save(run.user_id, run)
+            return f"{msg}开启下一关。"
 
         elif run.node_type == "card_select":
             cards = run.node_data.get("cards", [])
@@ -322,6 +356,13 @@ class ExploreEngine:
                     p.hp += 5
                 self.save_manager.save_save(run.user_id, run)
                 return f"购买成功！获得了遗物【{get_relic_name(rid)}】。"
+            elif itype == "gem":
+                p.gold -= price
+                gem_id = item.get("gem_id")
+                item["sold"] = True
+                shop_node_data = {"items": items}
+                res = self.start_gem_insert_flow(run, gem_id, "shop", shop_node_data)
+                return f"购买成功！{res}"
             elif itype == "remove":
                 return "REMOVE_FLOW"
             elif itype == "upgrade":
@@ -399,3 +440,61 @@ class ExploreEngine:
             p.gold -= price
             self.save_manager.save_save(run.user_id, run)
             return f"🔨 升级成功！已将【{ALL_CARDS[cid].name}】永久升级为强力变体【{ALL_CARDS[up_cid].name}】。"
+
+    def start_gem_insert_flow(self, run: GameRun, gem_id: str, next_node_type: str, next_node_data: dict) -> str:
+        from ..data.gem_data import GEM_CONFIG
+        gem_name = GEM_CONFIG[gem_id]["name"]
+        gem_desc = GEM_CONFIG[gem_id]["desc"]
+        run.node_type = "gem_insert"
+        run.node_data = {
+            "pending_gem": gem_id,
+            "next_node_type": next_node_type,
+            "next_node_data": next_node_data,
+            "text": f"💎 你获得了宝石：【{gem_name}】（{gem_desc}）。\n当前无法将宝石放入行囊，必须立即进行强制镶嵌！\n请选择你要镶嵌的卡牌序号（输入 c <卡牌序号> 镶嵌，可输入 c 0 或是 c 取消 选择跳过镶嵌）："
+        }
+        self.save_manager.save_save(run.user_id, run)
+        return f"你获得了宝石：【{gem_name}】。"
+
+    def gem_insert_cancel(self, run: GameRun) -> str:
+        next_type = run.node_data["next_node_type"]
+        next_data = run.node_data["next_node_data"]
+        run.node_type = next_type
+        run.node_data = next_data
+        self.save_manager.save_save(run.user_id, run)
+        return "你决定不进行镶嵌，丢弃了该宝石。继续前进。"
+
+    def gem_insert_choose(self, run: GameRun, deck_idx: int) -> str:
+        p = run.player
+        counts = {}
+        for c_id in p.deck:
+            counts[c_id] = counts.get(c_id, 0) + 1
+        sorted_items = sorted(counts.items())
+        if deck_idx < 1 or deck_idx > len(sorted_items):
+            return "❌ 无效的卡牌序号。"
+        cid = sorted_items[deck_idx - 1][0]
+        from ..entities.cards.base import ALL_CARDS
+        card_obj = ALL_CARDS.get(cid)
+        if not card_obj:
+            return "❌ 卡牌不存在。"
+        base_cid = cid
+        old_gems = []
+        if ":gems:" in cid:
+            parts = cid.rsplit(":gems:", 1)
+            base_cid = parts[0]
+            old_gems = parts[1].split(",")
+        max_slots = card_obj.get_gem_slots_count()
+        if len(old_gems) >= max_slots:
+            return f"❌ 该卡牌的宝石插槽已满（当前槽位数：{max_slots}，已镶嵌：{len(old_gems)}），无法继续镶嵌。"
+        gem_id = run.node_data["pending_gem"]
+        from ..data.gem_data import GEM_CONFIG
+        gem_name = GEM_CONFIG[gem_id]["name"]
+        new_gems = old_gems + [gem_id]
+        new_cid = f"{base_cid}:gems:{','.join(new_gems)}"
+        p.deck.remove(cid)
+        p.deck.append(new_cid)
+        next_type = run.node_data["next_node_type"]
+        next_data = run.node_data["next_node_data"]
+        run.node_type = next_type
+        run.node_data = next_data
+        self.save_manager.save_save(run.user_id, run)
+        return f"💎 镶嵌成功！已将【{gem_name}】成功镶嵌到了卡牌【{card_obj.name}】上。"

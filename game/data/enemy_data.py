@@ -439,6 +439,16 @@ ENEMY_CONFIG = {
     },
     "虚空潜伏者": {
         "name": "虚空潜伏者",
+        "type": "elite",
+        "hp": "50 (+ 3 * 关卡数)",
+        "actions": "1A 1BA",
+        "intents": [
+            {"id": "void_ambush", "val": 12, "desc": "虚空伏击 (造成 12 点黯蚀伤害)"},
+            {"id": "shadow_fade", "val": 10, "desc": "影遁 (获得 10 点护盾)"}
+        ]
+    },
+    "虚空潜伏者（召唤）": {
+        "name": "虚空潜伏者",
         "type": "summon",
         "hp": "20",
         "actions": "1A 0BA",
@@ -518,6 +528,36 @@ ENEMY_CONFIG = {
         "actions": "1A 0BA",
         "intents": [
             {"id": "star_bite", "val": 3, "desc": "星光撕咬 (造成 3 力场伤害)"}
+        ]
+    },
+    "亚弗戈蒙": {
+        "name": "亚弗戈蒙",
+        "type": "boss",
+        "hp": "180",
+        "actions": "2A 1BA",
+        "intents": [
+            {"id": "chain_of_time", "val": 8, "desc": "时间之链 (造成 8 点力场伤害，使玩家下回合减少 1A)"},
+            {"id": "portal_implosion", "val": 15, "desc": "门扉内爆 (造成 15 点钝击伤害，若玩家有护盾额外造成 5 点伤害)"},
+            {"id": "time_warp", "val": 0, "desc": "时空扭曲 (获得 15 点护盾，下回合获得 1 层力量)"}
+        ]
+    },
+    "虚空行者": {
+        "name": "虚空行者",
+        "type": "normal",
+        "hp": "16 (+ 2 * 关卡数)",
+        "actions": "1A 0BA",
+        "intents": [
+            {"id": "void_touch", "val": 6, "desc": "虚空之触 (造成 6 点黯蚀伤害)"},
+            {"id": "phase_shift", "val": 8, "desc": "相位转移 (获得 8 点护盾)"}
+        ]
+    },
+    "骨轻卒": {
+        "name": "骨轻卒",
+        "type": "summon",
+        "hp": "10",
+        "actions": "1A 0BA",
+        "intents": [
+            {"id": "bone_slash", "val": 3, "desc": "骨刃挥砍 (造成 3 点物理伤害)"}
         ]
     }
 }

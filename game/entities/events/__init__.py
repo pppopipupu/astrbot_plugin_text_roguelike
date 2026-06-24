@@ -15,6 +15,7 @@ from .void_contract import *
 from .forge_furnace import *
 from .leave import *
 from .portal_chamber import *
+from .chaos_events import *
 
 
 ALL_EVENTS = [
@@ -132,6 +133,61 @@ ALL_EVENTS = [
         ],
         min_stage=21,
         max_stage=24
+    ),
+    EventTemplate(
+        "void_library",
+        EVENT_CONFIG["void_library"]["description"],
+        [
+            ReadVoidTomeOption("强行阅读虚空秘典", "read_void_tome"),
+            BurnVoidBooksOption("点燃禁忌书架", "burn_void_books"),
+            SacrificeMindOption("献祭部分心智", "sacrifice_mind")
+        ],
+        min_stage=6,
+        max_stage=12
+    ),
+    EventTemplate(
+        "goblin_blackmarket",
+        EVENT_CONFIG["goblin_blackmarket"]["description"],
+        [
+            BuyBlackmarketRelicOption("强行买下神秘包裹", "buy_blackmarket_relic"),
+            RobBlackmarketOption("强行抢劫黑市", "rob_blackmarket"),
+            SellFleshOption("出售血肉", "sell_flesh")
+        ],
+        min_stage=13,
+        max_stage=20
+    ),
+    EventTemplate(
+        "time_fountain_trial",
+        EVENT_CONFIG["time_fountain_trial"]["description"],
+        [
+            DrinkTimeSandOption("吞食时间光沙", "drink_time_sand"),
+            AccelerateCinderOption("加速自身薪火", "accelerate_cinder"),
+            TouchTimeRiftOption("触碰时间裂隙", "touch_time_rift")
+        ],
+        min_stage=21,
+        max_stage=25
+    ),
+    EventTemplate(
+        "astral_caravan_disaster",
+        EVENT_CONFIG["astral_caravan_disaster"]["description"],
+        [
+            LootWreckageOption("强行搜刮飞船残骸", "loot_wreckage"),
+            RepairEngineOption("修复动力源并带走", "repair_engine"),
+            BraveStormOption("穿越虚空风暴逃跑", "brave_storm")
+        ],
+        min_stage=27,
+        max_stage=30
+    ),
+    EventTemplate(
+        "nameless_tombstone",
+        EVENT_CONFIG["nameless_tombstone"]["description"],
+        [
+            DigGraveOption("掘开墓穴底下的陪葬品", "dig_grave"),
+            ReadEpitaphOption("强行解读墓碑碑文", "read_epitaph"),
+            CarveOwnNameOption("在碑文刻上自己的名字避邪", "carve_own_name")
+        ],
+        min_stage=30,
+        max_stage=31
     )
 ]
 

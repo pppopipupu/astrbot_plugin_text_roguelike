@@ -272,28 +272,35 @@ class TestRogueBasic(unittest.TestCase):
                 pass
             self.assertIn("立即跳到某一层", "\n".join(event_help.results))
 
-            event_jump_11 = DummyEvent(f"/rogueadmin jump {user_id} 11", sender_id=user_id)
-            generator = plugin.rogueadmin(event_jump_11)
+            event_jump_26 = DummyEvent(f"/rogueadmin jump {user_id} 26", sender_id=user_id)
+            generator = plugin.rogueadmin(event_jump_26)
             async for _ in generator:
                 pass
-            res_text = "\n".join(event_jump_11.results)
-            self.assertIn("成功跳转到第 11 层", res_text)
-            self.assertIn("赐福", res_text)
+            res_text = "\n".join(event_jump_26.results)
+            self.assertIn("成功跳转到第 26 层", res_text)
+            self.assertIn("咖啡厅", res_text)
 
             run = plugin.save_manager.load_save(user_id)
-            self.assertEqual(run.player.stage, 11)
+            self.assertEqual(run.player.stage, 26)
+            self.assertEqual(run.node_type, "cafe")
+
+            res_leave = await run_command(plugin, ".rogue 离开", sender_id=user_id)
+            self.assertIn("先古赐福", res_leave)
+
+            run = plugin.save_manager.load_save(user_id)
+            self.assertEqual(run.player.stage, 26)
             self.assertEqual(run.node_type, "ancient")
 
-            event_jump_20 = DummyEvent(f"/rogueadmin jump {user_id} 20", sender_id=user_id)
-            generator = plugin.rogueadmin(event_jump_20)
+            event_jump_25 = DummyEvent(f"/rogueadmin jump {user_id} 25", sender_id=user_id)
+            generator = plugin.rogueadmin(event_jump_25)
             async for _ in generator:
                 pass
-            res_text = "\n".join(event_jump_20.results)
-            self.assertIn("成功跳转到第 20 层", res_text)
+            res_text = "\n".join(event_jump_25.results)
+            self.assertIn("成功跳转到第 25 层", res_text)
             self.assertIn("战斗阶段", res_text)
 
             run = plugin.save_manager.load_save(user_id)
-            self.assertEqual(run.player.stage, 20)
+            self.assertEqual(run.player.stage, 25)
             self.assertEqual(run.node_type, "battle")
 
             event_jump_15 = DummyEvent(f"/rogueadmin jump {user_id} 15", sender_id=user_id)

@@ -134,6 +134,8 @@ class TestRogueExplore(unittest.TestCase):
         map_engine._init_treasure_node(run)
         self.assertEqual(run.node_data.get("state"), "pending_remove")
         map_engine.choose_option(run, 3)
+        self.assertEqual(run.node_type, "gem_insert")
+        map_engine.gem_insert_cancel(run)
         self.assertEqual(run.node_type, "card_select")
         self.assertEqual(len(run.node_data.get("cards", [])), 3)
         self.assertGreater(player.gold, 10)
@@ -488,7 +490,7 @@ class TestRogueExplore(unittest.TestCase):
             max_hp=40,
             shield=0,
             gold=100,
-            stage=20,
+            stage=32,
             deck=["arcane_torrent", "arcane_barrier"],
             hand=["arcane_torrent", "arcane_barrier"],
             actions=3,
@@ -525,12 +527,12 @@ class TestRogueExplore(unittest.TestCase):
         engine._init_battle_node(run)
         self.assertEqual(enemy_test.actions, 1)
         run.node_type = "battle"
-        player.stage = 20
+        player.stage = 25
         sm.stats.unlocked_gatekey = False
         engine.card_player.handle_battle_win(run)
         self.assertEqual(run.node_type, "victory")
         run.node_type = "battle"
-        player.stage = 20
+        player.stage = 25
         sm.stats.unlocked_gatekey = True
         engine.card_player.handle_battle_win(run)
         self.assertEqual(run.node_type, "reward")
@@ -547,7 +549,7 @@ class TestRogueExplore(unittest.TestCase):
         engine.end_turn(run)
         self.assertTrue(any(b.id == "vulnerable_force" for b in enemy_test2.buffs))
         run.node_type = "battle"
-        player.stage = 25
+        player.stage = 32
         engine.card_player.handle_battle_win(run)
         self.assertEqual(run.node_type, "victory")
         self.assertTrue(sm.stats.killed_yog_sothoth)
@@ -618,3 +620,88 @@ class TestRogueExplore(unittest.TestCase):
         engine.card_player.play_card(run, 1)
         self.assertNotIn("1", player.amulets)
         self.assertIn("thorns_necklace", player.minion_graveyard)
+
+    def test_ancient_node_style_generation(self):
+        plugin = MyPlugin(DummyContext())
+        user_id = "test_user_ancient_node_style"
+        from game.models.state import UserStats
+        original_load_stats = plugin.save_manager.load_stats
+
+        def mock_load_stats_warrior(uid):
+            return UserStats(selected_class="战士")
+        plugin.save_manager.load_stats = mock_load_stats_warrior
+
+        warrior_styles_1 = set()
+        warrior_styles_11 = set()
+
+        for _ in range(50):
+            player = PlayerState(
+                hp=30, max_hp=30, shield=0, gold=100, stage=0,
+                deck=["warrior_strike"], hand=["warrior_strike"], actions=5, bonus_actions=5
+            )
+            run = GameRun(user_id=user_id, node_type="battle", player=player, enemies=[])
+            plugin.engine.map_engine.enter_next_stage(run)
+            style_1 = run.node_data.get("style")
+            warrior_styles_1.add(style_1)
+
+            options_1 = run.node_data.get("options", [])
+            if style_1 == "abyss":
+                has_abyss_reward = any(
+                    (item.get("relic") in ["abyss_gaze", "mark_of_fury", "greedy_contract", "abyss_contract"]) or
+                    (item.get("card") in ["abyss_collapse", "demon_contract", "abyss_erosion", "abyss_altar"])
+                    for item in options_1
+                )
+                self.assertTrue(has_abyss_reward)
+
+            player_11 = PlayerState(
+                hp=30, max_hp=30, shield=0, gold=100, stage=12,
+                deck=["warrior_strike"], hand=["warrior_strike"], actions=5, bonus_actions=5
+            )
+            run_11 = GameRun(user_id=user_id, node_type="battle", player=player_11, enemies=[])
+            plugin.engine.map_engine.enter_next_stage(run_11)
+            from game.core.cafe_engine import CafeEngine
+            CafeEngine(plugin.save_manager, plugin.engine.map_engine).leave_cafe(run_11)
+            style_11 = run_11.node_data.get("style")
+            warrior_styles_11.add(style_11)
+
+            options_11 = run_11.node_data.get("options", [])
+            if style_11 == "abyss":
+                has_abyss_card = any(
+                    item.get("card") in ["abyss_collapse", "demon_contract", "abyss_erosion", "abyss_altar"]
+                    for item in options_11
+                )
+                self.assertTrue(has_abyss_card)
+
+        self.assertEqual(warrior_styles_1, {"default", "abyss"})
+        self.assertEqual(warrior_styles_11, {"default", "abyss"})
+
+        def mock_load_stats_wizard(uid):
+            return UserStats(selected_class="法师")
+        plugin.save_manager.load_stats = mock_load_stats_wizard
+
+        wizard_styles_1 = set()
+        wizard_styles_11 = set()
+
+        for _ in range(50):
+            player = PlayerState(
+                hp=30, max_hp=30, shield=0, gold=100, stage=0,
+                deck=["fire_bolt"], hand=["fire_bolt"], actions=5, bonus_actions=5
+            )
+            run = GameRun(user_id=user_id, node_type="battle", player=player, enemies=[])
+            plugin.engine.map_engine.enter_next_stage(run)
+            wizard_styles_1.add(run.node_data.get("style"))
+
+            player_11 = PlayerState(
+                hp=30, max_hp=30, shield=0, gold=100, stage=12,
+                deck=["fire_bolt"], hand=["fire_bolt"], actions=5, bonus_actions=5
+            )
+            run_11 = GameRun(user_id=user_id, node_type="battle", player=player_11, enemies=[])
+            plugin.engine.map_engine.enter_next_stage(run_11)
+            from game.core.cafe_engine import CafeEngine
+            CafeEngine(plugin.save_manager, plugin.engine.map_engine).leave_cafe(run_11)
+            wizard_styles_11.add(run_11.node_data.get("style"))
+
+        self.assertEqual(wizard_styles_1, {"default", "abyss", "glacier"})
+        self.assertEqual(wizard_styles_11, {"default", "abyss", "glacier"})
+
+        plugin.save_manager.load_stats = original_load_stats

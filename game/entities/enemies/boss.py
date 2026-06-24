@@ -484,8 +484,29 @@ class BossYogSothothTemplate(EnemyTemplate):
             enemy.buffs.append(BuffState(id="end_gate_passive", name="终焉之门", stacks=1, desc="每回合开始时获得 15 点护盾，且清除自身所有负面效果，受到伤害时 30% 几率反弹 4 点真实伤害"))
             run.node_data["yog_sothoth_phase"] = 2
             run.node_data["yog_sothoth_turn"] = 0
+            run.node_data["is_void_corrupted"] = True
             enemy.intents.clear()
             engine._log_event(run, "🌟 虚空之门·尤格-索托斯破裂了！狂暴的虚空能量从中倾泻而出，虚空之门在坍缩中重新觉醒！进入了觉醒形态！")
+            engine._log_event(run, f"💬 【觉醒】虚空之门·尤格-索托斯：‘{run.player.name}，你的挣扎在无光之海中毫无意义。虚空已将你锁死，直面你的终焉吧！’")
+        elif enemy.name == "【觉醒】虚空之门·尤格-索托斯":
+            event.cancel()
+            enemy.name = "【终焉】虚空之门·尤格-索托斯"
+            enemy.max_hp = 300
+            enemy.hp = 300
+            enemy.shield = 50
+            enemy.actions = 3
+            enemy.bonus_actions = 2
+            enemy.max_actions = 3
+            enemy.max_bonus_actions = 2
+            enemy.buffs.clear()
+            from ...models.state import BuffState
+            enemy.buffs.append(BuffState(id="doomsday_gate_passive", name="终焉庇护", stacks=1, desc="每回合开始获得 20 护盾，且攻击力永久 +2"))
+            run.node_data["yog_sothoth_phase"] = 3
+            run.node_data["yog_sothoth_turn"] = 0
+            run.node_data["is_void_corrupted"] = True
+            enemy.intents.clear()
+            engine._log_event(run, "🌟 虚空之门爆发出极具毁灭性的光华，次元壁垒彻底粉碎！门扉之中显露出难以名状的混沌本质——终焉降临！")
+            engine._log_event(run, f"💬 【终焉】虚空之门·尤格-索托斯：‘万物归于虚无。{run.player.name}，化为这片坍缩维度的一部分吧！’")
 
     def roll_intents(self, run, engine, enemy) -> List['EnemyIntentState']:
         from ...models.state import EnemyIntentState
@@ -501,7 +522,7 @@ class BossYogSothothTemplate(EnemyTemplate):
                 intents_list.append(EnemyIntentState(type="void_exhaust", val=1, desc="虚空耗竭 (使玩家获得 1 层虚空耗竭 Buff)", cost_a=0, cost_ba=1))
             elif cycle == 2:
                 intents_list.append(EnemyIntentState(type="void_storm", val=10, desc="虚空风暴 (对玩家与所有我方随从造成 10 点力场伤害)", cost_a=1, cost_ba=0))
-                intents_list.append(EnemyIntentState(type="gravity_press", val=10, desc="重力压迫 (造成 10 点钝击伤害，如果玩家身上有护盾，额外损失 5 点护盾；对随机随从造成 6 点钝击伤害)", cost_a=1, cost_ba=0))
+                intents_list.append(EnemyIntentState(type="gravity_press", val=10, desc="重力压迫 (造成 10 点钝击伤害，如果玩家身上有护盾，额外损失 5 点护盾；对随机随关造成 6 点钝击伤害)", cost_a=1, cost_ba=0))
                 intents_list.append(EnemyIntentState(type="decay_whisper", val=2, desc="衰退低语 (使玩家获得 2 层虚空虚弱 Buff)", cost_a=0, cost_ba=1))
             elif cycle == 3:
                 intents_list.append(EnemyIntentState(type="ancient_resonance", val=20, desc="先古共鸣 (获得 20 点护盾，且下回合获得 2 层力量)", cost_a=1, cost_ba=0))
@@ -511,7 +532,7 @@ class BossYogSothothTemplate(EnemyTemplate):
                 intents_list.append(EnemyIntentState(type="gate_gaze", val=12, desc="门之凝视 (造成 12 点心灵伤害，对随机随从造成 8 点力场伤害，玩家下回合无法抽牌)", cost_a=1, cost_ba=0))
                 intents_list.append(EnemyIntentState(type="gravity_press", val=10, desc="重力压迫 (造成 10 点钝击伤害，如果玩家身上有护盾，额外损失 5 点护盾；对随机随从造成 6 点钝击伤害)", cost_a=1, cost_ba=0))
                 intents_list.append(EnemyIntentState(type="dimensional_distortion", val=15, desc="维度扭曲 (获得 15 点护盾)", cost_a=0, cost_ba=1))
-        else:
+        elif phase == 2:
             if cycle == 1:
                 intents_list.append(EnemyIntentState(type="time_collapse", val=14, desc="时空坍缩 (造成 14 点力场伤害，玩家下回合动作减少 1A 1BA，且洗入 2 张空间撕裂)", cost_a=1, cost_ba=0))
                 intents_list.append(EnemyIntentState(type="chaos_beam", val=10, desc="混乱光束 (造成 10 点光耀伤害，对所有随从造成 6 点光耀伤害)", cost_a=1, cost_ba=0))
@@ -532,7 +553,33 @@ class BossYogSothothTemplate(EnemyTemplate):
                 intents_list.append(EnemyIntentState(type="doomsday_tide", val=10, desc="灭世之潮 (对玩家与所有随从造成 10 点真实伤害，穿透护盾，并恢复自身 15 点生命值)", cost_a=1, cost_ba=0))
                 intents_list.append(EnemyIntentState(type="strength_infuse", val=2, desc="力量注入 (敌方全体获得 2 层力量)", cost_a=0, cost_ba=1))
                 intents_list.append(EnemyIntentState(type="void_shield_large", val=20, desc="虚空大盾 (获得 20 点护盾并净化自身 1 负面 Buff)", cost_a=0, cost_ba=1))
+        else:
+            if cycle == 1:
+                intents_list.append(EnemyIntentState(type="time_collapse", val=14, desc="时空坍缩 (造成 14 点力场伤害，玩家下回合动作减少 1A 1BA，且洗入 2 张空间撕裂)", cost_a=1, cost_ba=0))
+                intents_list.append(EnemyIntentState(type="doomsday_tide", val=12, desc="灭世之潮 (对玩家与所有随从造成 12 点真实伤害，穿透护盾，并恢复自身 15 点生命值)", cost_a=1, cost_ba=0))
+                intents_list.append(EnemyIntentState(type="chaos_beam", val=10, desc="混乱光束 (造成 10 点光耀伤害，对所有随从造成 6 点光耀伤害)", cost_a=1, cost_ba=0))
+                intents_list.append(EnemyIntentState(type="void_shield_large", val=20, desc="虚空大盾 (获得 20 点护盾并净化自身 1 负面 Buff)", cost_a=0, cost_ba=1))
+                intents_list.append(EnemyIntentState(type="abyss_exhaust", val=1, desc="深渊耗竭 (使玩家获得 1 层虚空耗竭 Buff)", cost_a=0, cost_ba=1))
+            elif cycle == 2:
+                intents_list.append(EnemyIntentState(type="all_gates_open", val=20, desc="万门齐开 (召唤 2 个虚空潜伏者，敌方全体获得 2 层力量；若格子满则造成 20 点心灵伤害)", cost_a=1, cost_ba=0))
+                intents_list.append(EnemyIntentState(type="doomsday_tide", val=12, desc="灭世之潮 (对玩家与所有随从造成 12 点真实伤害，穿透护盾，并恢复自身 15 点生命值)", cost_a=1, cost_ba=0))
+                intents_list.append(EnemyIntentState(type="abyss_gaze", val=12, desc="深渊凝视 (造成 12 点心灵伤害，使玩家下回合少抽 2 张牌)", cost_a=1, cost_ba=0))
+                intents_list.append(EnemyIntentState(type="strength_infuse", val=2, desc="力量注入 (敌方全体获得 2 层力量)", cost_a=0, cost_ba=1))
+                intents_list.append(EnemyIntentState(type="end_whisper", val=6, desc="终焉低语 (造成 6 点心灵伤害，且迫使玩家随机丢弃 1 张手牌)", cost_a=0, cost_ba=1))
+            elif cycle == 3:
+                intents_list.append(EnemyIntentState(type="doomsday_tide", val=12, desc="灭世之潮 (对玩家与所有随从造成 12 点真实伤害，穿透护盾，并恢复自身 15 点生命值)", cost_a=1, cost_ba=0))
+                intents_list.append(EnemyIntentState(type="time_collapse", val=10, desc="时空坍缩 (造成 10 点力场伤害，玩家下回合动作减少 1A 1BA，且洗入 2 张空间撕裂)", cost_a=1, cost_ba=0))
+                intents_list.append(EnemyIntentState(type="chaos_beam", val=10, desc="混乱光束 (造成 10 点光耀伤害，对所有随从造成 6 点光耀伤害)", cost_a=1, cost_ba=0))
+                intents_list.append(EnemyIntentState(type="mana_block", val=1, desc="魔力阻断 (使玩家获得 1 层魔力泄漏 Buff)", cost_a=0, cost_ba=1))
+                intents_list.append(EnemyIntentState(type="reality_shatter", val=8, desc="现实碎裂 (造成 8 点真实伤害)", cost_a=0, cost_ba=1))
+            else:
+                intents_list.append(EnemyIntentState(type="all_gates_open", val=20, desc="万门齐开 (召唤 2 个虚空潜伏者，敌方全体获得 2 层力量；若格子满则造成 20 点心灵伤害)", cost_a=1, cost_ba=0))
+                intents_list.append(EnemyIntentState(type="chaos_beam", val=12, desc="混乱光束 (造成 12 点光耀伤害，对所有随从造成 6 点光耀伤害)", cost_a=1, cost_ba=0))
+                intents_list.append(EnemyIntentState(type="doomsday_tide", val=10, desc="灭世之潮 (对玩家与所有随从造成 10 点真实伤害，穿透护盾，并恢复自身 15 点生命值)", cost_a=1, cost_ba=0))
+                intents_list.append(EnemyIntentState(type="strength_infuse", val=2, desc="力量注入 (敌方全体获得 2 层力量)", cost_a=0, cost_ba=1))
+                intents_list.append(EnemyIntentState(type="void_shield_large", val=20, desc="虚空大盾 (获得 20 点护盾并净化自身 1 负面 Buff)", cost_a=0, cost_ba=1))
         return intents_list
+
 
     def execute_intent(self, run, engine, enemy, intent, logs: List[str] = None):
         if logs is None:
@@ -761,3 +808,5 @@ class BossYogSothothTemplate(EnemyTemplate):
         return "\n".join(logs)
 
 register_enemy("【觉醒】虚空之门·尤格-索托斯")(BossYogSothothTemplate)
+register_enemy("【终焉】虚空之门·尤格-索托斯")(BossYogSothothTemplate)
+

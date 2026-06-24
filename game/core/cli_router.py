@@ -174,6 +174,46 @@ class CLIRouter:
                     self.save_manager.save_save(user_id, run)
                     selected_cards_str = "，".join(ALL_CARDS[c].name for c in top_state["selected"])
                     return f"✨ 你完成了发掘，获得了【{selected_cards_str}】并加入手牌。", False
+            elif stype == "overload_star_select":
+                input_str = " ".join(parts).strip()
+                if input_str in ("取消", "cancel", "abandon", "放弃", "q"):
+                    state_stack.pop()
+                    self.save_manager.save_save(user_id, run)
+                    return "❌ 取消霸瞳天星的使用操作。", False
+                sub = parts[0]
+                if sub.isdigit():
+                    parts = ["选择"] + parts
+                    sub = "选择"
+                if sub not in ("选择", "c"):
+                    return "❌ 你必须选择一张手牌保留。请输入：选择 <手牌序号>（如：选择 1），或输入 取消/q 放弃使用。", False
+                if len(parts) < 2:
+                    return "❌ 请提供手牌序号，例如：选择 1", False
+                try:
+                    idx = int(parts[1])
+                except ValueError:
+                    return "❌ 序号必须是数字。", False
+                p = run.player
+                if idx < 1 or idx > len(p.hand):
+                    return f"❌ 无效的手牌序号。你当前手牌有 {len(p.hand)} 张。", False
+                state_stack.pop()
+                upgraded = top_state.get("upgraded", False)
+                res = self.engine.execute_emperor_eye_resolve(run, idx - 1, upgraded)
+                if run.player.hp <= 0:
+                    settle_msg = self.save_manager.settle_game_and_delete(user_id, run, is_victory=False)
+                    return f"{res}\n💀 你被击败了！当前进度已清空。\n{settle_msg}", True
+                if self.engine.is_battle_won(run):
+                    self.engine._handle_battle_win(run)
+                    if run.node_type == "victory":
+                        settle_msg = self.save_manager.settle_game_and_delete(user_id, run, is_victory=True)
+                        boss_name = run.node_data.get("boss_name")
+                        if not boss_name and run.enemies:
+                            boss_name = run.enemies[0].name
+                        if not boss_name:
+                            boss_name = "最终BOSS"
+                        return f"{res}\n🎉 恭喜你击败了{boss_name}，通关成功！\n{settle_msg}", True
+                    else:
+                        return f"{res}\n🎉 战斗胜利！你击败了敌方所有单位。", True
+                return res, False
         if parts[0].isdigit():
             parts = ["选择"] + parts
         sub = parts[0]
@@ -354,6 +394,41 @@ class CLIRouter:
                 else:
                     yield zh_cn.get("global", {}).get("town_help_prompt", "🔮 主城探索中。输入 退出/exit 回到主菜单，或输入 W/A/S/D 进行移动。输入 交互/talk <目标> 开启互动。")
                     return
+        if run and run.node_type == "cafe":
+            from .cafe_engine import CafeEngine
+            cafe = CafeEngine(self.save_manager, self.engine.map_engine)
+            cmd = parts[0].lower()
+            if cmd in ("look", "look_around", "看", "查"):
+                yield cafe.render_cafe(run)
+                return
+            elif cmd in ("talk", "交互", "talk_to", "interact", "inter"):
+                if len(parts) < 2:
+                    yield "❌ 请指定交互的目标，例如：talk 向导长老"
+                else:
+                    yield cafe.talk_npc(run, " ".join(parts[1:]))
+                return
+            elif cmd in ("离开", "leave", "exit", "quit"):
+                cafe_data = run.node_data.get("cafe_data", {})
+                if cafe_data.get("active_npc") is not None:
+                    yield cafe.leave_npc(run)
+                else:
+                    yield cafe.leave_cafe(run)
+                return
+            elif cmd in ("选择", "c") or cmd.isdigit():
+                val = parts[1] if (cmd in ("选择", "c") and len(parts) > 1) else cmd
+                if val.isdigit():
+                    idx = int(val)
+                    yield cafe.choose_option(run, idx)
+                else:
+                    yield "❌ 无效的选项序号。"
+                return
+            elif cmd in ("帮助", "help"):
+                yield "💡 咖啡厅探索中。输入 离开 离开咖啡厅，或输入 talk <NPC名字> 进行交互。输入 看/查/look 重新观察四周。在对话中可直接输入选项数字。"
+                return
+            else:
+                yield "❌ 未知咖啡厅命令。输入 看/查/look 查看四周，talk <NPC> 进行互动，或输入 离开 前往先古赐福。"
+                return
+
         if run and run.node_data.get("state_stack"):
             res, term = self._execute_sub_action(user_id, run, parts)
             if is_town_combat:

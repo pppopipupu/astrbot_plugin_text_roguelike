@@ -6,6 +6,15 @@ from ..data.buff_data import BUFF_CONFIG
 from ..data.minion_data import MINION_CONFIG
 from .menu import get_card_cost_str
 
+def void_corrupt_text(text: str) -> str:
+    import random
+    chars = list(text)
+    for i in range(len(chars)):
+        if chars[i] not in (" ", "\n", "[", "]", "【", "】", "：", "❤️", "🛡️", "⚡", "⚔️", "A", "B", "H", "P", "G", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "|", "•", "━━━━━━━━━━━━━━━━━━━━", "格", "子", "敌", "人", "手", "牌", "抽", "弃", "消", "耗"):
+            if random.random() < 0.25:
+                chars[i] = random.choice(['░', '▒', '▓', '■', '?', '▰', '▱'])
+    return "".join(chars)
+
 def adjust_intent_desc_with_strength(desc: str, strength: int) -> str:
     if strength <= 0:
         return desc
@@ -109,7 +118,11 @@ def render_battle(run: GameRun) -> str:
                     else:
                         enemy_buff_strs.append(f"{b.name}")
                 buff_desc = " | Buff: " + " ".join(enemy_buff_strs)
-            lines.append(f" 格子 [{idx}] 敌人：{enemy.name} (❤️ HP {enemy.hp}/{enemy.max_hp}{shield_str}{buff_desc} | ⚡ 动作 {enemy.actions}A {enemy.bonus_actions}BA | ⚔️ 意图：{intent_str})")
+            e_name = enemy.name
+            if run.node_data.get("is_void_corrupted"):
+                e_name = void_corrupt_text(e_name)
+                intent_str = void_corrupt_text(intent_str)
+            lines.append(f" 格子 [{idx}] 敌人：{e_name} (❤️ HP {enemy.hp}/{enemy.max_hp}{shield_str}{buff_desc} | ⚡ 动作 {enemy.actions}A {enemy.bonus_actions}BA | ⚔️ 意图：{intent_str})")
     lines.append("")
     lines.append("【你的手牌】")
     if not p.hand:
@@ -131,10 +144,18 @@ def render_battle(run: GameRun) -> str:
                     "curse": "诅咒"
                 }
                 rname = rarity_map.get(getattr(card, "rarity", "common"), "普通")
-                if getattr(card, "unplayable", False):
-                    lines.append(f" [{valid_idx}] {color_ch} {card.name} <{rname}> - {card.desc}")
+                c_name = card.name
+                c_desc = card.desc
+                if run.node_data.get("is_void_corrupted"):
+                    c_name = void_corrupt_text(c_name)
+                    c_desc = void_corrupt_text(c_desc)
+                    cost_str = "?A ?BA"
                 else:
-                    lines.append(f" [{valid_idx}] {color_ch} {card.name} <{rname}> (消耗: {cost_str}) - {card.desc}")
+                    cost_str = get_card_cost_str(card)
+                if getattr(card, "unplayable", False):
+                    lines.append(f" [{valid_idx}] {color_ch} {c_name} <{rname}> - {c_desc}")
+                else:
+                    lines.append(f" [{valid_idx}] {color_ch} {c_name} <{rname}> (消耗: {cost_str}) - {c_desc}")
                 valid_idx += 1
     if run.node_data.get("pending_discard"):
         lines.append("⚠️ 状态：请选择一张手牌丢弃！请输入：/rogue 选择 <手牌序号>")
@@ -235,7 +256,7 @@ def render_detailed_battle(run: GameRun) -> str:
     else:
         for idx, enemy in enumerate(run.enemies, 1):
             shield_str = f" | 🛡️ 护盾 {enemy.shield}" if enemy.shield > 0 else ""
-            lines.append(f"  格子 [{idx}] 敌人：{enemy.name} (HP {enemy.hp}/{enemy.max_hp}{shield_str} | 动作 {enemy.actions}A {enemy.bonus_actions}BA)")
+            e_name = enemy.name
             strength = 0
             if getattr(enemy, "buffs", None):
                 for b in enemy.buffs:
@@ -258,6 +279,10 @@ def render_detailed_battle(run: GameRun) -> str:
             if ba_parts:
                 intent_parts.append(f"附赠动作(BA)：{' + '.join(ba_parts)}")
             intent_str = " | ".join(intent_parts) if intent_parts else "无意图"
+            if run.node_data.get("is_void_corrupted"):
+                e_name = void_corrupt_text(e_name)
+                intent_str = void_corrupt_text(intent_str)
+            lines.append(f"  格子 [{idx}] 敌人：{e_name} (HP {enemy.hp}/{enemy.max_hp}{shield_str} | 动作 {enemy.actions}A {enemy.bonus_actions}BA)")
             lines.append(f"    行动意图：{intent_str}")
             if getattr(enemy, "buffs", None):
                 lines.append("    敌人Buff：")

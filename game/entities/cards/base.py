@@ -122,6 +122,31 @@ class CardRegistryDict(dict):
         return super().__len__()
 
     def __getitem__(self, key):
+        if isinstance(key, str) and ":no_copy:1" in key:
+            base_key = key.replace(":no_copy:1", "")
+            base_card = self[base_key]
+            no_copy_card = copy.copy(base_card)
+            no_copy_card.id = key
+            no_copy_card.copy = 0
+            return no_copy_card
+
+        if isinstance(key, str) and ":gems:" in key:
+            parts = key.rsplit(":gems:", 1)
+            base_key = parts[0]
+            gems_str = parts[1]
+            base_card = self[base_key]
+            gems_card = copy.copy(base_card)
+            gems_card.id = key
+            gems_card.gems = gems_str.split(",") if gems_str else []
+            from ...data.gem_data import GEM_CONFIG
+            gem_descs = []
+            for g in gems_card.gems:
+                if g in GEM_CONFIG:
+                    gem_descs.append(f"<{GEM_CONFIG[g]['name']}>")
+            if gem_descs:
+                gems_card.desc = gems_card.desc + " （镶嵌：" + "，".join(gem_descs) + "）"
+            return gems_card
+
         if isinstance(key, str) and ":replay:" in key:
             parts = key.rsplit(":replay:", 1)
             base_key = parts[0]
@@ -195,6 +220,14 @@ class CardRegistryDict(dict):
                     setattr(upgraded_card, prop, up_cfg[prop])
             return upgraded_card
         
+        if isinstance(key, str) and ":return_left:" in key:
+            import re
+            base_key = re.sub(r":return_left:\d+", "", key)
+            base_card = self[base_key]
+            ret_card = copy.copy(base_card)
+            ret_card.id = key
+            return ret_card
+
         if key not in self:
             self._lazy_load_card(key)
         return super().__getitem__(key)
@@ -207,7 +240,9 @@ class CardRegistryDict(dict):
 
     def __contains__(self, key):
         if isinstance(key, str):
-            clean_key = key.split(":replay:")[0].split(":fragile:")[0]
+            import re
+            clean_key = re.sub(r":return_left:\d+", "", key)
+            clean_key = clean_key.replace(":no_copy:1", "").split(":gems:")[0].split(":replay:")[0].split(":fragile:")[0]
             if clean_key.endswith("+"):
                 base_key = clean_key[:-1]
                 if super().__contains__(base_key):

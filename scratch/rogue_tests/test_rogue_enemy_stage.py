@@ -176,7 +176,7 @@ class TestRogueEnemyStage(unittest.TestCase):
             max_hp=50,
             shield=0,
             gold=100,
-            stage=20,
+            stage=25,
             deck=["fire_bolt"],
             hand=["fire_bolt"],
             actions=2,

@@ -559,3 +559,9 @@ class WarriorBloodFuryCard(Card):
         engine._add_buff_to(run.player, "strength", "力量", "造成伤害增加", 2)
         engine._draw_cards(run.player, 2, run)
         return f"你点燃了自身的生命潜能，失去了 {loss} 点生命值，获得了 2 层【力量】并抽了 2 张牌！"
+
+@register_card("warrior_source_of_cinder")
+class WarriorSourceOfCinderCard(Card):
+    def execute(self, run, target, engine) -> str:
+        engine._add_buff_to(run.player, "source_of_cinder", "薪火之源", "每回合开始额外获得 1A 1BA", 1)
+        return "你获得了【薪火之源】状态！"

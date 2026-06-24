@@ -180,6 +180,117 @@ class GlacierCoreRelic(RelicImpl):
                 if feedback_parts:
                     engine._log_event(run, "🏔️ [极寒之核] 触发：" + "，".join(feedback_parts) + "。")
 
+class DoomsdayCoreRelic(RelicImpl):
+    def on_turn_end(self, event, run, engine):
+        if event.is_player:
+            played_count = run.node_data.get("cards_played_this_turn", 0)
+            if played_count >= 3:
+                engine._draw_cards(run.player, 1, run)
+                engine._log_event(run, "💎 [末日核心] 触发！本回合打出 >=3 张牌，额外抽 1 张牌！")
+
+class NecromancerSkullRelic(RelicImpl):
+    def on_minion_death(self, event, run, engine):
+        engine._heal_target(run, "p0", 2)
+        engine._log_event(run, "💀 [巫师颅骨] 触发！有单位死亡，玩家回复 2 点生命值！")
+
+class ArcanistHandRelic(RelicImpl):
+    def on_card_played(self, event, run, engine):
+        if event.card.cost_a == 0 and event.card.cost_ba == 0:
+            alive = [e for e in run.enemies if e.hp > 0]
+            if alive:
+                target_enemy = alive[0]
+                idx = run.enemies.index(target_enemy) + 1
+                engine._log_event(run, f"✋ [奥术师之手] 触发！使用 0 费卡牌，对【{target_enemy.name}】造成 3 点力场伤害！")
+                engine.combat_resolver.damage_target(run, f"e{idx}", 3, source="relic:arcanist_hand", damage_type="force")
+
+class CommanderMedalRelic(RelicImpl):
+    def on_battle_start(self, run, engine):
+        for m in run.player.minions.values():
+            m.actions += 1
+            m.bonus_actions += 1
+        engine._log_event(run, "🏅 [至高勋章] 触发！所有在场随从本回合获得的行动点数 +1！")
+
+class StalkerEyeRelic(RelicImpl):
+    def on_damage_calculate(self, event, run, engine):
+        if event.source == "p0" and event.card and getattr(event.card, "exhaust", False):
+            event.modified_damage += 4
+            engine._log_event(run, f"👁️ [潜伏者眼球] 触发！消耗卡牌【{event.card.name}】伤害提升 4 点！")
+
+    def on_shield_gain(self, event, run, engine):
+        if event.target == "p0":
+            from ...entities import ALL_CARDS
+            playing_cid = run.node_data.get("current_playing_card_id", "")
+            card = ALL_CARDS.get(playing_cid)
+            if card and getattr(card, "exhaust", False):
+                event.modified_amount += 4
+                engine._log_event(run, f"👁️ [潜伏者眼球] 触发！使用消耗卡牌【{card.name}】获得护盾，护盾提升 4 点！")
+class GladiatorBeltRelic(RelicImpl):
+    def on_turn_start(self, event, run, engine):
+        if event.is_player and run.player.minions:
+            p = run.player
+            p.shield += 2
+            engine._log_event(run, "🎗️ [角斗士皮带] 触发！有随从在场，你获得 2 点护盾！")
+
+class ShieldBatteryRelic(RelicImpl):
+    def on_shield_gain(self, event, run, engine):
+        if event.target == "p0":
+            import random
+            if random.random() < 0.5:
+                event.modified_amount += 2
+                engine._log_event(run, "🔋 [能量护盾电池] 触发！你额外获得 2 点护盾！")
+
+class CrimsonHeartRelic(RelicImpl):
+    def on_damage_calculate(self, event, run, engine):
+        p = run.player
+        if event.source == "p0" and p.hp / p.max_hp < 0.3:
+            event.modified_damage = int(event.modified_damage * 2)
+            engine._log_event(run, "❤️ [绯红之心] 触发！生命值低于 30%，造成的伤害翻倍！")
+
+    def on_card_played(self, event, run, engine):
+        p = run.player
+        if p.hp / p.max_hp < 0.3:
+            old_hp = p.hp
+            p.hp = min(p.max_hp, p.hp + 2)
+            if p.hp > old_hp:
+                engine._log_event(run, f"❤️ [绯红之心] 触发！打出卡牌回复了 {p.hp - old_hp} 点生命值！")
+
+@register_relic("espresso_relic")
+class EspressoRelic(RelicImpl):
+    def on_turn_start(self, event, run, engine):
+        if event.is_player:
+            run.player.actions += 1
+            engine._log_event(run, "☕ [特制浓缩咖啡] 触发！本回合额外获得 1A！")
+
+@register_relic("anthem_relic_3")
+class AnthemRelic3(RelicImpl):
+    def on_battle_start(self, run, engine):
+        p = run.player
+        p.shield += 2
+        engine._log_event(run, "🎵 [赞歌] 触发！获得 2 点初始护盾。")
+        if "anthem_relic_3" in p.relics:
+            p.relics.remove("anthem_relic_3")
+            p.relics.append("anthem_relic_2")
+
+@register_relic("anthem_relic_2")
+class AnthemRelic2(RelicImpl):
+    def on_battle_start(self, run, engine):
+        p = run.player
+        p.shield += 2
+        engine._log_event(run, "🎵 [赞歌] 触发！获得 2 点初始护盾。")
+        if "anthem_relic_2" in p.relics:
+            p.relics.remove("anthem_relic_2")
+            p.relics.append("anthem_relic_1")
+
+@register_relic("anthem_relic_1")
+class AnthemRelic1(RelicImpl):
+    def on_battle_start(self, run, engine):
+        p = run.player
+        p.shield += 2
+        engine._log_event(run, "🎵 [赞歌] 触发！获得 2 点初始护盾（次数已耗尽）。")
+        if "anthem_relic_1" in p.relics:
+            p.relics.remove("anthem_relic_1")
+
+
 
 for name, obj in list(globals().items()):
     if isinstance(obj, type) and issubclass(obj, RelicImpl) and obj is not RelicImpl:

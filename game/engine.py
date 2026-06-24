@@ -135,6 +135,12 @@ class GameEngine:
     def upgrade_card_in_deck(self, run: GameRun, deck_idx: int) -> str:
         return self.map_engine.upgrade_card_in_deck(run, deck_idx)
 
+    def gem_insert_choose(self, run: GameRun, deck_idx: int) -> str:
+        return self.map_engine.gem_insert_choose(run, deck_idx)
+
+    def gem_insert_cancel(self, run: GameRun) -> str:
+        return self.map_engine.gem_insert_cancel(run)
+
     def jump_to_stage(self, run: GameRun, target_stage: int) -> str:
         p = run.player
         p.stage = target_stage - 1

@@ -70,6 +70,11 @@ class GameRenderer:
             return render_treasure(run)
         elif nt == "card_select":
             return render_card_select(run)
+        elif nt == "gem_insert":
+            return run.node_data.get("text", "") + "\n\n" + render_deck(run)
+        elif nt == "cafe":
+            from ..core.cafe_engine import CafeEngine
+            return CafeEngine(None, None).render_cafe(run)
         return "未知关卡状态"
 
     @staticmethod

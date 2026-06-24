@@ -19,6 +19,8 @@ class RelicTriggerHandler:
         event_bus.subscribe(HealEvent, self.on_heal)
         event_bus.subscribe(DamageTakeEvent, self.on_damage_take)
         event_bus.subscribe(ShieldDecayEvent, self.on_shield_decay)
+        event_bus.subscribe(TurnEndEvent, self.on_turn_end)
+        event_bus.subscribe(MinionDeathEvent, self.on_minion_death)
 
     def on_battle_start(self, event):
         from ...entities.relics import get_relic_impl
@@ -52,11 +54,10 @@ class RelicTriggerHandler:
 
     def on_damage_calculate(self, event):
         from ...entities.relics import get_relic_impl
-        if event.source == "p0":
-            for r in list(event.run.player.relics):
-                impl = get_relic_impl(r)
-                if impl and hasattr(impl, "on_damage_calculate"):
-                    impl.on_damage_calculate(event, event.run, self.engine)
+        for r in list(event.run.player.relics):
+            impl = get_relic_impl(r)
+            if impl and hasattr(impl, "on_damage_calculate"):
+                impl.on_damage_calculate(event, event.run, self.engine)
 
     def on_minion_summon(self, event):
         from ...entities.relics import get_relic_impl
@@ -94,6 +95,20 @@ class RelicTriggerHandler:
             impl = get_relic_impl(r)
             if impl and hasattr(impl, "on_shield_decay"):
                 impl.on_shield_decay(event, event.run, self.engine)
+
+    def on_turn_end(self, event):
+        from ...entities.relics import get_relic_impl
+        for r in list(event.run.player.relics):
+            impl = get_relic_impl(r)
+            if impl and hasattr(impl, "on_turn_end"):
+                impl.on_turn_end(event, event.run, self.engine)
+
+    def on_minion_death(self, event):
+        from ...entities.relics import get_relic_impl
+        for r in list(event.run.player.relics):
+            impl = get_relic_impl(r)
+            if impl and hasattr(impl, "on_minion_death"):
+                impl.on_minion_death(event, event.run, self.engine)
 
 class BuffTriggerHandler:
     def __init__(self, event_bus, engine):

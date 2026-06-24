@@ -63,7 +63,22 @@ class CombatResolver:
                 return s
         return None
 
+    def _apply_gem_dmg(self, card: Optional[Card], dmg: int) -> int:
+        if card and hasattr(card, "gems") and card.gems:
+            add_val = 0
+            mul_val = 1
+            for g in card.gems:
+                if g == "gem_dmg_add_2":
+                    add_val += 2
+                elif g == "gem_dmg_mul_2":
+                    mul_val *= 2
+                elif g == "gem_dmg_mul_3":
+                    mul_val *= 3
+            return (dmg + add_val) * mul_val
+        return dmg
+
     def get_modified_spell_damage(self, run: GameRun, card: Card, damage: int) -> int:
+        damage = self._apply_gem_dmg(card, damage)
         dtype = getattr(card, "damage_type", "spell")
         calc_evt = DamageCalculateEvent(run, card, "p0", "e1", dtype, damage, damage)
         self.engine.event_bus.dispatch(calc_evt)
@@ -79,12 +94,42 @@ class CombatResolver:
                     b.stacks2 += count2
                 if buff_id == "stun" and isinstance(entity, EnemyState):
                     self.engine._sync_enemy_intents(entity)
+                self._check_shadow_tentacle(entity, buff_id)
                 return
         entity.buffs.append(BuffState(buff_id, buff_name, count, count2, desc))
         if buff_id == "stun" and isinstance(entity, EnemyState):
             self.engine._sync_enemy_intents(entity)
+        self._check_shadow_tentacle(entity, buff_id)
+
+    def _check_shadow_tentacle(self, entity, buff_id: str):
+        from ...models.state import EnemyState
+        if isinstance(entity, EnemyState):
+            is_negative = buff_id in ("stun", "weak", "electrified", "poison", "agony", "bleed", "void_weakness") or "vulnerable" in buff_id
+            if is_negative:
+                import sys
+                run = None
+                frame = sys._getframe()
+                while frame:
+                    if "run" in frame.f_locals:
+                        run = frame.f_locals["run"]
+                        break
+                    frame = frame.f_back
+                if run and "shadow_tentacle" in run.player.relics:
+                    self.gain_shield(run, "p0", 2)
+                    self.engine._log_event(run, "💎 [影魔触角] 触发！敌人被施加负面 Buff，玩家获得 2 点护盾！")
 
     def gain_shield(self, run: GameRun, target: str, amount: int):
+        if target == "p0":
+            cid = run.node_data.get("current_playing_card_cid")
+            if cid:
+                from ...entities.cards.base import ALL_CARDS
+                card = ALL_CARDS.get(cid)
+                if card and hasattr(card, "gems") and card.gems:
+                    for g in card.gems:
+                        if g == "gem_shield_add_3":
+                            amount += 3
+                        elif g == "gem_shield_add_8":
+                            amount += 8
         evt = ShieldGainEvent(run, target, amount, amount)
         self.engine.event_bus.dispatch(evt)
         final_amount = evt.modified_amount
@@ -102,6 +147,15 @@ class CombatResolver:
                 run.enemies[idx].shield += final_amount
 
     def heal_target(self, run: GameRun, target: str, heal: int):
+        if target == "p0" or target.startswith("p"):
+            cid = run.node_data.get("current_playing_card_cid")
+            if cid:
+                from ...entities.cards.base import ALL_CARDS
+                card = ALL_CARDS.get(cid)
+                if card and hasattr(card, "gems") and card.gems:
+                    for g in card.gems:
+                        if g == "gem_heal_add_2":
+                            heal += 2
         heal_evt = HealEvent(run, target, heal)
         self.engine.event_bus.dispatch(heal_evt)
         if heal_evt.cancelled:
@@ -152,6 +206,13 @@ class CombatResolver:
 
     def damage_target(self, run: GameRun, target: str, dmg: int, source: str = "effect", damage_type: str = "effect", card: Optional[Card] = None):
         target_name = self.get_target_name(run, target)
+        if card is None:
+            cid = run.node_data.get("current_playing_card_cid")
+            if cid:
+                from ...entities.cards.base import ALL_CARDS
+                card = ALL_CARDS.get(cid)
+        if source == "p0":
+            dmg = self._apply_gem_dmg(card, dmg)
         calc_evt = DamageCalculateEvent(run, card, source, target, damage_type, dmg, dmg)
         self.engine.event_bus.dispatch(calc_evt)
         final_dmg = max(0, calc_evt.modified_damage)

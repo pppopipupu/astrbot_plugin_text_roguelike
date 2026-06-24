@@ -12,6 +12,8 @@ class MapEngine:
     def enter_next_stage(self, run: GameRun):
         p = run.player
         p.stage += 1
+        if "espresso_relic" in p.relics:
+            p.relics.remove("espresso_relic")
         if hasattr(self.save_manager, "load_admin_config"):
             admin_cfg = self.save_manager.load_admin_config()
         else:
@@ -33,28 +35,50 @@ class MapEngine:
 
         if p.stage == 1:
             run.node_type = "start_ancient"
-            style = random.choice(["default", "abyss", "glacier"])
             stats = self.save_manager.load_stats(run.user_id)
             p_class = getattr(stats, "selected_class", "法师")
             if p_class == "战士":
-                relics_pool = [
-                    {"type": "double", "relic": "mark_of_fury"},
-                    {"type": "double", "relic": "greedy_contract"},
-                    {"type": "double", "relic": "mask_of_void"},
-                    {"type": "double", "relic": "unstable_crystal"},
-                    {"type": "double", "relic": "vampiric_touch"},
-                    {"type": "double", "relic": "ancient_page"}
-                ]
-                cards_pool = [
-                    {"type": "contract", "relic": "rust_shackle", "card": "demon_form"},
-                    {"type": "contract", "relic": "fool_oath", "card": "impervious"},
-                    {"type": "contract", "relic": "blind_spot", "card": "demon_form"},
-                    {"type": "contract", "relic": "tax_contract", "card": "impervious"}
-                ]
-                cards_pool.append({"type": "contract", "relic": "blind_spot", "card": "break_limits"})
-                cards_pool.append({"type": "contract", "relic": "blind_spot", "card": "unmined_gem"})
-                if getattr(stats, "killed_icerainboww", False) and icerainboww_enabled:
-                    cards_pool.append({"type": "contract", "relic": "wither_seed", "card": "minion_icerainboww"})
+                style = random.choice(["default", "abyss"])
+            else:
+                style = random.choice(["default", "abyss", "glacier"])
+
+            if p_class == "战士":
+                if style == "default":
+                    relics_pool = [
+                        {"type": "double", "relic": "mark_of_fury"},
+                        {"type": "double", "relic": "greedy_contract"},
+                        {"type": "double", "relic": "mask_of_void"},
+                        {"type": "double", "relic": "unstable_crystal"},
+                        {"type": "double", "relic": "vampiric_touch"},
+                        {"type": "double", "relic": "ancient_page"}
+                    ]
+                    cards_pool = [
+                        {"type": "contract", "relic": "rust_shackle", "card": "demon_form"},
+                        {"type": "contract", "relic": "fool_oath", "card": "impervious"},
+                        {"type": "contract", "relic": "blind_spot", "card": "demon_form"},
+                        {"type": "contract", "relic": "tax_contract", "card": "impervious"}
+                    ]
+                    cards_pool.append({"type": "contract", "relic": "blind_spot", "card": "break_limits"})
+                    cards_pool.append({"type": "contract", "relic": "blind_spot", "card": "unmined_gem"})
+                    if getattr(stats, "killed_icerainboww", False) and icerainboww_enabled:
+                        cards_pool.append({"type": "contract", "relic": "wither_seed", "card": "minion_icerainboww"})
+                else:
+                    relics_pool = [
+                        {"type": "double", "relic": "abyss_gaze"},
+                        {"type": "double", "relic": "mark_of_fury"},
+                        {"type": "double", "relic": "greedy_contract"},
+                        {"type": "double", "relic": "abyss_contract"}
+                    ]
+                    cards_pool = [
+                        {"type": "contract", "relic": "shadow_curse", "card": "abyss_collapse"},
+                        {"type": "contract", "relic": "shadow_curse", "card": "demon_contract"},
+                        {"type": "contract", "relic": "shadow_curse", "card": "abyss_erosion"},
+                        {"type": "contract", "relic": "shadow_curse", "card": "abyss_altar"}
+                    ]
+                    cards_pool.append({"type": "contract", "relic": "shadow_curse", "card": "break_limits"})
+                    cards_pool.append({"type": "contract", "relic": "shadow_curse", "card": "unmined_gem"})
+                    if getattr(stats, "killed_icerainboww", False) and icerainboww_enabled:
+                        cards_pool.append({"type": "contract", "relic": "shadow_curse", "card": "minion_icerainboww"})
             else:
                 if style == "default":
                     relics_pool = [
@@ -120,56 +144,20 @@ class MapEngine:
             options = selected_relics + selected_cards
             random.shuffle(options)
             run.node_data = {"options": options, "style": style}
-        elif p.stage == 11:
-            run.node_type = "ancient"
-            style = random.choice(["default", "abyss", "glacier"])
-            stats = self.save_manager.load_stats(run.user_id)
-            p_class = getattr(stats, "selected_class", "法师")
-            if p_class == "战士":
-                legends_pool = ["demon_form", "impervious"]
-                relics_pool = ["ancient_eye", "gold_compass", "dragon_blood", "energy_core", "heavy_armor"]
-            else:
-                if style == "default":
-                    legends_pool = ["doomsday_judgment", "time_warp", "magic_network", "meteor_swarm", "archmage_wish"]
-                    relics_pool = ["ancient_eye", "gold_compass", "dragon_blood", "energy_core", "heavy_armor"]
-                elif style == "abyss":
-                    legends_pool = ["abyss_collapse", "demon_contract", "abyss_erosion", "abyss_altar"]
-                    relics_pool = ["abyss_whisper", "gold_compass", "dragon_blood", "abyss_contract"]
-                else:
-                    legends_pool = ["frost_nova", "glacier_fortress", "glacier_tempest"]
-                    relics_pool = ["frost_blade", "energy_core", "heavy_armor", "glacier_core"]
-            
-            legends_pool.append("break_limits")
-            legends_pool.append("unmined_gem")
-            if getattr(stats, "killed_icerainboww", False) and icerainboww_enabled:
-                legends_pool.append("minion_icerainboww")
-                
-            available_relics = [r for r in relics_pool if r not in p.relics]
-            if not available_relics:
-                available_relics = relics_pool.copy()
-            random.shuffle(legends_pool)
-            random.shuffle(available_relics)
-            options = []
-            from ..models.state import check_and_replace_fireball
-            for i in range(3):
-                options.append({
-                    "card": check_and_replace_fireball(run, legends_pool[i % len(legends_pool)]),
-                    "relic": available_relics[i % len(available_relics)]
-                })
-            run.node_data = {"options": options, "style": style}
-        elif p.stage == 20:
-            run.node_type = "battle"
-            self.battle_engine._init_battle_node(run, "boss")
-        elif p.stage == 25:
+        elif p.stage in (13, 26):
+            from .cafe_engine import CafeEngine
+            cafe = CafeEngine(self.save_manager, self)
+            cafe.init_cafe(run)
+        elif p.stage in (12, 25, 31, 32):
             run.node_type = "battle"
             self.battle_engine._init_battle_node(run, "boss")
         else:
             if p.stage == 2:
-                self._generate_map_network(run, 2, 10)
-            elif p.stage == 12:
-                self._generate_map_network(run, 12, 20)
-            elif p.stage == 21:
-                self._generate_map_network(run, 21, 25)
+                self._generate_map_network(run, 2, 12)
+            elif p.stage == 14:
+                self._generate_map_network(run, 14, 25)
+            elif p.stage == 27:
+                self._generate_map_network(run, 27, 32)
             
             run.node_type = "map_select"
             nodes_layer = run.map_data.get("nodes", {}).get(str(p.stage), [])
@@ -223,25 +211,36 @@ class MapEngine:
         for s in range(start_s, end_s + 1):
             nodes[str(s)] = []
         
+        if "total_treasures" not in run.map_data:
+            run.map_data["total_treasures"] = random.choice([4, 5])
+        
+        tot = run.map_data["total_treasures"]
+        treasure_layers = []
+        if start_s == 2:
+            num_t = 2 if tot == 5 else 1
+            treasure_layers = random.sample(range(3, 12), num_t)
+        elif start_s == 14:
+            treasure_layers = random.sample(range(15, 25), 2)
+        elif start_s == 27:
+            treasure_layers = random.sample(range(27, 31), 1)
+
         types_pool = ["battle", "event", "shop", "elite", "rest"]
         for s in range(start_s, end_s + 1):
             s_str = str(s)
-            if s in (5, 15, 23):
-                nodes[s_str].append({
-                    "id": f"{s}_0",
-                    "type": "treasure",
-                    "next": []
-                })
-            elif s in (10, 20, 25):
+            if s in (12, 25, 31, 32):
                 nodes[s_str].append({
                     "id": f"{s}_0",
                     "type": "boss",
                     "next": []
                 })
             else:
-                width = random.randint(2, 3)
+                width = random.choices([2, 3, 4], weights=[0.1, 0.5, 0.4])[0]
+                treasure_idx = random.randint(0, width - 1) if s in treasure_layers else -1
                 for i in range(width):
-                    ntype = random.choice(types_pool)
+                    if i == treasure_idx:
+                        ntype = "treasure"
+                    else:
+                        ntype = random.choice(types_pool)
                     nodes[s_str].append({
                         "id": f"{s}_{i}",
                         "type": ntype,
@@ -347,3 +346,61 @@ class MapEngine:
 
     def upgrade_card_in_deck(self, run: GameRun, deck_idx: int) -> str:
         return self.explore_engine.upgrade_card_in_deck(run, deck_idx)
+
+    def gem_insert_choose(self, run: GameRun, deck_idx: int) -> str:
+        return self.explore_engine.gem_insert_choose(run, deck_idx)
+
+    def gem_insert_cancel(self, run: GameRun) -> str:
+        return self.explore_engine.gem_insert_cancel(run)
+
+    def _init_ancient_node(self, run: GameRun):
+        p = run.player
+        run.node_type = "ancient"
+        stats = self.save_manager.load_stats(run.user_id)
+        p_class = getattr(stats, "selected_class", "法师")
+        if hasattr(self.save_manager, "load_admin_config"):
+            admin_cfg = self.save_manager.load_admin_config()
+        else:
+            admin_cfg = {}
+        icerainboww_enabled = admin_cfg.get("icerainboww_enabled", True)
+        if p_class == "战士":
+            style = random.choice(["default", "abyss"])
+        else:
+            style = random.choice(["default", "abyss", "glacier"])
+
+        if p_class == "战士":
+            if style == "default":
+                legends_pool = ["demon_form", "impervious"]
+                relics_pool = ["ancient_eye", "gold_compass", "dragon_blood", "energy_core", "heavy_armor"]
+            else:
+                legends_pool = ["abyss_collapse", "demon_contract", "abyss_erosion", "abyss_altar"]
+                relics_pool = ["abyss_whisper", "gold_compass", "dragon_blood", "abyss_contract"]
+        else:
+            if style == "default":
+                legends_pool = ["doomsday_judgment", "time_warp", "magic_network", "meteor_swarm", "archmage_wish"]
+                relics_pool = ["ancient_eye", "gold_compass", "dragon_blood", "energy_core", "heavy_armor"]
+            elif style == "abyss":
+                legends_pool = ["abyss_collapse", "demon_contract", "abyss_erosion", "abyss_altar"]
+                relics_pool = ["abyss_whisper", "gold_compass", "dragon_blood", "abyss_contract"]
+            else:
+                legends_pool = ["frost_nova", "glacier_fortress", "glacier_tempest"]
+                relics_pool = ["frost_blade", "energy_core", "heavy_armor", "glacier_core"]
+        
+        legends_pool.append("break_limits")
+        legends_pool.append("unmined_gem")
+        if getattr(stats, "killed_icerainboww", False) and icerainboww_enabled:
+            legends_pool.append("minion_icerainboww")
+            
+        available_relics = [r for r in relics_pool if r not in p.relics]
+        if not available_relics:
+            available_relics = relics_pool.copy()
+        random.shuffle(legends_pool)
+        random.shuffle(available_relics)
+        options = []
+        from ..models.state import check_and_replace_fireball
+        for i in range(3):
+            options.append({
+                "card": check_and_replace_fireball(run, legends_pool[i % len(legends_pool)]),
+                "relic": available_relics[i % len(available_relics)]
+            })
+        run.node_data = {"options": options, "style": style}

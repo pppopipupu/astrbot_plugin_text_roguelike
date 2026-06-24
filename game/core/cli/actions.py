@@ -114,9 +114,15 @@ class ChooseAction(ActionHandler, actions=["选择", "c"]):
                     run.node_data["pending_upgrade"] = False
                     router.save_manager.save_save(user_id, run)
                     return "🔨 已取消卡牌升级操作。", False
+                if run.node_type == "gem_insert":
+                    res = router.engine.gem_insert_cancel(run)
+                    return res, False
             if arg in ("wizard", "warrior", "wiz", "war", "法师", "战士", "选择", "时序法师", "塑能法师", "秘钥学者"):
                 return "❌ 切换职业请在局外使用 /rogue class 命令。\n💡 选择命令 c 仅用于局内选项选择，无法用于选择职业。", False
             return "❌ 序号必须是数字。", False
+        if run.node_type == "gem_insert":
+            res = router.engine.gem_insert_choose(run, idx)
+            return res, False
         if run.node_data.get("pending_upgrade"):
             res = router.engine.upgrade_card_in_deck(run, idx)
             if run.player.hp <= 0:

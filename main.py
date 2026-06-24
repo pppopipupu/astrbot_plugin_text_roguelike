@@ -431,8 +431,8 @@ class MyPlugin(Star):
             except ValueError:
                 yield event.plain_result("❌ 错误：层数必须是整数")
                 return
-            if not (1 <= target_stage <= 25):
-                yield event.plain_result("❌ 错误：层数范围必须在 1 到 25 之间")
+            if not (1 <= target_stage <= 32):
+                yield event.plain_result("❌ 错误：层数范围必须在 1 到 32 之间")
                 return
             lock = self._get_user_lock(target_user_id)
             async with lock:

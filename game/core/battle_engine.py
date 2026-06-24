@@ -79,6 +79,9 @@ class BattleEngine(BaseBattleEngine):
 
     def _init_battle_node(self, run: GameRun, difficulty: str = "normal"):
         p = run.player
+        if run.node_data.get("temp_minus_1a"):
+            run.node_data["drain_a"] = True
+            run.node_data.pop("temp_minus_1a", None)
         p.hand.clear()
         p.draw_pile = p.deck.copy()
         import random
@@ -125,48 +128,45 @@ class BattleEngine(BaseBattleEngine):
         run.node_data["difficulty"] = difficulty
 
         if difficulty == "boss":
-            if p.stage == 20:
-                if hasattr(self.save_manager, "load_admin_config"):
-                    boss_cfg = self.save_manager.load_admin_config()
-                else:
-                    boss_cfg = {}
-                boss_setting = boss_cfg.get("final_boss", "random")
-                icerainboww_enabled = boss_cfg.get("icerainboww_enabled", True)
-                if not icerainboww_enabled:
-                    boss_name = "腐化之心"
-                else:
-                    if boss_setting == "random":
-                        boss_name = random.choice(["腐化之心", "Icerainboww"])
-                    else:
-                        boss_name = boss_setting
-
-                if boss_name == "腐化之心":
-                    run.enemies = [EnemyState(
-                        name="腐化之心",
-                        hp=120,
-                        max_hp=120,
-                        shield=0,
-                        actions=1,
-                        bonus_actions=2,
-                        max_actions=1,
-                        max_bonus_actions=2
-                    )]
-                    self._add_buff_to(run.enemies[0], "beat_of_death", "死亡律动", "玩家每使用一张牌，受到 1 点力场伤害。")
-                    run.node_data["boss_name"] = "腐化之心"
-                else:
-                    run.enemies = [EnemyState(
-                        name="Icerainboww",
-                        hp=160,
-                        max_hp=160,
-                        shield=0,
-                        actions=2,
-                        bonus_actions=0,
-                        max_actions=2,
-                        max_bonus_actions=0
-                    )]
-                    run.node_data["boss_name"] = "Icerainboww"
-                    run.node_data["icerainboww_turn"] = 1
+            if p.stage == 12:
+                run.enemies = [EnemyState(
+                    name="腐化之心",
+                    hp=120,
+                    max_hp=120,
+                    shield=0,
+                    actions=1,
+                    bonus_actions=2,
+                    max_actions=1,
+                    max_bonus_actions=2
+                )]
+                self._add_buff_to(run.enemies[0], "beat_of_death", "死亡律动", "玩家每使用一张牌，受到 1 点力场伤害。")
+                run.node_data["boss_name"] = "腐化之心"
             elif p.stage == 25:
+                run.enemies = [EnemyState(
+                    name="Icerainboww",
+                    hp=160,
+                    max_hp=160,
+                    shield=0,
+                    actions=2,
+                    bonus_actions=0,
+                    max_actions=2,
+                    max_bonus_actions=0
+                )]
+                run.node_data["boss_name"] = "Icerainboww"
+                run.node_data["icerainboww_turn"] = 1
+            elif p.stage == 31:
+                run.enemies = [EnemyState(
+                    name="亚弗戈蒙",
+                    hp=180,
+                    max_hp=180,
+                    shield=0,
+                    actions=2,
+                    bonus_actions=1,
+                    max_actions=2,
+                    max_bonus_actions=1
+                )]
+                run.node_data["boss_name"] = "亚弗戈蒙"
+            elif p.stage == 32:
                 run.enemies = [EnemyState(
                     name="虚空之门·尤格-索托斯",
                     hp=200,
@@ -208,14 +208,15 @@ class BattleEngine(BaseBattleEngine):
                     run.node_data["thunder_lord_turn"] = 1
         elif difficulty == "elite":
             from ..data.enemy_data import ENEMY_CONFIG
-            elite_pool = [
-                "地精百夫长", "石像鬼祭司", "狂暴兽王",
-                "黑曜石巨灵", "幽灵大魔法师", "暗影影魔",
-                "末日守卫", "亡灵巫师", "夺心魔", "夺心魔奥术师",
-                "吉斯洋基至高指挥官"
-            ]
+            if p.stage <= 12:
+                elite_pool = ["地精百夫长", "石像鬼祭司", "狂暴兽王", "夺心魔"]
+            elif p.stage <= 25:
+                elite_pool = ["黑曜石巨灵", "幽灵大魔法师", "暗影影魔", "夺心魔"]
+            else:
+                elite_pool = ["末日守卫", "亡灵巫师", "夺心魔奥术师", "吉斯洋基至高指挥官", "虚空潜伏者"]
             run.enemies = []
             base_name = random.choice(elite_pool)
+            run.node_data["elite_name"] = base_name
             cfg = ENEMY_CONFIG.get(base_name, {})
             import re
             hp_str = cfg.get("hp", "30")
@@ -243,11 +244,12 @@ class BattleEngine(BaseBattleEngine):
             ))
         else:
             from ..data.enemy_data import ENEMY_CONFIG
-            normal_pool = [
-                "地精突袭者", "石像鬼守卫", "堕落学徒", "狂暴野兽",
-                "幽灵法师", "冰霜史莱姆", "骷髅弓箭手", "剧毒蜘蛛",
-                "黑曜石巨人", "暗影刺客", "吉斯洋基海盗", "邪教徒咔咔"
-            ]
+            if p.stage <= 12:
+                normal_pool = ["地精突袭者", "石像鬼守卫", "堕落学徒", "狂暴野兽", "邪教徒咔咔"]
+            elif p.stage <= 25:
+                normal_pool = ["幽灵法师", "冰霜史莱姆", "骷髅弓箭手", "剧毒蜘蛛", "邪教徒咔咔"]
+            else:
+                normal_pool = ["黑曜石巨人", "暗影刺客", "吉斯洋基海盗", "虚空行者"]
             run.enemies = []
             num_enemies = random.randint(1, 3)
             selected_names = [random.choice(normal_pool) for _ in range(num_enemies)]
@@ -326,3 +328,55 @@ class BattleEngine(BaseBattleEngine):
             if idx < len(available):
                 new_minions[available[idx]] = m
         p.minions = new_minions
+
+    def execute_emperor_eye_resolve(self, run: GameRun, keep_idx: int, upgraded: bool) -> str:
+        p = run.player
+        exhausted_count = 0
+        retained_cid = None
+        if 0 <= keep_idx < len(p.hand):
+            retained_cid = p.hand[keep_idx]
+        cards_to_exhaust = []
+        for i, cid in enumerate(p.hand):
+            if i != keep_idx:
+                cards_to_exhaust.append(cid)
+        p.hand.clear()
+        if retained_cid:
+            p.hand.append(retained_cid)
+        from ..models.events import CardExhaustEvent
+        from ..entities.cards.base import ALL_CARDS
+        for cid in cards_to_exhaust:
+            p.exhaust_pile.append(cid)
+            card_obj = ALL_CARDS.get(cid)
+            cname = card_obj.name if card_obj else cid
+            self._log_event(run, f"✨ [消耗] 【{cname}】已被移入消耗堆。")
+            self.event_bus.dispatch(CardExhaustEvent(run, cid, "emperor_eye"))
+            exhausted_count += 1
+        card_pool = []
+        for cid, card_obj in ALL_CARDS.items():
+            if not cid.startswith("duel_") and not cid.startswith("curse_") and not cid.endswith("+"):
+                if not getattr(card_obj, "unplayable", False):
+                    card_pool.append(cid)
+        drawn = []
+        if card_pool and exhausted_count > 0:
+            import random
+            max_hand = 9 if "mask_of_void" in p.relics else 12
+            for _ in range(exhausted_count):
+                if len(p.hand) < max_hand:
+                    new_cid = random.choice(card_pool)
+                    p.hand.append(new_cid)
+                    card_obj = ALL_CARDS.get(new_cid)
+                    drawn.append(card_obj.name if card_obj else new_cid)
+        dmg_msg = ""
+        if upgraded:
+            alive_enemies = [e for e in run.enemies if e.hp > 0]
+            if alive_enemies:
+                import random
+                target_enemy = random.choice(alive_enemies)
+                target_idx = run.enemies.index(target_enemy) + 1
+                self.combat_resolver.damage_target(run, f"e{target_idx}", 49, source="p0", damage_type="force")
+                dmg_msg = f"\n💥 【霸瞳天星+】对随机敌人【{target_enemy.name}】造成了 49 点力场伤害！"
+        retained_name = ALL_CARDS[retained_cid].name if retained_cid else "无"
+        drawn_str = "，".join(drawn) if drawn else "无"
+        res_str = f"👁️ 【霸瞳天星】发动成功！保留了手牌中的【{retained_name}】，消耗了其他 {exhausted_count} 张卡牌。并随机获得了同等数量的卡牌：【{drawn_str}】。{dmg_msg}"
+        self.save_manager.save_save(run.user_id, run)
+        return self._append_logs_to_res(run, res_str)

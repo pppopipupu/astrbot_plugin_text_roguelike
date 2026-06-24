@@ -214,5 +214,126 @@ RELIC_CONFIG = {
         "rarity": "epic",
         "desc": "每当玩家的护盾在回合开始自动流失时，对所有敌人造成等同于流失量 50% 的冰霜伤害。",
         "price": 120
+    },
+    "centurion_mail": {
+        "name": "百夫长重甲",
+        "rarity": "rare",
+        "desc": "你受到的所有物理伤害降低 2 点。",
+        "price": 70
+    },
+    "priest_charm": {
+        "name": "祭司骨饰",
+        "rarity": "rare",
+        "desc": "每当你受到生命值治疗时，额外获得 3 点护盾。",
+        "price": 70
+    },
+    "beastmaster_claw": {
+        "name": "兽王之爪",
+        "rarity": "rare",
+        "desc": "我方所有在场随从的攻击力永久 +1。",
+        "price": 70
+    },
+    "djinn_shard": {
+        "name": "巨灵碎晶",
+        "rarity": "rare",
+        "desc": "你每回合打出的第一张法术卡牌，会对随机敌方角色造成 5 点力场伤害。",
+        "price": 70
+    },
+    "archmage_robe": {
+        "name": "魔法师法袍",
+        "rarity": "rare",
+        "desc": "每当有我方随从打出法术时，玩家获得 2 点护盾。",
+        "price": 70
+    },
+    "shadow_tentacle": {
+        "name": "影魔触角",
+        "rarity": "rare",
+        "desc": "当敌方目标被施加任何负面 Buff 时，你获得 2 点护盾。",
+        "price": 70
+    },
+    "mindflayer_brain": {
+        "name": "夺心魔脑核",
+        "rarity": "rare",
+        "desc": "每当你因为卡牌效果或回合结束弃牌时，对随机敌人造成 3 点心灵伤害。",
+        "price": 70
+    },
+    "doomsday_core": {
+        "name": "末日核心",
+        "rarity": "epic",
+        "desc": "回合结束时，若你本回合打出了 3 张或以上的卡牌，抽 1 张牌。",
+        "price": 120
+    },
+    "necromancer_skull": {
+        "name": "巫师颅骨",
+        "rarity": "epic",
+        "desc": "每当场上有任何我方随从或敌方角色死亡，你回复 2 点生命值。",
+        "price": 120
+    },
+    "arcanist_hand": {
+        "name": "奥术师之手",
+        "rarity": "epic",
+        "desc": "每当你打出一张 0 费的卡牌，对首个敌人造成 3 点力场伤害。",
+        "price": 120
+    },
+    "commander_medal": {
+        "name": "至高勋章",
+        "rarity": "epic",
+        "desc": "战斗开始时，我方所有在场随从本回合获得的行动点数 +1。",
+        "price": 120
+    },
+    "stalker_eye": {
+        "name": "潜伏者眼球",
+        "rarity": "epic",
+        "desc": "你打出的具有【消耗】词条的卡牌，其造成的伤害或获得的护盾值增加 4 点。",
+        "price": 120
+    },
+    "time_sand_blessing": {
+        "name": "时间沙之赐福",
+        "rarity": "epic",
+        "desc": "每个回合开始时额外获得 1 个附赠动作（BA）。",
+        "price": 0
+    },
+    "gladiator_belt": {
+        "name": "角斗士皮带",
+        "rarity": "epic",
+        "desc": "若我方有随从在场，你在回合开始时获得 2 点护盾。",
+        "price": 120
+    },
+    "shield_battery": {
+        "name": "能量护盾电池",
+        "rarity": "epic",
+        "desc": "你每当获得护盾时，有 50% 几率额外获得 2 点护盾。",
+        "price": 120
+    },
+    "crimson_heart": {
+        "name": "绯红之心",
+        "rarity": "epic",
+        "desc": "当生命值低于 30% 时，你造成的伤害翻倍，且每次打出卡牌时回复 2 点生命值。",
+        "price": 120
+    },
+    "espresso_relic": {
+        "name": "特制浓缩咖啡",
+        "rarity": "epic",
+        "desc": "本阶段内每场战斗回合开始时额外获得 1A。进入下一阶段时自动清除。",
+        "price": 0
+    },
+    "anthem_relic_3": {
+        "name": "赞歌",
+        "rarity": "epic",
+        "desc": "接下来的 3 场战斗开始时获得 2 点护盾。",
+        "price": 0
+    },
+    "anthem_relic_2": {
+        "name": "赞歌",
+        "rarity": "epic",
+        "desc": "接下来的 2 场战斗开始时获得 2 点护盾。",
+        "price": 0
+    },
+    "anthem_relic_1": {
+        "name": "赞歌",
+        "rarity": "epic",
+        "desc": "接下来的 1 场战斗开始时获得 2 点护盾。",
+        "price": 0
     }
 }
+

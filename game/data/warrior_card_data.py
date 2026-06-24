@@ -476,5 +476,15 @@ WARRIOR_CARD_CONFIG = {
         "rarity": "common",
         "retain": True,
         "feedback": "你点燃了自身的生命潜能，陷入【鲜血狂暴】状态！"
+    },
+    "warrior_source_of_cinder": {
+        "name": "薪火之源",
+        "color": "warrior",
+        "type": "spell",
+        "cost_a": 2,
+        "cost_ba": 1,
+        "desc": "获得薪火之源buff，回合开始时额外获得 1A 1BA。",
+        "rarity": "rare",
+        "feedback": "使用了【薪火之源】，获得了薪火之源状态！"
     }
 }

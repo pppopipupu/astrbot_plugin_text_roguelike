@@ -102,9 +102,11 @@ class TestRogueCardMech2(unittest.TestCase):
 
         found_in_11 = False
         for _ in range(50):
-            player11 = PlayerState(hp=50, max_hp=50, shield=0, gold=100, stage=10)
+            player11 = PlayerState(hp=50, max_hp=50, shield=0, gold=100, stage=12)
             run11 = GameRun(user_id="test_map_ancient", node_type="map_select", player=player11)
             map_eng.enter_next_stage(run11)
+            from game.core.cafe_engine import CafeEngine
+            CafeEngine(sm, map_eng).leave_cafe(run11)
             options11 = run11.node_data.get("options", [])
             if any(opt.get("card") == "unmined_gem" for opt in options11 if "card" in opt):
                 found_in_11 = True
