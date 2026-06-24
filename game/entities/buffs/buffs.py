@@ -393,6 +393,7 @@ class WishPowerBuff(BuffImpl):
             val = 6 if self.upgraded else 4
             event.modified_damage += val
 
+@register_buff("commander_aurora_emperor")
 class AuroraEmperorBuff(BuffImpl):
     def on_damage_calculate(self, event, buff_state, entity):
         if event.source.startswith("p") and event.source != "p0" and event.damage_type == "attack":

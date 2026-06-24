@@ -66,7 +66,7 @@ class GenericMinorVulnerableBuff(BuffImpl):
     def on_damage_calculate_defend(self, event, buff_state, entity):
         event.modified_damage = int(event.modified_damage * 1.5)
 
-    def on_turn_start(self, event, buff_state, entity):
+    def on_turn_end(self, event, buff_state, entity):
         if event.is_player == (entity == event.run.player):
             buff_state.stacks -= 1
             if buff_state.stacks <= 0:
@@ -76,7 +76,7 @@ class GenericVulnerableBuff(BuffImpl):
     def on_damage_calculate_defend(self, event, buff_state, entity):
         event.modified_damage = int(event.modified_damage * 2)
 
-    def on_turn_start(self, event, buff_state, entity):
+    def on_turn_end(self, event, buff_state, entity):
         if event.is_player == (entity == event.run.player):
             buff_state.stacks -= 1
             if buff_state.stacks <= 0:
@@ -117,7 +117,7 @@ class MinorVulnerableBuff(BuffImpl):
         if dtype_str == self.damage_type:
             event.modified_damage = int(event.modified_damage * 1.5)
 
-    def on_turn_start(self, event, buff_state, entity):
+    def on_turn_end(self, event, buff_state, entity):
         if event.is_player == (entity == event.run.player):
             buff_state.stacks -= 1
             if buff_state.stacks <= 0:
@@ -134,7 +134,7 @@ class VulnerableBuff(BuffImpl):
         if dtype_str == self.damage_type:
             event.modified_damage = int(event.modified_damage * 2)
 
-    def on_turn_start(self, event, buff_state, entity):
+    def on_turn_end(self, event, buff_state, entity):
         if event.is_player == (entity == event.run.player):
             buff_state.stacks -= 1
             if buff_state.stacks <= 0:

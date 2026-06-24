@@ -357,6 +357,19 @@ class TestRogueSystem(unittest.TestCase):
         res_duel = render_query_info("duel_warrior_strike")
         self.assertIn("未找到", res_duel)
 
+    def test_rogue_query_keywords_and_buffs(self):
+        for term in ("守护", "ward", "重放", "replay", "烈焰成长", "fire_grow", "炉温反噬", "forge_backfire", "时空强化", "time_warp_spell_boost", "极光圣域", "commander_aurora_emperor"):
+            res = render_query_info(term)
+            self.assertNotIn("未找到", res)
+            
+        from game.core.duel.query_manager import QueryManager
+        from game.models.manager import SaveManager
+        qm = QueryManager(SaveManager())
+        for term in ("守护", "ward", "重放", "replay", "烈焰成长", "fire_grow", "炉温反噬", "forge_backfire", "时空强化", "time_warp_spell_boost", "极光圣域", "commander_aurora_emperor"):
+            res = qm.render_duel_query_info(term)
+            self.assertNotIn("未在对决模式中匹配到", res)
+
+
     def test_rogue_overview_reader(self):
         plugin = MyPlugin(DummyContext())
         save_manager = SaveManager()

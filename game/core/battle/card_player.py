@@ -607,6 +607,19 @@ class CardPlayer:
             draw_count = max(0, draw_count - run.node_data["draw_penalty_next_turn"])
             run.node_data.pop("draw_penalty_next_turn", None)
         self.draw_cards(p, draw_count, run, ignore_focus=True)
+        discard_buff = next((b for b in p.buffs if b.id == "discard_next_turn"), None)
+        if discard_buff:
+            count = discard_buff.stacks
+            discarded_names = []
+            for _ in range(count):
+                if p.hand:
+                    discarded = p.hand.pop(random.randint(0, len(p.hand) - 1))
+                    card_name = ALL_CARDS[discarded].name if discarded in ALL_CARDS else "未知卡牌"
+                    discarded_names.append(f"【{card_name}】")
+                    self.engine._discard_card(run, discarded)
+            p.buffs.remove(discard_buff)
+            if discarded_names:
+                self.engine._log_event(run, f"💨 [回合开始弃牌] 由于受到怪物的干扰，你被迫丢弃了手牌：{', '.join(discarded_names)}。")
         self.engine._roll_enemy_intent(run)
         run.node_data["cards_played_this_turn"] = 0
         run.node_data["action_surge_turn_used"] = False

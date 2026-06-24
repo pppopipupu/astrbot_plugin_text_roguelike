@@ -233,7 +233,7 @@ class GarrisonLeaderWall(BaseMinionSkill):
         heal_val = 5 if is_upgraded else 3
         engine._gain_shield(run, "p0", shield_val)
         for mk, mv in run.player.minions.items():
-            if mv.id.startswith("officer_"):
+            if mv.id.startswith("officer_") or mv.id.startswith("commander_"):
                 mv.hp = min(mv.max_hp, mv.hp + heal_val)
         return f"为玩家提供了 {shield_val} 点护盾，并使我方全体士兵随从恢复了 {heal_val} 点生命。"
 

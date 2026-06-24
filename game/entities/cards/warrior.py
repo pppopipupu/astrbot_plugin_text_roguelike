@@ -363,7 +363,7 @@ class CommanderGarrisonLeaderCard(Card):
             engine._add_buff_to(m, "ward", "守护", "敌方单体攻击只能指向该随从")
             buff_hp = 6 if self.upgraded else 4
             for mk, mv in run.player.minions.items():
-                if mk != grid and mv.id.startswith("officer_"):
+                if mk != grid and (mv.id.startswith("officer_") or mv.id.startswith("commander_")):
                     mv.max_hp += buff_hp
                     mv.hp += buff_hp
             msg += f"\n🏰 [入场曲] 要塞卫队长自身获得【守护】，并使其他在场士兵最大生命值与血量值提升 {buff_hp} 点！"
@@ -419,7 +419,7 @@ class CommanderValiantHeraldCard(Card):
             from .base import ALL_CARDS
             for cid in run.player.draw_pile:
                 card = ALL_CARDS.get(cid)
-                if card and card.type == "minion" and card.id.startswith("officer_"):
+                if card and card.type == "minion" and (card.id.startswith("officer_") or card.id.startswith("commander_")):
                     eligible.append(cid)
             if eligible:
                 import random
@@ -490,7 +490,7 @@ class CommanderAuroraEmperorCard(Card):
         if grid:
             msg = f"在格子 [{grid}] 召唤了【{self.name}】。"
             for mk, mv in run.player.minions.items():
-                if mk != grid and mv.id.startswith("officer_"):
+                if mk != grid and (mv.id.startswith("officer_") or mv.id.startswith("commander_")):
                     mv.actions += 2
                     mv.attack_actions = 1
             buff_id = "commander_aurora_emperor+" if self.upgraded else "commander_aurora_emperor"

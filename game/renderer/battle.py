@@ -114,7 +114,8 @@ def render_battle(run: GameRun) -> str:
     if not p.hand:
         lines.append("（空空如也）")
     else:
-        for idx, cid in enumerate(p.hand, 1):
+        valid_idx = 1
+        for cid in p.hand:
             card = ALL_CARDS.get(cid)
             if card:
                 color_ch = "⚫" if card.color == "curse" else ("🔴" if card.color == "warrior" else ("🔵" if card.color == "wizard" else "⚪"))
@@ -130,9 +131,10 @@ def render_battle(run: GameRun) -> str:
                 }
                 rname = rarity_map.get(getattr(card, "rarity", "common"), "普通")
                 if getattr(card, "unplayable", False):
-                    lines.append(f" [{idx}] {color_ch} {card.name} <{rname}> - {card.desc}")
+                    lines.append(f" [{valid_idx}] {color_ch} {card.name} <{rname}> - {card.desc}")
                 else:
-                    lines.append(f" [{idx}] {color_ch} {card.name} <{rname}> (消耗: {cost_str}) - {card.desc}")
+                    lines.append(f" [{valid_idx}] {color_ch} {card.name} <{rname}> (消耗: {cost_str}) - {card.desc}")
+                valid_idx += 1
     if run.node_data.get("pending_discard"):
         lines.append("⚠️ 状态：请选择一张手牌丢弃！请输入：/rogue 选择 <手牌序号>")
         lines.append("━━━━━━━━━━━━━━━━━━━━")

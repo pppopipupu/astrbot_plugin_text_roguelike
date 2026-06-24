@@ -35,7 +35,7 @@ class NecromancerTemplate(EnemyTemplate):
             after_logs = run.node_data.get("battle_logs", [])
             dmg_msg = after_logs.pop() if len(after_logs) > before_len else ""
             engine._add_buff_to(run.player, "minor_vulnerable_necrotic", "轻度黯蚀易伤", "受到的黯蚀伤害增加 50%", 1)
-            logs.append(f"【{enemy.name}】射出暗影箭。{dmg_msg}")
+            logs.append(f"【{enemy.name}】射出暗影箭。{dmg_msg}，并对玩家施加了 1 层【轻度黯蚀易伤】。")
         elif intent.type == "raise_dead":
             from ....models.state import EnemyState, EnemyIntentState
             new_skeleton = EnemyState(

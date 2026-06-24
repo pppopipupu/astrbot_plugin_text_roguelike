@@ -53,13 +53,5 @@ class PortalGuardianTemplate(EnemyTemplate):
             engine._damage_target(run, "p0", val, source=f"enemy:{enemy.name}", damage_type="psychic")
             after_logs = run.node_data.get("battle_logs", [])
             dmg_msg = after_logs.pop() if len(after_logs) > before_len else ""
-            p = run.player
-            import random
-            if p.hand:
-                discarded = p.hand.pop(random.randint(0, len(p.hand) - 1))
-                from ...cards import ALL_CARDS
-                card_name = ALL_CARDS[discarded].name if discarded in ALL_CARDS else "未知卡牌"
-                agile_msg = engine._discard_card(run, discarded)
-                logs.append(f"【{enemy.name}】引发传送门不稳定。{dmg_msg} 且强行随机丢弃玩家手牌【{card_name}】！")
-                if agile_msg:
-                    logs.append(agile_msg)
+            engine._add_buff_to(run.player, "discard_next_turn", "下回合弃牌", "在下一回合开始时，你将随机丢弃等同于此状态层数的手牌", 1)
+            logs.append(f"【{enemy.name}】引发传送门不稳定。{dmg_msg}，且使玩家在下一回合开始时将被迫随机丢弃 1 张手牌。")

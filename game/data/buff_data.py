@@ -387,5 +387,31 @@ BUFF_CONFIG = {
     "astral_speed": {
         "name": "星界加速",
         "desc": "下回合开始时，获得 1 个额外动作点"
+    },
+    "ward": {
+        "name": "守护",
+        "desc": "拥有守护状态的随从在战场上时，敌方的单体指向性攻击意图将被强制吸引并只能指向该随从"
+    },
+    "fire_grow": {
+        "name": "烈焰成长",
+        "desc": "你造成的火焰伤害增加，每层增加 1 点"
+    },
+    "forge_backfire": {
+        "name": "炉温反噬",
+        "desc": "你在锻造熔炉中汲取温热力量带来的后遗症，你造成的法术伤害减少，每层减少 1 点",
+        "is_debuff": True
+    },
+    "time_warp_spell_boost": {
+        "name": "时空强化",
+        "desc": "本回合内你造成的法术伤害增加 2 点"
+    },
+    "commander_aurora_emperor": {
+        "name": "极光圣域",
+        "desc": "极光圣域力场展开，我方随从发起普通攻击时，玩家获得 2 点护盾（升级版则额外抽 1 张牌）"
+    },
+    "discard_next_turn": {
+        "name": "下回合弃牌",
+        "desc": "在下一回合开始时，你将随机丢弃等同于此状态层数的手牌",
+        "is_debuff": True
     }
 }

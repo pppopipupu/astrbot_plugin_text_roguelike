@@ -203,16 +203,8 @@ class BossCorruptedHeartTemplate(EnemyTemplate):
             self._perform_attack(run, engine, enemy, dmg, logs)
             
         elif intent.type == "gaze_discard":
-            if p.hand:
-                discarded = p.hand.pop(random.randint(0, len(p.hand) - 1))
-                from ..cards import ALL_CARDS
-                card_name = ALL_CARDS[discarded].name if discarded in ALL_CARDS else "未知卡牌"
-                agile_msg = engine._discard_card(run, discarded)
-                logs.append(f"【{enemy.name}】虚无凝视，迫使玩家随机丢弃了卡牌【{card_name}】。")
-                if agile_msg:
-                    logs.append(agile_msg)
-            else:
-                logs.append(f"【{enemy.name}】虚无凝视，但玩家没有手牌可以丢弃。")
+            engine._add_buff_to(run.player, "discard_next_turn", "下回合弃牌", "在下一回合开始时，你将随机丢弃等同于此状态层数的手牌", 1)
+            logs.append(f"【{enemy.name}】虚无凝视，使玩家在下一回合开始时将被迫随机丢弃 1 张手牌。")
                 
         elif intent.type == "heart_heal":
             enemy.hp = min(enemy.max_hp, enemy.hp + intent.val)
@@ -731,17 +723,8 @@ class BossYogSothothTemplate(EnemyTemplate):
             engine._damage_target(run, "p0", val, source=f"enemy:{enemy.name}", damage_type="psychic")
             after_logs = run.node_data.get("battle_logs", [])
             dmg_msg = after_logs.pop() if len(after_logs) > before_len else ""
-            logs.append(f"【{enemy.name}】发出终焉低语。{dmg_msg}")
-            if p.hand:
-                discarded = p.hand.pop(random.randint(0, len(p.hand) - 1))
-                from ..cards import ALL_CARDS
-                card_name = ALL_CARDS[discarded].name if discarded in ALL_CARDS else "未知卡牌"
-                agile_msg = engine._discard_card(run, discarded)
-                logs.append(f"玩家被迫随机丢弃了卡牌【{card_name}】。")
-                if agile_msg:
-                    logs.append(agile_msg)
-            else:
-                logs.append("但玩家没有手牌可以丢弃。")
+            engine._add_buff_to(run.player, "discard_next_turn", "下回合弃牌", "在下一回合开始时，你将随机丢弃等同于此状态层数的手牌", 1)
+            logs.append(f"【{enemy.name}】发出终焉低语。{dmg_msg}，且使玩家在下一回合开始时将被迫随机丢弃 1 张手牌。")
 
         elif intent.type == "doomsday_tide":
             before_len = len(run.node_data.get("battle_logs", []))

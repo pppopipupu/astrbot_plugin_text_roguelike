@@ -29,11 +29,5 @@ class GhostArchmageTemplate(EnemyTemplate):
             self._perform_attack(run, engine, enemy, intent.val, logs)
         elif intent.type == "mana_drain":
             self._perform_attack(run, engine, enemy, intent.val, logs)
-            if p.hand:
-                discarded = p.hand.pop(random.randint(0, len(p.hand) - 1))
-                from ...cards import ALL_CARDS
-                card_name = ALL_CARDS[discarded].name if discarded in ALL_CARDS else "未知卡牌"
-                agile_msg = engine._discard_card(run, discarded)
-                logs.append(f"【{enemy.name}】施展虹吸，迫使玩家随机丢弃了卡牌【{card_name}】。")
-                if agile_msg:
-                    logs.append(agile_msg)
+            engine._add_buff_to(run.player, "discard_next_turn", "下回合弃牌", "在下一回合开始时，你将随机丢弃等同于此状态层数的手牌", 1)
+            logs.append(f"【{enemy.name}】施展虹吸，使玩家在下一回合开始时将被迫随机丢弃 1 张手牌。")
