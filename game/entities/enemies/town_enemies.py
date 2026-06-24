@@ -66,6 +66,8 @@ class SniperEliteTemplate(EnemyTemplate):
                 cost_a=1,
                 cost_ba=0
             )
+        from .trash_talk_actions import try_trash_talk
+        try_trash_talk(run, enemy, logs)
         if intent.type == "aim":
             enemy.buffs.append(BuffState(id="strength", name="力量", stacks=3, desc="造成伤害增加 3"))
             logs.append(f"敌人【{enemy.name}】进入了瞄准状态，获得了 3 层力量。")
@@ -125,6 +127,8 @@ class PppopipupuTemplate(EnemyTemplate):
                 cost_a=1,
                 cost_ba=0
             )
+        from .trash_talk_actions import try_trash_talk
+        try_trash_talk(run, enemy, logs)
         if intent.type == "force_strike":
             engine._damage_target(run, "p0", 100, source=f"enemy:{enemy.name}", damage_type="force")
             logs.append(f"敌人【{enemy.name}】发出了撕裂空间的猛击，对玩家造成了 100 点真实力场伤害！")

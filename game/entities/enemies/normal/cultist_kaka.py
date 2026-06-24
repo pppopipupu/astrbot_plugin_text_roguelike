@@ -27,6 +27,8 @@ class CultistKakaTemplate(EnemyTemplate):
                 cost_a=1,
                 cost_ba=0
             )
+        from game.entities.enemies.trash_talk_actions import try_trash_talk
+        try_trash_talk(run, enemy, logs)
         if intent.type == "caw":
             engine._add_buff_to(enemy, "ritual", "仪式", "每回合开始时，获得等同于此状态层数的力量", 1)
             logs.append(f"【{enemy.name}】大喊：“咔咔！”，开始施展神秘仪式！")

@@ -96,6 +96,8 @@ class EnemyTemplate:
                 cost_a=1,
                 cost_ba=0
             )
+        from .trash_talk_actions import try_trash_talk
+        try_trash_talk(run, enemy, logs)
         if intent.type == "attack":
             self._perform_attack(run, engine, enemy, intent.val, logs)
         elif intent.type == "defend":

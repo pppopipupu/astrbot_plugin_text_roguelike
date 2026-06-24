@@ -36,6 +36,8 @@ class GithyankiPirateTemplate(EnemyTemplate):
                 cost_a=1,
                 cost_ba=0
             )
+        from game.entities.enemies.trash_talk_actions import try_trash_talk
+        try_trash_talk(run, enemy, logs)
         p = run.player
         if intent.type == "silver_sword":
             strength = 0

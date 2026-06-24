@@ -60,7 +60,7 @@ class TestRogueEnemyStage(unittest.TestCase):
 
         from game.entities.enemies.elite.shadow_fiend import ShadowFiendTemplate
         fiend_template = ShadowFiendTemplate("暗影影魔")
-        fiend_enemy = EnemyState("暗影影魔", 30, 30, 0, intent_type="shadow_strike", intent_val=6)
+        fiend_enemy = EnemyState("暗影影魔测试", 30, 30, 0, intent_type="shadow_strike", intent_val=6)
         fiend_logs = []
         run.player.hp = 50
         run.player.shield = 10
@@ -371,3 +371,83 @@ class TestRogueEnemyStage(unittest.TestCase):
         cmd_temp.execute_intent(run, engine, commander, cp_intent, cmd_logs_2)
         self.assertTrue(any(b.id == "strength" and b.stacks == 2 for b in commander.buffs))
         self.assertTrue(any(b.id == "strength" and b.stacks == 2 for b in run.enemies[1].buffs))
+
+    def test_enemy_trash_talk(self):
+        class DummySaveManager:
+            def save_save(self, user_id, run):
+                pass
+            def delete_save(self, user_id):
+                pass
+        sm = DummySaveManager()
+        engine = BattleEngine(sm)
+
+        player = PlayerState(
+            hp=50,
+            max_hp=100,
+            shield=0,
+            gold=100,
+            stage=1,
+            deck=["fire_bolt"],
+            hand=["fire_bolt"],
+            actions=1,
+            bonus_actions=1
+        )
+        run = GameRun(
+            user_id="test_trash",
+            node_type="battle",
+            player=player,
+            enemies=[]
+        )
+        run.node_data["turn"] = 1
+
+        from game.entities.enemies.summon.astral_puppy import AstralPuppyTemplate
+        puppy_enemy = EnemyState("星界幼犬", 15, 15, 0)
+        puppy_temp = AstralPuppyTemplate("星界幼犬")
+        puppy_intents = puppy_temp.roll_intents(run, engine, puppy_enemy)
+        logs = []
+        puppy_temp.execute_intent(run, engine, puppy_enemy, puppy_intents[0], logs)
+        self.assertFalse(any("【" in log and "】说" in log for log in logs))
+
+        from game.entities.enemies.town_enemies import NoobSlayer99Template
+        noob_enemy = EnemyState("NoobSlayer99", 50, 50, 0)
+        noob_temp = NoobSlayer99Template("NoobSlayer99")
+        noob_intents = noob_temp.roll_intents(run, engine, noob_enemy)
+        
+        logs_noob = []
+        noob_temp.execute_intent(run, engine, noob_enemy, noob_intents[0], logs_noob)
+        self.assertEqual(len(logs_noob), 2)
+        
+        logs_noob_2 = []
+        noob_temp.execute_intent(run, engine, noob_enemy, noob_intents[0], logs_noob_2)
+        self.assertEqual(len(logs_noob_2), 1)
+
+        run.node_data["turn"] = 2
+        player.hp = 20
+        player.max_hp = 100
+        noob_intents_2 = noob_temp.roll_intents(run, engine, noob_enemy)
+        logs_noob_3 = []
+        noob_temp.execute_intent(run, engine, noob_enemy, noob_intents_2[0], logs_noob_3)
+        self.assertTrue(any("单手" in log or "送你一程" in log or "双手离开" in log for log in logs_noob_3))
+
+        run.node_data["turn"] = 3
+        player.hp = 80
+        player.shield = 20
+        noob_intents_3 = noob_temp.roll_intents(run, engine, noob_enemy)
+        logs_noob_4 = []
+        noob_temp.execute_intent(run, engine, noob_enemy, noob_intents_3[0], logs_noob_4)
+        self.assertTrue(any("乌龟壳" in log or "最厚的甲" in log or "属乌龟" in log for log in logs_noob_4))
+
+        run.node_data["turn"] = 4
+        player.shield = 0
+        player.hand = ["fire_bolt"] * 12
+        noob_intents_4 = noob_temp.roll_intents(run, engine, noob_enemy)
+        logs_noob_5 = []
+        noob_temp.execute_intent(run, engine, noob_enemy, noob_intents_4[0], logs_noob_5)
+        self.assertTrue(any("斗地主" in log or "废纸" in log for log in logs_noob_5))
+
+        run.node_data["turn"] = 5
+        player.hand = ["fire_bolt"]
+        noob_intents_5 = noob_temp.roll_intents(run, engine, noob_enemy)
+        logs_noob_6 = []
+        noob_temp.execute_intent(run, engine, noob_enemy, noob_intents_5[0], logs_noob_6)
+        self.assertTrue(any("没牌" in log or "空手" in log or "个人秀" in log or "血虐" in log for log in logs_noob_6))
