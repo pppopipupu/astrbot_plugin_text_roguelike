@@ -731,3 +731,66 @@ class TestRogueTown(unittest.TestCase):
 
         asyncio.run(run_quest_test())
 
+    def test_town_shopkeeper_jack(self):
+        plugin = MyPlugin(DummyContext())
+        save_manager = SaveManager()
+
+        async def run_shop_test():
+            save_manager.delete_save("test_user")
+            stats_path = save_manager.get_stats_path("test_user")
+            if os.path.exists(stats_path):
+                try:
+                    os.remove(stats_path)
+                except:
+                    pass
+
+            await run_command(plugin, ".rogue 主城")
+            stats = save_manager.load_stats("test_user")
+            stats.town_pos = "shop"
+            stats.gp = 100000
+            save_manager.save_stats("test_user", stats)
+
+            res = await run_command(plugin, ".rogue talk 神秘店主")
+            self.assertIn("神秘店主", res)
+
+            res_menu = await run_command(plugin, ".rogue 2")
+            self.assertIn("购买 【时序法师】", res_menu)
+
+            res_buy_1 = await run_command(plugin, ".rogue 1")
+            self.assertIn("已成功解锁【时序法师】", res_buy_1)
+
+            await run_command(plugin, ".rogue 6")
+            await run_command(plugin, ".rogue exit")
+
+            stats = save_manager.load_stats("test_user")
+            stats.unlocked_subclasses.append("神秘物品")
+            stats.killed_icerainboww = True
+            stats.killed_yog_sothoth = True
+            save_manager.save_stats("test_user", stats)
+
+            await run_command(plugin, ".rogue talk 神秘店主")
+            res_menu_2 = await run_command(plugin, ".rogue 2")
+            self.assertIn("购买 【神秘物品】 (已解锁)", res_menu_2)
+            self.assertIn("【Icerainboww】 (已解锁)", res_menu_2)
+            self.assertIn("【尤格-索托斯】 (已解锁)", res_menu_2)
+
+            res_buy_already = await run_command(plugin, ".rogue 5")
+            self.assertIn("你已经解锁了【神秘物品】", res_buy_already)
+
+            res_buy_readonly = await run_command(plugin, ".rogue 6")
+            self.assertIn("为通关解锁内容，无需在此处购买", res_buy_readonly)
+
+            await run_command(plugin, ".rogue 8")
+            await run_command(plugin, ".rogue exit")
+
+            save_manager.delete_save("test_user")
+            stats_path = save_manager.get_stats_path("test_user")
+            if os.path.exists(stats_path):
+                try:
+                    os.remove(stats_path)
+                except:
+                    pass
+
+        asyncio.run(run_shop_test())
+
+

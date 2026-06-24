@@ -122,18 +122,30 @@ class TownEngine:
         elif npc_id == "Shopkeeper_Jack" and stats.town_flags.get("shop_sub_menu") == "buy_subclass":
             unlocked = getattr(stats, "unlocked_subclasses", [])
             has_gatekey = getattr(stats, "unlocked_gatekey", False)
+            from ..models.manager import SaveManager
+            boss_cfg = SaveManager().load_admin_config()
+            icerainboww_enabled = boss_cfg.get("icerainboww_enabled", True)
             items_list = [
-                ("时序法师", 2888, "时序法师" in unlocked),
-                ("塑能法师", 2888, "塑能法师" in unlocked),
-                ("秘钥学者", 2888, "秘钥学者" in unlocked),
-                ("门之钥匙", 3000, has_gatekey),
-                ("神秘物品", 66666, False)
+                ("时序法师", 2888, "时序法师" in unlocked, True),
+                ("塑能法师", 2888, "塑能法师" in unlocked, True),
+                ("秘钥学者", 2888, "秘钥学者" in unlocked, True),
+                ("门之钥匙", 3000, has_gatekey, True),
+                ("神秘物品", 66666, "神秘物品" in unlocked, True)
             ]
-            for idx, (name, price, is_unlocked) in enumerate(items_list):
-                if is_unlocked:
-                    options.append(f"{idx+1}. 购买 【{name}】 ({zh_cn.get('global', {}).get('unlocked_status', '已解锁')})")
+            if icerainboww_enabled:
+                killed_icerainboww = getattr(stats, "killed_icerainboww", False)
+                items_list.append(("Icerainboww" if killed_icerainboww else "？？？", None, killed_icerainboww, False))
+            killed_yog = getattr(stats, "killed_yog_sothoth", False)
+            items_list.append(("尤格-索托斯" if killed_yog else "？？？", None, killed_yog, False))
+            for idx, (name, price, is_unlocked, buyable) in enumerate(items_list):
+                if buyable:
+                    if is_unlocked:
+                        options.append(f"{idx+1}. 购买 【{name}】 ({zh_cn.get('global', {}).get('unlocked_status', '已解锁')})")
+                    else:
+                        options.append(f"{idx+1}. 购买 【{name}】 ({price} GP)")
                 else:
-                    options.append(f"{idx+1}. 购买 【{name}】 ({price} GP)")
+                    status_str = zh_cn.get('global', {}).get('unlocked_status', '已解锁') if is_unlocked else "未解锁"
+                    options.append(f"{idx+1}. 【{name}】 ({status_str})")
             options.append(f"{len(items_list)+1}. " + zh_cn.get("global", {}).get("back_to_previous", "返回上一级"))
         else:
             if npc_id == "Crypto_Whale" and stats.town_flags.get("reported_whale"):
@@ -332,7 +344,7 @@ class TownEngine:
         npc_data = entities.get(npc_id, {})
         choice_lower = choice.lower().strip()
 
-        if choice_lower in ("离开", "退出", "返回", "exit", "quit", "q"):
+        if choice_lower in ("离开", "退出", "返回", "exit", "quit"):
             stats.town_flags.pop("current_dialog", None)
             stats.town_flags.pop("market_sub_menu", None)
             stats.town_flags.pop("shop_sub_menu", None)

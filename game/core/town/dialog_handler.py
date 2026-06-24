@@ -126,37 +126,52 @@ def handle_sub_dialog(town_engine, stats: UserStats, npc_id: str, choice_lower: 
 
     shop_sub = stats.town_flags.get("shop_sub_menu")
     if npc_id == "Shopkeeper_Jack" and shop_sub == "buy_subclass":
-        if choice_lower == "6":
+        from ...models.manager import SaveManager
+        boss_cfg = SaveManager().load_admin_config()
+        icerainboww_enabled = boss_cfg.get("icerainboww_enabled", True)
+        unlocked = getattr(stats, "unlocked_subclasses", [])
+        has_gatekey = getattr(stats, "unlocked_gatekey", False)
+        items_list = [
+            ("时序法师", 2888, "时序法师" in unlocked, True),
+            ("塑能法师", 2888, "塑能法师" in unlocked, True),
+            ("秘钥学者", 2888, "秘钥学者" in unlocked, True),
+            ("门之钥匙", 3000, has_gatekey, True),
+            ("神秘物品", 66666, "神秘物品" in unlocked, True)
+        ]
+        if icerainboww_enabled:
+            killed_icerainboww = getattr(stats, "killed_icerainboww", False)
+            items_list.append(("Icerainboww" if killed_icerainboww else "？？？", None, killed_icerainboww, False))
+        killed_yog = getattr(stats, "killed_yog_sothoth", False)
+        items_list.append(("尤格-索托斯" if killed_yog else "？？？", None, killed_yog, False))
+        back_idx = len(items_list) + 1
+        if choice_lower == str(back_idx):
             stats.town_flags.pop("shop_sub_menu", None)
             town_engine.save_manager.save_stats(user_id, stats)
             return town_engine._render_dialog_window(stats, npc_id, zh_cn)
-        if choice_lower in ("1", "2", "3", "4", "5"):
-            unlocked = getattr(stats, "unlocked_subclasses", [])
-            has_gatekey = getattr(stats, "unlocked_gatekey", False)
-            subclass_map = {
-                "1": ("时序法师", 2888, False),
-                "2": ("塑能法师", 2888, False),
-                "3": ("秘钥学者", 2888, False),
-                "4": ("门之钥匙", 3000, True),
-                "5": ("神秘物品", 66666, False)
-            }
-            subclass_name, price, is_gatekey = subclass_map[choice_lower]
-            if is_gatekey:
-                if has_gatekey:
-                    return zh_cn.get("global", {}).get("already_unlocked_error", "❌ 你已经解锁了【{name}】。").format(name=subclass_name)
-            else:
-                if subclass_name in unlocked:
-                    return zh_cn.get("global", {}).get("already_unlocked_error", "❌ 你已经解锁了【{name}】。").format(name=subclass_name)
-            if stats.gp < price:
-                return zh_cn.get("global", {}).get("gp_insufficient", "").format(req=price, owned=stats.gp)
-            stats.gp -= price
-            if is_gatekey:
-                stats.unlocked_gatekey = True
-            else:
-                stats.unlocked_subclasses.append(subclass_name)
-            town_engine.save_manager.save_stats(user_id, stats)
-            success_msg = zh_cn.get("global", {}).get("shop_buy_success", "").format(name=subclass_name, price=price)
-            return success_msg + "\n\n" + town_engine._render_dialog_window(stats, npc_id, zh_cn)
+        try:
+            choice_val = int(choice_lower)
+            if 1 <= choice_val <= len(items_list):
+                name, price, is_unlocked, buyable = items_list[choice_val - 1]
+                if not buyable:
+                    return f"❌ 【{name}】为通关解锁内容，无需在此处购买。"
+                if name == "门之钥匙":
+                    if has_gatekey:
+                        return zh_cn.get("global", {}).get("already_unlocked_error", "❌ 你已经解锁了【{name}】。").format(name=name)
+                else:
+                    if name in unlocked:
+                        return zh_cn.get("global", {}).get("already_unlocked_error", "❌ 你已经解锁了【{name}】。").format(name=name)
+                if stats.gp < price:
+                    return zh_cn.get("global", {}).get("gp_insufficient", "").format(req=price, owned=stats.gp)
+                stats.gp -= price
+                if name == "门之钥匙":
+                    stats.unlocked_gatekey = True
+                else:
+                    stats.unlocked_subclasses.append(name)
+                town_engine.save_manager.save_stats(user_id, stats)
+                success_msg = zh_cn.get("global", {}).get("shop_buy_success", "").format(name=name, price=price)
+                return success_msg + "\n\n" + town_engine._render_dialog_window(stats, npc_id, zh_cn)
+        except ValueError:
+            pass
         return zh_cn.get("global", {}).get("invalid_option", "")
 
     return None

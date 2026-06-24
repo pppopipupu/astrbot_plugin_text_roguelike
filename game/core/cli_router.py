@@ -277,18 +277,26 @@ class CLIRouter:
             exempt_cmds = (
                 "查询", "query", "info", "i",
                 "背包", "bag", "inventory", "inv",
-                "任务", "quest", "quests"
+                "任务", "quest", "quests",
+                "帮助", "help",
+                "状态", "status",
+                "统计", "stat", "stats",
+                "地图", "map",
+                "队列", "queue", "q"
             )
             if first_cmd in exempt_cmds:
-                handler = self._command_handlers.get(first_cmd)
-                if handler:
-                    if curr_state in getattr(handler, "allowed_states", []):
-                        res_list = list(handler.execute(self, user_id, parts))
-                        yield "\n".join(res_list)
-                        return
-                    else:
-                        yield f"❌ 指令【{first_cmd}】在当前状态下不可用。"
-                        return
+                if first_cmd == "q" and run and run.node_data.get("state_stack"):
+                    pass
+                else:
+                    handler = self._command_handlers.get(first_cmd)
+                    if handler:
+                        if curr_state in getattr(handler, "allowed_states", []):
+                            res_list = list(handler.execute(self, user_id, parts))
+                            yield "\n".join(res_list)
+                            return
+                        else:
+                            yield f"❌ 指令【{first_cmd}】在当前状态下不可用。"
+                            return
         is_town_combat = run is not None and run.node_data.get("is_town_combat", False)
         if not parts:
             if run:
@@ -313,7 +321,7 @@ class CLIRouter:
                 if cmd in ("w", "a", "s", "d", "up", "down", "left", "right"):
                     yield self.town_engine.move(user_id, cmd)
                     return
-                elif cmd in ("退出", "quit", "exit", "q"):
+                elif cmd in ("退出", "quit", "exit"):
                     stats.in_town = False
                     self.save_manager.save_stats(user_id, stats)
                     yield zh_cn.get("global", {}).get("town_exit_success", "👋 你已退出主城，回到主菜单。") + "\n\n" + GameRenderer.render_menu(stats)

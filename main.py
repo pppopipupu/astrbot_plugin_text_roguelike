@@ -650,7 +650,20 @@ class MyPlugin(Star):
                 stats = self.save_manager.load_stats(user_id)
                 curr_state = self._get_current_state(user_id, run, stats)
                 if curr_state == "dialog":
-                    is_game_cmd = True
+                    if parts:
+                        first_w = parts[0].lower()
+                        dialog_valid_cmds = {
+                            "查询", "query", "info", "i",
+                            "背包", "bag", "inventory", "inv",
+                            "任务", "quest", "quests",
+                            "帮助", "help",
+                            "状态", "status",
+                            "统计", "stat", "stats",
+                            "地图", "map",
+                            "队列", "queue", "q"
+                        }
+                        if first_w.isdigit() or first_w in ("离开", "退出", "返回", "exit", "quit") or first_w in dialog_valid_cmds:
+                            is_game_cmd = True
                 elif curr_state == "town":
                     town_nav_cmds = {
                         "w", "a", "s", "d", "up", "down", "left", "right", 

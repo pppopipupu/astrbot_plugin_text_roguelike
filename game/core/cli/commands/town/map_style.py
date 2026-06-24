@@ -1,7 +1,7 @@
 from typing import Generator
 from ...base import CommandHandler
 
-class MapStyleCommand(CommandHandler, names=["地图", "map"], allowed_states=["menu", "town", "explore", "battle"]):
+class MapStyleCommand(CommandHandler, names=["地图", "map"]):
     def execute(self, router, user_id: str, parts: list[str]) -> Generator[str, None, None]:
         stats = router.save_manager.load_stats(user_id)
         if not stats.in_town:
