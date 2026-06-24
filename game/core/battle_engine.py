@@ -5,7 +5,7 @@ from .battle.base import BaseBattleEngine
 from .battle.combat_resolver import CombatResolver
 from .battle.card_player import CardPlayer
 from .battle.enemy_controller import EnemyTurnController
-from .battle.observers import RelicTriggerHandler, BuffTriggerHandler, AmuletTriggerHandler, RallyTriggerHandler, MinionTriggerHandler, EnemyTriggerHandler
+from .battle.observers import RelicTriggerHandler, BuffTriggerHandler, AmuletTriggerHandler, RallyTriggerHandler, MinionTriggerHandler, EnemyTriggerHandler, CardTriggerHandler
 
 class BattleEngine(BaseBattleEngine):
     def __init__(self, save_manager):
@@ -19,6 +19,7 @@ class BattleEngine(BaseBattleEngine):
         self.rally_handler = RallyTriggerHandler(self.event_bus, self)
         self.minion_handler = MinionTriggerHandler(self.event_bus, self)
         self.enemy_handler = EnemyTriggerHandler(self.event_bus, self)
+        self.card_handler = CardTriggerHandler(self.event_bus, self)
 
     def _log_event(self, run: Optional[GameRun], msg: str):
         if run is None:

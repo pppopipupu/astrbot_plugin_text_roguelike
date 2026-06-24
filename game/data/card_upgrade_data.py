@@ -419,5 +419,8 @@ CARD_UPGRADE_CONFIG = {
     },
     "discover": {
         "desc": "从消耗堆选择两张卡牌加入手牌。"
+    },
+    "warrior_shield_bash": {
+        "desc": "获得 24 点护盾，造成当前护盾值一半的钝击伤害。如果此卡牌被消耗，则你获得 2A 2BA。"
     }
 }

@@ -543,24 +543,12 @@ class WarriorHellRaiderCard(Card):
 @register_card("warrior_shield_bash")
 class WarriorShieldBashCard(Card):
     def execute(self, run, target, engine) -> str:
-        dmg = run.player.shield
+        shield_val = 24 if self.upgraded else 16
+        run.player.shield += shield_val
+        dmg = run.player.shield // 2
         name = engine._get_target_name(run, target)
-        engine._damage_target(run, target, dmg, damage_type="true", card=self)
-        
-        kill_msg = ""
-        target_enemy = None
-        if target.startswith("e"):
-            try:
-                idx = int(target[1:]) - 1
-                if 0 <= idx < len(run.enemies):
-                    target_enemy = run.enemies[idx]
-            except ValueError:
-                pass
-        if target_enemy and 0 < target_enemy.hp < 20:
-            engine._damage_target(run, target, target_enemy.hp, damage_type="true", card=self)
-            kill_msg = f" 💀 [斩杀成功] 裂伤将【{name}】瞬间抹杀！"
-            
-        return f"对【{name}】使用【盾牌猛击】，造成了 {dmg} 点盾值真实伤害。{kill_msg}"
+        engine._damage_target(run, target, dmg, damage_type="bludgeoning", card=self)
+        return f"对【{name}】使用【盾牌猛击】，获得了 {shield_val} 点护盾，并造成了 {dmg} 点钝击伤害。"
 
 @register_card("warrior_blood_fury")
 class WarriorBloodFuryCard(Card):

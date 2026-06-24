@@ -419,3 +419,17 @@ class EnemyTriggerHandler:
         if template and hasattr(template, "on_enemy_before_death"):
             template.on_enemy_before_death(event.run, event.enemy, event, self.engine)
 
+
+class CardTriggerHandler:
+    def __init__(self, event_bus, engine):
+        self.engine = engine
+        event_bus.subscribe(CardExhaustEvent, self.on_card_exhaust)
+
+    def on_card_exhaust(self, event):
+        base_cid = event.card_id.split("+")[0].split(":")[0]
+        if base_cid == "warrior_shield_bash":
+            p = event.run.player
+            p.actions += 2
+            p.bonus_actions += 2
+            self.engine._log_event(event.run, "✨ [盾牌猛击被消耗] 玩家获得了 2A 2BA！")
+

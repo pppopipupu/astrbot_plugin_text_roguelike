@@ -571,3 +571,93 @@ class TestRogueCardMech1(unittest.TestCase):
         player.hand = ["first_aid"]
         engine.play_card(run, 1, None)
         self.assertEqual(player.hp, 55)
+
+    def test_warrior_shield_bash(self):
+        plugin = MyPlugin(DummyContext())
+        engine = plugin.engine.battle_engine
+        player = PlayerState(
+            hp=30,
+            max_hp=30,
+            shield=10,
+            gold=100,
+            stage=1,
+            deck=["warrior_shield_bash", "warrior_shield_bash+"],
+            hand=["warrior_shield_bash", "warrior_shield_bash+"],
+            actions=5,
+            bonus_actions=5
+        )
+        enemy = EnemyState("测试敌人", 100, 100, 0)
+        run = GameRun(
+            user_id="test_user_shield_bash",
+            node_type="battle",
+            player=player,
+            enemies=[enemy]
+        )
+        engine.play_card(run, 1, "e0")
+        self.assertEqual(player.shield, 26)
+        self.assertEqual(enemy.hp, 87)
+        engine.play_card(run, 1, "e0")
+        self.assertEqual(player.shield, 50)
+        self.assertEqual(enemy.hp, 62)
+        from game.models.events import CardExhaustEvent
+        player.actions = 2
+        player.bonus_actions = 1
+        engine.event_bus.dispatch(CardExhaustEvent(run, "warrior_shield_bash", "test"))
+        self.assertEqual(player.actions, 4)
+        self.assertEqual(player.bonus_actions, 3)
+        engine.event_bus.dispatch(CardExhaustEvent(run, "warrior_shield_bash+", "test"))
+        self.assertEqual(player.actions, 6)
+        self.assertEqual(player.bonus_actions, 5)
+
+    def test_enemy_cleansing_buffs(self):
+        plugin = MyPlugin(DummyContext())
+        engine = plugin.engine.battle_engine
+        player = PlayerState(
+            hp=30,
+            max_hp=30,
+            shield=10,
+            gold=100,
+            stage=1,
+            deck=["warrior_strike"],
+            hand=["warrior_strike"],
+            actions=5,
+            bonus_actions=5
+        )
+        enemy = EnemyState("测试敌人", 100, 100, 10)
+        run = GameRun(
+            user_id="test_user_cleansing",
+            node_type="battle",
+            player=player,
+            enemies=[enemy]
+        )
+        enemy.buffs = [
+            BuffState(id="ancient_protection", name="先古庇护", desc="", stacks=1),
+            BuffState(id="vulnerable", name="易伤", desc="", stacks=2)
+        ]
+        class DummySaveManager:
+            def save_save(self, user_id, run):
+                pass
+            def delete_save(self, user_id):
+                pass
+        engine.save_manager = DummySaveManager()
+        engine.end_turn(run)
+        self.assertFalse(any(b.id == "vulnerable" for b in enemy.buffs))
+        self.assertTrue(any(b.id == "ancient_protection" for b in enemy.buffs))
+
+        enemy2 = EnemyState("测试敌人2", 100, 100, 0)
+        run2 = GameRun(
+            user_id="test_user_cleansing2",
+            node_type="battle",
+            player=player,
+            enemies=[enemy2]
+        )
+        enemy2.buffs = [
+            BuffState(id="end_gate_passive", name="终焉之门", desc="", stacks=1),
+            BuffState(id="vulnerable", name="易伤", desc="", stacks=2)
+        ]
+        engine.end_turn(run2)
+        self.assertFalse(any(b.id == "vulnerable" for b in enemy2.buffs))
+        self.assertTrue(any(b.id == "end_gate_passive" for b in enemy2.buffs))
+        self.assertEqual(enemy2.shield, 15)
+
+

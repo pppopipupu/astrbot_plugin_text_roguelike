@@ -10,12 +10,51 @@ def render_query_info(query_str: str) -> str:
     from ..models.manager import SaveManager
     boss_cfg = SaveManager().load_admin_config()
     icerainboww_enabled = boss_cfg.get("icerainboww_enabled", True)
-    q = query_str.strip().lower()
-    if not q:
+    
+    query_str_lower = query_str.strip().lower()
+    if not query_str_lower:
         return "❌ 请输入具体的查询内容。"
+        
+    rarity_map = {
+        "common": "普通",
+        "rare": "稀有",
+        "epic": "珍奇",
+        "legendary": "传奇",
+        "mythic": "神话",
+        "artifact": "神器",
+        "curse": "诅咒"
+    }
+    
+    def get_rarity_key(val: str) -> str | None:
+        val = val.strip().lower()
+        if val in rarity_map:
+            return val
+        for k, v in rarity_map.items():
+            if val == v:
+                return k
+        return None
+
+    q_search = query_str_lower
+    tier_filter = None
+
+    import re
+    m = re.search(r"\s+tier\s+(.+)$", query_str_lower)
+    if m:
+        tier_str = m.group(1).strip()
+        tier_filter = get_rarity_key(tier_str)
+        if not tier_filter:
+            return "❌ 无效的稀有度等级。可选：普通/common, 稀有/rare, 珍奇/epic, 传奇/legendary, 神话/mythic, 神器/artifact, 诅咒/curse"
+        q_search = query_str_lower[:m.start()].strip()
+    else:
+        r_key = get_rarity_key(query_str_lower)
+        if r_key is not None:
+            tier_filter = r_key
+            q_search = ""
+
     lines = ["━━━━━━━━━━━━━━━━━━━━", f"🔍 查询结果：{query_str}", ""]
     found = False
-    if q in ("buff", "buffs", "状态", "战斗效果", "效果"):
+    
+    if not tier_filter and q_search in ("buff", "buffs", "状态", "战斗效果", "效果"):
         found = True
         lines.append("✨ 【全体战斗效果 (Buff) 一览】")
         for bid, cfg in BUFF_CONFIG.items():
@@ -23,7 +62,8 @@ def render_query_info(query_str: str) -> str:
             desc = cfg.get("desc", "")
             lines.append(f"  • 【{bname}】: {desc}")
         lines.append("")
-    if q in ("keyword", "keywords", "词条", "机制"):
+        
+    if not tier_filter and q_search in ("keyword", "keywords", "词条", "机制"):
         found = True
         lines.append("🧩 【全体卡牌词条与机制一览】")
         for kid, cfg in KEYWORD_CONFIG.items():
@@ -31,20 +71,15 @@ def render_query_info(query_str: str) -> str:
             desc = cfg.get("desc", "")
             lines.append(f"  • 【{kname}】: {desc}")
         lines.append("")
+        
     for rid, cfg in RELIC_CONFIG.items():
-        if q == rid.lower() or q in cfg.get("name", "").lower():
+        if tier_filter and cfg.get("rarity", "common").lower() != tier_filter:
+            continue
+        match_keyword = (not q_search) or (q_search == rid.lower()) or (q_search in cfg.get("name", "").lower())
+        if match_keyword:
             found = True
             rname = cfg.get("name", rid)
             rarity = cfg.get("rarity", "common")
-            rarity_map = {
-                "common": "普通",
-                "rare": "稀有",
-                "epic": "珍奇",
-                "legendary": "传奇",
-                "mythic": "神话",
-                "artifact": "神器",
-                "curse": "诅咒"
-            }
             rname_rarity = rarity_map.get(rarity, rarity)
             desc = cfg.get("desc", "")
             price = cfg.get("price", 0)
@@ -52,26 +87,35 @@ def render_query_info(query_str: str) -> str:
             lines.append(f"效果：{desc}")
             lines.append(f"售价：{price} 金币")
             lines.append("")
+            
     for bid, cfg in BUFF_CONFIG.items():
-        if q == bid.lower() or q in cfg.get("name", "").lower():
+        if tier_filter:
+            continue
+        if q_search == bid.lower() or q_search in cfg.get("name", "").lower():
             found = True
             bname = cfg.get("name", bid)
             desc = cfg.get("desc", "")
             lines.append(f"✨ 战斗效果 (Buff)：{bname} (ID: {bid})")
             lines.append(f"描述：{desc}")
             lines.append("")
+            
     for kid, cfg in KEYWORD_CONFIG.items():
-        if q == kid.lower() or q in cfg.get("name", "").lower():
+        if tier_filter:
+            continue
+        if q_search == kid.lower() or q_search in cfg.get("name", "").lower():
             found = True
             kname = cfg.get("name", kid)
             desc = cfg.get("desc", "")
             lines.append(f"🧩 词条/机制：{kname} (ID: {kid})")
             lines.append(f"描述：{desc}")
             lines.append("")
+            
     for mid, cfg in MINION_CONFIG.items():
+        if tier_filter:
+            continue
         if not icerainboww_enabled and (mid == "minion_icerainboww" or mid == "minion_icerainboww+" or "icerainboww" in mid.lower() or "icerainboww" in cfg.get("name", "").lower()):
             continue
-        if q == mid.lower() or q in cfg.get("name", "").lower():
+        if q_search == mid.lower() or q_search in cfg.get("name", "").lower():
             found = True
             mname = cfg.get("name", mid)
             lines.append(f"🦁 随从：{mname} (ID: {mid})")
@@ -94,11 +138,15 @@ def render_query_info(query_str: str) -> str:
             else:
                 lines.append("技能列表：仅有普通攻击 (消耗 1A)。")
             lines.append("")
+            
     for cid, cfg in CARD_CONFIG.items():
         if not icerainboww_enabled and (cid == "minion_icerainboww" or cid == "minion_icerainboww+" or "icerainboww" in cid.lower() or "icerainboww" in cfg.get("name", "").lower()):
             continue
-        q_clean = q[:-1] if q.endswith("+") else q
-        if q_clean and (q_clean == cid.lower() or q_clean == cfg.get("name", "").lower() or q_clean in cid.lower() or q_clean in cfg.get("name", "").lower()):
+        if tier_filter and cfg.get("rarity", "common").lower() != tier_filter:
+            continue
+        q_clean = q_search[:-1] if q_search.endswith("+") else q_search
+        match_keyword = (not q_clean) or (q_clean == cid.lower()) or (q_clean == cfg.get("name", "").lower()) or (q_clean in cid.lower()) or (q_clean in cfg.get("name", "").lower())
+        if match_keyword:
             found = True
             cname = cfg.get("name", cid)
             ctype = cfg.get("type", "")
@@ -110,15 +158,6 @@ def render_query_info(query_str: str) -> str:
             }
             ctype_ch = type_map.get(ctype, ctype)
             rarity = cfg.get("rarity", "common")
-            rarity_map = {
-                "common": "普通",
-                "rare": "稀有",
-                "epic": "珍奇",
-                "legendary": "传奇",
-                "mythic": "神话",
-                "artifact": "神器",
-                "curse": "诅咒"
-            }
             rname_rarity = rarity_map.get(rarity, rarity)
             from ..cards import ALL_CARDS
             card_obj = ALL_CARDS.get(cid)
@@ -138,10 +177,13 @@ def render_query_info(query_str: str) -> str:
                     lines.append(f"升级消耗：{up_cost_str}")
                     lines.append(f"升级效果：{up_card.desc}")
                     lines.append("")
+                    
     for eid, cfg in ENEMY_CONFIG.items():
+        if tier_filter:
+            continue
         if not icerainboww_enabled and (eid == "Icerainboww" or "icerainboww" in eid.lower() or "icerainboww" in cfg.get("name", "").lower()):
             continue
-        if q == eid.lower() or q in cfg.get("name", "").lower():
+        if q_search == eid.lower() or q_search in cfg.get("name", "").lower():
             found = True
             ename = cfg.get("name", eid)
             etype = cfg.get("type", "normal")
@@ -191,18 +233,22 @@ def render_query_info(query_str: str) -> str:
         items_map = town_data.get("items", {})
         item_descs = town_data.get("item_descs", {})
         for item_id, aliases in items_map.items():
-            if q == item_id.lower() or any(q == alias.lower() or q in alias.lower() for alias in aliases):
+            if tier_filter:
+                continue
+            if q_search == item_id.lower() or any(q_search == alias.lower() or q_search in alias.lower() for alias in aliases):
                 found = True
                 ch_name = aliases[0]
                 desc = item_descs.get(item_id, "一件主城的特殊物品。")
                 lines.append(f"🎒 物品：{ch_name} ({item_id})")
                 lines.append(f"描述：{desc}")
                 lines.append("")
-
+                
         npcs_map = town_data.get("interactive_entities", {})
         for npc_id, npc_cfg in npcs_map.items():
+            if tier_filter:
+                continue
             npc_name = npc_cfg.get("name", npc_id)
-            if q == npc_id.lower() or q == npc_name.lower() or q in npc_name.lower():
+            if q_search == npc_id.lower() or q_search == npc_name.lower() or q_search in npc_name.lower():
                 found = True
                 desc = npc_cfg.get("desc", "先古主城的一位普通居民。")
                 lines.append(f"👤 居民：{npc_name} ({npc_id})")
@@ -214,7 +260,7 @@ def render_query_info(query_str: str) -> str:
                     for t in idle_talks:
                         lines.append(f"  • {t}")
                 lines.append("")
-
+                
     if not found:
         lines.append("❌ 未找到与该名称或 ID 匹配的随从、遗物、Buff、卡牌、怪物、主城居民或物品信息。")
         lines.append("")

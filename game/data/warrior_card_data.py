@@ -462,7 +462,7 @@ WARRIOR_CARD_CONFIG = {
         "type": "spell",
         "cost_a": 1,
         "cost_ba": 0,
-        "desc": "对目标造成等同于当前护盾值的真实伤害。若目标生命低于 20 点则斩杀。",
+        "desc": "获得 16 点护盾，造成当前护盾值一半的钝击伤害。如果此卡牌被消耗，则你获得 2A 2BA。",
         "rarity": "rare",
         "feedback": "你紧握重盾对【{target}】发起了【盾牌猛击】！"
     },

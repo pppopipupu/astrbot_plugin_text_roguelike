@@ -40,7 +40,7 @@ def render_battle(run: GameRun) -> str:
                 buff_strs.append(f"{b.name} x{b.stacks}")
             else:
                 buff_strs.append(f"{b.name}")
-        lines.append(f"{run.player.name}Buff：" + " | ".join(buff_strs))
+        lines.append(f"{run.player.name} Buff：" + " | ".join(buff_strs))
     lines.append("")
     lines.append("【我方战场】")
     if not p.minions and not p.amulets:

@@ -1,6 +1,6 @@
 from typing import List, Optional
 import re
-from .base import BuffImpl
+from .base import BuffImpl, is_debuff
 from .registry import register_buff
 
 class QuickenBuff(BuffImpl):
