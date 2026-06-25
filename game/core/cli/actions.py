@@ -158,12 +158,27 @@ class SpecialAction(ActionHandler, actions=["特殊", "sa"]):
             return "❌ 序号必须是数字。", False
         target = parts[2] if len(parts) > 2 else None
         res = router.engine.play_special_action(run, idx, target)
+        if run.player.hp <= 0:
+            settle_msg = router.save_manager.settle_game_and_delete(user_id, run, is_victory=False)
+            return f"{res}\n💀 你被击败了！当前进度已清空。\n{settle_msg}", True
+        if router.engine.is_battle_won(run):
+            router.engine._handle_battle_win(run)
+            if run.node_type == "victory":
+                settle_msg = router.save_manager.settle_game_and_delete(user_id, run, is_victory=True)
+                boss_name = run.node_data.get("boss_name")
+                if not boss_name and run.enemies:
+                    boss_name = run.enemies[0].name
+                if not boss_name:
+                    boss_name = "最终BOSS"
+                return f"{res}\n🎉 恭喜你击败了{boss_name}，通关成功！\n{settle_msg}", True
+            else:
+                return f"{res}\n🎉 战斗胜利！你击败了敌方所有单位。", True
         return res, False
 
 class EndTurnAction(ActionHandler, actions=["结束", "e"]):
     def execute(self, router, user_id: str, run, parts: list[str]) -> Tuple[str, bool]:
         res = router.engine.end_turn(run)
-        if "冒险结束" in res:
+        if "冒险结束" in res or router.engine.is_battle_won(run):
             return res, True
         return res, False
 

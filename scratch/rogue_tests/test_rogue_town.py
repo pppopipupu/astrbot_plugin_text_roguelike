@@ -793,4 +793,39 @@ class TestRogueTown(unittest.TestCase):
 
         asyncio.run(run_shop_test())
 
+    def test_town_combat_victory(self):
+        plugin = MyPlugin(DummyContext())
+        save_manager = SaveManager()
+
+        async def run_victory_test():
+            save_manager.delete_save("test_user")
+            stats_path = save_manager.get_stats_path("test_user")
+            if os.path.exists(stats_path):
+                try:
+                    os.remove(stats_path)
+                except:
+                    pass
+
+            await run_command(plugin, ".rogue 主城")
+            await run_command(plugin, ".rogue up")
+            await run_command(plugin, ".rogue talk 训练假人")
+            await run_command(plugin, ".rogue 2")
+
+            run = save_manager.load_save("test_user")
+            self.assertIsNotNone(run)
+            self.assertTrue(run.node_data.get("is_town_combat"))
+
+            plugin.engine.battle_engine.combat_resolver.damage_target(
+                run, "e1", 200, source="player", damage_type="slashing"
+            )
+            save_manager.save_save("test_user", run)
+
+            res = await run_command(plugin, ".rogue 结束")
+            self.assertTrue(any(x in res for x in ["训练假人已被摧毁", "战斗胜利"]))
+
+            run_after = save_manager.load_save("test_user")
+            self.assertIsNone(run_after)
+
+        asyncio.run(run_victory_test())
+
 

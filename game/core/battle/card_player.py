@@ -699,6 +699,9 @@ class CardPlayer:
         p.hp = min(p.max_hp, p.hp)
         evt_win = BattleWinEvent(run)
         self.engine.event_bus.dispatch(evt_win)
+        if run.node_data.get("is_town_combat"):
+            self.engine.save_manager.save_save(run.user_id, run)
+            return
         if run.node_data.get("no_reward"):
             run.node_type = "reward"
             run.node_data = {"cards": [], "no_reward": True}
