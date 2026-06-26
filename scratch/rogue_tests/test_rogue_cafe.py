@@ -308,6 +308,10 @@ class TestRogueCafe(unittest.TestCase):
         plugin.save_manager.save_stats(user_id, stats)
         
         async def go():
+            res_look = await run_command(plugin, "look", user_id)
+            self.assertNotIn("可交互", res_look)
+            self.assertNotIn("已交互", res_look)
+            
             res1 = await run_command(plugin, "talk 铁匠", user_id)
             self.assertIn("铁匠艾恩克拉德", res1)
             
@@ -321,8 +325,19 @@ class TestRogueCafe(unittest.TestCase):
             self.assertEqual(latest_run2.player.gold, 30)
             self.assertEqual(latest_run2.node_data["cafe_data"]["active_npc"], None)
             
-            res3 = await run_command(plugin, "离开", user_id)
-            self.assertIn("重新踏上了", res3)
+            res_look2 = await run_command(plugin, "look", user_id)
+            self.assertIn("铁匠艾恩克拉德 (已交互)", res_look2)
+            self.assertNotIn("卡牌大师 · 杰斯 (已交互)", res_look2)
+            
+            res3 = await run_command(plugin, "talk 卡牌大师", user_id)
+            self.assertIn("卡牌大师 · 杰斯", res3)
+            
+            res4 = await run_command(plugin, "1", user_id)
+            self.assertIn("你告别了交谈的旅客", res4)
+            self.assertIn("卡牌大师 · 杰斯 (已交互)", res4)
+            
+            res5 = await run_command(plugin, "离开", user_id)
+            self.assertIn("重新踏上了", res5)
             
         asyncio.run(go())
         plugin.save_manager.delete_save(user_id)

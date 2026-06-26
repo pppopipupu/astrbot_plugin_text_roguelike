@@ -87,7 +87,7 @@ class CafeEngine:
         if active_npc is None:
             npcs_str = ""
             for npc in cafe_data.get("npcs", []):
-                status = " (已交互)" if npc in cafe_data.get("talked_npcs", []) else " (可交互)"
+                status = " (已交互)" if npc in cafe_data.get("talked_npcs", []) else ""
                 npcs_str += f"\n  - {npc_show_names.get(npc, npc)}{status}"
             
             lines = [
@@ -163,10 +163,23 @@ class CafeEngine:
             found = mapped
 
         if not found:
-            for npc in npcs:
-                if target_lower in npc.lower():
-                    found = npc
-                    break
+            def clean_text(text: str) -> str:
+                res_chars = []
+                for char in text.lower():
+                    if char.isalnum() or (ord(char) >= 0x4e00 and ord(char) <= 0x9fff):
+                        res_chars.append(char)
+                return "".join(res_chars)
+
+            cleaned_target = clean_text(target_lower)
+            if cleaned_target:
+                for npc in npcs:
+                    if cleaned_target in clean_text(npc):
+                        found = npc
+                        break
+                    show_name = npc_show_names.get(npc, "")
+                    if show_name and cleaned_target in clean_text(show_name):
+                        found = npc
+                        break
 
         if not found:
             return f"❌ 咖啡厅里似乎没有名为【{target}】的旅客。请输入 /rogue 查看旅客名单。"
@@ -179,7 +192,11 @@ class CafeEngine:
 
     def leave_npc(self, run: GameRun) -> str:
         cafe_data = run.node_data.setdefault("cafe_data", {})
-        if cafe_data.get("active_npc") is not None:
+        active_npc = cafe_data.get("active_npc")
+        if active_npc is not None:
+            talked_npcs = cafe_data.setdefault("talked_npcs", [])
+            if active_npc not in talked_npcs:
+                talked_npcs.append(active_npc)
             cafe_data["active_npc"] = None
             cafe_data["dialog_state"] = None
             self.save_manager.save_save(run.user_id, run)
