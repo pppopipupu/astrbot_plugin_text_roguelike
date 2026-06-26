@@ -411,7 +411,7 @@ class BattleEngine(BaseBattleEngine):
 
         retained_name = ALL_CARDS[retained_cid].name if retained_cid else "无"
         drawn_str = "，".join(drawn) if drawn else "无"
-        res_str = f"👁️ 【霸瞳天星】发动成功！保留了手牌中的【{retained_name}】，消耗了其他 {exhausted_count} 张卡牌。并随机获得了同等数量 of 卡牌：【{drawn_str}】。{dmg_msg}"
+        res_str = f"👁️ 【霸瞳天星】发动成功！保留了手牌中的【{retained_name}】，消耗了其他 {exhausted_count} 张卡牌。并随机获得了同等数量的卡牌：【{drawn_str}】。{dmg_msg}"
         self.save_manager.save_save(run.user_id, run)
         return self._append_logs_to_res(run, res_str)
 
@@ -520,6 +520,9 @@ class BattleEngine(BaseBattleEngine):
                     added += 1
             if added > 0:
                 extra_copy_msg = f"\n✨ [复制] 【{card.name}】打出后往手牌中添加了 {added} 张复制品！"
+
+        if hasattr(card, "execute_tags"):
+            card.execute_tags(run, None, self)
 
         played_count = run.node_data.get("cards_played_this_turn", 0)
         from ..models.events import CardPlayedEvent

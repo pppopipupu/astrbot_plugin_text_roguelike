@@ -248,8 +248,6 @@ class CardPlayer:
         run.node_data["extra_play_msgs"] = []
         try:
             res = self.engine._execute_card_effect(run, card, target)
-            if hasattr(card, "execute_tags"):
-                card.execute_tags(run, target, self.engine)
 
             suspend_post_play = False
             if len(run.node_data.get("state_stack", [])) > initial_stack_len:
@@ -260,6 +258,9 @@ class CardPlayer:
                 run.node_data["suspended_card_hand_idx"] = hand_idx - 1
 
             if not suspend_post_play:
+                if hasattr(card, "execute_tags"):
+                    card.execute_tags(run, target, self.engine)
+
                 return_left = cid.return_left
                 if return_left <= 0:
                     if hasattr(card, "gems") and card.gems:
