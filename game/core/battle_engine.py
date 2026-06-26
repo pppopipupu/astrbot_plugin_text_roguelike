@@ -416,28 +416,24 @@ class BattleEngine(BaseBattleEngine):
         return self._append_logs_to_res(run, res_str)
 
     def resolve_suspended_card(self, run: GameRun):
-        suspended_cid = run.node_data.pop("suspended_card_cid", None)
-        if not suspended_cid:
-            suspended_cid = run.node_data.pop("emperor_eye_cid", None)
-        if not suspended_cid:
+        suspended_state = run.node_data.pop("suspended_card_cid", None)
+        if not suspended_state:
+            suspended_state = run.node_data.pop("emperor_eye_cid", None)
+        if not suspended_state:
             return
         run.node_data.pop("suspended_card_cost_a", None)
         run.node_data.pop("suspended_card_cost_ba", None)
         run.node_data.pop("suspended_card_hand_idx", None)
         p = run.player
+        from ..models.state import ensure_card_state
+        suspended_state = ensure_card_state(suspended_state)
         from ..entities.cards.base import ALL_CARDS
-        card = ALL_CARDS.get(suspended_cid)
+        card = ALL_CARDS.get(suspended_state)
         if not card:
             return
         
-        import re
-        return_left = 0
-        has_return_suffix = False
-        match = re.search(r":return_left:(\d+)", suspended_cid)
-        if match:
-            return_left = int(match.group(1))
-            has_return_suffix = True
-        else:
+        return_left = suspended_state.return_left
+        if return_left <= 0:
             if hasattr(card, "gems") and card.gems:
                 if "gem_return_5" in card.gems:
                     return_left = 5
@@ -445,22 +441,20 @@ class BattleEngine(BaseBattleEngine):
                     return_left = 3
 
         should_return = False
-        new_cid = suspended_cid
+        import copy
+        new_cid = copy.copy(suspended_state)
         if return_left > 0:
             next_left = return_left - 1
             if next_left > 0:
                 should_return = True
-                if has_return_suffix:
-                    new_cid = re.sub(r":return_left:\d+", f":return_left:{next_left}", suspended_cid)
-                else:
-                    new_cid = f"{suspended_cid}:return_left:{next_left}"
+                new_cid.return_left = next_left
 
         extra_return_msg = ""
         if should_return:
             p.hand.append(new_cid)
             extra_return_msg = f"\n✨ [返回] 【{card.name}】打出后回到了你的手牌！（剩余次数 {next_left}）"
         else:
-            self.card_player._handle_card_post_play(run, card, suspended_cid, source="played")
+            self.card_player._handle_card_post_play(run, card, suspended_state, source="played")
 
         if hasattr(card, "gems") and card.gems:
             has_shield_gem = any(g in card.gems for g in ("gem_shield_add_3", "gem_shield_add_8"))
@@ -508,28 +502,16 @@ class BattleEngine(BaseBattleEngine):
 
         extra_copy_msg = ""
         copy_count = 0
-        if ":no_copy:1" not in suspended_cid:
+        if not suspended_state.no_copy:
             if hasattr(card, "copy") and card.copy > 0:
                 copy_count = card.copy
             if hasattr(card, "gems") and card.gems and "gem_copy_1" in card.gems:
                 copy_count = max(copy_count, 1)
         if copy_count > 0:
-            def make_no_copy_cid(orig_cid: str) -> str:
-                res_cid = orig_cid
-                if ":gems:" in res_cid:
-                    parts = res_cid.rsplit(":gems:", 1)
-                    base = parts[0]
-                    gems = parts[1].split(",")
-                    if "gem_copy_1" in gems:
-                        gems.remove("gem_copy_1")
-                    if gems:
-                        res_cid = f"{base}:gems:{','.join(gems)}"
-                    else:
-                        res_cid = base
-                if ":no_copy:1" not in res_cid:
-                    res_cid = f"{res_cid}:no_copy:1"
-                return res_cid
-            copy_cid = make_no_copy_cid(suspended_cid)
+            import copy
+            copy_cid = copy.copy(suspended_state)
+            copy_cid.gems = [g for g in copy_cid.gems if g != "gem_copy_1"]
+            copy_cid.no_copy = True
             max_hand = 9 if "mask_of_void" in p.relics else 12
             added = 0
             for _ in range(copy_count):
@@ -552,11 +534,13 @@ class BattleEngine(BaseBattleEngine):
         run.node_data["cards_played_this_turn"] = played_count + 1
 
     def rollback_suspended_card(self, run: GameRun):
-        suspended_cid = run.node_data.pop("suspended_card_cid", None)
-        if not suspended_cid:
-            suspended_cid = run.node_data.pop("emperor_eye_cid", None)
-        if not suspended_cid:
+        suspended_state = run.node_data.pop("suspended_card_cid", None)
+        if not suspended_state:
+            suspended_state = run.node_data.pop("emperor_eye_cid", None)
+        if not suspended_state:
             return
+        from ..models.state import ensure_card_state
+        suspended_state = ensure_card_state(suspended_state)
         cost_a = run.node_data.pop("suspended_card_cost_a", 0)
         cost_ba = run.node_data.pop("suspended_card_cost_ba", 0)
         hand_idx = run.node_data.pop("suspended_card_hand_idx", None)
@@ -564,6 +548,6 @@ class BattleEngine(BaseBattleEngine):
         p.actions += cost_a
         p.bonus_actions += cost_ba
         if hand_idx is not None and 0 <= hand_idx <= len(p.hand):
-            p.hand.insert(hand_idx, suspended_cid)
+            p.hand.insert(hand_idx, suspended_state)
         else:
-            p.hand.append(suspended_cid)
+            p.hand.append(suspended_state)

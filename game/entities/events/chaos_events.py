@@ -36,13 +36,15 @@ class SacrificeMindOption(EventOption, action="sacrifice_mind", text="献祭部�
             removed = random.sample(p.deck, 2)
             for r in removed:
                 p.deck.remove(r)
-                base_cid = r.split(":gems:")[0]
+                from ...models.state import ensure_card_state
+                base_cid = ensure_card_state(r).id
                 if base_cid in ALL_CARDS:
                     removed_names.append(ALL_CARDS[base_cid].name)
         else:
             for r in list(p.deck):
                 p.deck.remove(r)
-                base_cid = r.split(":gems:")[0]
+                from ...models.state import ensure_card_state
+                base_cid = ensure_card_state(r).id
                 if base_cid in ALL_CARDS:
                     removed_names.append(ALL_CARDS[base_cid].name)
         p.deck.append("curse_dazed")

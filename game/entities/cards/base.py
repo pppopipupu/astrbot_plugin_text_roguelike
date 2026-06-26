@@ -128,138 +128,114 @@ class CardRegistryDict(dict):
             return default
 
     def __getitem__(self, key):
-        if isinstance(key, str) and ":no_copy:1" in key:
-            base_key = key.replace(":no_copy:1", "")
-            base_card = self[base_key]
-            no_copy_card = copy.copy(base_card)
-            no_copy_card.id = key
-            no_copy_card.copy = 0
-            return no_copy_card
+        from ...models.state import CardState, _parse_old_cid
+        if isinstance(key, str) and ":" not in key and not key.endswith("+"):
+            if key not in self:
+                self._lazy_load_card(key)
+            if key not in self:
+                raise KeyError(key)
+            return super().__getitem__(key)
+        if isinstance(key, str):
+            card_state = _parse_old_cid(key)
+        elif isinstance(key, dict):
+            from ...models.state import ensure_card_state
+            card_state = ensure_card_state(key)
+        elif isinstance(key, CardState):
+            card_state = key
+        else:
+            return super().__getitem__(key)
 
-        if isinstance(key, str) and ":gems:" in key:
-            parts = key.rsplit(":gems:", 1)
-            base_key = parts[0]
-            gems_str = parts[1]
-            base_card = self[base_key]
-            gems_card = copy.copy(base_card)
-            gems_card.id = key
-            gems_card.gems = gems_str.split(",") if gems_str else []
+        base_key = card_state.id
+        if base_key not in self:
+            self._lazy_load_card(base_key)
+        if base_key not in self:
+            raise KeyError(key)
+
+        base_card = super().__getitem__(base_key)
+        import copy
+        card = copy.copy(base_card)
+        card.id = base_key
+
+        if card_state.upgraded:
+            card.upgraded = True
+            from ...data.card_upgrade_data import CARD_UPGRADE_CONFIG
+            up_cfg = CARD_UPGRADE_CONFIG.get(base_key, {})
+            if "cost_a" in up_cfg:
+                card.cost_a = up_cfg["cost_a"]
+            if "cost_ba" in up_cfg:
+                card.cost_ba = up_cfg["cost_ba"]
+            if "desc" in up_cfg:
+                card.desc = up_cfg["desc"]
+            if "innate" in up_cfg:
+                card.innate = up_cfg["innate"]
+            if "exhaust" in up_cfg:
+                card.exhaust = up_cfg["exhaust"]
+            for prop in ("base_dmg", "heal_amount", "shield_amount", "minion_hp", "minion_atk", "countdown", "amulet_desc"):
+                if prop in up_cfg:
+                    setattr(card, prop, up_cfg[prop])
+            if " (易碎 " in card.name:
+                parts = card.name.split(" (易碎 ")
+                name_part = parts[0]
+                fragile_part = " (易碎 " + parts[1]
+                card.name = name_part + "+" + fragile_part
+            else:
+                if not card.name.endswith("+"):
+                    card.name += "+"
+
+        card.gems = list(card_state.gems)
+        if card.gems:
             from ...data.gem_data import GEM_CONFIG
             gem_descs = []
-            for g in gems_card.gems:
+            for g in card.gems:
                 if g in GEM_CONFIG:
                     gem_descs.append(f"<{GEM_CONFIG[g]['name']}>")
             if gem_descs:
-                gems_card.desc = gems_card.desc + " （镶嵌：" + "，".join(gem_descs) + "）"
-            return gems_card
+                card.desc = card.desc + " （镶嵌：" + "，".join(gem_descs) + "）"
 
-        if isinstance(key, str) and ":replay:" in key:
-            parts = key.rsplit(":replay:", 1)
-            base_key = parts[0]
-            replay_val = int(parts[1])
-            base_card = self[base_key]
-            replay_card = copy.copy(base_card)
-            replay_card.id = base_key
+        if card_state.replay > 0:
             from ...entities.tags import ReplayTag
-            replay_card.add_tag(ReplayTag("replay", replay_val))
-            replay_card.name = base_card.name
+            card.add_tag(ReplayTag("replay", card_state.replay))
             import re
-            clean_desc = re.sub(r"重放 \d+。", "", base_card.desc)
+            clean_desc = re.sub(r"重放 \d+。", "", card.desc)
             if clean_desc.endswith("。") or clean_desc.endswith("！"):
-                replay_card.desc = clean_desc + f"重放 {replay_val}。"
+                card.desc = clean_desc + f"重放 {card_state.replay}。"
             else:
-                replay_card.desc = clean_desc + f"。重放 {replay_val}。"
-            return replay_card
+                card.desc = clean_desc + f"。重放 {card_state.replay}。"
 
-        if isinstance(key, str) and ":fragile:" in key:
-            parts = key.split(":fragile:")
-            base_key = parts[0]
-            fragile_val = int(parts[1])
-            base_card = self[base_key]
-            fragile_card = copy.copy(base_card)
-            fragile_card.id = base_key
+        if card_state.fragile > 0:
             from ...entities.tags import FragileTag
-            fragile_card.add_tag(FragileTag("fragile", fragile_val))
-            clean_name = base_card.name
-            if " (易碎 " in clean_name:
-                clean_name = clean_name.split(" (易碎 ")[0]
-            fragile_card.name = f"{clean_name} (易碎 {fragile_val})"
+            card.add_tag(FragileTag("fragile", card_state.fragile))
             import re
-            fragile_card.desc = re.sub(r"易碎 \d+。", f"易碎 {fragile_val}。", base_card.desc)
-            return fragile_card
-
-        if isinstance(key, str) and key.endswith("+"):
-            base_key = key[:-1]
-            if base_key not in self:
-                self._lazy_load_card(base_key)
-            if base_key not in self:
-                raise KeyError(key)
-            base_card = super().__getitem__(base_key)
-            upgraded_card = copy.copy(base_card)
-            upgraded_card.id = key
-            if " (易碎 " in upgraded_card.name:
-                parts = upgraded_card.name.split(" (易碎 ")
-                name_part = parts[0]
-                fragile_part = " (易碎 " + parts[1]
-                upgraded_card.name = name_part + "+" + fragile_part
+            card.desc = re.sub(r"易碎 \d+。", f"易碎 {card_state.fragile}。", card.desc)
+            if " (易碎 " in card.name:
+                card.name = re.sub(r" \(易碎 \d+\)", f" (易碎 {card_state.fragile})", card.name)
             else:
-                if not upgraded_card.name.endswith("+"):
-                    upgraded_card.name += "+"
-            upgraded_card.upgraded = True
-            
-            from ...data.card_upgrade_data import CARD_UPGRADE_CONFIG
-            up_cfg = CARD_UPGRADE_CONFIG.get(base_key, {})
-            
-            if "cost_a" in up_cfg:
-                upgraded_card.cost_a = up_cfg["cost_a"]
-            if "cost_ba" in up_cfg:
-                upgraded_card.cost_ba = up_cfg["cost_ba"]
-            if "desc" in up_cfg:
-                upgraded_card.desc = up_cfg["desc"]
-            if "innate" in up_cfg:
-                upgraded_card.innate = up_cfg["innate"]
-            if "exhaust" in up_cfg:
-                upgraded_card.exhaust = up_cfg["exhaust"]
-                
-            for prop in ("base_dmg", "heal_amount", "shield_amount", "minion_hp", "minion_atk", "countdown", "amulet_desc"):
-                if prop in up_cfg:
-                    setattr(upgraded_card, prop, up_cfg[prop])
-            return upgraded_card
-        
-        if isinstance(key, str) and ":return_left:" in key:
-            import re
-            base_key = re.sub(r":return_left:\d+", "", key)
-            base_card = self[base_key]
-            ret_card = copy.copy(base_card)
-            ret_card.id = key
-            return ret_card
+                card.name = f"{card.name} (易碎 {card_state.fragile})"
 
-        if key not in self:
-            self._lazy_load_card(key)
-        return super().__getitem__(key)
+        card.return_left = card_state.return_left
+        card.no_copy = card_state.no_copy
+        if card_state.no_copy:
+            card.copy = 0
 
-    def get(self, key, default=None):
-        try:
-            return self[key]
-        except KeyError:
-            return default
+        return card
 
     def __contains__(self, key):
+        from ...models.state import CardState, _parse_old_cid
         if isinstance(key, str):
-            import re
-            clean_key = re.sub(r":return_left:\d+", "", key)
-            clean_key = clean_key.replace(":no_copy:1", "").split(":gems:")[0].split(":replay:")[0].split(":fragile:")[0]
-            if clean_key.endswith("+"):
-                base_key = clean_key[:-1]
-                if super().__contains__(base_key):
-                    return True
-                card_config = _get_card_config()
-                return base_key in card_config
-            if super().__contains__(clean_key):
-                return True
-            card_config = _get_card_config()
-            return clean_key in card_config
-        return super().__contains__(key)
+            card_state = _parse_old_cid(key)
+        elif isinstance(key, dict):
+            from ...models.state import ensure_card_state
+            card_state = ensure_card_state(key)
+        elif isinstance(key, CardState):
+            card_state = key
+        else:
+            return super().__contains__(key)
+        base_key = card_state.id
+        if super().__contains__(base_key):
+            return True
+        card_config = _get_card_config()
+        return base_key in card_config
+
 
 ALL_CARDS = CardRegistryDict()
 
@@ -303,21 +279,20 @@ for cid, cfg in _get_card_config().items():
         filtered = inst_kwargs
     else:
         filtered = {k: v for k, v in inst_kwargs.items() if k in sig.parameters}
-    ALL_CARDS[cid] = cls(**filtered)
-
-    if cid in ALL_CARDS:
-        ALL_CARDS[cid].rarity = rarity
-        ALL_CARDS[cid].exhaust = exhaust
-        ALL_CARDS[cid].fleeting = fleeting
-        ALL_CARDS[cid].agile = agile
-        ALL_CARDS[cid].retain = retain
-        ALL_CARDS[cid].innate = cfg.get("innate", False)
-        ALL_CARDS[cid].ethereal = cfg.get("ethereal", False)
-        ALL_CARDS[cid].unplayable = cfg.get("unplayable", False)
-        ALL_CARDS[cid].damage_type = cfg.get("damage_type", "effect")
-        fragile_val = cfg.get("fragile", 0)
-        if fragile_val > 0:
-            from ...entities.tags import FragileTag
-            ALL_CARDS[cid].add_tag(FragileTag("fragile", fragile_val))
-            if " (易碎 " not in ALL_CARDS[cid].name:
-                ALL_CARDS[cid].name = f"{ALL_CARDS[cid].name} (易碎 {fragile_val})"
+    inst = cls(**filtered)
+    inst.rarity = rarity
+    inst.exhaust = exhaust
+    inst.fleeting = fleeting
+    inst.agile = agile
+    inst.retain = retain
+    inst.innate = cfg.get("innate", False)
+    inst.ethereal = cfg.get("ethereal", False)
+    inst.unplayable = cfg.get("unplayable", False)
+    inst.damage_type = cfg.get("damage_type", "effect")
+    fragile_val = cfg.get("fragile", 0)
+    if fragile_val > 0:
+        from ...entities.tags import FragileTag
+        inst.add_tag(FragileTag("fragile", fragile_val))
+        if " (易碎 " not in inst.name:
+            inst.name = f"{inst.name} (易碎 {fragile_val})"
+    ALL_CARDS[cid] = inst

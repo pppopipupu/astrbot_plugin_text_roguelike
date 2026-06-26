@@ -378,14 +378,14 @@ class ExploreEngine:
     def remove_card_from_deck(self, run: GameRun, deck_idx: int) -> str:
         p = run.player
         counts = {}
-        for c_id in p.deck:
-            counts[c_id] = counts.get(c_id, 0) + 1
-        sorted_items = sorted(counts.items())
+        for c in p.deck:
+            counts[c] = counts.get(c, 0) + 1
+        sorted_items = sorted(counts.items(), key=lambda item: (item[0].id, item[0].upgraded))
         if deck_idx < 1 or deck_idx > len(sorted_items):
             return "❌ 无效的卡牌序号。"
-        cid = sorted_items[deck_idx - 1][0]
-        removed_name = ALL_CARDS[cid].name
-        p.deck.remove(cid)
+        c_state = sorted_items[deck_idx - 1][0]
+        removed_name = ALL_CARDS[c_state].name
+        p.deck.remove(c_state)
         
         discount = 1.0
         if "gold_compass" in p.relics:
@@ -405,32 +405,37 @@ class ExploreEngine:
     def upgrade_card_in_deck(self, run: GameRun, deck_idx: int) -> str:
         p = run.player
         counts = {}
-        for c_id in p.deck:
-            counts[c_id] = counts.get(c_id, 0) + 1
-        sorted_items = sorted(counts.items())
+        for c in p.deck:
+            counts[c] = counts.get(c, 0) + 1
+        sorted_items = sorted(counts.items(), key=lambda item: (item[0].id, item[0].upgraded))
         
         if deck_idx < 1 or deck_idx > len(sorted_items):
             return "❌ 无效的卡牌序号。"
         
-        cid = sorted_items[deck_idx - 1][0]
-        if cid.endswith("+"):
+        c_state = sorted_items[deck_idx - 1][0]
+        if c_state.upgraded:
             return "❌ 该卡牌已经升级过了，无法重复升级。"
             
         from ..data.card_upgrade_data import CARD_UPGRADE_CONFIG
-        if cid not in CARD_UPGRADE_CONFIG:
+        if c_state.id not in CARD_UPGRADE_CONFIG:
             return "❌ 该卡牌无法被升级。"
             
-        up_cid = cid + "+"
-        p.deck.remove(cid)
-        p.deck.append(up_cid)
+        import copy
+        new_state = copy.copy(c_state)
+        new_state.upgraded = True
+        p.deck.remove(c_state)
+        p.deck.append(new_state)
         
         source = run.node_data.get("upgrade_source", "rest")
         run.node_data["pending_upgrade"] = False
         
+        old_card_name = ALL_CARDS[c_state].name
+        new_card_name = ALL_CARDS[new_state].name
+        
         if source in ("rest", "event"):
             self.map_engine.enter_next_stage(run)
             self.save_manager.save_save(run.user_id, run)
-            return f"🔨 升级成功！你的【{ALL_CARDS[cid].name}】已成功升级为强力变体【{ALL_CARDS[up_cid].name}】。你离开此地继续赶路，开启下一关。"
+            return f"🔨 升级成功！你的【{old_card_name}】已成功升级为强力变体【{new_card_name}】。你离开此地继续赶路，开启下一关。"
         else:
             items = run.node_data.get("items", [])
             for item in items:
@@ -439,7 +444,7 @@ class ExploreEngine:
             price = run.node_data.get("upgrade_price", 30)
             p.gold -= price
             self.save_manager.save_save(run.user_id, run)
-            return f"🔨 升级成功！已将【{ALL_CARDS[cid].name}】永久升级为强力变体【{ALL_CARDS[up_cid].name}】。"
+            return f"🔨 升级成功！已将【{old_card_name}】永久升级为强力变体【{new_card_name}】。"
 
     def start_gem_insert_flow(self, run: GameRun, gem_id: str, next_node_type: str, next_node_data: dict) -> str:
         from ..data.gem_data import GEM_CONFIG
@@ -476,22 +481,20 @@ class ExploreEngine:
         card_obj = ALL_CARDS.get(cid)
         if not card_obj:
             return "❌ 卡牌不存在。"
-        base_cid = cid
-        old_gems = []
-        if ":gems:" in cid:
-            parts = cid.rsplit(":gems:", 1)
-            base_cid = parts[0]
-            old_gems = parts[1].split(",")
+        from ..models.state import ensure_card_state
+        cid = ensure_card_state(cid)
+        old_gems = list(cid.gems)
         max_slots = card_obj.get_gem_slots_count()
         if len(old_gems) >= max_slots:
             return f"❌ 该卡牌的宝石插槽已满（当前槽位数：{max_slots}，已镶嵌：{len(old_gems)}），无法继续镶嵌。"
         gem_id = run.node_data["pending_gem"]
         from ..data.gem_data import GEM_CONFIG
         gem_name = GEM_CONFIG[gem_id]["name"]
-        new_gems = old_gems + [gem_id]
-        new_cid = f"{base_cid}:gems:{','.join(new_gems)}"
         p.deck.remove(cid)
-        p.deck.append(new_cid)
+        import copy
+        new_card_state = copy.copy(cid)
+        new_card_state.gems = old_gems + [gem_id]
+        p.deck.append(new_card_state)
         next_type = run.node_data["next_node_type"]
         next_data = run.node_data["next_node_data"]
         run.node_type = next_type

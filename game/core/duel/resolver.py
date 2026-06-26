@@ -36,10 +36,15 @@ class DuelResolver:
         if target.isdigit():
             idx = int(target) - 1
             if 0 <= idx < len(p.hand):
-                cid = p.hand[idx]
-                if cid.endswith("+"):
+                from ...models.state import ensure_card_state
+                cid = ensure_card_state(p.hand[idx])
+                p.hand[idx] = cid
+                if cid.upgraded:
                     return "❌ 该卡牌已经是强化版本了。"
-                p.hand[idx] = cid + "+"
+                import copy
+                new_cid = copy.copy(cid)
+                new_cid.upgraded = True
+                p.hand[idx] = new_cid
                 run.node_data[f"{prefix}_evolved_this_turn"] = True
                 run.node_data[f"{prefix}_evolve_points"] = ev - 1
                 self.engine._log_event(run, "✨ 进化了手牌中的卡牌为强化版！")

@@ -68,11 +68,136 @@ class UserStats:
     unlocked_new_cards: List[str] = field(default_factory=list)
 
 
+
 if not hasattr(sys, "_rogue_stat_recorder"):
     sys._rogue_stat_recorder = None
 
 def register_stat_recorder(recorder):
     sys._rogue_stat_recorder = recorder
+
+@dataclass
+class CardState:
+    id: str
+    upgraded: bool = False
+    gems: List[str] = field(default_factory=list)
+    return_left: int = 0
+    replay: int = 0
+    fragile: int = 0
+    no_copy: bool = False
+
+    def __hash__(self):
+        return hash((self.id, self.upgraded, tuple(self.gems), self.return_left, self.replay, self.fragile, self.no_copy))
+
+    def __eq__(self, other):
+        if isinstance(other, str):
+            try:
+                temp_state = _parse_old_cid(other)
+                return (self.id == temp_state.id and 
+                        self.upgraded == temp_state.upgraded and 
+                        self.gems == temp_state.gems and 
+                        self.return_left == temp_state.return_left and 
+                        self.replay == temp_state.replay and 
+                        self.fragile == temp_state.fragile and 
+                        self.no_copy == temp_state.no_copy)
+            except:
+                return False
+        if not isinstance(other, CardState):
+            return False
+        return (self.id == other.id and 
+                self.upgraded == other.upgraded and 
+                self.gems == other.gems and 
+                self.return_left == other.return_left and 
+                self.replay == other.replay and 
+                self.fragile == other.fragile and 
+                self.no_copy == other.no_copy)
+
+    def __lt__(self, other):
+        if isinstance(other, str):
+            try:
+                temp_state = _parse_old_cid(other)
+                return self < temp_state
+            except:
+                return False
+        if not isinstance(other, CardState):
+            return NotImplemented
+        if self.id != other.id:
+            return self.id < other.id
+        if self.upgraded != other.upgraded:
+            return self.upgraded < other.upgraded
+        if self.gems != other.gems:
+            return tuple(self.gems) < tuple(other.gems)
+        return (self.return_left, self.replay, self.fragile, self.no_copy) < (other.return_left, other.replay, other.fragile, other.no_copy)
+
+    @classmethod
+    def from_cid(cls, cid: str) -> 'CardState':
+        import warnings
+        warnings.warn("from_cid is deprecated", DeprecationWarning, stacklevel=2)
+        return _parse_old_cid(cid)
+
+def ensure_card_state(c) -> CardState:
+    if isinstance(c, CardState):
+        return c
+    if isinstance(c, str):
+        return _parse_old_cid(c)
+    if isinstance(c, dict):
+        return CardState(
+            id=c.get("id", ""),
+            upgraded=c.get("upgraded", False),
+            gems=c.get("gems", []),
+            return_left=c.get("return_left", 0),
+            replay=c.get("replay", 0),
+            fragile=c.get("fragile", 0),
+            no_copy=c.get("no_copy", False)
+        )
+    return c
+
+def _parse_old_cid(cid: str) -> CardState:
+    if not isinstance(cid, str):
+        if hasattr(cid, "id"):
+            return cid
+        raise ValueError("cid must be str")
+    parts = cid.split(":")
+    first_part = parts[0]
+    upgraded = False
+    if first_part.endswith("+"):
+        upgraded = True
+        base_id = first_part[:-1]
+    else:
+        base_id = first_part
+    gems = []
+    return_left = 0
+    replay = 0
+    fragile = 0
+    no_copy = False
+    i = 1
+    while i < len(parts):
+        part = parts[i]
+        if part == "gems" and i + 1 < len(parts):
+            gems = parts[i+1].split(",") if parts[i+1] else []
+            i += 2
+        elif part == "replay" and i + 1 < len(parts):
+            replay = int(parts[i+1])
+            i += 2
+        elif part == "fragile" and i + 1 < len(parts):
+            fragile = int(parts[i+1])
+            i += 2
+        elif part == "return_left" and i + 1 < len(parts):
+            return_left = int(parts[i+1])
+            i += 2
+        elif part == "no_copy" and i + 1 < len(parts):
+            no_copy = (parts[i+1] == "1")
+            i += 2
+        else:
+            i += 1
+    return CardState(
+        id=base_id,
+        upgraded=upgraded,
+        gems=gems,
+        return_left=return_left,
+        replay=replay,
+        fragile=fragile,
+        no_copy=no_copy
+    )
 
 @dataclass
 class BuffState:
@@ -81,6 +206,7 @@ class BuffState:
     stacks: int = 1
     stacks2: Optional[int] = None
     desc: str = ""
+
 
 @dataclass
 class CardTag:
@@ -226,14 +352,14 @@ class PlayerState:
     gold: int
     stage: int
     name: str = "玩家"
-    deck: List[str] = field(default_factory=list)
-    draw_pile: List[str] = field(default_factory=list)
-    discard_pile: List[str] = field(default_factory=list)
-    exhaust_pile: List[str] = field(default_factory=list)
-    graveyard: List[str] = field(default_factory=list)
+    deck: List[CardState] = field(default_factory=list)
+    draw_pile: List[CardState] = field(default_factory=list)
+    discard_pile: List[CardState] = field(default_factory=list)
+    exhaust_pile: List[CardState] = field(default_factory=list)
+    graveyard: List[CardState] = field(default_factory=list)
     minion_graveyard: List[str] = field(default_factory=list)
     enemy_graveyard: List[str] = field(default_factory=list)
-    hand: List[str] = field(default_factory=list)
+    hand: List[CardState] = field(default_factory=list)
     actions: int = 1
     bonus_actions: int = 1
     minions: Dict[str, MinionState] = field(default_factory=dict)
@@ -244,6 +370,32 @@ class PlayerState:
     relics: List[str] = field(default_factory=list)
     subclass: str = ""
     selected_class: str = "法师"
+
+    def __post_init__(self):
+        self.deck = [self._ensure_card_state(c) for c in self.deck]
+        self.draw_pile = [self._ensure_card_state(c) for c in self.draw_pile]
+        self.discard_pile = [self._ensure_card_state(c) for c in self.discard_pile]
+        self.exhaust_pile = [self._ensure_card_state(c) for c in self.exhaust_pile]
+        self.graveyard = [self._ensure_card_state(c) for c in self.graveyard]
+        self.hand = [self._ensure_card_state(c) for c in self.hand]
+
+    def _ensure_card_state(self, c) -> CardState:
+        if isinstance(c, CardState):
+            return c
+        if isinstance(c, str):
+            return _parse_old_cid(c)
+        if isinstance(c, dict):
+            return CardState(
+                id=c.get("id", ""),
+                upgraded=c.get("upgraded", False),
+                gems=c.get("gems", []),
+                return_left=c.get("return_left", 0),
+                replay=c.get("replay", 0),
+                fragile=c.get("fragile", 0),
+                no_copy=c.get("no_copy", False)
+            )
+        return c
+
 
 @dataclass
 class EnemyIntentState:

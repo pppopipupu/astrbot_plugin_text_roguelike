@@ -148,7 +148,7 @@ class DeployAmuletCard(Card):
             deploy_id = self.id
             deploy_name = self.name
             deploy_desc = self.amulet_desc
-            if self.id == "abyss_altar+":
+            if self.id == "abyss_altar" and self.upgraded:
                 deploy_id = "abyss_altar_awaken"
                 aw_cfg = CARD_CONFIG.get("abyss_altar_awaken", {})
                 deploy_name = aw_cfg.get("name", "苏醒的深渊祭坛")
@@ -257,7 +257,7 @@ class IronWillCard(Card):
         engine._heal_target(run, "p0", heal_val)
         if self.upgraded:
             for b in run.player.buffs:
-                if b.id == self.id:
+                if b.id == buff_id:
                     b.stacks2 = 2
                     break
         shield_msg = ""
@@ -462,24 +462,17 @@ class UnminedGemCard(Card):
         from .base import ALL_CARDS
         if run.player.hand:
             idx = random.randint(0, len(run.player.hand) - 1)
-            target_cid = run.player.hand[idx]
+            from ...models.state import ensure_card_state
+            target_cid = ensure_card_state(run.player.hand[idx])
             val = 4 if self.upgraded else 3
-            import re
-            if ":replay:" in target_cid:
-                match = re.search(r":replay:(\d+)", target_cid)
-                if match:
-                    old_val = int(match.group(1))
-                    new_val = old_val + val
-                    new_cid = re.sub(r":replay:\d+", f":replay:{new_val}", target_cid)
-                else:
-                    new_cid = f"{target_cid}:replay:{val}"
-                    new_val = val
-            else:
-                new_cid = f"{target_cid}:replay:{val}"
-                new_val = val
+            old_val = target_cid.replay
+            new_val = old_val + val
+            import copy
+            new_cid = copy.copy(target_cid)
+            new_cid.replay = new_val
             run.player.hand[idx] = new_cid
             card_name = ALL_CARDS.get(new_cid).name
-            if ":replay:" in target_cid:
+            if old_val > 0:
                 return f"使用了【{self.name}】。随机使手牌中的【{card_name}】获得了重放 {val} 效果（累计重放 {new_val}）。"
             else:
                 return f"使用了【{self.name}】。随机使手牌中的【{card_name}】获得了重放 {val} 效果。"

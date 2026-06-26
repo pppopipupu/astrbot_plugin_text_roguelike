@@ -124,10 +124,10 @@ class TestDuelAdvanced(TestDuelSystem):
         self.assertIn("使用了【未掘宝石】", res)
         
         run = self.save_manager.load_duel_save(u1)
-        self.assertTrue(any(":replay:" in c for c in run.player.hand))
+        self.assertTrue(any(c.replay > 0 for c in run.player.hand))
         
         from game.entities.cards.duel import ALL_DUEL_CARDS
-        mod_cid = [c for c in run.player.hand if ":replay:" in c][0]
+        mod_cid = [c for c in run.player.hand if c.replay > 0][0]
         card_obj = ALL_DUEL_CARDS.get(mod_cid)
         self.assertEqual(card_obj.name, "打击")
         self.assertIn("重放 3", card_obj.desc)

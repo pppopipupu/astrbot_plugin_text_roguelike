@@ -11,37 +11,48 @@ class CardPlayer:
     def __init__(self, engine):
         self.engine = engine
 
-    def _handle_card_post_play(self, run, card, cid, source="played"):
+    def _handle_card_post_play(self, run, card, c_state, source="played"):
         p = run.player
-        def clean_cid_state(c_id: str) -> str:
-            import re
-            return re.sub(r":return_left:\d+", "", c_id)
+        from ...models.state import ensure_card_state
+        c_state = ensure_card_state(c_state)
+        import copy
+        clean_state = copy.copy(c_state)
+        clean_state.return_left = 0
 
-        if hasattr(card, "handle_post_play") and card.handle_post_play(run, cid, source, self.engine):
+        if hasattr(card, "handle_post_play") and card.handle_post_play(run, c_state, source, self.engine):
             return
         if getattr(card, "fleeting", False):
-            base_cid = cid.split(":fragile:")[0].split(":replay:")[0]
-            if base_cid in p.deck:
-                p.deck.remove(base_cid)
+            match_state = copy.copy(clean_state)
+            match_state.replay = 0
+            match_state.fragile = 0
+            found = None
+            for dc in p.deck:
+                if (dc.id == match_state.id and 
+                    dc.upgraded == match_state.upgraded and 
+                    dc.gems == match_state.gems):
+                    found = dc
+                    break
+            if found:
+                p.deck.remove(found)
         elif any(b.id == "void_exhaustion" for b in p.buffs):
-            p.exhaust_pile.append(clean_cid_state(cid))
+            p.exhaust_pile.append(clean_state)
             self.engine._log_event(run, f"✨ [虚空耗竭] 【{card.name}】已被强行移入消耗堆！")
-            exhaust_evt = CardExhaustEvent(run, cid, source)
+            exhaust_evt = CardExhaustEvent(run, c_state, source)
             self.engine.event_bus.dispatch(exhaust_evt)
         elif card.type in ("minion", "amulet"):
             if card.type == "minion":
                 self.engine._log_event(run, f"✨ [消耗] 【{card.name}】进入战场。")
             else:
                 self.engine._log_event(run, f"✨ [消耗] 【{card.name}】部署完毕。")
-            exhaust_evt = CardExhaustEvent(run, cid, source)
+            exhaust_evt = CardExhaustEvent(run, c_state, source)
             self.engine.event_bus.dispatch(exhaust_evt)
         elif getattr(card, "exhaust", False):
-            p.exhaust_pile.append(clean_cid_state(cid))
+            p.exhaust_pile.append(clean_state)
             self.engine._log_event(run, f"✨ [消耗] 【{card.name}】已被移入消耗堆。")
-            exhaust_evt = CardExhaustEvent(run, cid, source)
+            exhaust_evt = CardExhaustEvent(run, c_state, source)
             self.engine.event_bus.dispatch(exhaust_evt)
         else:
-            p.discard_pile.append(clean_cid_state(cid))
+            p.discard_pile.append(clean_state)
 
     def draw_cards(self, p: PlayerState, count: int, run: Optional[GameRun] = None, ignore_focus: bool = False):
         if not ignore_focus and any(b.id == "tactical_focus" for b in p.buffs):
@@ -67,7 +78,7 @@ class CardPlayer:
                         self.engine._log_event(run, f"🔥 [地狱狂徒] 触发自动连携，免费打出刚抽到的 1A 卡牌【{card_obj.name}】！")
                         p0_spells = {"first_aid", "get_ready", "adrenaline", "mana_potion", "mass_healing_word", "refresh_spirit", "shield", "misty_step", "arcane_intellect", "calculated_gamble", "time_warp", "time_stop", "archmage_wish", "wizard_magic_shield", "warrior_blood_fury", "wizard_prismatic_wall", "wizard_antimagic_field"}
                         target = "p0"
-                        if card_obj.type == "spell" and card_obj.id.replace("+", "") not in p0_spells:
+                        if card_obj.type == "spell" and card_obj.id not in p0_spells:
                             target = self.engine._get_first_alive_enemy(run)
                         elif card_obj.type == "minion" or card_obj.type == "amulet":
                             target = self.engine._get_free_grid(run.player)
@@ -90,10 +101,12 @@ class CardPlayer:
             if reshuffled:
                 self.engine._log_event(run, "🔄 弃牌堆已重新洗入抽牌堆。")
 
-    def discard_card(self, run: GameRun, cid: str) -> str:
+    def discard_card(self, run: GameRun, cid) -> str:
+        from ...models.state import ensure_card_state
+        c_state = ensure_card_state(cid)
         p = run.player
-        card = ALL_CARDS.get(cid)
-        discard_evt = CardDiscardEvent(run, cid, "manual")
+        card = ALL_CARDS.get(c_state)
+        discard_evt = CardDiscardEvent(run, c_state, "manual")
         self.engine.event_bus.dispatch(discard_evt)
         if "mindflayer_brain" in p.relics:
             alive = [e for e in run.enemies if e.hp > 0]
@@ -104,13 +117,13 @@ class CardPlayer:
                 self.engine._log_event(run, f"🧠 [夺心魔脑核] 触发！弃牌对【{target_enemy.name}】造成 3 点心灵伤害！")
                 self.engine.combat_resolver.damage_target(run, f"e{idx}", 3, source="relic:mindflayer_brain", damage_type="psychic")
         if not card:
-            p.discard_pile.append(cid)
+            p.discard_pile.append(c_state)
             return self.engine._append_logs_to_res(run, "")
         if getattr(card, "agile", False):
             target = None
             if card.type == "spell":
                 p0_spells = {"first_aid", "get_ready", "adrenaline", "mana_potion", "mass_healing_word", "refresh_spirit", "shield", "misty_step", "arcane_intellect", "calculated_gamble", "time_warp", "time_stop", "archmage_wish"}
-                if card.id.replace("+", "") in p0_spells:
+                if card.id in p0_spells:
                     target = "p0"
                 else:
                     target = self.engine._get_first_alive_enemy(run)
@@ -128,11 +141,11 @@ class CardPlayer:
                 res += f"x {len(extra_msgs)}次"
             else:
                 res += "".join(extra_msgs)
-            self._handle_card_post_play(run, card, cid, source="agile")
+            self._handle_card_post_play(run, card, c_state, source="agile")
             self._reindex_minions(p)
             return self.engine._append_logs_to_res(run, f"✨ 触发[灵巧]：丢弃【{card.name}】时自动打出！效果：{res}")
         else:
-            p.discard_pile.append(cid)
+            p.discard_pile.append(c_state)
             self._reindex_minions(p)
             return self.engine._append_logs_to_res(run, "")
 
@@ -143,13 +156,15 @@ class CardPlayer:
             return "❌ 只有在战斗中才能使用卡牌。"
         if hand_idx < 1 or hand_idx > len(p.hand):
             return "❌ 无效的手牌序号。"
-        cid = p.hand[hand_idx - 1]
+        from ...models.state import ensure_card_state
+        cid = ensure_card_state(p.hand[hand_idx - 1])
+        p.hand[hand_idx - 1] = cid
         card = ALL_CARDS.get(cid)
         if not card:
             return "❌ 卡牌不存在。"
         if getattr(card, "unplayable", False):
             return "❌ 该卡牌不能被打出。"
-        base_id = card.id.replace("+", "").split(":")[0]
+        base_id = card.id
         is_discover = base_id == "discover"
         is_emperor_eye = base_id.startswith("neutral_emperor_eye")
         if not is_discover:
@@ -158,7 +173,7 @@ class CardPlayer:
                     pass
                 elif card.type == "spell":
                     p0_spells = {"first_aid", "get_ready", "adrenaline", "mana_potion", "mass_healing_word", "refresh_spirit", "shield", "misty_step", "arcane_intellect", "calculated_gamble", "time_warp", "time_stop", "archmage_wish"}
-                    if card.id.replace("+", "") in p0_spells:
+                    if card.id in p0_spells:
                         target = "p0"
                     else:
                         target = self.engine._get_first_alive_enemy(run)
@@ -245,14 +260,8 @@ class CardPlayer:
                 run.node_data["suspended_card_hand_idx"] = hand_idx - 1
 
             if not suspend_post_play:
-                import re
-                return_left = 0
-                has_return_suffix = False
-                match = re.search(r":return_left:(\d+)", cid)
-                if match:
-                    return_left = int(match.group(1))
-                    has_return_suffix = True
-                else:
+                return_left = cid.return_left
+                if return_left <= 0:
                     if hasattr(card, "gems") and card.gems:
                         if "gem_return_5" in card.gems:
                             return_left = 5
@@ -260,15 +269,13 @@ class CardPlayer:
                             return_left = 3
 
                 should_return = False
-                new_cid = cid
+                import copy
+                new_cid = copy.copy(cid)
                 if return_left > 0:
                     next_left = return_left - 1
                     if next_left > 0:
                         should_return = True
-                        if has_return_suffix:
-                            new_cid = re.sub(r":return_left:\d+", f":return_left:{next_left}", cid)
-                        else:
-                            new_cid = f"{cid}:return_left:{next_left}"
+                        new_cid.return_left = next_left
 
                 if should_return:
                     p.hand.append(new_cid)
@@ -332,28 +339,16 @@ class CardPlayer:
                                 self.engine._log_event(run, f"💎 [虚弱玛瑙] 触发，对【{run.enemies[idx].name}】施加 2 层虚弱！")
 
             copy_count = 0
-            if ":no_copy:1" not in cid:
+            if not cid.no_copy:
                 if hasattr(card, "copy") and card.copy > 0:
                     copy_count = card.copy
                 if hasattr(card, "gems") and card.gems and "gem_copy_1" in card.gems:
                     copy_count = max(copy_count, 1)
             if copy_count > 0:
-                def make_no_copy_cid(orig_cid: str) -> str:
-                    res_cid = orig_cid
-                    if ":gems:" in res_cid:
-                        parts = res_cid.rsplit(":gems:", 1)
-                        base = parts[0]
-                        gems = parts[1].split(",")
-                        if "gem_copy_1" in gems:
-                            gems.remove("gem_copy_1")
-                        if gems:
-                            res_cid = f"{base}:gems:{','.join(gems)}"
-                        else:
-                            res_cid = base
-                    if ":no_copy:1" not in res_cid:
-                        res_cid = f"{res_cid}:no_copy:1"
-                    return res_cid
-                copy_cid = make_no_copy_cid(cid)
+                import copy
+                copy_cid = copy.copy(cid)
+                copy_cid.gems = [g for g in copy_cid.gems if g != "gem_copy_1"]
+                copy_cid.no_copy = True
                 max_hand = 9 if "mask_of_void" in p.relics else 12
                 added = 0
                 for _ in range(copy_count):
@@ -403,8 +398,8 @@ class CardPlayer:
             return "❌ 只有在战斗中才能使用卡牌的特殊行动。"
         if hand_idx < 1 or hand_idx > len(p.hand):
             return "❌ 无效的手牌序号。"
-        cid = p.hand[hand_idx - 1]
-        card = ALL_CARDS.get(cid)
+        c_state = p.hand[hand_idx - 1]
+        card = ALL_CARDS.get(c_state)
         if not card:
             return "❌ 卡牌不存在。"
         if getattr(card, "unplayable", False):
@@ -436,7 +431,7 @@ class CardPlayer:
             return f"❌ 你的动作资源不足（需要 {req_a}A {req_ba}BA，当前 {p.actions}A {p.bonus_actions}BA）。"
         if target is None:
             p0_spells = {"first_aid", "get_ready", "adrenaline", "mana_potion", "mass_healing_word", "refresh_spirit", "shield", "misty_step", "arcane_intellect", "calculated_gamble", "time_warp", "time_stop", "archmage_wish"}
-            if card.id.replace("+", "") in p0_spells:
+            if card.id in p0_spells:
                 target = "p0"
             else:
                 target = self.engine._get_first_alive_enemy(run)
@@ -447,8 +442,8 @@ class CardPlayer:
         p.actions -= req_a
         p.bonus_actions -= req_ba
         p.hand.pop(hand_idx - 1)
-        run.node_data["current_playing_card_cid"] = cid
-        self._handle_card_post_play(run, card, cid, source="played")
+        run.node_data["current_playing_card_cid"] = c_state
+        self._handle_card_post_play(run, card, c_state, source="played")
         run.node_data["current_playing_card_id"] = card.id
         try:
             res = card.special_action(run, target)
@@ -592,26 +587,26 @@ class CardPlayer:
         self.engine.event_bus.dispatch(evt_end)
         retained = []
         temp_retains = list(run.node_data.get("temp_retain_cards", []))
-        for cid in p.hand:
-            card = ALL_CARDS.get(cid)
+        for c_state in p.hand:
+            card = ALL_CARDS.get(c_state)
             if card and (getattr(card, "retain", False) or (hasattr(card, "gems") and card.gems and "gem_retain" in card.gems)):
-                retained.append(cid)
-            elif cid in temp_retains:
-                retained.append(cid)
-                temp_retains.remove(cid)
-            elif card and (card.id == "curse_dimensional_tear" or card.id == "curse_dimensional_tear+"):
-                p.exhaust_pile.append(cid)
+                retained.append(c_state)
+            elif c_state in temp_retains:
+                retained.append(c_state)
+                temp_retains.remove(c_state)
+            elif card and card.id == "curse_dimensional_tear":
+                p.exhaust_pile.append(c_state)
                 self.engine._log_event(run, f"💥 [空间撕裂] 手牌中的【{card.name}】在回合结束时发生坍缩，被消耗并对【{run.player.name}】造成 3 点真实伤害！")
                 self.engine.combat_resolver.damage_target(run, "p0", 3, source="curse", damage_type="true")
-                exhaust_evt = CardExhaustEvent(run, cid, "curse_dimensional_tear")
+                exhaust_evt = CardExhaustEvent(run, c_state, "curse_dimensional_tear")
                 self.engine.event_bus.dispatch(exhaust_evt)
             elif card and getattr(card, "ethereal", False):
-                p.exhaust_pile.append(cid)
+                p.exhaust_pile.append(c_state)
                 self.engine._log_event(run, f"✨ [虚无] 【{card.name}】在回合结束时被消耗。")
-                exhaust_evt = CardExhaustEvent(run, cid, "ethereal")
+                exhaust_evt = CardExhaustEvent(run, c_state, "ethereal")
                 self.engine.event_bus.dispatch(exhaust_evt)
             else:
-                p.discard_pile.append(cid)
+                p.discard_pile.append(c_state)
                 if "mindflayer_brain" in p.relics:
                     alive = [e for e in run.enemies if e.hp > 0]
                     if alive:

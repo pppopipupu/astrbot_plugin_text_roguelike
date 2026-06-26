@@ -18,20 +18,38 @@ class ReplayTag(CardTag):
 class FragileTag(CardTag):
     def handle_post_play(self, card: Card, run: GameRun, cid: str, source: str, engine) -> bool:
         p = run.player
-        base_cid = cid.split(":fragile:")[0].split(":replay:")[0]
-        curr_fragile = self.value
+        from ..models.state import ensure_card_state
+        cid = ensure_card_state(cid)
+        base_cid = cid.id
+        curr_fragile = cid.fragile
+        if curr_fragile <= 0:
+            curr_fragile = self.value
+
+        match_state = copy.copy(cid)
+        match_state.replay = 0
+        match_state.fragile = 0
+
+        found = None
+        for dc in p.deck:
+            if (dc.id == match_state.id and 
+                dc.upgraded == match_state.upgraded and 
+                dc.gems == match_state.gems):
+                found = dc
+                break
+
         if curr_fragile <= 1:
-            if base_cid in p.deck:
-                p.deck.remove(base_cid)
+            if found:
+                p.deck.remove(found)
             engine._log_event(run, f"💥 【{card.name}】彻底碎裂，已从牌组中移除！")
         else:
             next_fragile = curr_fragile - 1
-            base_part = cid.split(":fragile:")[0]
-            next_cid = f"{base_part}:fragile:{next_fragile}"
+            next_cid = copy.copy(cid)
+            next_cid.fragile = next_fragile
+
             from ..entities.cards import ALL_CARDS
             if getattr(card, "fleeting", False):
-                if base_cid in p.deck:
-                    p.deck.remove(base_cid)
+                if found:
+                    p.deck.remove(found)
             elif any(b.id == "void_exhaustion" for b in p.buffs):
                 p.exhaust_pile.append(next_cid)
                 engine._log_event(run, f"✨ [虚空耗竭] 【{card.name}】已被强行移入消耗堆！")

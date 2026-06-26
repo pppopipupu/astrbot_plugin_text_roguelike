@@ -338,8 +338,6 @@ class MinionTriggerHandler:
             matched = None
             if event.card.id in free_cards:
                 matched = event.card.id
-            elif event.card.id.endswith("+") and event.card.id[:-1] in free_cards:
-                matched = event.card.id[:-1]
             elif (event.card.id + "+") in free_cards:
                 matched = event.card.id + "+"
             if matched:
@@ -441,7 +439,9 @@ class CardTriggerHandler:
         event_bus.subscribe(CardExhaustEvent, self.on_card_exhaust)
 
     def on_card_exhaust(self, event):
-        base_cid = event.card_id.split("+")[0].split(":")[0]
+        from ...models.state import ensure_card_state
+        c_state = ensure_card_state(event.card_id)
+        base_cid = c_state.id
         if base_cid == "warrior_shield_bash":
             p = event.run.player
             p.actions += 2

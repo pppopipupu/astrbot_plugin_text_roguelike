@@ -198,7 +198,7 @@ class TestRogueExplore(unittest.TestCase):
             res_upg = await run_command(plugin, ".rogue 选择 1", sender_id="test_user_upg")
             self.assertIn("升级成功", res_upg)
             run = save_manager.load_save("test_user_upg")
-            self.assertTrue(any(card.endswith("+") for card in run.player.deck))
+            self.assertTrue(any(card.upgraded for card in run.player.deck))
             run.node_type = "event"
             run.node_data = {
                 "event_id": "forge_furnace",

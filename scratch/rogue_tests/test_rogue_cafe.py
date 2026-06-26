@@ -69,7 +69,7 @@ class TestRogueCafe(unittest.TestCase):
             latest_run2 = plugin.save_manager.load_save(user_id)
             self.assertEqual(latest_run2.player.gold, 30)
             self.assertEqual(latest_run2.node_data["cafe_data"]["active_npc"], None)
-            has_upgraded = any("fire_bolt+" in card for card in latest_run2.player.deck)
+            has_upgraded = any(card.id == "fire_bolt" and card.upgraded for card in latest_run2.player.deck)
             self.assertTrue(has_upgraded)
             
         asyncio.run(go())

@@ -56,16 +56,16 @@ class TestRogueCardMech2(unittest.TestCase):
         )
 
         engine.play_card(run, 2)
-        self.assertTrue(any(":replay:3" in cid for cid in player.hand))
+        self.assertTrue(any(cid.replay == 3 for cid in player.hand))
         self.assertIn("unmined_gem", player.exhaust_pile)
 
         engine.play_card(run, 2)
-        self.assertTrue(any(":replay:7" in cid or ":replay:16" in cid for cid in player.hand))
-        self.assertTrue(any(cid.startswith("unmined_gem+") for cid in player.exhaust_pile))
+        self.assertTrue(any(cid.replay == 7 or cid.replay == 16 for cid in player.hand))
+        self.assertTrue(any(cid.id == "unmined_gem" and cid.upgraded for cid in player.exhaust_pile))
 
         self.assertEqual(len(player.hand), 1)
         target_card_id = player.hand[0]
-        self.assertTrue(":replay:" in target_card_id)
+        self.assertTrue(target_card_id.replay > 0)
 
         hp_before = run.enemies[0].hp
         engine.play_card(run, 1)

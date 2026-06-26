@@ -548,24 +548,27 @@ class CafeEngine:
                     return "❌ 你的金币不足 70 GP。"
                 p.gold -= 70
                 if p.deck:
-                    cid = random.choice(p.deck)
-                    if cid in ALL_CARDS:
-                        upg_cid = cid + "+"
-                        if upg_cid in ALL_CARDS and upg_cid not in p.deck:
-                            p.deck.remove(cid)
-                            p.deck.append(upg_cid)
-                            cid = upg_cid
+                    from ..models.state import ensure_card_state
+                    cid = ensure_card_state(random.choice(p.deck))
+                    from ..data.card_upgrade_data import CARD_UPGRADE_CONFIG
+                    import copy
+                    if cid.id in CARD_UPGRADE_CONFIG and not cid.upgraded:
+                        upg_cid = copy.copy(cid)
+                        upg_cid.upgraded = True
+                        p.deck.remove(cid)
+                        p.deck.append(upg_cid)
+                        cid = upg_cid
                     if random.random() < 0.5:
-                        card_obj = ALL_CARDS.get(cid.split(":gems:")[0])
+                        card_obj = ALL_CARDS.get(cid.id)
                         if card_obj:
                             max_slots = card_obj.get_gem_slots_count()
-                            base_cid = cid.split(":gems:")[0]
-                            old_gems = cid.split(":gems:")[1].split(",") if ":gems:" in cid else []
+                            old_gems = list(cid.gems)
                             if len(old_gems) < max_slots:
-                                old_gems.append("empty")
-                                new_cid = f"{base_cid}:gems:{','.join(old_gems)}"
+                                new_gems = old_gems + ["empty"]
+                                upg_gem_cid = copy.copy(cid)
+                                upg_gem_cid.gems = new_gems
                                 p.deck.remove(cid)
-                                p.deck.append(new_cid)
+                                p.deck.append(upg_gem_cid)
                 talked_npcs.append(npc)
                 cafe_data["active_npc"] = None
                 cafe_data["dialog_state"] = None
@@ -575,15 +578,17 @@ class CafeEngine:
                     return "❌ 你的金币不足 30 GP。"
                 p.gold -= 30
                 if p.deck:
-                    cid = random.choice(p.deck)
-                    card_obj = ALL_CARDS.get(cid.split(":gems:")[0])
+                    from ..models.state import ensure_card_state
+                    cid = ensure_card_state(random.choice(p.deck))
+                    card_obj = ALL_CARDS.get(cid.id)
                     if card_obj:
                         max_slots = card_obj.get_gem_slots_count()
-                        base_cid = cid.split(":gems:")[0]
-                        old_gems = cid.split(":gems:")[1].split(",") if ":gems:" in cid else []
+                        old_gems = list(cid.gems)
                         if len(old_gems) < max_slots:
-                            old_gems.append("empty")
-                            new_cid = f"{base_cid}:gems:{','.join(old_gems)}"
+                            new_gems = old_gems + ["empty"]
+                            import copy
+                            new_cid = copy.copy(cid)
+                            new_cid.gems = new_gems
                             p.deck.remove(cid)
                             p.deck.append(new_cid)
                 talked_npcs.append(npc)
@@ -616,7 +621,8 @@ class CafeEngine:
                     return "🐟 pppopipupu转过头赞许地看着你：'你很有静气。这颗【永恒祖母绿】送给你，它是宁静的馈赠。'\n你开启了【永恒祖母绿】的强制镶嵌流程！"
                 elif idx == 2:
                     p.gold = max(0, p.gold - 20)
-                    curses = [cid for cid in p.deck if cid.startswith("curse_")]
+                    from ..models.state import ensure_card_state
+                    curses = [cid for cid in p.deck if ensure_card_state(cid).id.startswith("curse_")]
                     purged_msg = "（你卡组中没有诅咒卡牌，但他依然收下了 20 金币作为惊扰费）"
                     if curses:
                         cur = curses[0]
@@ -958,8 +964,9 @@ class CafeEngine:
                 removed_name = "无"
                 if p.deck:
                     cid = random.choice(p.deck)
-                    card_obj = ALL_CARDS.get(cid.split(":gems:")[0])
-                    removed_name = card_obj.name if card_obj else cid
+                    from ..models.state import ensure_card_state
+                    card_obj = ALL_CARDS.get(ensure_card_state(cid).id)
+                    removed_name = card_obj.name if card_obj else ensure_card_state(cid).id
                     p.deck.remove(cid)
                 p.max_hp += 6
                 p.hp += 6
