@@ -441,6 +441,11 @@ class TestRogueCardMech2(unittest.TestCase):
         self.assertTrue(any(b.id == "barricade" for b in player.buffs))
         engine._damage_target(run, "p0", 10, damage_type="slash")
         self.assertEqual(player.hp, 30)
+        self.assertEqual(player.shield, 5)
+        self.assertTrue(any(b.id == "buffer" for b in player.buffs))
+        engine._damage_target(run, "p0", 10, damage_type="slash")
+        self.assertEqual(player.hp, 30)
+        self.assertEqual(player.shield, 5)
         self.assertFalse(any(b.id == "buffer" for b in player.buffs))
         player.shield = 15
         engine.end_turn(run)
@@ -529,3 +534,43 @@ class TestRogueCardMech2(unittest.TestCase):
         player.actions = 2
         engine.play_card(run, 1)
         self.assertEqual(run.node_data["extra_turns_left"], 3)
+
+    def test_buffer_buff_mechanics(self):
+        class DummySaveManager:
+            def save_save(self, user_id, run):
+                pass
+            def delete_save(self, user_id):
+                pass
+        sm = DummySaveManager()
+        engine = BattleEngine(sm)
+        player = PlayerState(
+            hp=30,
+            max_hp=30,
+            shield=10,
+            actions=3,
+            bonus_actions=3,
+            gold=100,
+            stage=1
+        )
+        enemy = EnemyState("测试敌人", 50, 50, 0)
+        run = GameRun(
+            user_id="test_buffer_mechanics_user",
+            node_type="battle",
+            player=player,
+            enemies=[enemy]
+        )
+        engine._add_buff_to(player, "buffer", "缓冲", "免疫下一次伤害", 1)
+        self.assertTrue(any(b.id == "buffer" for b in player.buffs))
+        engine.combat_resolver.damage_target(run, "p0", 5, damage_type="bludgeoning")
+        self.assertEqual(player.hp, 30)
+        self.assertEqual(player.shield, 5)
+        self.assertTrue(any(b.id == "buffer" for b in player.buffs))
+        engine.combat_resolver.damage_target(run, "p0", 2, damage_type="true")
+        self.assertEqual(player.hp, 30)
+        self.assertEqual(player.shield, 5)
+        self.assertFalse(any(b.id == "buffer" for b in player.buffs))
+        engine._add_buff_to(player, "buffer", "缓冲", "免疫下一次伤害", 1)
+        engine.combat_resolver.damage_target(run, "p0", 10, damage_type="bludgeoning")
+        self.assertEqual(player.hp, 30)
+        self.assertEqual(player.shield, 5)
+        self.assertFalse(any(b.id == "buffer" for b in player.buffs))

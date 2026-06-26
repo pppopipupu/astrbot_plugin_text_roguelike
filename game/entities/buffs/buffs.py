@@ -346,13 +346,20 @@ class AncientWisdomBuff(BuffImpl):
 class BufferBuff(BuffImpl):
     def on_damage_calculate_defend(self, event, buff_state, entity):
         if event.modified_damage > 0:
-            event.modified_damage = 0
-            buff_state.stacks -= 1
-            name = "玩家" if entity == event.run.player else getattr(entity, "name", "未知")
-            event.engine._log_event(event.run, f"🛡️ 【{name}】的【缓冲】消耗了 1 层，免疫了本次伤害。")
-            if buff_state.stacks <= 0:
-                if buff_state in entity.buffs:
-                    entity.buffs.remove(buff_state)
+            damage_type = event.damage_type
+            is_true = False
+            if damage_type == "true" or damage_type == "TRUE":
+                is_true = True
+            elif hasattr(damage_type, "value") and (damage_type.value == "true" or damage_type.value == "TRUE"):
+                is_true = True
+            if is_true or event.modified_damage > entity.shield:
+                event.modified_damage = 0
+                buff_state.stacks -= 1
+                name = "玩家" if entity == event.run.player else getattr(entity, "name", "未知")
+                event.engine._log_event(event.run, f"🛡️ 【{name}】的【缓冲】消耗了 1 层，免疫了本次伤害。")
+                if buff_state.stacks <= 0:
+                    if buff_state in entity.buffs:
+                        entity.buffs.remove(buff_state)
 
 class DemonContractBuff(BuffImpl):
     def on_card_played(self, event, buff_state, entity):

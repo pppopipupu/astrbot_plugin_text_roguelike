@@ -129,31 +129,60 @@ class BattleEngine(BaseBattleEngine):
 
         if difficulty == "boss":
             if p.stage == 12:
-                run.enemies = [EnemyState(
-                    name="腐化之心",
-                    hp=120,
-                    max_hp=120,
-                    shield=0,
-                    actions=1,
-                    bonus_actions=2,
-                    max_actions=1,
-                    max_bonus_actions=2
-                )]
-                self._add_buff_to(run.enemies[0], "beat_of_death", "死亡律动", "玩家每使用一张牌，受到 1 点力场伤害。")
-                run.node_data["boss_name"] = "腐化之心"
+                boss_name = random.choice(["远古红龙", "雷霆领主"])
+                if boss_name == "远古红龙":
+                    run.enemies = [EnemyState(
+                        name="远古红龙",
+                        hp=140,
+                        max_hp=140,
+                        shield=0,
+                        actions=1,
+                        bonus_actions=2,
+                        max_actions=1,
+                        max_bonus_actions=2
+                    )]
+                    run.node_data["boss_name"] = "远古红龙"
+                else:
+                    run.enemies = [EnemyState(
+                        name="雷霆领主",
+                        hp=130,
+                        max_hp=130,
+                        shield=0,
+                        actions=1,
+                        bonus_actions=2,
+                        max_actions=1,
+                        max_bonus_actions=2
+                    )]
+                    run.node_data["boss_name"] = "雷霆领主"
+                    run.node_data["thunder_lord_turn"] = 1
             elif p.stage == 25:
-                run.enemies = [EnemyState(
-                    name="Icerainboww",
-                    hp=160,
-                    max_hp=160,
-                    shield=0,
-                    actions=2,
-                    bonus_actions=0,
-                    max_actions=2,
-                    max_bonus_actions=0
-                )]
-                run.node_data["boss_name"] = "Icerainboww"
-                run.node_data["icerainboww_turn"] = 1
+                boss_name = random.choice(["腐化之心", "Icerainboww"])
+                if boss_name == "腐化之心":
+                    run.enemies = [EnemyState(
+                        name="腐化之心",
+                        hp=120,
+                        max_hp=120,
+                        shield=0,
+                        actions=1,
+                        bonus_actions=2,
+                        max_actions=1,
+                        max_bonus_actions=2
+                    )]
+                    self._add_buff_to(run.enemies[0], "beat_of_death", "死亡律动", "玩家每使用一张牌，受到 1 点力场伤害。")
+                    run.node_data["boss_name"] = "腐化之心"
+                else:
+                    run.enemies = [EnemyState(
+                        name="Icerainboww",
+                        hp=160,
+                        max_hp=160,
+                        shield=0,
+                        actions=2,
+                        bonus_actions=0,
+                        max_actions=2,
+                        max_bonus_actions=0
+                    )]
+                    run.node_data["boss_name"] = "Icerainboww"
+                    run.node_data["icerainboww_turn"] = 1
             elif p.stage == 31:
                 run.enemies = [EnemyState(
                     name="亚弗戈蒙",
@@ -194,6 +223,7 @@ class BattleEngine(BaseBattleEngine):
                         max_actions=1,
                         max_bonus_actions=2
                     )]
+                    run.node_data["boss_name"] = "远古红龙"
                 else:
                     run.enemies = [EnemyState(
                         name="雷霆领主",
@@ -205,6 +235,7 @@ class BattleEngine(BaseBattleEngine):
                         max_actions=1,
                         max_bonus_actions=2
                     )]
+                    run.node_data["boss_name"] = "雷霆领主"
                     run.node_data["thunder_lord_turn"] = 1
         elif difficulty == "elite":
             from ..data.enemy_data import ENEMY_CONFIG
