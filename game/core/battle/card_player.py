@@ -149,8 +149,9 @@ class CardPlayer:
             return "❌ 卡牌不存在。"
         if getattr(card, "unplayable", False):
             return "❌ 该卡牌不能被打出。"
-        is_discover = card.id.replace("+", "") == "discover"
-        is_emperor_eye = card.id.replace("+", "").startswith("neutral_emperor_eye")
+        base_id = card.id.replace("+", "").split(":")[0]
+        is_discover = base_id == "discover"
+        is_emperor_eye = base_id.startswith("neutral_emperor_eye")
         if not is_discover:
             if target is None:
                 if is_emperor_eye:
@@ -222,150 +223,164 @@ class CardPlayer:
         p.bonus_actions -= req_ba
         p.hand.pop(hand_idx - 1)
         
+        initial_stack_len = len(run.node_data.get("state_stack", []))
         run.node_data["current_playing_card_cid"] = cid
         run.node_data["current_playing_card_hand_idx"] = hand_idx - 1
         run.node_data["card_played_triggered_dmg"] = False
         run.node_data["card_played_triggered_shield"] = False
         run.node_data["card_played_triggered_heal"] = False
-        
-        import re
-        return_left = 0
-        has_return_suffix = False
-        match = re.search(r":return_left:(\d+)", cid)
-        if match:
-            return_left = int(match.group(1))
-            has_return_suffix = True
-        else:
-            if hasattr(card, "gems") and card.gems:
-                if "gem_return_5" in card.gems:
-                    return_left = 5
-                elif "gem_return_3" in card.gems:
-                    return_left = 3
-
-        should_return = False
-        new_cid = cid
-        if return_left > 0:
-            next_left = return_left - 1
-            if next_left > 0:
-                should_return = True
-                if has_return_suffix:
-                    new_cid = re.sub(r":return_left:\d+", f":return_left:{next_left}", cid)
-                else:
-                    new_cid = f"{cid}:return_left:{next_left}"
-
-        if should_return:
-            p.hand.append(new_cid)
-            run.node_data["extra_return_msg"] = f"\n✨ [返回] 【{card.name}】打出后回到了你的手牌！（剩余次数 {next_left}）"
-        else:
-            self._handle_card_post_play(run, card, cid, source="played")
-
         run.node_data["current_playing_card_id"] = card.id
         run.node_data["extra_play_msgs"] = []
         try:
             res = self.engine._execute_card_effect(run, card, target)
             if hasattr(card, "execute_tags"):
                 card.execute_tags(run, target, self.engine)
-            if hasattr(card, "gems") and card.gems:
-                has_shield_gem = any(g in card.gems for g in ("gem_shield_add_3", "gem_shield_add_8"))
-                if has_shield_gem and not run.node_data.get("card_played_triggered_shield", False):
-                    self.engine.combat_resolver.gain_shield(run, "p0", 0)
-                has_heal_gem = "gem_heal_add_2" in card.gems
-                if has_heal_gem and not run.node_data.get("card_played_triggered_heal", False):
-                    self.engine.combat_resolver.heal_target(run, "p0", 0)
-                has_dmg_gem = any(g in card.gems for g in ("gem_dmg_add_2", "gem_dmg_mul_2", "gem_dmg_mul_3"))
-                if has_dmg_gem and not run.node_data.get("card_played_triggered_dmg", False):
-                    dmg_target = target
-                    if not dmg_target or not dmg_target.startswith("e"):
-                        dmg_target = self.engine._get_first_alive_enemy(run)
-                    if dmg_target and dmg_target != "0" and dmg_target != "e0":
-                        self.engine.combat_resolver.damage_target(run, dmg_target, 0, source="p0", damage_type="effect")
+
+            suspend_post_play = False
+            if len(run.node_data.get("state_stack", [])) > initial_stack_len:
+                suspend_post_play = True
+                run.node_data["suspended_card_cid"] = cid
+                run.node_data["suspended_card_cost_a"] = req_a
+                run.node_data["suspended_card_cost_ba"] = req_ba
+                run.node_data["suspended_card_hand_idx"] = hand_idx - 1
+
+            if not suspend_post_play:
+                import re
+                return_left = 0
+                has_return_suffix = False
+                match = re.search(r":return_left:(\d+)", cid)
+                if match:
+                    return_left = int(match.group(1))
+                    has_return_suffix = True
+                else:
+                    if hasattr(card, "gems") and card.gems:
+                        if "gem_return_5" in card.gems:
+                            return_left = 5
+                        elif "gem_return_3" in card.gems:
+                            return_left = 3
+
+                should_return = False
+                new_cid = cid
+                if return_left > 0:
+                    next_left = return_left - 1
+                    if next_left > 0:
+                        should_return = True
+                        if has_return_suffix:
+                            new_cid = re.sub(r":return_left:\d+", f":return_left:{next_left}", cid)
+                        else:
+                            new_cid = f"{cid}:return_left:{next_left}"
+
+                if should_return:
+                    p.hand.append(new_cid)
+                    run.node_data["extra_return_msg"] = f"\n✨ [返回] 【{card.name}】打出后回到了你的手牌！（剩余次数 {next_left}）"
+                else:
+                    self._handle_card_post_play(run, card, cid, source="played")
+
+                if hasattr(card, "gems") and card.gems:
+                    has_shield_gem = any(g in card.gems for g in ("gem_shield_add_3", "gem_shield_add_8"))
+                    if has_shield_gem and not run.node_data.get("card_played_triggered_shield", False):
+                        self.engine.combat_resolver.gain_shield(run, "p0", 0)
+                    has_heal_gem = "gem_heal_add_2" in card.gems
+                    if has_heal_gem and not run.node_data.get("card_played_triggered_heal", False):
+                        self.engine.combat_resolver.heal_target(run, "p0", 0)
+                    has_dmg_gem = any(g in card.gems for g in ("gem_dmg_add_2", "gem_dmg_mul_2", "gem_dmg_mul_3"))
+                    if has_dmg_gem and not run.node_data.get("card_played_triggered_dmg", False):
+                        dmg_target = target
+                        if not dmg_target or not dmg_target.startswith("e"):
+                            dmg_target = self.engine._get_first_alive_enemy(run)
+                        if dmg_target and dmg_target != "0" and dmg_target != "e0":
+                            self.engine.combat_resolver.damage_target(run, dmg_target, 0, source="p0", damage_type="effect")
         finally:
             run.node_data["current_playing_card_id"] = ""
             run.node_data["current_playing_card_cid"] = ""
             run.node_data.pop("current_playing_card_hand_idx", None)
 
-        played_count = run.node_data.get("cards_played_this_turn", 0)
-        played_evt = CardPlayedEvent(run, card, target, res)
-        self.engine.event_bus.dispatch(played_evt)
-        res = played_evt.feedback
+        if not suspend_post_play:
+            played_count = run.node_data.get("cards_played_this_turn", 0)
+            played_evt = CardPlayedEvent(run, card, target, res)
+            self.engine.event_bus.dispatch(played_evt)
+            res = played_evt.feedback
 
-        if hasattr(card, "gems") and card.gems:
-            for g in card.gems:
-                if g == "gem_gain_a_1":
-                    p.actions += 1
-                    self.engine._log_event(run, "💎 [劫掠青金石] 触发，获得 1A！")
-                elif g == "gem_gain_a_1_ba_1":
-                    p.actions += 1
-                    p.bonus_actions += 1
-                    self.engine._log_event(run, "💎 [神圣白钻] 触发，获得 1A 1BA！")
-                elif g == "gem_vuln_1":
-                    if target and target.startswith("e"):
-                        try:
-                            idx = int(target[1:]) - 1
-                            if idx < 0: idx = 0
-                        except ValueError:
-                            idx = 0
-                        if idx < len(run.enemies):
-                            self.engine.combat_resolver.add_buff_to(run.enemies[idx], "vulnerable", "易伤", "受到的伤害增加50%", 1)
-                            self.engine._log_event(run, f"💎 [易伤尖晶石] 触发，对【{run.enemies[idx].name}】施加 1 层易伤！")
-                elif g == "gem_weak_2":
-                    if target and target.startswith("e"):
-                        try:
-                            idx = int(target[1:]) - 1
-                            if idx < 0: idx = 0
-                        except ValueError:
-                            idx = 0
-                        if idx < len(run.enemies):
-                            self.engine.combat_resolver.add_buff_to(run.enemies[idx], "weak", "虚弱", "造成的伤害减少50%", 2)
-                            self.engine._log_event(run, f"💎 [虚弱玛瑙] 触发，对【{run.enemies[idx].name}】施加 2 层虚弱！")
+            if hasattr(card, "gems") and card.gems:
+                for g in card.gems:
+                    if g == "gem_gain_a_1":
+                        p.actions += 1
+                        self.engine._log_event(run, "💎 [劫掠青金石] 触发，获得 1A！")
+                    elif g == "gem_gain_a_1_ba_1":
+                        p.actions += 1
+                        p.bonus_actions += 1
+                        self.engine._log_event(run, "💎 [神圣白钻] 触发，获得 1A 1BA！")
+                    elif g == "gem_vuln_1":
+                        if target and target.startswith("e"):
+                            try:
+                                idx = int(target[1:]) - 1
+                                if idx < 0: idx = 0
+                            except ValueError:
+                                idx = 0
+                            if idx < len(run.enemies):
+                                self.engine.combat_resolver.add_buff_to(run.enemies[idx], "vulnerable", "易伤", "受到的伤害增加50%", 1)
+                                self.engine._log_event(run, f"💎 [易伤尖晶石] 触发，对【{run.enemies[idx].name}】施加 1 层易伤！")
+                    elif g == "gem_weak_2":
+                        if target and target.startswith("e"):
+                            try:
+                                idx = int(target[1:]) - 1
+                                if idx < 0: idx = 0
+                            except ValueError:
+                                idx = 0
+                            if idx < len(run.enemies):
+                                self.engine.combat_resolver.add_buff_to(run.enemies[idx], "weak", "虚弱", "造成的伤害减少50%", 2)
+                                self.engine._log_event(run, f"💎 [虚弱玛瑙] 触发，对【{run.enemies[idx].name}】施加 2 层虚弱！")
 
-        copy_count = 0
-        if ":no_copy:1" not in cid:
-            if hasattr(card, "copy") and card.copy > 0:
-                copy_count = card.copy
-            if hasattr(card, "gems") and card.gems and "gem_copy_1" in card.gems:
-                copy_count = max(copy_count, 1)
-        if copy_count > 0:
-            def make_no_copy_cid(orig_cid: str) -> str:
-                res_cid = orig_cid
-                if ":gems:" in res_cid:
-                    parts = res_cid.rsplit(":gems:", 1)
-                    base = parts[0]
-                    gems = parts[1].split(",")
-                    if "gem_copy_1" in gems:
-                        gems.remove("gem_copy_1")
-                    if gems:
-                        res_cid = f"{base}:gems:{','.join(gems)}"
-                    else:
-                        res_cid = base
-                if ":no_copy:1" not in res_cid:
-                    res_cid = f"{res_cid}:no_copy:1"
-                return res_cid
-            copy_cid = make_no_copy_cid(cid)
-            max_hand = 9 if "mask_of_void" in p.relics else 12
-            added = 0
-            for _ in range(copy_count):
-                if len(p.hand) < max_hand:
-                    p.hand.append(copy_cid)
-                    added += 1
-            if added > 0:
-                run.node_data["extra_copy_msg"] = f"\n✨ [复制] 【{card.name}】打出后往手牌中添加了 {added} 张复制品！"
+            copy_count = 0
+            if ":no_copy:1" not in cid:
+                if hasattr(card, "copy") and card.copy > 0:
+                    copy_count = card.copy
+                if hasattr(card, "gems") and card.gems and "gem_copy_1" in card.gems:
+                    copy_count = max(copy_count, 1)
+            if copy_count > 0:
+                def make_no_copy_cid(orig_cid: str) -> str:
+                    res_cid = orig_cid
+                    if ":gems:" in res_cid:
+                        parts = res_cid.rsplit(":gems:", 1)
+                        base = parts[0]
+                        gems = parts[1].split(",")
+                        if "gem_copy_1" in gems:
+                            gems.remove("gem_copy_1")
+                        if gems:
+                            res_cid = f"{base}:gems:{','.join(gems)}"
+                        else:
+                            res_cid = base
+                    if ":no_copy:1" not in res_cid:
+                        res_cid = f"{res_cid}:no_copy:1"
+                    return res_cid
+                copy_cid = make_no_copy_cid(cid)
+                max_hand = 9 if "mask_of_void" in p.relics else 12
+                added = 0
+                for _ in range(copy_count):
+                    if len(p.hand) < max_hand:
+                        p.hand.append(copy_cid)
+                        added += 1
+                if added > 0:
+                    run.node_data["extra_copy_msg"] = f"\n✨ [复制] 【{card.name}】打出后往手牌中添加了 {added} 张复制品！"
 
-        extra_msgs = run.node_data.pop("extra_play_msgs", [])
-        if len(extra_msgs) > 10:
-            res += f"x {len(extra_msgs)}次"
+            extra_msgs = run.node_data.pop("extra_play_msgs", [])
+            if len(extra_msgs) > 10:
+                res += f"x {len(extra_msgs)}次"
+            else:
+                res += "".join(extra_msgs)
+
+            extra_return_msg = run.node_data.pop("extra_return_msg", "")
+            if extra_return_msg:
+                res += extra_return_msg
+            extra_copy_msg = run.node_data.pop("extra_copy_msg", "")
+            if extra_copy_msg:
+                res += extra_copy_msg
+
+            run.node_data["cards_played_this_turn"] = played_count + 1
+            self.engine.save_manager.save_save(run.user_id, run)
         else:
-            res += "".join(extra_msgs)
-
-        extra_return_msg = run.node_data.pop("extra_return_msg", "")
-        if extra_return_msg:
-            res += extra_return_msg
-        extra_copy_msg = run.node_data.pop("extra_copy_msg", "")
-        if extra_copy_msg:
-            res += extra_copy_msg
-
-        run.node_data["cards_played_this_turn"] = played_count + 1
-        self.engine.save_manager.save_save(run.user_id, run)
+            self.engine.save_manager.save_save(run.user_id, run)
+            return self.engine._append_logs_to_res(run, res)
         has_damaged = False
         for idx, e in enumerate(run.enemies):
             if idx < len(initial_status):

@@ -132,6 +132,9 @@ class GameEngine:
     def _discard_card(self, run: GameRun, cid: str) -> str:
         return self.battle_engine._discard_card(run, cid)
 
+    def execute_emperor_eye_resolve(self, run: GameRun, keep_idx: int, upgraded: bool) -> str:
+        return self.battle_engine.execute_emperor_eye_resolve(run, keep_idx, upgraded)
+
     def upgrade_card_in_deck(self, run: GameRun, deck_idx: int) -> str:
         return self.map_engine.upgrade_card_in_deck(run, deck_idx)
 

@@ -50,6 +50,7 @@ class CLIRouter:
                 agile_msg = self.engine._discard_card(run, cid)
                 if len(discarded) >= req_count:
                     state_stack.pop()
+                    self.engine.battle_engine.resolve_suspended_card(run)
                 else:
                     top_state["required_count"] = req_count - len(discarded)
                     top_state["discarded"] = []
@@ -66,10 +67,10 @@ class CLIRouter:
                             boss_name = run.enemies[0].name
                         if not boss_name:
                             boss_name = "最终BOSS"
-                        return f"{res}\n🎉 恭喜你击败了{boss_name}，通关成功！\n{settle_msg}", True
+                        return self.engine.battle_engine._append_logs_to_res(run, f"{res}\n🎉 恭喜你击败了{boss_name}，通关成功！\n{settle_msg}"), True
                     else:
-                        return f"{res}\n🎉 战斗胜利！你击败了敌方所有单位。", True
-                return res, False
+                        return self.engine.battle_engine._append_logs_to_res(run, f"{res}\n🎉 战斗胜利！你击败了敌方所有单位。"), True
+                return self.engine.battle_engine._append_logs_to_res(run, res), False
             elif stype == "awaiting_target":
                 if parts and parts[0] in self._action_handlers:
                     state_stack.pop()
@@ -143,8 +144,9 @@ class CLIRouter:
                 input_str = " ".join(parts).strip()
                 if input_str in ("取消", "cancel", "abandon", "放弃", "q"):
                     state_stack.pop()
+                    self.engine.battle_engine.rollback_suspended_card(run)
                     self.save_manager.save_save(user_id, run)
-                    return "❌ 取消发掘操作。", False
+                    return self.engine.battle_engine._append_logs_to_res(run, "❌ 取消发掘操作。"), False
                 sub = parts[0]
                 if sub.isdigit():
                     parts = ["选择"] + parts
@@ -171,15 +173,18 @@ class CLIRouter:
                     return f"✨ 你发掘了【{card_name}】并加入手牌。请继续选择第 {len(top_state['selected']) + 1} 张发掘卡牌：\n{exhaust_list}", False
                 else:
                     state_stack.pop()
+                    self.engine.battle_engine.resolve_suspended_card(run)
                     self.save_manager.save_save(user_id, run)
                     selected_cards_str = "，".join(ALL_CARDS[c].name for c in top_state["selected"])
-                    return f"✨ 你完成了发掘，获得了【{selected_cards_str}】并加入手牌。", False
+                    res = f"✨ 你完成了发掘，获得了【{selected_cards_str}】并加入手牌。"
+                    return self.engine.battle_engine._append_logs_to_res(run, res), False
             elif stype == "overload_star_select":
                 input_str = " ".join(parts).strip()
                 if input_str in ("取消", "cancel", "abandon", "放弃", "q"):
                     state_stack.pop()
+                    self.engine.battle_engine.rollback_suspended_card(run)
                     self.save_manager.save_save(user_id, run)
-                    return "❌ 取消霸瞳天星的使用操作。", False
+                    return self.engine.battle_engine._append_logs_to_res(run, "❌ 取消霸瞳天星的使用操作。"), False
                 sub = parts[0]
                 if sub.isdigit():
                     parts = ["选择"] + parts
