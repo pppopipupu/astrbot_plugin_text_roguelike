@@ -39,27 +39,27 @@ except ImportError:
         def debug(self, *args, **kwargs): pass
     logger = DummyLogger()
 
-from game.models.manager import SaveManager
-from game.engine import GameEngine
-from game.renderer import GameRenderer
-from game.core.cli_router import CLIRouter
+from astrbot_plugin_text_roguelike.game.models.manager import SaveManager
+from astrbot_plugin_text_roguelike.game.engine import GameEngine
+from astrbot_plugin_text_roguelike.game.renderer import GameRenderer
+from astrbot_plugin_text_roguelike.game.core.cli_router import CLIRouter
 
-from game.models.state import set_user_id
+from astrbot_plugin_text_roguelike.game.models.state import set_user_id
 
-from game.core.duel_router import DuelRouter
+from astrbot_plugin_text_roguelike.game.core.duel_router import DuelRouter
 
 def resolve_card_id(card_input: str) -> str | None:
     card_input = card_input.strip()
     if not card_input:
         return None
-    from game.cards import ALL_CARDS
+    from astrbot_plugin_text_roguelike.game.cards import ALL_CARDS
     if card_input in ALL_CARDS:
         return card_input
     card_input_lower = card_input.lower()
     for cid in list(ALL_CARDS.keys()):
         if cid.lower() == card_input_lower:
             return cid
-    from game.data.card_data import CARD_CONFIG
+    from astrbot_plugin_text_roguelike.game.data.card_data import CARD_CONFIG
     for cid, cfg in CARD_CONFIG.items():
         name = cfg.get("name", "")
         if card_input == name or card_input_lower == name.lower():
@@ -454,9 +454,9 @@ class MyPlugin(Star):
                     return
                 
                 try:
-                    from .game.cards import ALL_CARDS
+                    from astrbot_plugin_text_roguelike.game.cards import ALL_CARDS
                 except ImportError:
-                    from game.cards import ALL_CARDS
+                    from astrbot_plugin_text_roguelike.game.cards import ALL_CARDS
                 
                 card_obj = ALL_CARDS.get(card_id)
                 card_name = card_obj.name if card_obj else card_id
@@ -518,14 +518,14 @@ class MyPlugin(Star):
                             return event.plain_result("⚠️ 已经是最后一页了。")
                         stats.reader_page += 1
                         self.save_manager.save_stats(user_id, stats)
-                        from game.renderer.menu import render_reader_page
+                        from astrbot_plugin_text_roguelike.game.renderer.menu import render_reader_page
                         return event.plain_result(render_reader_page(stats))
                     elif cmd in ("上一页", "b", "back", "prev"):
                         if stats.reader_page <= 1:
                             return event.plain_result("⚠️ 已经是第一页了。")
                         stats.reader_page -= 1
                         self.save_manager.save_stats(user_id, stats)
-                        from game.renderer.menu import render_reader_page
+                        from astrbot_plugin_text_roguelike.game.renderer.menu import render_reader_page
                         return event.plain_result(render_reader_page(stats))
                 else:
                     stats.reader_active = False
@@ -597,7 +597,7 @@ class MyPlugin(Star):
                 first_word = parts[0].lower()
                 is_duel_cmd = False
                 try:
-                    from game.core.duel.base import DuelCommandHandler, DuelActionHandler
+                    from astrbot_plugin_text_roguelike.game.core.duel.base import DuelCommandHandler, DuelActionHandler
                     registry_cmds = set(DuelCommandHandler.registry.keys()) | set(DuelActionHandler.registry.keys())
                 except ImportError:
                     registry_cmds = set()

@@ -27,7 +27,7 @@ class PlayAction(DuelActionHandler, names=["使用", "use", "u", "play", "p"]):
         try:
             from ...entities.cards.duel import ALL_DUEL_CARDS
         except ImportError:
-            from game.entities.cards.duel import ALL_DUEL_CARDS
+            from astrbot_plugin_text_roguelike.game.entities.cards.duel import ALL_DUEL_CARDS
         card = ALL_DUEL_CARDS.get(cid)
         if not card:
             return DUEL_BROADCAST_TEMPLATES["play_no_card_entity"], False, None, None, None, None
@@ -36,9 +36,9 @@ class PlayAction(DuelActionHandler, names=["使用", "use", "u", "play", "p"]):
             from ...data.duel_card_data import DUEL_CARD_CONFIG
         except ImportError:
             try:
-                from game.data.duel_card_data import DUEL_CARD_CONFIG
+                from astrbot_plugin_text_roguelike.game.data.duel_card_data import DUEL_CARD_CONFIG
             except ImportError:
-                from game.data import neutral_card_data
+                from astrbot_plugin_text_roguelike.game.data import neutral_card_data
                 DUEL_CARD_CONFIG = {}
                 
         cfg = DUEL_CARD_CONFIG.get(card.id, {})
@@ -101,9 +101,9 @@ class PlayAction(DuelActionHandler, names=["使用", "use", "u", "play", "p"]):
             from ...models.events import CardPlayEvent, CardExhaustEvent, CardPlayedEvent
         except ImportError:
             try:
-                from game.models.events import CardPlayEvent, CardExhaustEvent, CardPlayedEvent
+                from astrbot_plugin_text_roguelike.game.models.events import CardPlayEvent, CardExhaustEvent, CardPlayedEvent
             except ImportError:
-                from game.models.events import CardPlayEvent, CardExhaustEvent, CardPlayedEvent
+                from astrbot_plugin_text_roguelike.game.models.events import CardPlayEvent, CardExhaustEvent, CardPlayedEvent
                 
         play_evt = CardPlayEvent(run, card, target, cost_a, cost_ba)
         router.engine.event_bus.dispatch(play_evt)
@@ -291,7 +291,7 @@ class EvolveAction(DuelActionHandler, names=["进化", "evolve", "ev"]):
                 try:
                     from ...entities.cards.duel import ALL_DUEL_CARDS
                 except ImportError:
-                    from game.entities.cards.duel import ALL_DUEL_CARDS
+                    from astrbot_plugin_text_roguelike.game.entities.cards.duel import ALL_DUEL_CARDS
                 cid = p.hand[idx]
                 card = ALL_DUEL_CARDS.get(cid)
                 if card:

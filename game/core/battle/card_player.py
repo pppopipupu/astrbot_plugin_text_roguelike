@@ -776,7 +776,7 @@ class CardPlayer:
             card_pool = list(ALL_CARDS.keys())
             p_class = getattr(stats, "selected_class", "法师")
             target_color = "warrior" if p_class == "战士" else "wizard"
-            from game.entities.cards.market import is_card_available
+            from astrbot_plugin_text_roguelike.game.entities.cards.market import is_card_available
             normal_cards = [
                 cid for cid in card_pool
                 if ALL_CARDS[cid].rarity not in ("legendary", "mythic", "artifact")

@@ -1,7 +1,7 @@
 import copy
 from typing import Optional
-from game.models.state import CardTag, Card, GameRun
-from game.models.events import CardPlayedEvent, CardExhaustEvent
+from astrbot_plugin_text_roguelike.game.models.state import CardTag, Card, GameRun
+from astrbot_plugin_text_roguelike.game.models.events import CardPlayedEvent, CardExhaustEvent
 
 class ReplayTag(CardTag):
     def execute(self, card: Card, run: GameRun, target: Optional[str], engine) -> Optional[str]:
@@ -28,7 +28,7 @@ class FragileTag(CardTag):
             next_fragile = curr_fragile - 1
             base_part = cid.split(":fragile:")[0]
             next_cid = f"{base_part}:fragile:{next_fragile}"
-            from game.entities.cards import ALL_CARDS
+            from astrbot_plugin_text_roguelike.game.entities.cards import ALL_CARDS
             if getattr(card, "fleeting", False):
                 if base_cid in p.deck:
                     p.deck.remove(base_cid)

@@ -271,9 +271,9 @@ class TestRogueSystem(unittest.TestCase):
         asyncio.run(go())
 
     def test_warrior_ward_and_rally(self):
-        from game.core.battle_engine import BattleEngine
-        from game.models.state import GameRun, PlayerState, EnemyState, MinionState, Card
-        from game.entities.enemies.base import EnemyTemplate
+        from astrbot_plugin_text_roguelike.game.core.battle_engine import BattleEngine
+        from astrbot_plugin_text_roguelike.game.models.state import GameRun, PlayerState, EnemyState, MinionState, Card
+        from astrbot_plugin_text_roguelike.game.entities.enemies.base import EnemyTemplate
         class DummySaveManager:
             def load_admin_config(self):
                 return {}
@@ -342,7 +342,7 @@ class TestRogueSystem(unittest.TestCase):
             enemies=[],
             node_data={}
         )
-        from game.renderer import GameRenderer
+        from astrbot_plugin_text_roguelike.game.renderer import GameRenderer
         output = GameRenderer.render_deck(run)
         self.assertIn("奥术星火", output)
         self.assertIn("末日审判", output)
@@ -362,8 +362,8 @@ class TestRogueSystem(unittest.TestCase):
             res = render_query_info(term)
             self.assertNotIn("未找到", res)
             
-        from game.core.duel.query_manager import QueryManager
-        from game.models.manager import SaveManager
+        from astrbot_plugin_text_roguelike.game.core.duel.query_manager import QueryManager
+        from astrbot_plugin_text_roguelike.game.models.manager import SaveManager
         qm = QueryManager(SaveManager())
         for term in ("守护", "ward", "重放", "replay", "烈焰成长", "fire_grow", "炉温反噬", "forge_backfire", "时空强化", "time_warp_spell_boost", "极光圣域", "commander_aurora_emperor"):
             res = qm.render_duel_query_info(term)
@@ -493,7 +493,7 @@ class TestRogueSystem(unittest.TestCase):
         if "PYTHONPATH" in env:
             del env["PYTHONPATH"]
             
-        script = "import sys, asyncio; sys.path.insert(0, '" + basename + "'); from main import MyPlugin; from scratch.rogue_tests.base import run_command; plugin = MyPlugin(None); stats = plugin.save_manager.load_stats('test_import'); stats.rogue_mode = True; plugin.save_manager.save_stats('test_import', stats); asyncio.run(run_command(plugin, 'overview', 'test_import'))"
+        script = "import sys, asyncio; sys.path.insert(0, '" + parent_dir + "'); sys.path.insert(0, '" + cwd + "'); from main import MyPlugin; from scratch.rogue_tests.base import run_command; plugin = MyPlugin(None); stats = plugin.save_manager.load_stats('test_import'); stats.rogue_mode = True; plugin.save_manager.save_stats('test_import', stats); asyncio.run(run_command(plugin, 'overview', 'test_import'))"
         
         res = subprocess.run(
             [sys.executable, "-c", script],

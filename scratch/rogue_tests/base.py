@@ -12,15 +12,15 @@ if sys.platform.startswith("win"):
     except Exception:
         pass
 
-from game.models.manager import SaveManager
-from game.models.state import GameRun, PlayerState, EnemyState, MinionState, BuffState
-from game.core.battle_engine import BattleEngine
-from game.core.map_engine import MapEngine
-from game.entities.cards.base import ALL_CARDS
-from game.renderer.query import render_query_info
-from game.core.cli_router import CLIRouter
-from game.models.state import UserStats
-from game.engine import GameEngine
+from astrbot_plugin_text_roguelike.game.models.manager import SaveManager
+from astrbot_plugin_text_roguelike.game.models.state import GameRun, PlayerState, EnemyState, MinionState, BuffState
+from astrbot_plugin_text_roguelike.game.core.battle_engine import BattleEngine
+from astrbot_plugin_text_roguelike.game.core.map_engine import MapEngine
+from astrbot_plugin_text_roguelike.game.entities.cards.base import ALL_CARDS
+from astrbot_plugin_text_roguelike.game.renderer.query import render_query_info
+from astrbot_plugin_text_roguelike.game.core.cli_router import CLIRouter
+from astrbot_plugin_text_roguelike.game.models.state import UserStats
+from astrbot_plugin_text_roguelike.game.engine import GameEngine
 from main import MyPlugin
 
 class DummyContext:

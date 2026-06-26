@@ -7,7 +7,7 @@ def run_cmd(cmd):
 
 def main():
     print("=== 1. Container Import Check ===")
-    code, out, err = run_cmd("docker exec -w /AstrBot/data/plugins/astrbot_plugin_text_roguelike astrbot-test-env python -c \"from astrbot.api.star import Star; from main import MyPlugin; print('Import check passed')\"")
+    code, out, err = run_cmd("docker exec -w /AstrBot/data/plugins/astrbot_plugin_text_roguelike -e PYTHONPATH=/AstrBot/data/plugins astrbot-test-env python -c \"from astrbot.api.star import Star; from main import MyPlugin; print('Import check passed')\"")
     print(out)
     if code != 0 or "Import check passed" not in out:
         print(f"Import check failed with exit code {code}: {err}")

@@ -65,7 +65,7 @@ class QueryManager:
                 try:
                     from ...renderer import GameRenderer
                 except ImportError:
-                    from game.renderer import GameRenderer
+                    from astrbot_plugin_text_roguelike.game.renderer import GameRenderer
                     
                 if sub_query in ("抽牌堆", "draw", "draw_pile"):
                     render_res = GameRenderer.render_draw_pile(run)
@@ -93,9 +93,9 @@ class QueryManager:
             from ...data.buff_data import BUFF_CONFIG
             from ...data.keyword_data import KEYWORD_CONFIG
         except ImportError:
-            from game.data.duel_card_data import DUEL_CARD_CONFIG, QUEST_CONFIGS
-            from game.data.buff_data import BUFF_CONFIG
-            from game.data.keyword_data import KEYWORD_CONFIG
+            from astrbot_plugin_text_roguelike.game.data.duel_card_data import DUEL_CARD_CONFIG, QUEST_CONFIGS
+            from astrbot_plugin_text_roguelike.game.data.buff_data import BUFF_CONFIG
+            from astrbot_plugin_text_roguelike.game.data.keyword_data import KEYWORD_CONFIG
             
         lines = [DUEL_BROADCAST_TEMPLATES["query_title"].format(query_str=query_str)]
         found = False

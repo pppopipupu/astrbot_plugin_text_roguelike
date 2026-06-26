@@ -156,7 +156,7 @@ class AmuletTriggerHandler:
         try:
             from ...data.amulet_data import AMULET_CONFIG
         except ImportError:
-            from game.data.amulet_data import AMULET_CONFIG
+            from astrbot_plugin_text_roguelike.game.data.amulet_data import AMULET_CONFIG
         for ak, av in list(p.amulets.items()):
             av.countdown -= 1
             if av.countdown <= 0:

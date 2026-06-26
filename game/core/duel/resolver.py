@@ -126,9 +126,9 @@ class DuelResolver:
             from ...entities.minions.minions import ALL_MINIONS
         except ImportError:
             try:
-                from game.entities.minions.minions import ALL_MINIONS
+                from astrbot_plugin_text_roguelike.game.entities.minions.minions import ALL_MINIONS
             except ImportError:
-                from game.entities.minions import ALL_MINIONS
+                from astrbot_plugin_text_roguelike.game.entities.minions import ALL_MINIONS
         if m.id not in ALL_MINIONS:
             return f"❌ 随从【{m.name}】没有任何可用技能。"
         template = ALL_MINIONS[m.id]

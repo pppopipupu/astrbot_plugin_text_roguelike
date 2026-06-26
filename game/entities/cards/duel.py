@@ -7,7 +7,7 @@ class DuelGenericCard(Card):
         try:
             from ...data.duel_card_data import DUEL_CARD_CONFIG
         except ImportError:
-            from game.data.duel_card_data import DUEL_CARD_CONFIG
+            from astrbot_plugin_text_roguelike.game.data.duel_card_data import DUEL_CARD_CONFIG
         cfg = DUEL_CARD_CONFIG.get(self.id, {})
         face_target = cfg.get("face_target", True)
         is_damage = ("base_dmg" in cfg or "damage" in cfg or "damage_type" in cfg)
@@ -120,7 +120,7 @@ class DuelWarriorBash(Card):
         try:
             from ...data.duel_card_data import DUEL_CARD_CONFIG
         except ImportError:
-            from game.data.duel_card_data import DUEL_CARD_CONFIG
+            from astrbot_plugin_text_roguelike.game.data.duel_card_data import DUEL_CARD_CONFIG
         cfg = DUEL_CARD_CONFIG.get(self.id, {})
         damage = cfg.get("base_dmg", cfg.get("damage", 8))
         engine._damage_target(run, target, damage, damage_type="bludgeoning", card=self)
@@ -138,7 +138,7 @@ class DuelWarriorAnger(Card):
         try:
             from ...data.duel_card_data import DUEL_CARD_CONFIG
         except ImportError:
-            from game.data.duel_card_data import DUEL_CARD_CONFIG
+            from astrbot_plugin_text_roguelike.game.data.duel_card_data import DUEL_CARD_CONFIG
         cfg = DUEL_CARD_CONFIG.get(self.id, {})
         damage = cfg.get("base_dmg", cfg.get("damage", 4))
         engine._damage_target(run, target, damage, damage_type="slashing", card=self)
@@ -241,7 +241,7 @@ class DuelRewardAncientResonance(Card):
         try:
             from ...data.amulet_data import AMULET_CONFIG
         except ImportError:
-            from game.data.amulet_data import AMULET_CONFIG
+            from astrbot_plugin_text_roguelike.game.data.amulet_data import AMULET_CONFIG
         p = run.player
         triggered = []
         for ak, av in list(p.amulets.items()):
@@ -519,7 +519,7 @@ class DuelCardRegistryDict(dict):
                 try:
                     from .registry import CARD_CLASS_REGISTRY
                 except ImportError:
-                    from game.entities.cards.registry import CARD_CLASS_REGISTRY
+                    from astrbot_plugin_text_roguelike.game.entities.cards.registry import CARD_CLASS_REGISTRY
                 if orig_key in CARD_CLASS_REGISTRY:
                     cls, decorator_kwargs = CARD_CLASS_REGISTRY[orig_key]
                 else:

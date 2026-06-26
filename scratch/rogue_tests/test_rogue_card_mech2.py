@@ -86,7 +86,7 @@ class TestRogueCardMech2(unittest.TestCase):
         engine.play_card(run, 2)
         self.assertEqual(player.hand[0], "fire_bolt:replay:7")
 
-        from game.core.map_engine import MapEngine
+        from astrbot_plugin_text_roguelike.game.core.map_engine import MapEngine
         map_eng = MapEngine(sm, engine)
         
         found_in_1 = False
@@ -105,7 +105,7 @@ class TestRogueCardMech2(unittest.TestCase):
             player11 = PlayerState(hp=50, max_hp=50, shield=0, gold=100, stage=12)
             run11 = GameRun(user_id="test_map_ancient", node_type="map_select", player=player11)
             map_eng.enter_next_stage(run11)
-            from game.core.cafe_engine import CafeEngine
+            from astrbot_plugin_text_roguelike.game.core.cafe_engine import CafeEngine
             CafeEngine(sm, map_eng).leave_cafe(run11)
             options11 = run11.node_data.get("options", [])
             if any(opt.get("card") == "unmined_gem" for opt in options11 if "card" in opt):
@@ -468,7 +468,7 @@ class TestRogueCardMech2(unittest.TestCase):
         engine.play_card(run, 1)
         self.assertTrue(any(b.id == "demon_form" for b in player.buffs))
         self.assertEqual(next(b for b in player.buffs if b.id == "demon_form").stacks, 3)
-        from game.models.events import TurnStartEvent
+        from astrbot_plugin_text_roguelike.game.models.events import TurnStartEvent
         engine.event_bus.dispatch(TurnStartEvent(run, is_player=True))
         self.assertTrue(any(b.id == "strength" for b in player.buffs))
         self.assertEqual(next(b for b in player.buffs if b.id == "strength").stacks, 3)

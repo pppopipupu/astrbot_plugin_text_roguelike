@@ -1,6 +1,6 @@
 import random
 from typing import List
-from game.data.trash_talk_data import TALKING_ENEMIES, TRASH_TALK_DB
+from astrbot_plugin_text_roguelike.game.data.trash_talk_data import TALKING_ENEMIES, TRASH_TALK_DB
 
 def try_trash_talk(run, enemy, logs: List[str]):
     if enemy.name not in TALKING_ENEMIES:

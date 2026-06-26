@@ -28,7 +28,7 @@ class GithyankiPirateTemplate(EnemyTemplate):
     def execute_intent(self, run, engine, enemy, intent, logs: List[str] = None):
         if logs is None:
             logs = intent
-            from game.models.state import EnemyIntentState
+            from astrbot_plugin_text_roguelike.game.models.state import EnemyIntentState
             intent = EnemyIntentState(
                 type=getattr(enemy, "intent_type", ""),
                 val=getattr(enemy, "intent_val", 0),
@@ -36,7 +36,7 @@ class GithyankiPirateTemplate(EnemyTemplate):
                 cost_a=1,
                 cost_ba=0
             )
-        from game.entities.enemies.trash_talk_actions import try_trash_talk
+        from astrbot_plugin_text_roguelike.game.entities.enemies.trash_talk_actions import try_trash_talk
         try_trash_talk(run, enemy, logs)
         p = run.player
         if intent.type == "silver_sword":

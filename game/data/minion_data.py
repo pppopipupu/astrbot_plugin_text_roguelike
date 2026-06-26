@@ -1,5 +1,5 @@
-from game.data.minion_data_basic import MINION_BASIC_CONFIG
-from game.data.minion_data_officer import MINION_OFFICER_CONFIG
+from astrbot_plugin_text_roguelike.game.data.minion_data_basic import MINION_BASIC_CONFIG
+from astrbot_plugin_text_roguelike.game.data.minion_data_officer import MINION_OFFICER_CONFIG
 
 MINION_CONFIG = {}
 MINION_CONFIG.update(MINION_BASIC_CONFIG)

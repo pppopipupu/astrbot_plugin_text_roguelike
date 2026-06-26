@@ -72,7 +72,7 @@ class DuelCombatResolver:
         try:
             from ...entities.cards.duel import ALL_DUEL_CARDS
         except ImportError:
-            from game.entities.cards.duel import ALL_DUEL_CARDS
+            from astrbot_plugin_text_roguelike.game.entities.cards.duel import ALL_DUEL_CARDS
         eligible = []
         for cid in p.minion_graveyard:
             card = ALL_DUEL_CARDS.get(cid)

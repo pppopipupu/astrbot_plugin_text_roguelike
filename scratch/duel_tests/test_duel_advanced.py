@@ -126,7 +126,7 @@ class TestDuelAdvanced(TestDuelSystem):
         run = self.save_manager.load_duel_save(u1)
         self.assertTrue(any(":replay:" in c for c in run.player.hand))
         
-        from game.entities.cards.duel import ALL_DUEL_CARDS
+        from astrbot_plugin_text_roguelike.game.entities.cards.duel import ALL_DUEL_CARDS
         mod_cid = [c for c in run.player.hand if ":replay:" in c][0]
         card_obj = ALL_DUEL_CARDS.get(mod_cid)
         self.assertEqual(card_obj.name, "打击")

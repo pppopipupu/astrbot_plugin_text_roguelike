@@ -474,9 +474,9 @@ class TestRogueCardMech1(unittest.TestCase):
         self.assertEqual(len(player.hand), 1)
 
     def test_flame_barrier_timing(self):
-        from game.models.state import EnemyIntentState
-        from game.core.battle_engine import BattleEngine
-        from game.models.manager import SaveManager
+        from astrbot_plugin_text_roguelike.game.models.state import EnemyIntentState
+        from astrbot_plugin_text_roguelike.game.core.battle_engine import BattleEngine
+        from astrbot_plugin_text_roguelike.game.models.manager import SaveManager
         engine = BattleEngine(SaveManager())
         player = PlayerState(hp=30, max_hp=30, shield=0, gold=100, stage=1, deck=[], hand=[], draw_pile=[], discard_pile=[], exhaust_pile=[], graveyard=[])
         enemy = EnemyState(name="小鬼", hp=100, max_hp=100, shield=0, actions=1, max_actions=1, bonus_actions=0, max_bonus_actions=0, intent_type="attack", intent_val=10, intent_desc="攻击 10", intents=[])
@@ -489,7 +489,7 @@ class TestRogueCardMech1(unittest.TestCase):
         self.assertFalse(any(b.id == "flame_barrier_buff" for b in player.buffs))
 
     def test_echo_form_and_replay_triggers_beat_of_death(self):
-        from game.models.state import BuffState
+        from astrbot_plugin_text_roguelike.game.models.state import BuffState
         class DummySaveManager:
             def save_save(self, user_id, run):
                 pass
@@ -599,7 +599,7 @@ class TestRogueCardMech1(unittest.TestCase):
         engine.play_card(run, 1, "e0")
         self.assertEqual(player.shield, 50)
         self.assertEqual(enemy.hp, 62)
-        from game.models.events import CardExhaustEvent
+        from astrbot_plugin_text_roguelike.game.models.events import CardExhaustEvent
         player.actions = 2
         player.bonus_actions = 1
         engine.event_bus.dispatch(CardExhaustEvent(run, "warrior_shield_bash", "test"))

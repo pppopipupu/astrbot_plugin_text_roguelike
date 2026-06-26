@@ -65,7 +65,7 @@ def handle_sub_dialog(town_engine, stats: UserStats, npc_id: str, choice_lower: 
             town_engine.save_manager.save_stats(user_id, stats)
             return town_engine._render_dialog_window(stats, npc_id, zh_cn)
         target_cid = None
-        from game.entities.cards.base import _get_card_config
+        from astrbot_plugin_text_roguelike.game.entities.cards.base import _get_card_config
         card_config = _get_card_config()
         for cid, cfg in card_config.items():
             if cfg.get("name") == choice:

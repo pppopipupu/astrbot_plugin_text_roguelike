@@ -1,10 +1,10 @@
 import unittest
 import random
 from scratch.rogue_tests.base import *
-from game.models.state import PlayerState, GameRun, EnemyState
-from game.entities.cards.base import ALL_CARDS
-from game.core.battle_engine import BattleEngine
-from game.entities.events.chaos_events import (
+from astrbot_plugin_text_roguelike.game.models.state import PlayerState, GameRun, EnemyState
+from astrbot_plugin_text_roguelike.game.entities.cards.base import ALL_CARDS
+from astrbot_plugin_text_roguelike.game.core.battle_engine import BattleEngine
+from astrbot_plugin_text_roguelike.game.entities.events.chaos_events import (
     ReadVoidTomeOption, BurnVoidBooksOption, SacrificeMindOption,
     BuyBlackmarketRelicOption, RobBlackmarketOption, SellFleshOption,
     DrinkTimeSandOption, AccelerateCinderOption, TouchTimeRiftOption,
@@ -41,7 +41,7 @@ class TestRogueChaosUpdate(unittest.TestCase):
         
         player.actions = 2
         player.bonus_actions = 1
-        from game.models.events import TurnStartEvent
+        from astrbot_plugin_text_roguelike.game.models.events import TurnStartEvent
         evt = TurnStartEvent(run, is_player=True)
         engine.event_bus.dispatch(evt)
         self.assertEqual(player.actions, 3)
@@ -272,7 +272,7 @@ class TestRogueChaosUpdate(unittest.TestCase):
         engine._add_buff_to(player, "source_of_cinder", "薪火之源", "每回合开始额外获得 1A 1BA", 2)
         player.actions = 2
         player.bonus_actions = 1
-        from game.models.events import TurnStartEvent
+        from astrbot_plugin_text_roguelike.game.models.events import TurnStartEvent
         evt = TurnStartEvent(run, is_player=True)
         engine.event_bus.dispatch(evt)
         self.assertEqual(player.actions, 4)
@@ -282,7 +282,7 @@ class TestRogueChaosUpdate(unittest.TestCase):
         class DummySaveManager:
             def save_save(self, user_id, run): pass
             def settle_game_and_delete(self, user_id, run, is_victory): return ""
-        from game.engine import GameEngine
+        from astrbot_plugin_text_roguelike.game.engine import GameEngine
         sm = DummySaveManager()
         ge = GameEngine(sm)
         player = PlayerState(
@@ -298,7 +298,7 @@ class TestRogueChaosUpdate(unittest.TestCase):
         self.assertEqual(player.shield, 16)
 
     def test_collaboration_query(self):
-        from game.renderer.query import render_query_info
+        from astrbot_plugin_text_roguelike.game.renderer.query import render_query_info
         res = render_query_info("协作")
         self.assertIn("协作", res)
         self.assertIn("我方累计召唤随从的总次数", res)

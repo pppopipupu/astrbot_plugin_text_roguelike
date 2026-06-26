@@ -58,7 +58,7 @@ class TestRogueEnemyStage(unittest.TestCase):
         self.assertIn("对生命造成", last_log)
         self.assertNotIn("（", last_log)
 
-        from game.entities.enemies.elite.shadow_fiend import ShadowFiendTemplate
+        from astrbot_plugin_text_roguelike.game.entities.enemies.elite.shadow_fiend import ShadowFiendTemplate
         fiend_template = ShadowFiendTemplate("暗影影魔")
         fiend_enemy = EnemyState("暗影影魔测试", 30, 30, 0, intent_type="shadow_strike", intent_val=6)
         fiend_logs = []
@@ -70,7 +70,7 @@ class TestRogueEnemyStage(unittest.TestCase):
         self.assertEqual(len(fiend_logs), 1)
         self.assertIn("对【玩家】造成 6 点真实伤害，对生命造成 6 伤害", fiend_logs[0])
 
-        from game.entities.buffs.debuffs import BeatOfDeathBuff
+        from astrbot_plugin_text_roguelike.game.entities.buffs.debuffs import BeatOfDeathBuff
         beat_buff = BeatOfDeathBuff(2)
         class FakeEvent:
             def __init__(self, run, engine):
@@ -245,7 +245,7 @@ class TestRogueEnemyStage(unittest.TestCase):
         p_state = PlayerState(hp=50, max_hp=50, shield=0, gold=10, stage=1)
         run = GameRun(user_id="test_exp", node_type="battle", player=p_state, enemies=[cultist])
 
-        from game.entities.enemies.normal.cultist_kaka import CultistKakaTemplate
+        from astrbot_plugin_text_roguelike.game.entities.enemies.normal.cultist_kaka import CultistKakaTemplate
         c_temp = CultistKakaTemplate("邪教徒咔咔")
 
         intents_1 = c_temp.roll_intents(run, engine, cultist)
@@ -257,7 +257,7 @@ class TestRogueEnemyStage(unittest.TestCase):
         self.assertTrue(any(b.id == "ritual" for b in cultist.buffs))
         self.assertIn("咔咔", "".join(c_logs_1))
 
-        from game.models.events import TurnStartEvent
+        from astrbot_plugin_text_roguelike.game.models.events import TurnStartEvent
         evt_start = TurnStartEvent(run, is_player=False)
         engine.event_bus.dispatch(evt_start)
         self.assertTrue(any(b.id == "strength" and b.stacks == 1 for b in cultist.buffs))
@@ -273,7 +273,7 @@ class TestRogueEnemyStage(unittest.TestCase):
         flayer = EnemyState("夺心魔", 48, 48, 0, max_actions=1, max_bonus_actions=1)
         run.enemies = [flayer]
 
-        from game.entities.enemies.elite.mind_flayer import MindFlayerTemplate
+        from astrbot_plugin_text_roguelike.game.entities.enemies.elite.mind_flayer import MindFlayerTemplate
         f_temp = MindFlayerTemplate("夺心魔")
 
         run.player.buffs.clear()
@@ -282,7 +282,7 @@ class TestRogueEnemyStage(unittest.TestCase):
 
         tentacles_intent = next((it for it in intents_f1 if it.type == "tentacles"), None)
         if not tentacles_intent:
-            from game.models.state import EnemyIntentState
+            from astrbot_plugin_text_roguelike.game.models.state import EnemyIntentState
             tentacles_intent = EnemyIntentState(type="tentacles", val=8, desc="触须袭击")
         f_logs_1 = []
         f_temp.execute_intent(run, engine, flayer, tentacles_intent, f_logs_1)
@@ -305,7 +305,7 @@ class TestRogueEnemyStage(unittest.TestCase):
 
         blast_intent = next((it for it in intents_f1 if it.type == "mind_blast"), None)
         if not blast_intent:
-            from game.models.state import EnemyIntentState
+            from astrbot_plugin_text_roguelike.game.models.state import EnemyIntentState
             blast_intent = EnemyIntentState(type="mind_blast", val=8, desc="心灵震爆")
         f_logs_3 = []
         f_temp.execute_intent(run, engine, flayer, blast_intent, f_logs_3)
@@ -322,14 +322,14 @@ class TestRogueEnemyStage(unittest.TestCase):
         pirate = EnemyState("吉斯洋基海盗", 18, 18, 0, max_actions=1, max_bonus_actions=0)
         run.enemies = [pirate]
 
-        from game.entities.enemies.normal.githyanki_pirate import GithyankiPirateTemplate
+        from astrbot_plugin_text_roguelike.game.entities.enemies.normal.githyanki_pirate import GithyankiPirateTemplate
         p_temp = GithyankiPirateTemplate("吉斯洋基海盗")
 
         run.player.shield = 10
         run.player.hp = 50
         slash_intent = next((it for it in p_temp.roll_intents(run, engine, pirate) if it.type == "silver_sword"), None)
         if not slash_intent:
-            from game.models.state import EnemyIntentState
+            from astrbot_plugin_text_roguelike.game.models.state import EnemyIntentState
             slash_intent = EnemyIntentState(type="silver_sword", val=7, desc="银剑")
         p_logs_1 = []
         p_temp.execute_intent(run, engine, pirate, slash_intent, p_logs_1)
@@ -338,7 +338,7 @@ class TestRogueEnemyStage(unittest.TestCase):
 
         step_intent = next((it for it in p_temp.roll_intents(run, engine, pirate) if it.type == "astral_step"), None)
         if not step_intent:
-            from game.models.state import EnemyIntentState
+            from astrbot_plugin_text_roguelike.game.models.state import EnemyIntentState
             step_intent = EnemyIntentState(type="astral_step", val=6, desc="跃迁")
         p_logs_2 = []
         p_temp.execute_intent(run, engine, pirate, step_intent, p_logs_2)
@@ -351,13 +351,13 @@ class TestRogueEnemyStage(unittest.TestCase):
         commander = EnemyState("吉斯洋基至高指挥官", 55, 55, 0, max_actions=1, max_bonus_actions=1)
         run.enemies = [commander]
 
-        from game.entities.enemies.elite.githyanki_supreme_commander import GithyankiSupremeCommanderTemplate
+        from astrbot_plugin_text_roguelike.game.entities.enemies.elite.githyanki_supreme_commander import GithyankiSupremeCommanderTemplate
         cmd_temp = GithyankiSupremeCommanderTemplate("吉斯洋基至高指挥官")
 
         cmd_logs_1 = []
         sh_intent = next((it for it in cmd_temp.roll_intents(run, engine, commander) if it.type == "summon_hound"), None)
         if not sh_intent:
-            from game.models.state import EnemyIntentState
+            from astrbot_plugin_text_roguelike.game.models.state import EnemyIntentState
             sh_intent = EnemyIntentState(type="summon_hound", val=0, desc="星界呼唤")
         cmd_temp.execute_intent(run, engine, commander, sh_intent, cmd_logs_1)
         self.assertEqual(len(run.enemies), 2)
@@ -366,7 +366,7 @@ class TestRogueEnemyStage(unittest.TestCase):
         cmd_logs_2 = []
         cp_intent = next((it for it in cmd_temp.roll_intents(run, engine, commander) if it.type == "commanding_presence"), None)
         if not cp_intent:
-            from game.models.state import EnemyIntentState
+            from astrbot_plugin_text_roguelike.game.models.state import EnemyIntentState
             cp_intent = EnemyIntentState(type="commanding_presence", val=2, desc="指挥")
         cmd_temp.execute_intent(run, engine, commander, cp_intent, cmd_logs_2)
         self.assertTrue(any(b.id == "strength" and b.stacks == 2 for b in commander.buffs))
@@ -400,7 +400,7 @@ class TestRogueEnemyStage(unittest.TestCase):
         )
         run.node_data["turn"] = 1
 
-        from game.entities.enemies.summon.astral_puppy import AstralPuppyTemplate
+        from astrbot_plugin_text_roguelike.game.entities.enemies.summon.astral_puppy import AstralPuppyTemplate
         puppy_enemy = EnemyState("星界幼犬", 15, 15, 0)
         puppy_temp = AstralPuppyTemplate("星界幼犬")
         puppy_intents = puppy_temp.roll_intents(run, engine, puppy_enemy)
@@ -408,7 +408,7 @@ class TestRogueEnemyStage(unittest.TestCase):
         puppy_temp.execute_intent(run, engine, puppy_enemy, puppy_intents[0], logs)
         self.assertFalse(any("【" in log and "】说" in log for log in logs))
 
-        from game.entities.enemies.town_enemies import NoobSlayer99Template
+        from astrbot_plugin_text_roguelike.game.entities.enemies.town_enemies import NoobSlayer99Template
         noob_enemy = EnemyState("NoobSlayer99", 50, 50, 0)
         noob_temp = NoobSlayer99Template("NoobSlayer99")
         noob_intents = noob_temp.roll_intents(run, engine, noob_enemy)
