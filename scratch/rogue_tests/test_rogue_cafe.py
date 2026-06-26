@@ -1,9 +1,9 @@
 import unittest
 import asyncio
 from scratch.rogue_tests.base import *
-from astrbot_plugin_text_roguelike.game.models.state import GameRun, PlayerState, EnemyState, Card, BuffState
-from astrbot_plugin_text_roguelike.game.models.events import BattleStartEvent, TurnStartEvent, CardPlayedEvent, DamageCalculateEvent
-from astrbot_plugin_text_roguelike.game.core.cafe_engine import CafeEngine
+from game.models.state import GameRun, PlayerState, EnemyState, Card, BuffState
+from game.models.events import BattleStartEvent, TurnStartEvent, CardPlayedEvent, DamageCalculateEvent
+from game.core.cafe_engine import CafeEngine
 
 class TestRogueCafe(unittest.TestCase):
     def test_cafe_trigger_and_npcs(self):

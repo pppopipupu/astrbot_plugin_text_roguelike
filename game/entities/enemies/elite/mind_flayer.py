@@ -38,7 +38,7 @@ class MindFlayerTemplate(EnemyTemplate):
     def execute_intent(self, run, engine, enemy, intent, logs: List[str] = None):
         if logs is None:
             logs = intent
-            from astrbot_plugin_text_roguelike.game.models.state import EnemyIntentState
+            from ....models.state import EnemyIntentState
             intent = EnemyIntentState(
                 type=getattr(enemy, "intent_type", ""),
                 val=getattr(enemy, "intent_val", 0),
@@ -46,7 +46,7 @@ class MindFlayerTemplate(EnemyTemplate):
                 cost_a=1,
                 cost_ba=0
             )
-        from astrbot_plugin_text_roguelike.game.entities.enemies.trash_talk_actions import try_trash_talk
+        from ....entities.enemies.trash_talk_actions import try_trash_talk
         try_trash_talk(run, enemy, logs)
         p = run.player
         if intent.type == "tentacles":
@@ -133,7 +133,7 @@ class MindFlayerArcanistTemplate(EnemyTemplate):
     def execute_intent(self, run, engine, enemy, intent, logs: List[str] = None):
         if logs is None:
             logs = intent
-            from astrbot_plugin_text_roguelike.game.models.state import EnemyIntentState
+            from ....models.state import EnemyIntentState
             intent = EnemyIntentState(
                 type=getattr(enemy, "intent_type", ""),
                 val=getattr(enemy, "intent_val", 0),
@@ -141,7 +141,7 @@ class MindFlayerArcanistTemplate(EnemyTemplate):
                 cost_a=1,
                 cost_ba=0
             )
-        from astrbot_plugin_text_roguelike.game.entities.enemies.trash_talk_actions import try_trash_talk
+        from ....entities.enemies.trash_talk_actions import try_trash_talk
         try_trash_talk(run, enemy, logs)
         p = run.player
         if intent.type == "tentacles":

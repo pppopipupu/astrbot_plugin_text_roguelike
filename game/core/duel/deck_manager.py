@@ -24,7 +24,7 @@ class DeckManager:
         try:
             from ...data.duel_card_data import DUEL_CARD_CONFIG
         except ImportError:
-            from astrbot_plugin_text_roguelike.game.data.duel_card_data import DUEL_CARD_CONFIG
+            from ...data.duel_card_data import DUEL_CARD_CONFIG
         counts = {}
         for cid in deck_list:
             base_id = cid.rstrip("+")
@@ -133,7 +133,7 @@ class DeckManager:
                 try:
                     from ...entities.cards.duel import ALL_DUEL_CARDS
                 except ImportError:
-                    from astrbot_plugin_text_roguelike.game.entities.cards.duel import ALL_DUEL_CARDS
+                    from ...entities.cards.duel import ALL_DUEL_CARDS
                 for idx, cid in enumerate(sorted_cids, 1):
                     card = ALL_DUEL_CARDS.get(cid)
                     if card:
@@ -161,7 +161,7 @@ class DeckManager:
             try:
                 from ...data.duel_card_data import DUEL_CARD_CONFIG
             except ImportError:
-                from astrbot_plugin_text_roguelike.game.data.duel_card_data import DUEL_CARD_CONFIG
+                from ...data.duel_card_data import DUEL_CARD_CONFIG
             matched = []
             q_clean = query.lower()
             for cid, val in DUEL_CARD_CONFIG.items():
@@ -175,7 +175,7 @@ class DeckManager:
                 try:
                     from ...entities.cards.duel import ALL_DUEL_CARDS
                 except ImportError:
-                    from astrbot_plugin_text_roguelike.game.entities.cards.duel import ALL_DUEL_CARDS
+                    from ...entities.cards.duel import ALL_DUEL_CARDS
                 matches_str = "、".join([f"【{ALL_DUEL_CARDS[cid].name.replace('对决·', '')}】" for cid in matched[:5]])
                 return DUEL_BROADCAST_TEMPLATES["deck_add_multiple_matches"].format(matches=matches_str), False
                 
@@ -201,7 +201,7 @@ class DeckManager:
                 try:
                     from ...entities.cards.duel import ALL_DUEL_CARDS
                 except ImportError:
-                    from astrbot_plugin_text_roguelike.game.entities.cards.duel import ALL_DUEL_CARDS
+                    from ...entities.cards.duel import ALL_DUEL_CARDS
                 cname = ALL_DUEL_CARDS[cid].name.replace('对决·', '')
                 if limit == 1:
                     return DUEL_BROADCAST_TEMPLATES["deck_add_mythic_limit"].format(cname=cname, cur_count=cur_count), False
@@ -216,7 +216,7 @@ class DeckManager:
             try:
                 from ...entities.cards.duel import ALL_DUEL_CARDS
             except ImportError:
-                from astrbot_plugin_text_roguelike.game.entities.cards.duel import ALL_DUEL_CARDS
+                from ...entities.cards.duel import ALL_DUEL_CARDS
             cname = ALL_DUEL_CARDS[cid].name.replace('对决·', '')
             return DUEL_BROADCAST_TEMPLATES["deck_add_success"].format(active=active, count=count, cname=cname), False
             
@@ -257,7 +257,7 @@ class DeckManager:
             try:
                 from ...entities.cards.duel import ALL_DUEL_CARDS
             except ImportError:
-                from astrbot_plugin_text_roguelike.game.entities.cards.duel import ALL_DUEL_CARDS
+                from ...entities.cards.duel import ALL_DUEL_CARDS
             cname = ALL_DUEL_CARDS[cid_to_rem].name.replace('对决·', '')
             return DUEL_BROADCAST_TEMPLATES["deck_remove_success"].format(active=active, actual_rem=actual_rem, cname=cname), False
             
@@ -306,7 +306,7 @@ class DeckManager:
             try:
                 from ...data.duel_card_data import DUEL_CARD_CONFIG
             except ImportError:
-                from astrbot_plugin_text_roguelike.game.data.duel_card_data import DUEL_CARD_CONFIG
+                from ...data.duel_card_data import DUEL_CARD_CONFIG
                 
             for cid in cards:
                 if not isinstance(cid, str):

@@ -27,7 +27,7 @@ class ExploreEngine:
         stats = None
         if hasattr(self.save_manager, "load_stats"):
             stats = self.save_manager.load_stats(run.user_id)
-        from astrbot_plugin_text_roguelike.game.entities.cards.market import is_card_available
+        from ..entities.cards.market import is_card_available
         card_pool = [
             cid for cid, c in ALL_CARDS.items()
             if c.rarity not in ("legendary", "mythic", "artifact")
@@ -184,7 +184,7 @@ class ExploreEngine:
                 stats = None
                 if hasattr(self.save_manager, "load_stats"):
                     stats = self.save_manager.load_stats(run.user_id)
-                from astrbot_plugin_text_roguelike.game.entities.cards.market import is_card_available
+                from ..entities.cards.market import is_card_available
                 card_pool = [
                     cid for cid, c in ALL_CARDS.items()
                     if c.rarity == "epic"
@@ -284,7 +284,7 @@ class ExploreEngine:
                 stats = None
                 if hasattr(self.save_manager, "load_stats"):
                     stats = self.save_manager.load_stats(run.user_id)
-                from astrbot_plugin_text_roguelike.game.entities.cards.market import is_card_available
+                from ..entities.cards.market import is_card_available
                 class_cards = [
                     cid for cid, c in ALL_CARDS.items()
                     if c.color == class_color

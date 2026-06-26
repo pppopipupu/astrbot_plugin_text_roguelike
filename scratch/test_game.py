@@ -13,9 +13,9 @@ if sys.platform.startswith("win"):
         sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
         sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
 
-from astrbot_plugin_text_roguelike.game.models.manager import SaveManager
-from astrbot_plugin_text_roguelike.game.engine import GameEngine
-from astrbot_plugin_text_roguelike.game.renderer import GameRenderer
+from game.models.manager import SaveManager
+from game.engine import GameEngine
+from game.renderer import GameRenderer
 from main import MyPlugin
 
 class DummyContext:

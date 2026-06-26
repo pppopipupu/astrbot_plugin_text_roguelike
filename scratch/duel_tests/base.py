@@ -5,10 +5,10 @@ import tempfile
 import sys
 
 
-from astrbot_plugin_text_roguelike.game.models.manager import SaveManager
-from astrbot_plugin_text_roguelike.game.core.duel_router import DuelRouter
-from astrbot_plugin_text_roguelike.game.models.state import GameRun, PlayerState, MinionState, AmuletState, BuffState
-from astrbot_plugin_text_roguelike.game.renderer.duel_renderer import render_duel_battle_public, render_duel_battle_private
+from game.models.manager import SaveManager
+from game.core.duel_router import DuelRouter
+from game.models.state import GameRun, PlayerState, MinionState, AmuletState, BuffState
+from game.renderer.duel_renderer import render_duel_battle_public, render_duel_battle_private
 
 class DummyEvent:
     def __init__(self, message_str: str, sender_id: str):

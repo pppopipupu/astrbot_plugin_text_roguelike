@@ -157,7 +157,7 @@ class TestRogueExplore(unittest.TestCase):
         player.stage = 5
         player.gold = 20
         run.node_type = "event"
-        from astrbot_plugin_text_roguelike.game.entities.events import CoinFountainOption
+        from game.entities.events import CoinFountainOption
         opt = CoinFountainOption("投入金币", "coin_fountain")
         opt.execute(run, map_engine)
         self.assertEqual(player.gold, 10)
@@ -624,7 +624,7 @@ class TestRogueExplore(unittest.TestCase):
     def test_ancient_node_style_generation(self):
         plugin = MyPlugin(DummyContext())
         user_id = "test_user_ancient_node_style"
-        from astrbot_plugin_text_roguelike.game.models.state import UserStats
+        from game.models.state import UserStats
         original_load_stats = plugin.save_manager.load_stats
 
         def mock_load_stats_warrior(uid):
@@ -659,7 +659,7 @@ class TestRogueExplore(unittest.TestCase):
             )
             run_11 = GameRun(user_id=user_id, node_type="battle", player=player_11, enemies=[])
             plugin.engine.map_engine.enter_next_stage(run_11)
-            from astrbot_plugin_text_roguelike.game.core.cafe_engine import CafeEngine
+            from game.core.cafe_engine import CafeEngine
             CafeEngine(plugin.save_manager, plugin.engine.map_engine).leave_cafe(run_11)
             style_11 = run_11.node_data.get("style")
             warrior_styles_11.add(style_11)
@@ -697,7 +697,7 @@ class TestRogueExplore(unittest.TestCase):
             )
             run_11 = GameRun(user_id=user_id, node_type="battle", player=player_11, enemies=[])
             plugin.engine.map_engine.enter_next_stage(run_11)
-            from astrbot_plugin_text_roguelike.game.core.cafe_engine import CafeEngine
+            from game.core.cafe_engine import CafeEngine
             CafeEngine(plugin.save_manager, plugin.engine.map_engine).leave_cafe(run_11)
             wizard_styles_11.add(run_11.node_data.get("style"))
 

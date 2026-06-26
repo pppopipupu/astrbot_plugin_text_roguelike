@@ -41,7 +41,7 @@ class DuelCardPlayer:
         try:
             from ...entities.cards.duel import ALL_DUEL_CARDS
         except ImportError:
-            from astrbot_plugin_text_roguelike.game.entities.cards.duel import ALL_DUEL_CARDS
+            from ...entities.cards.duel import ALL_DUEL_CARDS
         card = ALL_DUEL_CARDS.get(cid)
         discard_evt = CardDiscardEvent(run, cid, "manual")
         self.engine.event_bus.dispatch(discard_evt)

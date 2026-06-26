@@ -19,7 +19,7 @@ class CultistKakaTemplate(EnemyTemplate):
     def execute_intent(self, run, engine, enemy, intent, logs: List[str] = None):
         if logs is None:
             logs = intent
-            from astrbot_plugin_text_roguelike.game.models.state import EnemyIntentState
+            from ....models.state import EnemyIntentState
             intent = EnemyIntentState(
                 type=getattr(enemy, "intent_type", ""),
                 val=getattr(enemy, "intent_val", 0),
@@ -27,7 +27,7 @@ class CultistKakaTemplate(EnemyTemplate):
                 cost_a=1,
                 cost_ba=0
             )
-        from astrbot_plugin_text_roguelike.game.entities.enemies.trash_talk_actions import try_trash_talk
+        from ....entities.enemies.trash_talk_actions import try_trash_talk
         try_trash_talk(run, enemy, logs)
         if intent.type == "caw":
             engine._add_buff_to(enemy, "ritual", "仪式", "每回合开始时，获得等同于此状态层数的力量", 1)

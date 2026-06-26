@@ -133,7 +133,7 @@ class Card:
 
     @replay.setter
     def replay(self, val: int):
-        from astrbot_plugin_text_roguelike.game.entities.tags import ReplayTag
+        from ..entities.tags import ReplayTag
         if val > 0:
             self.add_tag(ReplayTag("replay", val))
         else:
@@ -145,7 +145,7 @@ class Card:
 
     @fragile.setter
     def fragile(self, val: int):
-        from astrbot_plugin_text_roguelike.game.entities.tags import FragileTag
+        from ..entities.tags import FragileTag
         if val > 0:
             self.add_tag(FragileTag("fragile", val))
         else:

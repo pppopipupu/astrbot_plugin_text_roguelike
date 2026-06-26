@@ -21,7 +21,7 @@ class TestDuelMinionsSpells(TestDuelSystem):
         run.player.hand = ["duel_meteor_swarm", "duel_frost_nova"]
         run.player.actions = 10
         
-        from astrbot_plugin_text_roguelike.game.models.state import MinionState
+        from game.models.state import MinionState
         run.player2.minions["1"] = MinionState(id="water_elemental", name="水元素", hp=9999, max_hp=9999, atk=2, actions=1, bonus_actions=0)
         self.save_manager.save_duel_save(u1, run)
         
@@ -58,7 +58,7 @@ class TestDuelMinionsSpells(TestDuelSystem):
         run.player.actions = 10
         run.player.bonus_actions = 10
         
-        from astrbot_plugin_text_roguelike.game.models.state import MinionState
+        from game.models.state import MinionState
         run.player2.minions["1"] = MinionState(id="water_elemental", name="水元素", hp=100, max_hp=100, atk=2, actions=1, bonus_actions=0)
         self.save_manager.save_duel_save(u1, run)
         
@@ -94,7 +94,7 @@ class TestDuelMinionsSpells(TestDuelSystem):
         self.assertTrue(minion_has_vuln)
 
     def test_tiered_limits_and_complex_rare_cards(self):
-        from astrbot_plugin_text_roguelike.game.data.duel_card_data import DUEL_CARD_CONFIG
+        from game.data.duel_card_data import DUEL_CARD_CONFIG
         DUEL_CARD_CONFIG["duel_mythic_test"] = {"name": "神话测试", "rarity": "mythic", "type": "spell", "color": "neutral", "cost_a": 1, "cost_ba": 0, "desc": "神话测试"}
         
         u1 = "user1"
@@ -127,7 +127,7 @@ class TestDuelMinionsSpells(TestDuelSystem):
         run.player.bonus_actions = 0
         run.player.hp = 70
         
-        from astrbot_plugin_text_roguelike.game.models.state import MinionState
+        from game.models.state import MinionState
         run.player2.minions["1"] = MinionState(id="water_elemental", name="水元素", hp=15, max_hp=30, atk=2, actions=1, bonus_actions=0)
         self.save_manager.save_duel_save(u1, run)
         
@@ -140,7 +140,7 @@ class TestDuelMinionsSpells(TestDuelSystem):
         run.player.hand = ["duel_destiny_scales"]
         run.player.actions = 10
         run.player2.minions["2"] = MinionState(id="fam", name="魔宠", hp=10, max_hp=30, atk=25, actions=1, bonus_actions=0)
-        from astrbot_plugin_text_roguelike.game.models.state import BuffState
+        from game.models.state import BuffState
         run.player2.minions["2"].buffs.append(BuffState(id="vulnerable", name="易伤", desc="", stacks=2))
         self.save_manager.save_duel_save(u1, run)
         

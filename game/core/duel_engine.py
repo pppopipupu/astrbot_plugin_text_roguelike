@@ -47,7 +47,7 @@ class DuelEngine:
         try:
             from ..data.duel_card_data import DUEL_CARD_CONFIG
         except ImportError:
-            from astrbot_plugin_text_roguelike.game.data.duel_card_data import DUEL_CARD_CONFIG
+            from ..data.duel_card_data import DUEL_CARD_CONFIG
         cid_for_cfg = card.id
         if not cid_for_cfg.startswith("duel_"):
             cid_for_cfg = "duel_" + cid_for_cfg
@@ -109,7 +109,7 @@ class DuelEngine:
         try:
             from ..data.duel_card_data import DUEL_CARD_CONFIG
         except ImportError:
-            from astrbot_plugin_text_roguelike.game.data.duel_card_data import DUEL_CARD_CONFIG
+            from ..data.duel_card_data import DUEL_CARD_CONFIG
         cid_for_cfg = card.id
         if not cid_for_cfg.startswith("duel_"):
             cid_for_cfg = "duel_" + cid_for_cfg
@@ -230,7 +230,7 @@ class DuelEngine:
             try:
                 from ..data.duel_card_data import DUEL_CARD_CONFIG
             except ImportError:
-                from astrbot_plugin_text_roguelike.game.data.duel_card_data import DUEL_CARD_CONFIG
+                from ..data.duel_card_data import DUEL_CARD_CONFIG
             cid_for_cfg = card.id
             if not cid_for_cfg.startswith("duel_"):
                 cid_for_cfg = "duel_" + cid_for_cfg
@@ -435,7 +435,7 @@ class DuelEngine:
             try:
                 from ..data.duel_card_data import RUSH_MINIONS, CHARGE_MINIONS
             except ImportError:
-                from astrbot_plugin_text_roguelike.game.data.duel_card_data import RUSH_MINIONS, CHARGE_MINIONS
+                from ..data.duel_card_data import RUSH_MINIONS, CHARGE_MINIONS
             if minion_id_clean in RUSH_MINIONS:
                 m.attack_actions = 1
                 self._add_buff_to(m, "rush_buff", "突进", "本回合可立即攻击敌方随从。")
@@ -604,7 +604,7 @@ class DuelEngine:
         try:
             from ..data.amulet_data import AMULET_CONFIG
         except ImportError:
-            from astrbot_plugin_text_roguelike.game.data.amulet_data import AMULET_CONFIG
+            from ..data.amulet_data import AMULET_CONFIG
         base_id = amulet_id[:-1] if amulet_id.endswith("+") else amulet_id
         cfg = AMULET_CONFIG.get(base_id)
         if not cfg:

@@ -51,7 +51,7 @@ class TestRogueMinions(unittest.TestCase):
                 pass
         sm = DummySaveManager()
         engine = BattleEngine(sm)
-        from astrbot_plugin_text_roguelike.game.models.state import AmuletState
+        from game.models.state import AmuletState
         player = PlayerState(
             hp=50,
             max_hp=100,

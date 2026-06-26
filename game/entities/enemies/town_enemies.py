@@ -58,7 +58,7 @@ class SniperEliteTemplate(EnemyTemplate):
     def execute_intent(self, run, engine, enemy, intent, logs: List[str] = None):
         if logs is None:
             logs = intent
-            from astrbot_plugin_text_roguelike.game.models.state import EnemyIntentState
+            from ...models.state import EnemyIntentState
             intent = EnemyIntentState(
                 type=getattr(enemy, "intent_type", ""),
                 val=getattr(enemy, "intent_val", 0),
@@ -119,7 +119,7 @@ class PppopipupuTemplate(EnemyTemplate):
     def execute_intent(self, run, engine, enemy, intent, logs: List[str] = None):
         if logs is None:
             logs = intent
-            from astrbot_plugin_text_roguelike.game.models.state import EnemyIntentState
+            from ...models.state import EnemyIntentState
             intent = EnemyIntentState(
                 type=getattr(enemy, "intent_type", ""),
                 val=getattr(enemy, "intent_val", 0),

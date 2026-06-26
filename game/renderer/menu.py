@@ -129,7 +129,7 @@ def get_rogue_relic_library_items() -> list:
     return items
 
 def get_duel_card_library_items() -> list:
-    from astrbot_plugin_text_roguelike.game.entities.cards.duel import ALL_DUEL_CARDS
+    from ..entities.cards.duel import ALL_DUEL_CARDS
     neutrals = []
     wizard_cards = []
     warrior_cards = []
