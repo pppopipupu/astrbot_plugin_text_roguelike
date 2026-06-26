@@ -168,6 +168,13 @@ class TestRogueExplore(unittest.TestCase):
         self.assertEqual(len(player.deck), 3)
 
     def test_card_upgrade_and_forge(self):
+        mhw = ALL_CARDS.get("mass_healing_word")
+        mhw_plus = ALL_CARDS.get("mass_healing_word+")
+        self.assertIsNotNone(mhw)
+        self.assertIsNotNone(mhw_plus)
+        self.assertTrue(mhw_plus.upgraded)
+        self.assertEqual(mhw_plus.heal_amount, 12)
+
         fb = ALL_CARDS.get("fireball")
         fb_plus = ALL_CARDS.get("fireball+")
         self.assertIsNotNone(fb)
