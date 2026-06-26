@@ -12,7 +12,7 @@ if %ERRORLEVEL% neq 0 (
 echo.
 
 echo [2/2] Running all unit tests inside container...
-docker exec -t astrbot-test-env python /AstrBot/data/plugins/astrbot_plugin_text_roguelike/scratch/test_flow.py
+docker exec -w /AstrBot/data/plugins/astrbot_plugin_text_roguelike -e PYTHONPATH=/AstrBot/data/plugins/astrbot_plugin_text_roguelike -t astrbot-test-env python /AstrBot/data/plugins/astrbot_plugin_text_roguelike/scratch/test_flow.py
 if %ERRORLEVEL% neq 0 (
     echo.
     echo ERROR: Unit tests failed!

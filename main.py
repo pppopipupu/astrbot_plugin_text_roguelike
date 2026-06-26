@@ -39,45 +39,27 @@ except ImportError:
         def debug(self, *args, **kwargs): pass
     logger = DummyLogger()
 
-try:
-    from .game.models.manager import SaveManager
-    from .game.engine import GameEngine
-    from .game.renderer import GameRenderer
-    from .game.core.cli_router import CLIRouter
-except ImportError:
-    from game.models.manager import SaveManager
-    from game.engine import GameEngine
-    from game.renderer import GameRenderer
-    from game.core.cli_router import CLIRouter
+from game.models.manager import SaveManager
+from game.engine import GameEngine
+from game.renderer import GameRenderer
+from game.core.cli_router import CLIRouter
 
-try:
-    from .game.models.state import set_user_id
-except ImportError:
-    from game.models.state import set_user_id
+from game.models.state import set_user_id
 
-try:
-    from .game.core.duel_router import DuelRouter
-except ImportError:
-    from game.core.duel_router import DuelRouter
+from game.core.duel_router import DuelRouter
 
 def resolve_card_id(card_input: str) -> str | None:
     card_input = card_input.strip()
     if not card_input:
         return None
-    try:
-        from .game.cards import ALL_CARDS
-    except ImportError:
-        from game.cards import ALL_CARDS
+    from game.cards import ALL_CARDS
     if card_input in ALL_CARDS:
         return card_input
     card_input_lower = card_input.lower()
     for cid in list(ALL_CARDS.keys()):
         if cid.lower() == card_input_lower:
             return cid
-    try:
-        from .game.data.card_data import CARD_CONFIG
-    except ImportError:
-        from game.data.card_data import CARD_CONFIG
+    from game.data.card_data import CARD_CONFIG
     for cid, cfg in CARD_CONFIG.items():
         name = cfg.get("name", "")
         if card_input == name or card_input_lower == name.lower():
@@ -91,7 +73,7 @@ def resolve_card_id(card_input: str) -> str | None:
             return base_id + "+"
     return None
 
-@register("helloworld", "YourName", "一个简单的 Hello World 插件", "1.0.0")
+@register("astrbot_plugin_text_roguelike", "pppopipupu", "基于 DND 5.5E 背景的纯文字回合制肉鸽卡牌游戏插件，带有持久化存档等功能。", "1.0.0")
 class MyPlugin(Star):
     def __init__(self, context: Context, config: dict | None = None):
         super().__init__(context, config)
