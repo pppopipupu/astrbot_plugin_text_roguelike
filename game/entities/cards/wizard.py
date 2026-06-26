@@ -166,7 +166,7 @@ class EchoFormCard(Card):
         feedback_tmpl = cfg.get("feedback")
         if feedback_tmpl:
             return feedback_tmpl.format(name=self.name)
-        return f"使用了【{self.name}】，获得了【回响形态】buff（每回合打出的卡牌额外打出，每张牌最多回响 10 次，多余层数顺延至后续卡牌，可叠加）。"
+        return f"使用了【{self.name}】，获得了【回响形态】buff（每回合打出的卡牌额外打出，每张牌最多回响 5 次，多余层数顺延至后续卡牌，可叠加）。"
 
 @register_card("doomsday_judgment")
 class DoomsdayJudgmentCard(Card):

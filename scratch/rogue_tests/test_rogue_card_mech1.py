@@ -183,9 +183,9 @@ class TestRogueCardMech1(unittest.TestCase):
         res5 = run_echo_test(5, 3)
         self.assertEqual(res5, [5, 0, 0])
         res10 = run_echo_test(10, 3)
-        self.assertEqual(res10, [10, 0, 0])
+        self.assertEqual(res10, [5, 5, 0])
         res24 = run_echo_test(24, 4)
-        self.assertEqual(res24, [10, 10, 4, 0])
+        self.assertEqual(res24, [5, 5, 5, 5])
 
         player = PlayerState(
             hp=30,
@@ -659,5 +659,107 @@ class TestRogueCardMech1(unittest.TestCase):
         self.assertFalse(any(b.id == "vulnerable" for b in enemy2.buffs))
         self.assertTrue(any(b.id == "end_gate_passive" for b in enemy2.buffs))
         self.assertEqual(enemy2.shield, 15)
+
+    def test_gem_desc_dynamic_modification_and_damage_fallbacks(self):
+        from game.models.state import CardState
+        from game.entities.cards.base import ALL_CARDS
+        state = CardState(
+            id="warrior_strike",
+            upgraded=False,
+            gems=["gem_dmg_mul_2", "gem_copy_1", "gem_retain", "gem_cost_ba_sub_1"]
+        )
+        card = ALL_CARDS[state]
+        self.assertEqual(card.cost_ba, 0)
+        self.assertIn("造成 12 点", card.desc)
+        self.assertIn("复制 1", card.desc)
+        self.assertIn("保留", card.desc)
+        self.assertIn("BA消耗减少 1", card.desc)
+
+        state2 = CardState(
+            id="shield",
+            upgraded=False,
+            gems=["gem_dmg_mul_2"]
+        )
+        card2 = ALL_CARDS[state2]
+        self.assertNotIn("造成", card2.desc)
+
+        player = PlayerState(
+            hp=30,
+            max_hp=30,
+            shield=0,
+            gold=100,
+            stage=2,
+            deck=[state2],
+            draw_pile=[],
+            discard_pile=[],
+            exhaust_pile=[],
+            graveyard=[],
+            hand=[state2],
+            actions=2,
+            bonus_actions=1
+        )
+        enemy = EnemyState(
+            name="测试敌人",
+            hp=20,
+            max_hp=20,
+            shield=0
+        )
+        run = GameRun(
+            user_id="test_user_gem_fallback",
+            node_type="battle",
+            player=player,
+            enemies=[enemy]
+        )
+        plugin = MyPlugin(DummyContext())
+        engine = plugin.engine.battle_engine
+        class DummySaveManager:
+            def save_save(self, user_id, run):
+                pass
+            def delete_save(self, user_id):
+                pass
+        engine.save_manager = DummySaveManager()
+        engine.play_card(run, 1)
+        self.assertEqual(enemy.hp, 20)
+
+    def test_discover_exhaust(self):
+        player = PlayerState(
+            hp=30,
+            max_hp=30,
+            shield=0,
+            gold=100,
+            stage=2,
+            deck=["discover"],
+            draw_pile=["dagger_throw"],
+            discard_pile=[],
+            exhaust_pile=["first_aid"],
+            graveyard=[],
+            hand=["discover"],
+            actions=2,
+            bonus_actions=1
+        )
+        enemy = EnemyState(
+            name="测试敌人",
+            hp=20,
+            max_hp=20,
+            shield=0
+        )
+        run = GameRun(
+            user_id="test_user_discover_exhaust",
+            node_type="battle",
+            player=player,
+            enemies=[enemy]
+        )
+        plugin = MyPlugin(DummyContext())
+        engine = plugin.engine.battle_engine
+        class DummySaveManager:
+            def save_save(self, user_id, run):
+                pass
+            def delete_save(self, user_id):
+                pass
+        engine.save_manager = DummySaveManager()
+        engine.play_card(run, 1)
+        run.node_data["state_stack"].pop()
+        engine.resolve_suspended_card(run)
+        self.assertTrue(any(c.id == "discover" for c in player.exhaust_pile))
 
 

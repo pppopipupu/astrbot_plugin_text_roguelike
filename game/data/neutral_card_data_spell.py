@@ -308,8 +308,9 @@ NEUTRAL_CARD_SPELLS = {
         "type": "spell",
         "cost_a": 1,
         "cost_ba": 0,
-        "desc": "从消耗堆选择一张卡牌加入手牌。",
+        "desc": "从消耗堆选择一张卡牌加入手牌。消耗。",
         "rarity": "rare",
+        "exhaust": True,
         "feedback": "使用了【发掘】。"
     },
     "neutral_power_word_kill": {

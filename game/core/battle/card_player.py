@@ -208,8 +208,6 @@ class CardPlayer:
         
         req_a = card.cost_a
         req_ba = card.cost_ba
-        if hasattr(card, "gems") and card.gems and "gem_cost_ba_sub_1" in card.gems:
-            req_ba = max(0, req_ba - 1)
         real_x_a = 0
         real_x_ba = 0
         if req_a == -1:
@@ -291,7 +289,7 @@ class CardPlayer:
                     has_heal_gem = "gem_heal_add_2" in card.gems
                     if has_heal_gem and not run.node_data.get("card_played_triggered_heal", False):
                         self.engine.combat_resolver.heal_target(run, "p0", 0)
-                    has_dmg_gem = any(g in card.gems for g in ("gem_dmg_add_2", "gem_dmg_mul_2", "gem_dmg_mul_3"))
+                    has_dmg_gem = "gem_dmg_add_2" in card.gems
                     if has_dmg_gem and not run.node_data.get("card_played_triggered_dmg", False):
                         dmg_target = target
                         if not dmg_target or not dmg_target.startswith("e"):
@@ -408,8 +406,6 @@ class CardPlayer:
         
         req_a = card.cost_a
         req_ba = card.cost_ba
-        if hasattr(card, "gems") and card.gems and "gem_cost_ba_sub_1" in card.gems:
-            req_ba = max(0, req_ba - 1)
         real_x_a = 0
         real_x_ba = 0
         if req_a == -1:

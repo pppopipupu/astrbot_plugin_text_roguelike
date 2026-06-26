@@ -44,7 +44,7 @@ class EchoFormBuff(BuffImpl):
             card_id = card_id[5:]
         if card_id.startswith("echo_form"):
             stacks = max(0, stacks - 1)
-        num_echoes = min(10, max(0, stacks - 10 * played_count))
+        num_echoes = min(5, max(0, stacks - 5 * played_count))
         if num_echoes > 0:
             for _ in range(num_echoes):
                 if event.engine.is_battle_won(event.run):
@@ -65,7 +65,7 @@ class EchoFormBuff(BuffImpl):
             card_id = card_id[5:]
         if card_id.startswith("echo_form"):
             stacks = max(0, stacks - 1)
-        num_echoes = min(10, max(0, stacks - 10 * played_count))
+        num_echoes = min(5, max(0, stacks - 5 * played_count))
         res = ""
         if num_echoes > 0:
             for _ in range(num_echoes):

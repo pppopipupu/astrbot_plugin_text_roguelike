@@ -463,7 +463,7 @@ class BattleEngine(BaseBattleEngine):
             has_heal_gem = "gem_heal_add_2" in card.gems
             if has_heal_gem and not run.node_data.get("card_played_triggered_heal", False):
                 self.combat_resolver.heal_target(run, "p0", 0)
-            has_dmg_gem = any(g in card.gems for g in ("gem_dmg_add_2", "gem_dmg_mul_2", "gem_dmg_mul_3"))
+            has_dmg_gem = "gem_dmg_add_2" in card.gems
             if has_dmg_gem and not run.node_data.get("card_played_triggered_dmg", False):
                 dmg_target = self._get_first_alive_enemy(run)
                 if dmg_target and dmg_target != "0" and dmg_target != "e0":

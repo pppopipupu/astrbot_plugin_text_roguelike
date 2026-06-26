@@ -325,19 +325,19 @@ class TestDuelAdvanced(TestDuelSystem):
         res, term, p1, dm1, p2, dm2 = self.router.route_in_game_action(run, u1, "张三", ["使用", "1", "e1"])
         self.assertIn("打出了卡牌【打击】", res)
         run = self.save_manager.load_duel_save(u1)
-        self.assertEqual(run.player2.hp, initial_opp_hp - 66)
+        self.assertEqual(run.player2.hp, initial_opp_hp - 36)
+        
+        initial_opp_hp = run.player2.hp
+        res, term, p1, dm1, p2, dm2 = self.router.route_in_game_action(run, u1, "张三", ["使用", "1", "e1"])
+        self.assertIn("打出了卡牌【打击】", res)
+        run = self.save_manager.load_duel_save(u1)
+        self.assertEqual(run.player2.hp, initial_opp_hp - 36)
         
         initial_opp_hp = run.player2.hp
         res, term, p1, dm1, p2, dm2 = self.router.route_in_game_action(run, u1, "张三", ["使用", "1", "e1"])
         self.assertIn("打出了卡牌【打击】", res)
         run = self.save_manager.load_duel_save(u1)
         self.assertEqual(run.player2.hp, initial_opp_hp - 18)
-        
-        initial_opp_hp = run.player2.hp
-        res, term, p1, dm1, p2, dm2 = self.router.route_in_game_action(run, u1, "张三", ["使用", "1", "e1"])
-        self.assertIn("打出了卡牌【打击】", res)
-        run = self.save_manager.load_duel_save(u1)
-        self.assertEqual(run.player2.hp, initial_opp_hp - 6)
         
         run.player.hand = ["duel_commander_patrol_captain", "duel_officer_banner_bearer"]
         run.player.actions = 6
