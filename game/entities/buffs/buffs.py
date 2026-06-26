@@ -305,8 +305,8 @@ class AncientProtectionBuff(BuffImpl):
     def on_damage_calculate_defend(self, event, buff_state, entity):
         if event.modified_damage > 0:
             recoil_dmg = max(1, int(event.modified_damage * 0.20))
-            event.engine._damage_target(event.run, "p0", recoil_dmg, source=f"buff:{entity.name}", damage_type="true")
-            event.engine._log_event(event.run, f"⚡ 【{entity.name}】的反弹结界触发，对玩家反弹了 {recoil_dmg} 点真实伤害！")
+            event.engine._damage_target(event.run, "p0", recoil_dmg, source=f"buff:{entity.name}", damage_type="force")
+            event.engine._log_event(event.run, f"⚡ 【{entity.name}】的反弹结界触发，对玩家反弹了 {recoil_dmg} 点力场伤害！")
 
 class EndGatePassiveBuff(BuffImpl):
     def on_turn_start(self, event, buff_state, entity):
@@ -322,10 +322,8 @@ class EndGatePassiveBuff(BuffImpl):
 
     def on_damage_calculate_defend(self, event, buff_state, entity):
         if event.modified_damage > 0:
-            import random
-            if random.random() < 0.30:
-                event.engine._damage_target(event.run, "p0", 4, source=f"buff:{entity.name}", damage_type="true")
-                event.engine._log_event(event.run, f"⚡ 【{entity.name}】的终焉结界触发，对玩家反弹了 4 点真实伤害！")
+            event.engine._damage_target(event.run, "p0", 1, source=f"buff:{entity.name}", damage_type="true")
+            event.engine._log_event(event.run, f"⚡ 【{entity.name}】的终焉结界触发，对玩家反弹了 1 点真实伤害！")
 
 class DoomsdayGatePassiveBuff(BuffImpl):
     def on_turn_start(self, event, buff_state, entity):
@@ -333,6 +331,12 @@ class DoomsdayGatePassiveBuff(BuffImpl):
             entity.shield += 20
             event.engine._add_buff_to(entity, "strength", "力量", "造成的伤害增加", 2)
             event.engine._log_event(event.run, f"🌌 【{entity.name}】触发【终焉庇护】：获得了 20 点护盾与 2 层力量！")
+
+    def on_damage_calculate_defend(self, event, buff_state, entity):
+        if event.modified_damage > 0:
+            event.engine._damage_target(event.run, "p0", 1, source=f"buff:{entity.name}", damage_type="true")
+            event.engine._damage_target(event.run, "p0", 2, source=f"buff:{entity.name}", damage_type="force")
+            event.engine._log_event(event.run, f"⚡ 【{entity.name}】的终焉结界触发，对玩家反弹了 1 点真实伤害与 2 点力场伤害！")
 
 
 class AncientWisdomBuff(BuffImpl):
