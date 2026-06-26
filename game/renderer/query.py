@@ -212,7 +212,12 @@ def render_query_info(query_str: str) -> str:
             continue
         if not icerainboww_enabled and (eid == "Icerainboww" or "icerainboww" in eid.lower() or "icerainboww" in cfg.get("name", "").lower()):
             continue
-        if q_search == eid.lower() or q_search in cfg.get("name", "").lower():
+        is_meta_hidden = eid in ("【终焉】虚空之门·尤格-索托斯", "【时空主宰】亚弗戈蒙")
+        if is_meta_hidden:
+            match_keyword = (q_search == eid.lower()) or (q_search == cfg.get("name", "").lower())
+        else:
+            match_keyword = (q_search == eid.lower()) or (q_search in cfg.get("name", "").lower())
+        if match_keyword:
             found = True
             ename = cfg.get("name", eid)
             etype = cfg.get("type", "normal")

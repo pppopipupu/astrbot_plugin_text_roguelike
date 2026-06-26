@@ -469,6 +469,68 @@ class UnyieldingBuff(BuffImpl):
         buff_state.already_taken = 0
 
 
+class TimeLordPassiveBuff(BuffImpl):
+    def on_turn_start(self, event, buff_state, entity):
+        if not event.is_player:
+            entity.shield += 20
+            to_remove = []
+            for b in entity.buffs:
+                if is_debuff(b.id):
+                    to_remove.append(b)
+            for b in to_remove:
+                entity.buffs.remove(b)
+            event.engine._log_event(event.run, f"⏳ 【{entity.name}】触发【时空主宰】：获得 20 护盾并清除了所有负面效果！")
+            
+            active_echoes = [e for e in event.run.enemies if e.name == "时空残影" and e.hp > 0]
+            if len(active_echoes) < 1 and len(event.run.enemies) < 3:
+                import random
+                if random.random() < 0.5:
+                    from ...models.state import EnemyState
+                    echo_enemy = EnemyState(
+                        name="时空残影",
+                        hp=15,
+                        max_hp=15,
+                        shield=0,
+                        actions=1,
+                        bonus_actions=0,
+                        max_actions=1,
+                        max_bonus_actions=0
+                    )
+                    event.run.enemies.append(echo_enemy)
+                    event.engine._log_event(event.run, "⏳ 亚弗戈蒙的时空波动爆发，从时间的褶皱中召唤出了【时空残影】！")
+
+    def on_damage_calculate_defend(self, event, buff_state, entity):
+        if event.modified_damage > 0:
+            active_echoes = [e for e in event.run.enemies if e.name == "时空残影" and e.hp > 0]
+            if active_echoes:
+                active_echo = active_echoes[0]
+                shared_dmg = event.modified_damage // 2
+                if shared_dmg > 0:
+                    event.modified_damage = event.modified_damage - shared_dmg
+                    idx = event.run.enemies.index(active_echo) + 1
+                    event.engine.combat_resolver.damage_target(event.run, f"e{idx}", shared_dmg, source="effect", damage_type="true")
+                    event.engine._log_event(event.run, f"🔮 【时空残影】作为肉盾，为亚弗戈蒙分担了 {shared_dmg} 点伤害！")
+            
+            if event.modified_damage > 0:
+                event.engine._damage_target(event.run, "p0", 3, source=f"buff:{entity.name}", damage_type="true")
+                event.engine._log_event(event.run, f"⚡ 【{entity.name}】的时空壁垒触发，对玩家反弹了 3 点真实伤害！")
+
+
+class PendulumResonanceBuff(BuffImpl):
+    def on_turn_end(self, event, buff_state, entity):
+        if event.is_player:
+            run = event.run
+            p = run.player
+            if p.actions == 0 or p.bonus_actions == 0:
+                played_count = run.node_data.get("cards_played_this_turn", 0)
+                dmg = max(4, played_count * 2)
+                event.engine._damage_target(run, "p0", dmg, source="buff:钟摆共振", damage_type="true")
+                event.engine._log_event(run, f"🔔 [钟摆共振] 银钟剧烈震荡！由于你本回合用光了动作点（当前 {p.actions}A {p.bonus_actions}BA），时空失衡，受到 {dmg} 点真实伤害！")
+            else:
+                event.engine._log_event(run, "⏳ [钟摆共振] 时间轴流动保持平稳。你保留了至少 1A 1BA，规避了震荡伤害，且在下回合将额外抽取 2 张牌！")
+                run.node_data["draw_penalty_next_turn"] = run.node_data.get("draw_penalty_next_turn", 0) - 2
+
+
 for name, obj in list(globals().items()):
     if isinstance(obj, type) and issubclass(obj, BuffImpl) and obj is not BuffImpl:
         if not getattr(obj, "auto_register", True):

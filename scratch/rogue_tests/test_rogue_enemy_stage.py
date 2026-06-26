@@ -539,3 +539,116 @@ class TestRogueEnemyStage(unittest.TestCase):
 
         engine._damage_target(run, "e1", 30, damage_type="fire")
         self.assertEqual(enemy.hp, 120)
+
+    def test_aforgomon_boss_mechanisms(self):
+        class DummySaveManager:
+            def save_save(self, user_id, run):
+                pass
+            def delete_save(self, user_id):
+                pass
+            def load_stats(self, user_id):
+                return None
+        sm = DummySaveManager()
+        engine = BattleEngine(sm)
+        player = PlayerState(hp=100, max_hp=100, shield=0, gold=100, stage=31, name="测试玩家")
+        run = GameRun(user_id="test_user", node_type="battle", player=player)
+        engine._init_battle_node(run, "boss")
+        
+        boss = run.enemies[0]
+        self.assertEqual(boss.name, "亚弗戈蒙")
+        self.assertEqual(boss.hp, 180)
+        
+        from game.renderer import render_query_info
+        res_afor = render_query_info("【时空主宰】亚弗戈蒙")
+        self.assertFalse("未找到" in res_afor)
+        res_yog = render_query_info("【终焉】虚空之门·尤格-索托斯")
+        self.assertFalse("未找到" in res_yog)
+        
+        intents_p1 = engine.enemy_controller.roll_enemy_intent(run)
+        self.assertTrue(len(boss.intents) >= 2)
+        
+        engine._damage_target(run, "e1", 180, damage_type="true")
+        self.assertEqual(boss.name, "【时空主宰】亚弗戈蒙")
+        self.assertEqual(boss.hp, 220)
+        self.assertEqual(boss.max_hp, 220)
+        
+        has_res = any(b.id == "pendulum_resonance" for b in player.buffs)
+        self.assertTrue(has_res)
+        
+        intents_p2 = engine.enemy_controller.roll_enemy_intent(run)
+        self.assertTrue(len(boss.intents) >= 3)
+        
+        from game.entities.enemies.boss import BossAforgomonTemplate
+        from game.models.state import EnemyIntentState, CardState
+        aforgomon_temp = BossAforgomonTemplate("亚弗戈蒙")
+        
+        player.hand = [CardState("strike"), CardState("defend"), CardState("strike")]
+        intent_tf = EnemyIntentState(type="time_fracture", val=12, desc="", cost_a=1, cost_ba=0)
+        logs_tf = []
+        aforgomon_temp.execute_intent(run, engine, boss, intent_tf, logs_tf)
+        self.assertEqual(player.hand[0].fragile, 0)
+        self.assertEqual(player.hand[1].fragile, 1)
+        self.assertEqual(player.hand[2].fragile, 1)
+        
+        player.buffs = [b for b in player.buffs if b.id != "pendulum_resonance"]
+        intent_sbc = EnemyIntentState(type="silver_bell_clang", val=15, desc="", cost_a=1, cost_ba=0)
+        logs_sbc = []
+        aforgomon_temp.execute_intent(run, engine, boss, intent_sbc, logs_sbc)
+        has_res2 = any(b.id == "pendulum_resonance" for b in player.buffs)
+        self.assertTrue(has_res2)
+        
+        player.hp = 100
+        logs_sbc2 = []
+        aforgomon_temp.execute_intent(run, engine, boss, intent_sbc, logs_sbc2)
+        self.assertEqual(player.hp, 80)
+        
+        boss.hp = 100
+        boss.shield = 0
+        intent_tr = EnemyIntentState(type="time_reflux", val=0, desc="", cost_a=1, cost_ba=0)
+        logs_tr = []
+        aforgomon_temp.execute_intent(run, engine, boss, intent_tr, logs_tr)
+        self.assertEqual(boss.hp, 125)
+        self.assertEqual(boss.shield, 20)
+        
+        player.hand = [CardState("strike")]
+        intent_tl = EnemyIntentState(type="temporal_lock", val=5, desc="", cost_a=0, cost_ba=1)
+        logs_tl = []
+        aforgomon_temp.execute_intent(run, engine, boss, intent_tl, logs_tl)
+        self.assertEqual(len(player.hand), 0)
+        
+        import unittest.mock as mock
+        with mock.patch("random.random", return_value=0.1):
+            from game.models.events import TurnStartEvent
+            evt = TurnStartEvent(run=run, is_player=False)
+            engine.event_bus.dispatch(evt)
+            
+        self.assertTrue(any(e.name == "时空残影" for e in run.enemies))
+        
+        echo_enemy = next(e for e in run.enemies if e.name == "时空残影")
+        self.assertEqual(echo_enemy.hp, 15)
+        
+        player.hp = 100
+        boss.hp = 220
+        boss.shield = 0
+        engine._damage_target(run, "e1", 20, damage_type="slashing")
+        self.assertEqual(boss.hp, 210)
+        self.assertEqual(echo_enemy.hp, 5)
+        self.assertEqual(player.hp, 97)
+        
+        player.actions = 0
+        player.bonus_actions = 1
+        run.node_data["cards_played_this_turn"] = 3
+        player.hp = 100
+        from game.models.events import TurnEndEvent
+        evt_end = TurnEndEvent(run=run, is_player=True)
+        engine.event_bus.dispatch(evt_end)
+        self.assertEqual(player.hp, 94)
+        
+        player.actions = 1
+        player.bonus_actions = 1
+        run.node_data["cards_played_this_turn"] = 3
+        player.hp = 100
+        evt_end2 = TurnEndEvent(run=run, is_player=True)
+        engine.event_bus.dispatch(evt_end2)
+        self.assertEqual(player.hp, 100)
+        self.assertEqual(run.node_data.get("draw_penalty_next_turn"), -2)

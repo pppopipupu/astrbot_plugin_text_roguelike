@@ -810,3 +810,185 @@ class BossYogSothothTemplate(EnemyTemplate):
 register_enemy("【觉醒】虚空之门·尤格-索托斯")(BossYogSothothTemplate)
 register_enemy("【终焉】虚空之门·尤格-索托斯")(BossYogSothothTemplate)
 
+@register_enemy("亚弗戈蒙")
+class BossAforgomonTemplate(EnemyTemplate):
+    def on_enemy_before_death(self, run, enemy, event, engine):
+        if enemy.name == "亚弗戈蒙":
+            event.cancel()
+            enemy.name = "【时空主宰】亚弗戈蒙"
+            enemy.max_hp = 220
+            enemy.hp = 220
+            enemy.shield = 40
+            enemy.actions = 3
+            enemy.bonus_actions = 1
+            enemy.max_actions = 3
+            enemy.max_bonus_actions = 1
+            enemy.buffs.clear()
+            from ...models.state import BuffState
+            enemy.buffs.append(BuffState(id="time_lord_passive", name="时空主宰", stacks=1, desc="每回合开始获得 20 护盾，且清除自身所有负面效果；受到伤害时 50% 几率召唤时空残影，且反弹 3 点真实伤害；分担 50% 伤害"))
+            engine._add_buff_to(run.player, "pendulum_resonance", "钟摆共振", "回合结束时若动作点全光则受打出牌数*2点真伤惩罚，保留至少1A 1BA则获得额外抽取2张牌的奖赏", 1)
+            run.node_data["aforgomon_phase"] = 2
+            run.node_data["aforgomon_turn"] = 0
+            enemy.intents.clear()
+            engine._log_event(run, "⏳ 虚空中回荡起清脆的钟鸣，亚弗戈蒙的身影在无数个平行时空交错叠加，最终汇聚为无法名状的伟岸实体！")
+            engine._log_event(run, f"💬 【时空主宰】亚弗戈蒙：‘时间的织网已被你扯碎，{run.player.name}。现在，在无尽轮回的钟摆共鸣中，化为微尘吧！’")
+
+    def roll_intents(self, run, engine, enemy) -> List['EnemyIntentState']:
+        from ...models.state import EnemyIntentState
+        import random
+        phase = run.node_data.get("aforgomon_phase", 1)
+        turn = run.node_data.get("aforgomon_turn", 1)
+        run.node_data["aforgomon_turn"] = turn + 1
+        intents_list = []
+        if phase == 1:
+            for _ in range(enemy.max_actions):
+                chosen = random.choice([
+                    {"id": "chain_of_time", "val": 8, "desc": "时间之链 (造成 8 点力场伤害，使玩家下回合减少 1A)"},
+                    {"id": "portal_implosion", "val": 15, "desc": "门扉内爆 (造成 15 点钝击伤害，若玩家有护盾额外造成 5 点伤害)"}
+                ])
+                intents_list.append(EnemyIntentState(
+                    type=chosen["id"],
+                    val=chosen["val"],
+                    desc=chosen["desc"],
+                    cost_a=1,
+                    cost_ba=0
+                ))
+            for _ in range(enemy.max_bonus_actions):
+                intents_list.append(EnemyIntentState(
+                    type="time_warp",
+                    val=15,
+                    desc="时空扭曲 (获得 15 点护盾，下回合获得 1 层力量)",
+                    cost_a=0,
+                    cost_ba=1
+                ))
+        else:
+            for _ in range(enemy.max_actions):
+                chosen = random.choice([
+                    {"id": "time_fracture", "val": 12, "desc": "时序断裂 (造成 12 点力场伤害，并使玩家手牌除首张外全部获得【易碎 1】磨损)"},
+                    {"id": "silver_bell_clang", "val": 15, "desc": "银钟轰鸣 (造成 15 点雷鸣伤害，若玩家已受【钟摆共振】则额外造成 5 点真实伤害，否则对其施加【钟摆共振】)"},
+                    {"id": "time_reflux", "val": 0, "desc": "时空回退 (获得 20 点护盾并恢复自身 25 点生命值)"}
+                ])
+                intents_list.append(EnemyIntentState(
+                    type=chosen["id"],
+                    val=chosen["val"],
+                    desc=chosen["desc"],
+                    cost_a=1,
+                    cost_ba=0
+                ))
+            for _ in range(enemy.max_bonus_actions):
+                intents_list.append(EnemyIntentState(
+                    type="temporal_lock",
+                    val=5,
+                    desc="时间锁定 (造成 5 点心灵伤害，且迫使玩家随机丢弃 1 张手牌)",
+                    cost_a=0,
+                    cost_ba=1
+                ))
+        return intents_list
+
+    def execute_intent(self, run, engine, enemy, intent, logs: List[str] = None):
+        if logs is None:
+            logs = intent
+            from ...models.state import EnemyIntentState
+            intent = EnemyIntentState(
+                type=getattr(enemy, "intent_type", ""),
+                val=getattr(enemy, "intent_val", 0),
+                desc=getattr(enemy, "intent_desc", ""),
+                cost_a=1,
+                cost_ba=0
+            )
+        p = run.player
+        strength = 0
+        for b in enemy.buffs:
+            if b.id == "strength":
+                strength += b.stacks
+        val = intent.val + strength
+
+        if intent.type == "chain_of_time":
+            before_len = len(run.node_data.get("battle_logs", []))
+            engine._damage_target(run, "p0", val, source=f"enemy:{enemy.name}", damage_type="force")
+            after_logs = run.node_data.get("battle_logs", [])
+            dmg_msg = after_logs.pop() if len(after_logs) > before_len else ""
+            run.node_data["drain_a"] = True
+            logs.append(f"【{enemy.name}】施展时间之链对玩家造成伤害。{dmg_msg}，且使玩家在下一回合失去 1 个动作点 (A)。")
+        elif intent.type == "portal_implosion":
+            extra = 5 if p.shield > 0 else 0
+            final_val = val + extra
+            before_len = len(run.node_data.get("battle_logs", []))
+            engine._damage_target(run, "p0", final_val, source=f"enemy:{enemy.name}", damage_type="bludgeoning")
+            after_logs = run.node_data.get("battle_logs", [])
+            dmg_msg = after_logs.pop() if len(after_logs) > before_len else ""
+            logs.append(f"【{enemy.name}】引动门扉内爆。{dmg_msg}")
+        elif intent.type == "time_warp":
+            enemy.shield += intent.val
+            engine._add_buff_to(enemy, "strength", "力量", "造成的伤害增加", 1)
+            logs.append(f"【{enemy.name}】施展时空扭曲，获得 15 点护盾，且力量提升了 1 点。")
+        elif intent.type == "time_fracture":
+            before_len = len(run.node_data.get("battle_logs", []))
+            engine._damage_target(run, "p0", val, source=f"enemy:{enemy.name}", damage_type="force")
+            after_logs = run.node_data.get("battle_logs", [])
+            dmg_msg = after_logs.pop() if len(after_logs) > before_len else ""
+            logs.append(f"【{enemy.name}】施展时序断裂，虚空能量粉碎了局部时序。{dmg_msg}")
+            affected = []
+            if len(p.hand) > 1:
+                for card in p.hand[1:]:
+                    card.fragile = max(card.fragile, 1)
+                    from ...entities import ALL_CARDS
+                    card_name = "未知卡牌"
+                    if card in ALL_CARDS:
+                        card_name = ALL_CARDS[card].name
+                    elif card.id in ALL_CARDS:
+                        card_name = ALL_CARDS[card.id].name
+                    affected.append(f"【{card_name}】")
+            if affected:
+                logs.append(f"⏳ 时序断裂的余波磨损了你的手牌，使等同于 {'、'.join(affected)} 的卡牌附着了【易碎 1】状态！")
+        elif intent.type == "silver_bell_clang":
+            has_resonance = any(b.id == "pendulum_resonance" for b in p.buffs)
+            before_len = len(run.node_data.get("battle_logs", []))
+            engine._damage_target(run, "p0", val, source=f"enemy:{enemy.name}", damage_type="thunder")
+            after_logs = run.node_data.get("battle_logs", [])
+            dmg_msg = after_logs.pop() if len(after_logs) > before_len else ""
+            logs.append(f"【{enemy.name}】敲响银钟，低沉 of 银钟轰鸣震荡灵魂。{dmg_msg}")
+            if has_resonance:
+                before_len2 = len(run.node_data.get("battle_logs", []))
+                engine._damage_target(run, "p0", 5, source=f"enemy:{enemy.name}", damage_type="true")
+                after_logs2 = run.node_data.get("battle_logs", [])
+                dmg_msg2 = after_logs2.pop() if len(after_logs2) > before_len2 else ""
+                logs.append(f"🔔 钟摆产生剧烈共振！对你额外造成了 5 点真实伤害！{dmg_msg2}")
+            else:
+                engine._add_buff_to(p, "pendulum_resonance", "钟摆共振", "回合结束时若动作点全光则受打出牌数*2点真伤惩罚，保留至少1A 1BA则获得额外抽取2张牌的奖赏", 1)
+                logs.append("⏳ 银钟鸣响，你被施加了【钟摆共振】状态！")
+        elif intent.type == "time_reflux":
+            enemy.shield += 20
+            enemy.hp = min(enemy.max_hp, enemy.hp + 25)
+            logs.append(f"【{enemy.name}】发动时空回退，获得了 20 点护盾，并恢复了 25 点生命值。")
+            from ..buffs import is_debuff
+            neg_buff = next((b for b in enemy.buffs if is_debuff(b.id)), None)
+            if neg_buff:
+                neg_name = neg_buff.name
+                neg_buff.stacks -= 1
+                if neg_buff.stacks <= 0:
+                    enemy.buffs.remove(neg_buff)
+                engine._sync_enemy_intents(enemy)
+                logs.append(f"⏳ 时空回退使【{enemy.name}】清除了 1 层自身的负面状态【{neg_name}】！")
+        elif intent.type == "temporal_lock":
+            before_len = len(run.node_data.get("battle_logs", []))
+            engine._damage_target(run, "p0", val, source=f"enemy:{enemy.name}", damage_type="psychic")
+            after_logs = run.node_data.get("battle_logs", [])
+            dmg_msg = after_logs.pop() if len(after_logs) > before_len else ""
+            logs.append(f"【{enemy.name}】施展时间锁定。{dmg_msg}")
+            if p.hand:
+                import random
+                idx = random.randint(0, len(p.hand) - 1)
+                discarded = p.hand.pop(idx)
+                from ...entities import ALL_CARDS
+                card_name = "未知卡牌"
+                if discarded in ALL_CARDS:
+                    card_name = ALL_CARDS[discarded].name
+                elif discarded.id in ALL_CARDS:
+                    card_name = ALL_CARDS[discarded.id].name
+                engine._discard_card(run, discarded)
+                logs.append(f"💨 时间被锁定，你被迫随机丢弃了手牌：【{card_name}】。")
+        return "\n".join(logs)
+
+register_enemy("【时空主宰】亚弗戈蒙")(BossAforgomonTemplate)
+
