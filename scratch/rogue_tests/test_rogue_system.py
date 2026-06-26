@@ -369,6 +369,10 @@ class TestRogueSystem(unittest.TestCase):
             res = qm.render_duel_query_info(term)
             self.assertNotIn("未在对决模式中匹配到", res)
 
+    def test_rogue_query_gems_and_new_keywords(self):
+        for term in ("复制", "返回", "copy", "return", "裂变金刚石", "永恒祖母绿", "宝石", "gem", "gem_copy_1", "入场曲", "fanfare", "谢幕曲", "last_words", "吟唱", "countdown"):
+            res = render_query_info(term)
+            self.assertNotIn("未找到", res)
 
     def test_rogue_overview_reader(self):
         plugin = MyPlugin(DummyContext())

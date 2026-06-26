@@ -4,6 +4,7 @@ from ..data.minion_data import MINION_CONFIG
 from ..data.card_data import CARD_CONFIG
 from ..data.enemy_data import ENEMY_CONFIG
 from ..data.keyword_data import KEYWORD_CONFIG
+from ..data.gem_data import GEM_CONFIG
 from .menu import get_card_cost_str
 
 def render_query_info(query_str: str) -> str:
@@ -71,6 +72,18 @@ def render_query_info(query_str: str) -> str:
             desc = cfg.get("desc", "")
             lines.append(f"  • 【{kname}】: {desc}")
         lines.append("")
+
+    if not tier_filter and q_search in ("gem", "gems", "宝石", "宝石一览"):
+        found = True
+        lines.append("💎 【全体镶嵌宝石一览】")
+        for gid, cfg in GEM_CONFIG.items():
+            gname = cfg.get("name", gid)
+            rarity = cfg.get("rarity", "common")
+            grarity_ch = rarity_map.get(rarity, rarity)
+            desc = cfg.get("desc", "")
+            price = cfg.get("price", 0)
+            lines.append(f"  • 【{gname}】 ({grarity_ch}) - 效果：{desc} | 价格：{price} GP")
+        lines.append("")
         
     for rid, cfg in RELIC_CONFIG.items():
         if tier_filter and cfg.get("rarity", "common").lower() != tier_filter:
@@ -108,6 +121,22 @@ def render_query_info(query_str: str) -> str:
             desc = cfg.get("desc", "")
             lines.append(f"🧩 词条/机制：{kname} (ID: {kid})")
             lines.append(f"描述：{desc}")
+            lines.append("")
+
+    for gid, cfg in GEM_CONFIG.items():
+        if tier_filter and cfg.get("rarity", "common").lower() != tier_filter:
+            continue
+        match_keyword = (not q_search) or (q_search == gid.lower()) or (q_search in cfg.get("name", "").lower()) or (q_search in cfg.get("desc", "").lower())
+        if match_keyword:
+            found = True
+            gname = cfg.get("name", gid)
+            rarity = cfg.get("rarity", "common")
+            grarity_ch = rarity_map.get(rarity, rarity)
+            desc = cfg.get("desc", "")
+            price = cfg.get("price", 0)
+            lines.append(f"💎 宝石：{gname} (ID: {gid}) ({grarity_ch})")
+            lines.append(f"效果：{desc}")
+            lines.append(f"售价：{price} 金币")
             lines.append("")
             
     for mid, cfg in MINION_CONFIG.items():
