@@ -623,3 +623,93 @@ class TestRogueSystem(unittest.TestCase):
             self.assertEqual(state.fragile, 3)
             self.assertTrue(state.no_copy)
 
+    def test_multi_card_lock_system(self):
+        plugin = MyPlugin(DummyContext())
+        user_id = "test_user_multi_lock"
+        plugin.save_manager.delete_save(user_id)
+        stats_path = plugin.save_manager.get_stats_path(user_id)
+        if os.path.exists(stats_path):
+            os.remove(stats_path)
+
+        async def go():
+            stats = plugin.save_manager.load_stats(user_id)
+            stats.gp = 1000
+            stats.locked_cards = []
+            plugin.save_manager.save_stats(user_id, stats)
+
+            res_menu = await run_command(plugin, "lock", sender_id=user_id)
+            self.assertIn("锁定卡牌管理系统", res_menu)
+            self.assertIn("暂无任何锁定的卡牌", res_menu)
+
+            res_fail_notfound = await run_command(plugin, "lock 绝无此卡", sender_id=user_id)
+            self.assertIn("未找到", res_fail_notfound)
+
+            res_fail_legendary = await run_command(plugin, "lock fireball_upgrade_legendary", sender_id=user_id)
+            if "fireball_upgrade_legendary" in ALL_CARDS:
+                self.assertIn("无法锁定", res_fail_legendary)
+
+            stats.gp = 200
+            plugin.save_manager.save_stats(user_id, stats)
+            res_fail_gp = await run_command(plugin, "lock 痛击", sender_id=user_id)
+            self.assertIn("当前仅有", res_fail_gp.replace(" ", ""))
+
+            stats.gp = 1000
+            plugin.save_manager.save_stats(user_id, stats)
+            res_success = await run_command(plugin, "lock 痛击", sender_id=user_id)
+            self.assertIn("锁定成功", res_success)
+            self.assertIn("痛击", res_success)
+
+            stats = plugin.save_manager.load_stats(user_id)
+            self.assertEqual(stats.gp, 700)
+            self.assertIn("warrior_bash", stats.locked_cards)
+
+            res_fail_dup = await run_command(plugin, "lock 痛击", sender_id=user_id)
+            self.assertIn("已经", res_fail_dup)
+
+            stats.gp = 5000
+            for i in range(7):
+                stats.locked_cards.append(f"dummy_card_{i}")
+            plugin.save_manager.save_stats(user_id, stats)
+
+            res_fail_limit = await run_command(plugin, "lock 防御", sender_id=user_id)
+            self.assertIn("最多只能同时锁定", res_fail_limit)
+
+            res_unlock = await run_command(plugin, "unlock 痛击", sender_id=user_id)
+            self.assertIn("解锁成功", res_unlock)
+            stats = plugin.save_manager.load_stats(user_id)
+            self.assertNotIn("warrior_bash", stats.locked_cards)
+
+            res_clear = await run_command(plugin, "lock clear", sender_id=user_id)
+            self.assertIn("成功清空", res_clear)
+            stats = plugin.save_manager.load_stats(user_id)
+            self.assertEqual(len(stats.locked_cards), 0)
+
+            stats.guaranteed_card = "warrior_bash"
+            stats.locked_cards = ["warrior_defend"]
+            plugin.save_manager.save_stats(user_id, stats)
+
+            stats.rogue_mode = True
+            stats.selected_class = "战士"
+            plugin.save_manager.save_stats(user_id, stats)
+            
+            res_start = await run_command(plugin, "start", sender_id=user_id)
+            self.assertIn("契约", res_start)
+
+            run = plugin.save_manager.load_save(user_id)
+            self.assertIsNotNone(run)
+            card_ids = [c.id for c in run.player.deck]
+            self.assertIn("warrior_bash", card_ids)
+            self.assertIn("warrior_defend", card_ids)
+
+            stats_after = plugin.save_manager.load_stats(user_id)
+            self.assertIsNone(stats_after.guaranteed_card)
+            self.assertIn("warrior_bash", stats_after.locked_cards)
+            self.assertIn("warrior_defend", stats_after.locked_cards)
+
+            plugin.save_manager.delete_save(user_id)
+            stats_path = plugin.save_manager.get_stats_path(user_id)
+            if os.path.exists(stats_path):
+                os.remove(stats_path)
+
+        asyncio.run(go())
+

@@ -350,7 +350,7 @@ NEUTRAL_CARD_SPELLS = {
         "type": "spell",
         "cost_a": 1,
         "cost_ba": 1,
-        "desc": "传送脱逃离开遭遇战，无任何战利品金币奖励。20层 and 25层BOSS战禁用。即逝。",
+        "desc": "传送脱逃离开遭遇战，无任何战利品金币奖励。20层和25层BOSS战禁用。即逝。",
         "rarity": "mythic",
         "fleeting": True,
         "feedback": "🔮 你咏唱了【异界传送】，张开空间裂缝使自己瞬间传送逃离战场！"

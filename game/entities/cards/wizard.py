@@ -365,34 +365,54 @@ class ArcaneBarrierCard(Card):
 @register_card("wizard_prismatic_wall")
 class WizardPrismaticWallCard(Card):
     def execute(self, run, target, engine) -> str:
-        engine._gain_shield(run, "p0", 15)
-        engine._add_buff_to(run.player, "prismatic_barrier", "虹光屏障", "受击时反射 12 点混合属性伤害", 2)
-        return "你咏唱了【虹光法墙】，获得了 15 点护盾与 2 层【虹光屏障】！"
+        shield_val = 25 if self.upgraded else 15
+        barrier_layers = 3 if self.upgraded else 2
+        engine._gain_shield(run, "p0", shield_val)
+        if self.upgraded:
+            engine._add_buff_to(run.player, "prismatic_barrier_upgraded", "虹光屏障+", "受击时反射 20 点混合属性伤害", barrier_layers)
+            return f"你咏唱了【虹光法墙+】，获得了 {shield_val} 点护盾与 {barrier_layers} 层【虹光屏障+】！"
+        else:
+            engine._add_buff_to(run.player, "prismatic_barrier", "虹光屏障", "受击时反射 12 点混合属性伤害", barrier_layers)
+            return f"你咏唱了【虹光法墙】，获得了 {shield_val} 点护盾与 {barrier_layers} 层【虹光屏障】！"
 
 @register_card("wizard_antimagic_field")
 class WizardAntimagicFieldCard(Card):
     def execute(self, run, target, engine) -> str:
-        run.player.buffs.clear()
-        for enemy in run.enemies:
-            enemy.buffs.clear()
-        run.player.amulets.clear()
-        engine._add_buff_to(run.player, "antimagic_immune", "反魔法屏障", "免疫本回合所有非物理伤害", 1)
-        return "反魔法力场席卷了战场！清除了所有单位的 Buff 并摧毁了玩家所有的护符，且你本回合将免疫非物理伤害！"
+        if self.upgraded:
+            from ..buffs import is_debuff
+            run.player.buffs = [b for b in run.player.buffs if not is_debuff(b.id)]
+            for enemy in run.enemies:
+                enemy.buffs = [b for b in enemy.buffs if is_debuff(b.id)]
+            engine._add_buff_to(run.player, "antimagic_immune", "反魔法屏障", "免疫本回合所有非物理伤害", 1)
+            return "掌控禁魔法阵展开！清除了玩家的负面状态与敌人的所有增益，且你本回合将免疫非物理伤害！"
+        else:
+            run.player.buffs.clear()
+            for enemy in run.enemies:
+                enemy.buffs.clear()
+            run.player.amulets.clear()
+            engine._add_buff_to(run.player, "antimagic_immune", "反魔法屏障", "免疫本回合所有非物理伤害", 1)
+            return "反魔法力场席卷了战场！清除了所有单位的 Buff 并摧毁了玩家所有的护符，且你本回合将免疫非物理伤害！"
 
 @register_card("wizard_time_ravage")
 class WizardTimeRavageCard(Card):
     def execute(self, run, target, engine) -> str:
         name = engine._get_target_name(run, target)
-        engine._damage_target(run, target, 15, damage_type="true", card=self)
+        dmg = 25 if self.upgraded else 15
+        debuff_layers = 3 if self.upgraded else 2
+        engine._damage_target(run, target, dmg, damage_type="true", card=self)
         if target.startswith("e"):
             try:
                 idx = int(target[1:]) - 1
                 if 0 <= idx < len(run.enemies):
                     enemy = run.enemies[idx]
-                    engine._add_buff_to(enemy, "weak", "虚弱", "造成的伤害减少 50%", 2)
-                    engine._add_buff_to(enemy, "vulnerable", "易伤", "受到的伤害增加 50%", 2)
+                    engine._add_buff_to(enemy, "weak", "虚弱", "造成的伤害减少 50%", debuff_layers)
+                    engine._add_buff_to(enemy, "vulnerable", "易伤", "受到的伤害增加 50%", debuff_layers)
             except ValueError:
                 pass
-        return f"对【{name}】释放【时光蹂躏】，造成了 15 点时间侵蚀真实伤害，并施加了 2 层【虚弱】与 2 层【易伤】！"
+        msg = f"对【{name}】释放【时光蹂躏】，造成了 {dmg} 点时间侵蚀真实伤害，并施加了 {debuff_layers} 层【虚弱】与 {debuff_layers} 层【易伤】！"
+        if self.upgraded:
+            run.player.action_a += 1
+            msg += " 你获得了 1A 时间补偿！"
+        return msg
 
 

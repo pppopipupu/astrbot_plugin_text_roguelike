@@ -39,14 +39,14 @@ def render_bag(stats: UserStats) -> str:
     lines.append("")
     
     lines.append("🏷️ 【下局游戏定制（待带入）卡牌】")
-    g_card = getattr(stats, "guaranteed_card", None)
+    locked_list = getattr(stats, "locked_cards", []) or []
     p_pool = getattr(stats, "purchased_pool", [])
     
     has_custom = False
-    if g_card:
+    if locked_list:
         has_custom = True
-        c_name = ALL_CARDS[g_card].name if g_card in ALL_CARDS else g_card
-        lines.append(f"  📌 锁定必带卡牌：【{c_name}】")
+        locked_names = "、".join([f"【{ALL_CARDS[cid].name}】" if cid in ALL_CARDS else cid for cid in locked_list])
+        lines.append(f"  📌 锁定必带卡牌：{locked_names}")
     if p_pool:
         has_custom = True
         p_names = "、".join([f"【{ALL_CARDS[cid].name}】" if cid in ALL_CARDS else cid for cid in p_pool])

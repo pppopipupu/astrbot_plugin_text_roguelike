@@ -59,6 +59,7 @@ class UserStats:
     in_town: bool = False
     town_pos: str = "square"
     guaranteed_card: Optional[str] = None
+    locked_cards: List[str] = field(default_factory=list)
     purchased_pool: List[str] = field(default_factory=list)
     defeated_town_npcs: List[str] = field(default_factory=list)
     town_inventory: List[str] = field(default_factory=list)

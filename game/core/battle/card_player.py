@@ -54,7 +54,7 @@ class CardPlayer:
         else:
             p.discard_pile.append(clean_state)
 
-    def draw_cards(self, p: PlayerState, count: int, run: Optional[GameRun] = None, ignore_focus: bool = False):
+    def draw_cards(self, p: PlayerState, count: int, run: Optional[GameRun] = None, ignore_focus: bool = False, depth: int = 0):
         if not ignore_focus and any(b.id == "tactical_focus" for b in p.buffs):
             if run is not None:
                 self.engine._log_event(run, "⚠️ [无法抽牌] 本回合无法再抽牌。")
@@ -72,10 +72,14 @@ class CardPlayer:
                     reshuffled = True
             if p.draw_pile:
                 cid = p.draw_pile.pop()
-                if run is not None and any(b.id == "hell_raider" for b in p.buffs):
+                is_hell_raider = any(b.id == "hell_raider" for b in p.buffs)
+                is_hell_raider_upg = any(b.id == "hell_raider_upgraded" for b in p.buffs)
+                if run is not None and (is_hell_raider or is_hell_raider_upg):
                     card_obj = ALL_CARDS.get(cid)
-                    if card_obj and getattr(card_obj, "cost_a", 0) == 1 and getattr(card_obj, "cost_ba", 0) == 0:
-                        self.engine._log_event(run, f"🔥 [地狱狂徒] 触发自动连携，免费打出刚抽到的 1A 卡牌【{card_obj.name}】！")
+                    cost_a_limit = 2 if is_hell_raider_upg else 1
+                    if card_obj and getattr(card_obj, "cost_a", 0) <= cost_a_limit and getattr(card_obj, "cost_ba", 0) == 0:
+                        buff_prefix = "地狱狂徒+" if is_hell_raider_upg else "地狱狂徒"
+                        self.engine._log_event(run, f"🔥 [{buff_prefix}] 触发自动连携，免费打出刚抽到的 {getattr(card_obj, 'cost_a', 0)}A 卡牌【{card_obj.name}】！")
                         p0_spells = {"first_aid", "get_ready", "adrenaline", "mana_potion", "mass_healing_word", "refresh_spirit", "shield", "misty_step", "arcane_intellect", "calculated_gamble", "time_warp", "time_stop", "archmage_wish", "wizard_magic_shield", "warrior_blood_fury", "wizard_prismatic_wall", "wizard_antimagic_field"}
                         target = "p0"
                         if card_obj.type == "spell" and card_obj.id not in p0_spells:
@@ -89,6 +93,9 @@ class CardPlayer:
                         self.engine.event_bus.dispatch(played_evt)
                         self.engine._log_event(run, f" 连携打出反馈：{played_evt.feedback}")
                         self._handle_card_post_play(run, card_obj, cid, source="hell_raider")
+                        if is_hell_raider_upg and depth < 5:
+                            self.engine._log_event(run, "🔥 [地狱狂徒+] 额外抽取 1 张卡牌。")
+                            self.draw_cards(p, 1, run, depth=depth+1)
                         continue
                 if len(p.hand) < max_hand:
                     p.hand.append(cid)

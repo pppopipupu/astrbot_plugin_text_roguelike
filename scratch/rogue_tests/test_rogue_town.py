@@ -144,7 +144,7 @@ class TestRogueTown(unittest.TestCase):
             res = await run_command(plugin, ".rogue 1")
             self.assertIn("你使用锈蚀的钥匙开启了宝箱", res)
             stats = save_manager.load_stats("test_user")
-            self.assertEqual(stats.guaranteed_card, "discover")
+            self.assertIn("discover", stats.locked_cards)
             self.assertNotIn("rusty_key", stats.town_inventory)
             await run_command(plugin, ".rogue exit")
 
@@ -314,7 +314,7 @@ class TestRogueTown(unittest.TestCase):
             await run_command(plugin, ".rogue exit")
 
             stats = save_manager.load_stats("test_user")
-            self.assertEqual(stats.guaranteed_card, "warrior_bash")
+            self.assertIn("warrior_bash", stats.locked_cards)
 
             await run_command(plugin, ".rogue talk 卡牌商人")
             await run_command(plugin, ".rogue 2")

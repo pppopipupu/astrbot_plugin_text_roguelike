@@ -32,15 +32,17 @@ class GameEngine:
         commons = [cid for cid, c in ALL_CARDS.items() if getattr(c, "rarity", "common") == "common" and getattr(c, "color", "") in allowed_colors and not cid.startswith("curse_") and not cid.startswith("duel_") and cid != "time_stop"]
         rares = [cid for cid, c in ALL_CARDS.items() if getattr(c, "rarity", "common") == "rare" and getattr(c, "color", "") in allowed_colors and not cid.startswith("curse_") and not cid.startswith("duel_") and cid != "time_stop"]
         epics = [cid for cid, c in ALL_CARDS.items() if getattr(c, "rarity", "common") == "epic" and getattr(c, "color", "") in allowed_colors and not cid.startswith("curse_") and not cid.startswith("duel_") and cid != "time_stop"]
-        locked_cards = []
+        locked_cards = list(getattr(stats, "locked_cards", []) or [])
         g_card = getattr(stats, "guaranteed_card", None)
         if g_card:
-            locked_cards.append(g_card)
+            if g_card not in locked_cards:
+                locked_cards.append(g_card)
             stats.guaranteed_card = None
         p_pool = getattr(stats, "purchased_pool", [])
         if p_pool:
             locked_cards.extend(p_pool)
             stats.purchased_pool = []
+        stats.locked_cards = locked_cards
         target_counts = {"common": 5, "rare": 2, "epic": 1}
         for cid in locked_cards:
             c_obj = ALL_CARDS.get(cid)

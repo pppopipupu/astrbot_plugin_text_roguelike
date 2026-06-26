@@ -232,7 +232,7 @@ ENEMY_NORMAL_CONFIG = {
         "intents": [
             {"id": "doom_strike", "val": 7, "desc": "毁灭打击 (造成 7 穿刺伤害，并施加 1 层轻度挥砍易伤)"},
             {"id": "hellfire", "val": 5, "desc": "地狱火 (造成 5 火焰伤害，并施加 1 层轻度火焰易伤)"},
-            {"id": "sacrifice", "val": 15, "desc": "牺牲防御 (获得 15 护盾， but 扣除自身 2 HP)"}
+            {"id": "sacrifice", "val": 15, "desc": "牺牲防御 (获得 15 护盾，但扣除自身 2 HP)"}
         ]
     },
     "亡灵巫师": {

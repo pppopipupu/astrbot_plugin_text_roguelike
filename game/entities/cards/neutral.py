@@ -536,10 +536,17 @@ class NeutralPowerWordKillCard(Card):
                     target_enemy = run.enemies[idx]
             except ValueError:
                 pass
-        if target_enemy and target_enemy.hp < 60:
+        
+        threshold = 100 if self.upgraded else 60
+        if target_enemy and target_enemy.hp < threshold:
             engine._damage_target(run, target, target_enemy.hp, damage_type="true", card=self)
             return f"你指着【{name}】吐露死亡真言：【律令死亡】！其身形瞬间枯萎，当场陨灭！"
-        return "❌ 律令失败：目标生命值不低于 60 点，无法将其即死！卡牌化作灰烬自毁。"
+        
+        if self.upgraded and target_enemy:
+            engine._damage_target(run, target, 40, damage_type="true", card=self)
+            return f"❌ 律令未达致死判定条件，但【{name}】依然受到了 40 点时间的真实伤害！卡牌化作灰烬自毁。"
+        
+        return f"❌ 律令失败：目标生命值不低于 {threshold} 点，无法将其即死！卡牌化作灰烬自毁。"
 
 @register_card("neutral_power_word_stun")
 class NeutralPowerWordStunCard(Card):
@@ -553,10 +560,18 @@ class NeutralPowerWordStunCard(Card):
                     target_enemy = run.enemies[idx]
             except ValueError:
                 pass
-        if target_enemy and target_enemy.hp < 100:
+        
+        threshold = 150 if self.upgraded else 100
+        if target_enemy and target_enemy.hp < threshold:
             engine._add_buff_to(target_enemy, "stun", "单体晕眩", "下回合无法行动", 1)
             return f"你吐露震慑真言：【律令震慑】！【{name}】脑部剧震，陷入深度晕眩！"
-        return "❌ 律令失败：目标生命值不低于 100 点，不受震慑干扰！"
+        
+        if self.upgraded and target_enemy:
+            engine._damage_target(run, target, 15, damage_type="force", card=self)
+            target_enemy.actions = max(0, target_enemy.actions - 1)
+            return f"❌ 律令未达深度震慑条件，但【{name}】受到了 15 点力场伤害，且因受震慑其下回合动作点数减少 1A！"
+            
+        return f"❌ 律令失败：目标生命值不低于 {threshold} 点，不受震慑干扰！"
 
 @register_card("neutral_power_word_pain")
 class NeutralPowerWordPainCard(Card):
@@ -570,20 +585,36 @@ class NeutralPowerWordPainCard(Card):
                     target_enemy = run.enemies[idx]
             except ValueError:
                 pass
-        if target_enemy and target_enemy.hp < 120:
-            engine._add_buff_to(target_enemy, "bleed", "流血", "每回合开始受到4点真实伤害", 3)
-            engine._add_buff_to(target_enemy, "weak", "虚弱", "造成的伤害减少50%", 2)
-            return f"你吐露痛苦真言：【律令痛苦】！【{name}】浑身皮肤崩裂，痛苦不堪，陷入流血与虚弱状态！"
-        return "❌ 律令失败：目标生命值不低于 120 点，顶住了痛苦折磨！"
+        
+        threshold = 180 if self.upgraded else 120
+        bleed_layers = 4 if self.upgraded else 3
+        weak_layers = 3 if self.upgraded else 2
+        
+        if target_enemy and target_enemy.hp < threshold:
+            engine._add_buff_to(target_enemy, "bleed", "流血", "每回合开始受到4点真实伤害", bleed_layers)
+            engine._add_buff_to(target_enemy, "weak", "虚弱", "造成的伤害减少50%", weak_layers)
+            return f"你吐露痛苦真言：【律令痛苦】！【{name}】浑身皮肤崩裂，痛苦不堪，陷入 {bleed_layers} 层【流血】与 {weak_layers} 层【虚弱】状态！"
+            
+        if self.upgraded and target_enemy:
+            engine._damage_target(run, target, 12, damage_type="slashing", card=self)
+            return f"❌ 律令未达折磨判定条件，但你对【{name}】造成了 12 点物理挥砍伤害！"
+            
+        return f"❌ 律令失败：目标生命值不低于 {threshold} 点，顶住了痛苦折磨！"
 
 @register_card("neutral_plane_shift")
 class NeutralPlaneShiftCard(Card):
     def execute(self, run, target, engine) -> str:
-        if run.player.stage in (20, 25):
+        forbidden_stages = (32,) if self.upgraded else (25, 32)
+        if run.player.stage in forbidden_stages:
             return "❌ 异界传送在此强力领主战中被神秘结界屏蔽了，你无法在这里传送脱逃！"
-        run.node_data["no_reward"] = True
+        
         run.enemies.clear()
-        return "🔮 你咏唱了【异界传送】，张开空间裂缝使自己瞬间传送逃离战场！由于你半途脱逃，你将无法获得这场战斗的任何金币和卡牌奖励！"
+        if self.upgraded:
+            run.player.gp += 40
+            return "🔮 你咏唱了【异界传送+】，张开空间裂缝使自己瞬间传送逃离战场！你凭借精妙的空间法术顺手带走了部分战场遗珍，获得了 40 点金币奖励！"
+        else:
+            run.node_data["no_reward"] = True
+            return "🔮 你咏唱了【异界传送】，张开空间裂缝使自己瞬间传送逃离战场！由于你半途脱逃，你将无法获得这场战斗的任何金币和卡牌奖励！"
 
 @register_card("neutral_emperor_eye")
 class NeutralEmperorEyeCard(Card):

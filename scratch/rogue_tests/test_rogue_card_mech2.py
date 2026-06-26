@@ -574,3 +574,131 @@ class TestRogueCardMech2(unittest.TestCase):
         self.assertEqual(player.hp, 30)
         self.assertEqual(player.shield, 5)
         self.assertFalse(any(b.id == "buffer" for b in player.buffs))
+
+    def test_market_cards_upgraded(self):
+        class DummySaveManager:
+            def save_save(self, user_id, run):
+                pass
+            def delete_save(self, user_id):
+                pass
+        sm = DummySaveManager()
+        engine = BattleEngine(sm)
+        player = PlayerState(
+            hp=50,
+            max_hp=100,
+            shield=10,
+            actions=5,
+            bonus_actions=5,
+            gold=100,
+            stage=25
+        )
+        enemy = EnemyState("测试敌人", 200, 200, 0)
+        run = GameRun(
+            user_id="test_market_upgraded_user",
+            node_type="battle",
+            player=player,
+            enemies=[enemy]
+        )
+        
+        from game.models.state import CardState, BuffState
+        
+        card_fury = CardState("warrior_blood_fury", upgraded=True)
+        fury_obj = ALL_CARDS.get(card_fury)
+        player.hp = 50
+        player.hand = []
+        player.draw_pile = ["warrior_strike", "warrior_defend", "warrior_strike"]
+        fury_obj.execute(run, None, engine)
+        self.assertEqual(player.hp, 47)
+        self.assertEqual(next(b for b in player.buffs if b.id == "strength").stacks, 3)
+        self.assertEqual(len(player.hand), 3)
+        
+        player.buffs = []
+        player.hand = []
+        player.draw_pile = ["wizard_prismatic_wall+"]
+        card_hell = CardState("warrior_hell_raider", upgraded=True)
+        hell_obj = ALL_CARDS.get(card_hell)
+        hell_obj.execute(run, None, engine)
+        self.assertTrue(any(b.id == "hell_raider_upgraded" for b in player.buffs))
+        engine.card_player.draw_cards(player, 1, run)
+        self.assertTrue(any(b.id == "prismatic_barrier_upgraded" for b in player.buffs))
+        self.assertEqual(player.shield, 160)
+        
+        enemy.hp = 200
+        engine.combat_resolver.damage_target(run, "p0", 5, source="e1", damage_type="bludgeoning")
+        self.assertEqual(enemy.hp, 180)
+        
+        player.buffs = [
+            BuffState(id="weak", name="虚弱", desc="", stacks=2),
+            BuffState(id="strength", name="力量", desc="", stacks=3)
+        ]
+        enemy.buffs = [
+            BuffState(id="weak", name="虚弱", desc="", stacks=1),
+            BuffState(id="strength", name="力量", desc="", stacks=2)
+        ]
+        from game.models.state import AmuletState
+        player.amulets = {"1": AmuletState(id="some_amulet", name="测试护符", countdown=3, desc="测试描述")}
+        card_anti = CardState("wizard_antimagic_field", upgraded=True)
+        anti_obj = ALL_CARDS.get(card_anti)
+        anti_obj.execute(run, None, engine)
+        self.assertTrue(any(b.id == "strength" for b in player.buffs))
+        self.assertFalse(any(b.id == "weak" for b in player.buffs))
+        self.assertEqual(len(player.amulets), 1)
+        self.assertTrue(any(b.id == "weak" for b in enemy.buffs))
+        self.assertFalse(any(b.id == "strength" for b in enemy.buffs))
+        
+        enemy.hp = 200
+        enemy.buffs = []
+        player.action_a = 3
+        card_time = CardState("wizard_time_ravage", upgraded=True)
+        time_obj = ALL_CARDS.get(card_time)
+        time_obj.execute(run, "e1", engine)
+        self.assertEqual(enemy.hp, 175)
+        self.assertEqual(next(b for b in enemy.buffs if b.id == "weak").stacks, 3)
+        self.assertEqual(next(b for b in enemy.buffs if b.id == "vulnerable").stacks, 3)
+        self.assertEqual(player.action_a, 4)
+        
+        enemy.hp = 120
+        card_kill = CardState("neutral_power_word_kill", upgraded=True)
+        kill_obj = ALL_CARDS.get(card_kill)
+        res = kill_obj.execute(run, "e1", engine)
+        self.assertEqual(enemy.hp, 80)
+        self.assertIn("40", res)
+        kill_obj.execute(run, "e1", engine)
+        self.assertEqual(enemy.hp, 0)
+        # 7. 律令震慑升级版
+        run.enemies = [enemy]
+        enemy.hp = 180
+        enemy.actions = 2
+        card_stun = CardState("neutral_power_word_stun", upgraded=True)
+        stun_obj = ALL_CARDS.get(card_stun)
+        res = stun_obj.execute(run, "e1", engine)
+        self.assertEqual(enemy.hp, 165)
+        self.assertEqual(enemy.actions, 1)
+        enemy.hp = 140
+        stun_obj.execute(run, "e1", engine)
+        self.assertTrue(any(b.id == "stun" for b in enemy.buffs))
+        
+        # 8. 律令痛苦升级版
+        run.enemies = [enemy]
+        enemy.hp = 200
+        enemy.buffs = []
+        card_pain = CardState("neutral_power_word_pain", upgraded=True)
+        pain_obj = ALL_CARDS.get(card_pain)
+        pain_obj.execute(run, "e1", engine)
+        self.assertEqual(enemy.hp, 188)
+        enemy.hp = 170
+        pain_obj.execute(run, "e1", engine)
+        self.assertEqual(next(b for b in enemy.buffs if b.id == "bleed").stacks, 4)
+        self.assertEqual(next(b for b in enemy.buffs if b.id == "weak").stacks, 3)
+        
+        player.stage = 25
+        player.gp = 100
+        card_shift = CardState("neutral_plane_shift", upgraded=True)
+        shift_obj = ALL_CARDS.get(card_shift)
+        res = shift_obj.execute(run, None, engine)
+        self.assertNotIn("❌", res)
+        self.assertEqual(player.gp, 140)
+        
+        player.stage = 32
+        res2 = shift_obj.execute(run, None, engine)
+        self.assertIn("❌", res2)

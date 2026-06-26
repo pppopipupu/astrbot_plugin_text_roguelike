@@ -537,8 +537,12 @@ class DeployWarriorAmuletCard(Card):
 @register_card("warrior_hell_raider")
 class WarriorHellRaiderCard(Card):
     def execute(self, run, target, engine) -> str:
-        engine._add_buff_to(run.player, "hell_raider", "地狱狂徒", "抽到 1A 且不消耗 BA 卡牌时自动释放且免费", 1)
-        return "你咏唱了【地狱狂徒】，浑身散发出炽热的地狱火光！你将立刻对抽到的 1A 卡牌进行自动连携打出！"
+        if self.upgraded:
+            engine._add_buff_to(run.player, "hell_raider_upgraded", "地狱狂徒+", "抽到 2A及以下 且不消耗 BA 卡牌时免费自动打出，并额外抽 1 张卡", 1)
+            return "你咏唱了【地狱狂徒+】，浑身爆发出恐怖的炼狱火光！你将立刻对抽到的所有符合条件的卡牌进行狂暴连携打出，并额外抽牌！"
+        else:
+            engine._add_buff_to(run.player, "hell_raider", "地狱狂徒", "抽到 1A 且不消耗 BA 卡牌时自动释放且免费", 1)
+            return "你咏唱了【地狱狂徒】，浑身散发出炽热的地狱火光！你将立刻对抽到的 1A 卡牌进行自动连携打出！"
 
 @register_card("warrior_shield_bash")
 class WarriorShieldBashCard(Card):
@@ -553,12 +557,15 @@ class WarriorShieldBashCard(Card):
 @register_card("warrior_blood_fury")
 class WarriorBloodFuryCard(Card):
     def execute(self, run, target, engine) -> str:
-        loss = min(5, run.player.hp - 1)
+        loss_val = 3 if self.upgraded else 5
+        str_val = 3 if self.upgraded else 2
+        draw_val = 3 if self.upgraded else 2
+        loss = min(loss_val, run.player.hp - 1)
         if loss > 0:
             run.player.hp -= loss
-        engine._add_buff_to(run.player, "strength", "力量", "造成伤害增加", 2)
-        engine._draw_cards(run.player, 2, run)
-        return f"你点燃了自身的生命潜能，失去了 {loss} 点生命值，获得了 2 层【力量】并抽了 2 张牌！"
+        engine._add_buff_to(run.player, "strength", "力量", "造成伤害增加", str_val)
+        engine._draw_cards(run.player, draw_val, run)
+        return f"你点燃了自身的生命潜能，失去了 {loss} 点生命值，获得了 {str_val} 层【力量】并抽了 {draw_val} 张牌！"
 
 @register_card("warrior_source_of_cinder")
 class WarriorSourceOfCinderCard(Card):

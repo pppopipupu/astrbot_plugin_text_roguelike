@@ -74,12 +74,18 @@ def handle_sub_dialog(town_engine, stats: UserStats, npc_id: str, choice_lower: 
         if not target_cid:
             return zh_cn.get("global", {}).get("card_lock_failed_not_found", "").format(name=choice)
         c_obj = ALL_CARDS[target_cid]
-        if getattr(c_obj, "rarity", "common") == "legendary":
+        if getattr(c_obj, "rarity", "common") in ("legendary", "mythic", "artifact", "curse"):
             return zh_cn.get("global", {}).get("card_lock_failed_legendary", "")
+        if target_cid in getattr(stats, "locked_cards", []):
+            return f"❌ 锁定失败：卡牌【{choice}】已经在你的锁定列表中了。"
+        if len(getattr(stats, "locked_cards", [])) >= 8:
+            return "❌ 锁定失败：最多只能同时锁定 8 张卡牌。"
         if stats.gp < 300:
             return zh_cn.get("global", {}).get("gp_insufficient", "").format(req=300, owned=stats.gp)
         stats.gp -= 300
-        stats.guaranteed_card = target_cid
+        if not hasattr(stats, "locked_cards") or stats.locked_cards is None:
+            stats.locked_cards = []
+        stats.locked_cards.append(target_cid)
         stats.town_flags.pop("market_sub_menu", None)
         town_engine.save_manager.save_stats(user_id, stats)
         res_msg = zh_cn.get("global", {}).get("card_lock_success", "").format(name=choice)
@@ -234,7 +240,10 @@ def process_dialog_action(town_engine, stats: UserStats, npc_id: str, action: st
         stats.town_inventory.remove("rusty_key")
         stats.town_flags["box_opened"] = 1
         stats.gp += 300
-        stats.guaranteed_card = "discover"
+        if not hasattr(stats, "locked_cards") or stats.locked_cards is None:
+            stats.locked_cards = []
+        if "discover" not in stats.locked_cards and len(stats.locked_cards) < 8:
+            stats.locked_cards.append("discover")
         town_engine.save_manager.save_stats(user_id, stats)
         return npc_data.get("open_success", "") + "\n\n" + town_engine._render_dialog_window(stats, npc_id, zh_cn)
 
@@ -246,7 +255,10 @@ def process_dialog_action(town_engine, stats: UserStats, npc_id: str, action: st
             stats.gp += 200
             res = npc_data.get("wish_success_gp", "")
         elif c_effect == "card":
-            stats.guaranteed_card = "discover"
+            if not hasattr(stats, "locked_cards") or stats.locked_cards is None:
+                stats.locked_cards = []
+            if "discover" not in stats.locked_cards and len(stats.locked_cards) < 8:
+                stats.locked_cards.append("discover")
             res = npc_data.get("wish_success_card", "")
         else:
             stats.town_health_bonus += 5

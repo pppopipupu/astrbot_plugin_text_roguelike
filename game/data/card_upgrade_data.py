@@ -443,5 +443,33 @@ CARD_UPGRADE_CONFIG = {
     },
     "neutral_hero_anthem": {
         "desc": "获得 10 点护盾，抽 1 张牌。消耗。"
+    },
+    "warrior_blood_fury": {
+        "desc": "失去 3 点生命值，获得 3 层【力量】。抽 3 张卡牌。保留。"
+    },
+    "warrior_hell_raider": {
+        "desc": "你获得【地狱狂徒+】状态。抽到 2A及以下 且不消耗 BA 卡牌时免费自动打出，并且每次连携触发后额外抽取 1 张卡牌。消耗。"
+    },
+    "wizard_prismatic_wall": {
+        "desc": "获得 25 点护盾与 3 层【虹光屏障+】。受击时反射 20 点混合属性伤害。"
+    },
+    "wizard_antimagic_field": {
+        "cost_ba": 0,
+        "desc": "清除我方所有负面 Buff 与敌方所有正面 Buff，你本回合免疫非物理伤害。消耗。"
+    },
+    "wizard_time_ravage": {
+        "desc": "对目标造成 25 点真实伤害，并使其获得 3 层【虚弱】与 3 层【易伤】，且你获得 1A 行动点。消耗。"
+    },
+    "neutral_power_word_kill": {
+        "desc": "若目标生命低于 100 点则直接消灭；否则造成 40 点真实伤害。消耗。"
+    },
+    "neutral_power_word_stun": {
+        "desc": "若目标生命低于 150 点，使其【单体晕眩】1 回合；否则造成 15 点力场伤害，且使其下回合减少 1A 行动点。"
+    },
+    "neutral_power_word_pain": {
+        "desc": "若目标生命低于 180 点，使其获得 4 层【流血】与 3 层【虚弱】；否则造成 12 点物理挥砍伤害。"
+    },
+    "neutral_plane_shift": {
+        "desc": "传送脱逃离开遭遇战，且获得 40 金币空间遗珍。在 25 层与 32 层 BOSS 战中禁用。即逝。"
     }
 }

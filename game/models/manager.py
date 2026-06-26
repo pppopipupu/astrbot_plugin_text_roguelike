@@ -56,6 +56,7 @@ class SaveManager:
                 in_town=d.get("in_town", False),
                 town_pos=d.get("town_pos", "square"),
                 guaranteed_card=d.get("guaranteed_card", None),
+                locked_cards=d.get("locked_cards", []),
                 purchased_pool=d.get("purchased_pool", []),
                 defeated_town_npcs=d.get("defeated_town_npcs", []),
                 town_inventory=d.get("town_inventory", []),
