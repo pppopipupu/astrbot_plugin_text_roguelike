@@ -160,8 +160,8 @@ class BattleEngine(BaseBattleEngine):
                 if boss_name == "腐化之心":
                     run.enemies = [EnemyState(
                         name="腐化之心",
-                        hp=120,
-                        max_hp=120,
+                        hp=200,
+                        max_hp=200,
                         shield=0,
                         actions=1,
                         bonus_actions=2,
@@ -169,6 +169,7 @@ class BattleEngine(BaseBattleEngine):
                         max_bonus_actions=2
                     )]
                     self._add_buff_to(run.enemies[0], "beat_of_death", "死亡律动", "玩家每使用一张牌，受到 1 点力场伤害。")
+                    self._add_buff_to(run.enemies[0], "unyielding", "坚不可摧", "一回合最多可受到该状态层数点伤害，超出的部分会直接免疫，真实伤害可以穿透坚不可摧", 40)
                     run.node_data["boss_name"] = "腐化之心"
                 else:
                     run.enemies = [EnemyState(

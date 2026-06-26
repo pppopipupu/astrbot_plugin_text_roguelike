@@ -66,10 +66,10 @@ class CafeEngine:
         active_npc = cafe_data.get("active_npc")
         
         npc_show_names = {
-            "Guide_Elder": "👴 向导长老 (主城客串)",
-            "Bartender_Jack": "🍺 酒保杰克 (主城客串)",
-            "Blacksmith_Ironclad": "🔨 铁匠艾恩克拉德 (主城客串)",
-            "pppopipupu": "🐟 pppopipupu (主城客串)",
+            "Guide_Elder": "👴 向导长老",
+            "Bartender_Jack": "🍺 酒保杰克",
+            "Blacksmith_Ironclad": "🔨 铁匠艾恩克拉德",
+            "pppopipupu": "🐟 pppopipupu",
             "杰斯": "🃏 卡牌大师 · 杰斯",
             "艾琳": "💎 宝石琢磨师 · 艾琳",
             "雷恩": "🛡️ 退役角斗士 · 雷恩",

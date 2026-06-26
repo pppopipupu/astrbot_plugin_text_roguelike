@@ -447,6 +447,28 @@ class SourceOfCinderBuff(BuffImpl):
             event.engine._log_event(event.run, f"🔥 [薪火之源] 触发！本回合额外获得 {buff_state.stacks}A {buff_state.stacks}BA！")
 
 
+class UnyieldingBuff(BuffImpl):
+    def on_damage_calculate_defend(self, event, buff_state, entity):
+        dtype_str = event.damage_type.value if hasattr(event.damage_type, "value") else str(event.damage_type)
+        if dtype_str == "true" or dtype_str == "TRUE":
+            return
+        already_taken = getattr(buff_state, "already_taken", 0)
+        limit = buff_state.stacks
+        allowed_remaining = max(0, limit - already_taken)
+        if event.modified_damage > allowed_remaining:
+            event.modified_damage = allowed_remaining
+
+    def on_damage_take_defend(self, event, buff_state, entity, engine):
+        dtype_str = event.damage_type.value if hasattr(event.damage_type, "value") else str(event.damage_type)
+        if dtype_str == "true" or dtype_str == "TRUE":
+            return
+        already_taken = getattr(buff_state, "already_taken", 0)
+        buff_state.already_taken = already_taken + event.amount
+
+    def on_turn_end(self, event, buff_state, entity):
+        buff_state.already_taken = 0
+
+
 for name, obj in list(globals().items()):
     if isinstance(obj, type) and issubclass(obj, BuffImpl) and obj is not BuffImpl:
         if not getattr(obj, "auto_register", True):

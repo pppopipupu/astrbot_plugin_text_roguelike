@@ -280,3 +280,49 @@ class TestRogueCafe(unittest.TestCase):
         engine._init_battle_node(run, "normal")
         self.assertEqual(p.shield, 2)
         self.assertNotIn("anthem_relic_1", p.relics)
+
+    def test_cafe_bypass_prefix_talk_and_choose(self):
+        plugin = MyPlugin(DummyContext())
+        user_id = "test_user_bypass_cafe"
+        plugin.save_manager.delete_save(user_id)
+        p = PlayerState(
+            hp=30, max_hp=30, shield=0, gold=100, stage=13,
+            deck=["fire_bolt"], hand=[], draw_pile=[], discard_pile=[],
+            exhaust_pile=[], graveyard=[], relics=[]
+        )
+        run = GameRun(user_id=user_id, node_type="cafe", player=p, enemies=[], node_data={})
+        cafe_data = {
+            "npcs": ["Blacksmith_Ironclad", "杰斯"],
+            "active_npc": None,
+            "dialog_state": None,
+            "talked_npcs": [],
+            "card_master_stock": [],
+            "gemcutter_stock": [],
+            "hunter_stock": None
+        }
+        run.node_data["cafe_data"] = cafe_data
+        plugin.save_manager.save_save(user_id, run)
+        
+        stats = plugin.save_manager.load_stats(user_id)
+        stats.rogue_mode = True
+        plugin.save_manager.save_stats(user_id, stats)
+        
+        async def go():
+            res1 = await run_command(plugin, "talk 铁匠", user_id)
+            self.assertIn("铁匠艾恩克拉德", res1)
+            
+            latest_run = plugin.save_manager.load_save(user_id)
+            self.assertEqual(latest_run.node_data["cafe_data"]["active_npc"], "Blacksmith_Ironclad")
+            
+            res2 = await run_command(plugin, "1", user_id)
+            self.assertIn("大锤猛砸", res2)
+            
+            latest_run2 = plugin.save_manager.load_save(user_id)
+            self.assertEqual(latest_run2.player.gold, 30)
+            self.assertEqual(latest_run2.node_data["cafe_data"]["active_npc"], None)
+            
+            res3 = await run_command(plugin, "离开", user_id)
+            self.assertIn("重新踏上了", res3)
+            
+        asyncio.run(go())
+        plugin.save_manager.delete_save(user_id)

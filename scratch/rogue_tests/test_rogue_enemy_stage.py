@@ -488,3 +488,54 @@ class TestRogueEnemyStage(unittest.TestCase):
         run32 = GameRun(user_id="test_boss", node_type="battle", player=player32)
         engine._init_battle_node(run32, "boss")
         self.assertEqual(run32.enemies[0].name, "虚空之门·尤格-索托斯")
+
+    def test_unyielding_buff(self):
+        class DummySaveManager:
+            def save_save(self, user_id, run):
+                pass
+            def delete_save(self, user_id):
+                pass
+            def load_stats(self, user_id):
+                return None
+        sm = DummySaveManager()
+        engine = BattleEngine(sm)
+        player = PlayerState(hp=100, max_hp=100, shield=0, gold=100, stage=25)
+        run = GameRun(user_id="test_user", node_type="battle", player=player)
+        engine._init_battle_node(run, "boss")
+        
+        corrupted_heart = None
+        for enemy in run.enemies:
+            if enemy.name == "腐化之心":
+                corrupted_heart = enemy
+                break
+        
+        if corrupted_heart:
+            self.assertEqual(corrupted_heart.max_hp, 200)
+            self.assertEqual(corrupted_heart.hp, 200)
+            unyielding_buff = next((b for b in corrupted_heart.buffs if b.id == "unyielding"), None)
+            self.assertIsNotNone(unyielding_buff)
+            self.assertEqual(unyielding_buff.stacks, 40)
+
+        enemy = EnemyState("测试敌人", 200, 200, 0)
+        from game.models.state import BuffState
+        enemy.buffs.append(BuffState("unyielding", "坚不可摧", 40))
+        run.enemies = [enemy]
+
+        engine._damage_target(run, "e1", 30, damage_type="fire")
+        self.assertEqual(enemy.hp, 170)
+        
+        engine._damage_target(run, "e1", 20, damage_type="fire")
+        self.assertEqual(enemy.hp, 160)
+        
+        engine._damage_target(run, "e1", 15, damage_type="fire")
+        self.assertEqual(enemy.hp, 160)
+
+        engine._damage_target(run, "e1", 10, damage_type="true")
+        self.assertEqual(enemy.hp, 150)
+
+        from game.models.events import TurnEndEvent
+        evt = TurnEndEvent(run=run, is_player=False)
+        engine.event_bus.dispatch(evt)
+
+        engine._damage_target(run, "e1", 30, damage_type="fire")
+        self.assertEqual(enemy.hp, 120)

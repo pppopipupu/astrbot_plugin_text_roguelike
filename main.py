@@ -184,6 +184,8 @@ class MyPlugin(Star):
         if run is not None:
             if getattr(run, "node_type", "") == "battle":
                 return "battle"
+            if getattr(run, "node_type", "") == "cafe":
+                return "cafe"
             return "explore"
         if stats is not None:
             if getattr(stats, "in_town", False):
@@ -676,6 +678,38 @@ class MyPlugin(Star):
                     elif self.cli_router and first_word in self.cli_router._command_handlers:
                         handler = self.cli_router._command_handlers[first_word]
                         if curr_state in getattr(handler, "allowed_states", []):
+                            is_game_cmd = True
+                elif curr_state == "cafe":
+                    cafe_data = run.node_data.get("cafe_data", {})
+                    active_npc = cafe_data.get("active_npc")
+                    if active_npc is not None:
+                        dialog_valid_cmds = {
+                            "查询", "query", "info", "i",
+                            "背包", "bag", "inventory", "inv",
+                            "任务", "quest", "quests",
+                            "帮助", "help",
+                            "状态", "status",
+                            "统计", "stat", "stats",
+                            "地图", "map",
+                            "队列", "queue", "q"
+                        }
+                        if first_word.isdigit() or first_word in ("离开", "退出", "返回", "exit", "quit", "leave") or first_word in dialog_valid_cmds or first_word in ("选择", "c"):
+                            is_game_cmd = True
+                    else:
+                        cafe_lobby_cmds = {
+                            "交互", "talk", "interact", "inter", "talk_to",
+                            "离开", "leave", "exit", "quit",
+                            "看", "查", "look", "look_around",
+                            "帮助", "help",
+                            "查询", "query", "info", "i",
+                            "背包", "bag", "inventory", "inv",
+                            "任务", "quest", "quests",
+                            "状态", "status",
+                            "统计", "stat", "stats",
+                            "地图", "map",
+                            "队列", "queue", "q"
+                        }
+                        if first_word in cafe_lobby_cmds:
                             is_game_cmd = True
                 else:
                     if self.cli_router and first_word in self.cli_router._command_handlers:
