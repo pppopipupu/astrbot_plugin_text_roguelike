@@ -435,9 +435,9 @@ class AstralSpeedBuff(BuffImpl):
 class SourceOfCinderBuff(BuffImpl):
     def on_turn_start(self, event, buff_state, entity):
         if entity == event.run.player and event.is_player:
-            event.run.player.actions += 1
-            event.run.player.bonus_actions += 1
-            event.engine._log_event(event.run, "🔥 [薪火之源] 触发！本回合额外获得 1A 1BA！")
+            event.run.player.actions += buff_state.stacks
+            event.run.player.bonus_actions += buff_state.stacks
+            event.engine._log_event(event.run, f"🔥 [薪火之源] 触发！本回合额外获得 {buff_state.stacks}A {buff_state.stacks}BA！")
 
 
 for name, obj in list(globals().items()):

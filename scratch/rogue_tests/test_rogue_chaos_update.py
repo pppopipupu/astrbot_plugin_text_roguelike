@@ -257,3 +257,48 @@ class TestRogueChaosUpdate(unittest.TestCase):
         res16 = opt16.execute(run, eng)
         self.assertEqual(player.hp, 15)
         self.assertTrue(eng.stage_entered)
+
+    def test_source_of_cinder_stack(self):
+        class DummySaveManager:
+            def save_save(self, user_id, run): pass
+        sm = DummySaveManager()
+        engine = BattleEngine(sm)
+        player = PlayerState(
+            hp=40, max_hp=40, shield=0, gold=100, stage=1,
+            deck=["warrior_source_of_cinder"], hand=["warrior_source_of_cinder"],
+            actions=3, bonus_actions=2, buffs=[]
+        )
+        run = GameRun(user_id="test_cinder_stack", node_type="battle", player=player, enemies=[EnemyState("e1", 10, 10, 0)])
+        engine._add_buff_to(player, "source_of_cinder", "薪火之源", "每回合开始额外获得 1A 1BA", 2)
+        player.actions = 2
+        player.bonus_actions = 1
+        from game.models.events import TurnStartEvent
+        evt = TurnStartEvent(run, is_player=True)
+        engine.event_bus.dispatch(evt)
+        self.assertEqual(player.actions, 4)
+        self.assertEqual(player.bonus_actions, 3)
+
+    def test_gem_effects_independent(self):
+        class DummySaveManager:
+            def save_save(self, user_id, run): pass
+            def settle_game_and_delete(self, user_id, run, is_victory): return ""
+        from game.engine import GameEngine
+        sm = DummySaveManager()
+        ge = GameEngine(sm)
+        player = PlayerState(
+            hp=40, max_hp=40, shield=0, gold=100, stage=1,
+            deck=["tactical_focus:gems:gem_shield_add_8", "fire_bolt:gems:gem_shield_add_8"],
+            hand=["tactical_focus:gems:gem_shield_add_8", "fire_bolt:gems:gem_shield_add_8"],
+            actions=3, bonus_actions=3, buffs=[]
+        )
+        run = GameRun(user_id="test_gems", node_type="battle", player=player, enemies=[EnemyState("e1", 20, 20, 0)])
+        ge.play_card(run, 1, "p0")
+        self.assertEqual(player.shield, 8)
+        ge.play_card(run, 1, "e1")
+        self.assertEqual(player.shield, 16)
+
+    def test_collaboration_query(self):
+        from game.renderer.query import render_query_info
+        res = render_query_info("协作")
+        self.assertIn("协作", res)
+        self.assertIn("我方累计召唤随从的总次数", res)

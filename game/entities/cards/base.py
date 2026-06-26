@@ -121,6 +121,12 @@ class CardRegistryDict(dict):
                 self._lazy_load_card(k)
         return super().__len__()
 
+    def get(self, key, default=None):
+        try:
+            return self[key]
+        except KeyError:
+            return default
+
     def __getitem__(self, key):
         if isinstance(key, str) and ":no_copy:1" in key:
             base_key = key.replace(":no_copy:1", "")

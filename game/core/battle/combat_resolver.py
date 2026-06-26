@@ -130,6 +130,8 @@ class CombatResolver:
                             amount += 3
                         elif g == "gem_shield_add_8":
                             amount += 8
+        if run.node_data.get("current_playing_card_cid"):
+            run.node_data["card_played_triggered_shield"] = True
         evt = ShieldGainEvent(run, target, amount, amount)
         self.engine.event_bus.dispatch(evt)
         final_amount = evt.modified_amount
@@ -156,6 +158,8 @@ class CombatResolver:
                     for g in card.gems:
                         if g == "gem_heal_add_2":
                             heal += 2
+        if run.node_data.get("current_playing_card_cid"):
+            run.node_data["card_played_triggered_heal"] = True
         heal_evt = HealEvent(run, target, heal)
         self.engine.event_bus.dispatch(heal_evt)
         if heal_evt.cancelled:
@@ -211,7 +215,9 @@ class CombatResolver:
             if cid:
                 from ...entities.cards.base import ALL_CARDS
                 card = ALL_CARDS.get(cid)
-        if source == "p0":
+        if run.node_data.get("current_playing_card_cid"):
+            run.node_data["card_played_triggered_dmg"] = True
+        if source in ("p0", "player", "effect"):
             dmg = self._apply_gem_dmg(card, dmg)
         calc_evt = DamageCalculateEvent(run, card, source, target, damage_type, dmg, dmg)
         self.engine.event_bus.dispatch(calc_evt)

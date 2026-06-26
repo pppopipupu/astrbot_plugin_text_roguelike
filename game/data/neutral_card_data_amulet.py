@@ -1,0 +1,100 @@
+NEUTRAL_CARD_AMULETS = {
+    "lucky_coin": {
+        "name": "幸运金币",
+        "color": "neutral",
+        "type": "amulet",
+        "cost_a": 1,
+        "cost_ba": 0,
+        "desc": "每回合结束时，你获得 3 金币。",
+        "rarity": "rare",
+        "countdown": 3,
+        "amulet_desc": "每回合结束时，你获得 3 金币。",
+        "feedback_success": "将【{name}】部署到了格子 [{grid}]。",
+        "feedback_fail": "战场格子已满，部署失败。"
+    },
+    "thorns_necklace": {
+        "name": "荆棘项链",
+        "color": "neutral",
+        "type": "amulet",
+        "cost_a": 1,
+        "cost_ba": 0,
+        "desc": "当你受到伤害时，对伤害来源造成 2 点伤害。",
+        "rarity": "rare",
+        "countdown": 2,
+        "amulet_desc": "受到伤害时，向伤害源反弹 2 点伤害。",
+        "feedback_success": "将【{name}】部署到了格子 [{grid}]。",
+        "feedback_fail": "战场格子已满，部署失败。"
+    },
+    "void_beacon": {
+        "name": "虚空信标",
+        "color": "neutral",
+        "type": "amulet",
+        "cost_a": 1,
+        "cost_ba": 0,
+        "desc": "吟唱 2。每回合开始时，对所有敌人施加 1 层易伤，并对随机敌人造成 5 点力场伤害。",
+        "rarity": "rare",
+        "countdown": 2,
+        "amulet_desc": "每回合开始时，对所有敌人施加 1 层易伤，并对随机敌人造成 5 点力场伤害。",
+        "feedback_success": "将【{name}】部署到了格子 [{grid}]。"
+    },
+    "abyss_altar": {
+        "name": "深渊祭坛",
+        "color": "neutral",
+        "type": "amulet",
+        "cost_a": 2,
+        "cost_ba": 1,
+        "desc": "(消耗: 2A 1BA) 部署【深渊祭坛】（吟唱 1）。谢幕曲：在此格子部署【苏醒的深渊祭坛】。",
+        "rarity": "legendary",
+        "countdown": 1,
+        "amulet_desc": "谢幕曲：在此格子部署【苏醒的深渊祭坛】。",
+        "feedback_success": "在格子 [{grid}] 部署了【{name}】。"
+    },
+    "abyss_altar_awaken": {
+        "name": "苏醒的深渊祭坛",
+        "color": "neutral",
+        "type": "amulet",
+        "cost_a": 1,
+        "cost_ba": 1,
+        "desc": "(消耗: 1A 1BA) 部署【苏醒的深渊祭坛】（吟唱 1）。谢幕曲：在此格子部署【汇集的深渊祭坛】。",
+        "rarity": "legendary",
+        "countdown": 1,
+        "amulet_desc": "谢幕曲：在此格子部署【汇集的深渊祭坛】。",
+        "feedback_success": "在格子 [{grid}] 部署了【{name}】。"
+    },
+    "abyss_altar_converge": {
+        "name": "汇集的深渊祭坛",
+        "color": "neutral",
+        "type": "amulet",
+        "cost_a": 1,
+        "cost_ba": 1,
+        "desc": "(消耗: 1A 1BA) 部署【汇集的深渊祭坛】（吟唱 1）。谢幕曲：在此格子部署【爆发的深渊祭坛】。",
+        "rarity": "legendary",
+        "countdown": 1,
+        "amulet_desc": "谢幕曲：在此格子部署【爆发的深渊祭坛】。",
+        "feedback_success": "在格子 [{grid}] 部署了【{name}】。"
+    },
+    "abyss_altar_burst": {
+        "name": "爆发的深渊祭坛",
+        "color": "neutral",
+        "type": "amulet",
+        "cost_a": 1,
+        "cost_ba": 1,
+        "desc": "(消耗: 1A 1BA) 部署【爆发的深渊祭坛】（吟唱 1）。谢幕曲：在此格子部署【终结的深渊祭坛】。",
+        "rarity": "legendary",
+        "countdown": 1,
+        "amulet_desc": "谢幕曲：在此格子部署【终结的深渊祭坛】。",
+        "feedback_success": "在格子 [{grid}] 部署了【{name}】。"
+    },
+    "abyss_altar_end": {
+        "name": "终结的深渊祭坛",
+        "color": "neutral",
+        "type": "amulet",
+        "cost_a": 1,
+        "cost_ba": 1,
+        "desc": "(消耗: 1A 1BA) 部署【终结的深渊祭坛】（吟唱 1）。谢幕曲对场上所有敌人造成 500 点真实伤害，你受到 10 点真实伤害。",
+        "rarity": "legendary",
+        "countdown": 1,
+        "amulet_desc": "谢幕曲对场上所有敌人造成 500 点真实伤害，你受到 10 点真实伤害。",
+        "feedback_success": "在格子 [{grid}] 部署了【{name}】。"
+    }
+}

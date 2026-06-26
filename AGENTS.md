@@ -1,13 +1,34 @@
 # 魔法肉鸽卡牌游戏插件开发规范指引 (AGENTS.md)
 
-本文档定义了本项目的目录结构、全局通用开发规范，并指引开发人员及 AI Agent 阅读对应的模式专有规范文档。
-
-本项目的专有开发规范与测试准则已按游戏模式进行拆分，请根据您当前开发或修改的模块，阅读对应的规范文档：
-
-- **肉鸽模式 (Rogue Mode)**：包含战斗引擎、随机事件、探索地图、职业卡牌以及核心测试流等规范。
-  - 请阅读：[game/core/battle/AGENTS.md](file:///c:/Users/pppop/Desktop/azuki/astrbot_plugin_text_roguelike/game/core/battle/AGENTS.md)
-- **对决模式 (Duel Mode)**：包含双方对局、能量与动作成长、召唤失调、进化机制、局外牌组校验、局外主菜单、指令队列执行以及对局测试等规范。
-  - 请阅读：[game/core/duel/AGENTS.md](file:///c:/Users/pppop/Desktop/azuki/astrbot_plugin_text_roguelike/game/core/duel/AGENTS.md)
+> [!IMPORTANT]
+> ## 🚨 AI 助手强制阅读指令 (MANDATORY PRE-FLIGHT READ INSTRUCTION)
+>
+> **在开始开发、修改或测试本项目代码之前，你必须根据待修改的文件路径，优先调用 `view_file` 完整阅读对应的子模式规范文档！** 未经阅读直接修改代码属于违规行为。
+>
+> ### ⚔️ 1. 肉鸽模式 / 主城模式 / 咖啡馆模式 (Rogue, Town & Cafe)
+> - **适用文件路径**：
+>   - `game/core/battle_engine.py`
+>   - `game/core/explore_engine.py`
+>   - `game/core/map_engine.py`
+>   - `game/core/cafe_engine.py`
+>   - `game/core/town_engine.py`
+>   - `game/core/battle/` 目录
+>   - `game/core/town/` 目录
+>   - `game/entities/` 目录（除对决卡牌 `cards/duel.py` 外）
+>   - `game/data/` 目录中除对决外的静态配置文件
+>   - `scratch/rogue_tests/` 目录
+> - **👉 必须优先读取的子规范**：[game/core/battle/AGENTS.md](file:///c:/Users/pppop/Desktop/azuki/astrbot_plugin_text_roguelike/game/core/battle/AGENTS.md)
+>
+> ### 🃏 2. 对决模式 (Duel Mode / TCG)
+> - **适用文件路径**：
+>   - `game/core/duel_engine.py`
+>   - `game/core/duel_router.py`
+>   - `game/core/duel/` 目录
+>   - `game/entities/cards/duel.py`
+>   - `game/data/duel_card_data.py`
+>   - `game/data/duel_template_data.py`
+>   - `scratch/duel_tests/` 目录
+> - **👉 必须优先读取的子规范**：[game/core/duel/AGENTS.md](file:///c:/Users/pppop/Desktop/azuki/astrbot_plugin_text_roguelike/game/core/duel/AGENTS.md)
 
 ---
 
@@ -25,6 +46,8 @@
   - `engine.py`: 顶层游戏引擎接口。
   - `core/`: 核心引擎包。
     - `battle_engine.py`: 战斗引擎 Facade 门面接口，委派执行实际战斗动作。
+    - `cafe_engine.py`: 咖啡馆模式核心逻辑引擎。
+    - `town_engine.py`: 主城模式核心逻辑引擎。
     - `cli_router.py`: 用户命令行分发路由，委派具体的处理器完成命令与动作。
     - `duel_engine.py`: 对决模式核心 TCG 逻辑引擎，独立处理双人对局状态。
     - `duel_router.py`: 对决模式指令与动作分发路由器，在重构后仅作为门面 Facade，委派牌组和查询功能。
@@ -43,6 +66,9 @@
       - `deck_manager.py`: 对决模式牌组管理器，独立负责牌组创建、校验、导入导出与分享码处理。
       - `query_manager.py`: 对决模式查询管理器，负责对决状态查询、抽牌堆、弃牌堆、随从墓地等信息查询。
       - `AGENTS.md`: 对决模式开发规范文档。
+    - `town/`: 主城模式子逻辑包。
+      - `dialog_handler.py`: NPC 对话交互逻辑处理器。
+      - `quest_manager.py`: 任务承接、进度追踪与奖励发放管理器。
     - `event_bus.py`: 事件总线订阅与广播机制。
     - `explore_engine.py`: 荒野探索、宝箱房、奇妙商店、篝火等节点逻辑。
     - `map_engine.py`: 关卡地图网络拓扑结构生成、节点移动和路由控制。
@@ -50,23 +76,33 @@
     - `card_data.py`: 全体卡牌的基础映射字典与卡牌桥接属性配置。
     - `duel_card_data.py`: 全体对决卡牌静态映射属性、Quest与奖励卡配置。
     - `duel_template_data.py`: 全体对决系统广播、提示和错误反馈的静态文本模板配置文件。
-    - `neutral_card_data.py`: 中立卡牌的属性、伤害/护盾/治疗参数与反馈模板数据。
+    - `neutral_card_data.py`: 中立卡牌基础字典。
+    - `neutral_card_data_spell.py`: 中立卡牌法术效果配置。
+    - `neutral_card_data_minion.py`: 中立卡牌随从效果配置.
+    - `neutral_card_data_amulet.py`: 中立卡牌护符效果配置。
     - `wizard_card_data.py`: 法师职业卡牌的属性、伤害/护盾/治疗参数与反馈模板数据。
     - `warrior_card_data.py`: 战士职业卡牌的属性、伤害/护盾/治疗参数与反馈模板数据.
     - `card_upgrade_data.py`: 全体卡牌升级后的属性与效果模板数据。
-    - `minion_data.py`: 我方全体随从的属性、技能参数与反馈模板。
-    - `enemy_data.py`: 敌方全体角色意图、召唤物属性与意图说明数据。
+    - `minion_data.py`: 随从基础字典。
+    - `minion_data_basic.py`: 基础随从属性与技能效果模板配置。
+    - `minion_data_officer.py`: 高阶将领随从属性与技能效果模板配置。
+    - `enemy_data.py`: 敌方全体角色基础意图字典。
+    - `enemy_data_normal.py`: 普通敌人行动意图与行动数据配置。
+    - `enemy_data_boss.py`: 领主 BOSS 行动意图与行动数据配置。
+    - `gem_data.py`: 宝石合成及强化属性配置。
+    - `keyword_data.py`: 卡牌词条解释说明配置。
     - `amulet_data.py`: 全体护符的默认吟唱时间与结算效果参数。
     - `buff_data.py`: 全体战斗 Buff 的展示名称与效果描述配置。
     - `trash_talk_data.py`: 会说话的智力怪物及切磋对手在各语境下的垃圾话文本数据配置。
     - `event_data.py`: 荒野事件的场景叙述、选项参数及选项触发反馈模板。
     - `relic_data.py`: 全体遗物的属性、稀有度、售价与效果描述配置.
+    - `town/`: 主城静态配置文件目录，包含 `zh_cn_global.json`、`zh_cn_npcs.json` 及各房间独立 json 配置文件。
   - `models/`: 数据模型及底层管理。
     - `state.py`: 玩家、敌人、随从、卡牌、护符等实体状态的 Dataclass 模型。
-    - `events.py`: 包含 BattleStartEvent 等 14 个原子事件的定义。
+    - `events.py`: 包含 BattleStartEvent 等原子事件的定义。
     - `manager.py`: 本地存档序列化、载入及销毁管理。
   - `entities/`: 实体行为与逻辑多态实现。
-    - `effects.py`: 原子游戏效果 definition。
+    - `effects.py`: 原子游戏效果定义。
     - `cards/`: 卡牌逻辑包，包含 registry.py，base.py，neutral.py，wizard.py，warrior.py，legendary.py，curse.py 以及 duel.py 等对决卡牌具体打出效果类实现。
     - `buffs/`: 战斗 Buff 逻辑包，包含 registry.py 提供装饰器注册机制，以及 buffs.py 继承自 BuffImpl 的各种 Buff 响应逻辑。
     - `relics/`: 遗物逻辑包，包含 registry.py 提供装饰器注册机制，以及 relics.py 包含各种遗物的被动监听逻辑实现。
@@ -84,7 +120,7 @@
     - `events/`: 随机事件选项逻辑子包。
       - `base.py`: 事件选项及模板基类定义。
       - `registry.py`: 事件选项注册器桥接。
-      - `fountain.py`, `knight.py` 等 11 个具体事件选项的多态模块实现。
+      - `fountain.py`, `knight.py` 等具体事件选项的多态模块实现。
   - `renderer/`: 游戏状态文本渲染层。
     - `__init__.py`: 代理至各渲染子模块的 GameRenderer.
     - `menu.py`: 菜单、卡牌库及玩家牌组渲染。
@@ -108,11 +144,14 @@
     - `test_rogue_enemy_stage.py`: 伤害结算及真实伤害判定、怪物行动与晕眩、状态压缩和关卡胜利结算等敌人与关卡用例。
     - `test_rogue_explore.py`: 荒野事件选项（如老兵房、古泉等）、遗物与护符结算、篝火 forge 卡牌强化与跳过等非战斗探索用例。
     - `test_rogue_system.py`: 局外持久化存档与恢复、牌组完备性、以及不同子命令间执行状态的强隔离用例。
+    - `test_rogue_town.py`: 主城任务承接、商店购买、切磋交互流程测试用例。
+    - `test_rogue_cafe.py`: 咖啡馆日常经营、菜单升级、顾客接待逻辑测试用例。
+    - `test_rogue_chaos_update.py`: 复杂混乱战局下的机制联动与状态更新测试用例。
   - `duel_tests/`: 对决模式拆分后的高内聚单元与集成测试包。
     - `base.py`: 对决模式基础 Dummy 测试桩与环境配置。
     - `test_duel_basic.py`: 局外牌组创建校验（25-50张、同名卡上限4张）、卡组导出导入分享码、对决菜单等用例。
     - `test_duel_flow.py`: 对局开始、使用卡牌能量扣除、指令队列执行、双人多轮交替回合流转的完整生命周期用例。
-    - `test_duel_advanced.py`: 力量 Buff 数值伤害缩放、双击及回响多重打出检测、随从召唤与技能效果（如巡逻队长和旗手）触发用例。
+    - `test_duel_advanced.py`: 力量 Buff 数值伤害缩放、双击及回响多重打出检测、随从召唤与技能效果触发用例。
     - `test_duel_minions_spells.py`: 随从死亡、AOE 伤害对空方格过滤、生命上限与护盾变动、对决模式查询与隔离用例。
 
 ---
@@ -141,7 +180,7 @@
 - 指令分支由 main.py 的统一分发器 _execute_sub_action 路由。所有指令以元组 (res_text, should_terminate) 形式返回。
 - 指令前缀配置项 `shortcut_prefix` 类型变更为 `list` 以支持多个前缀别名。匹配时对所有前缀按长度由长至短倒序排列，规避较短的前缀提前截断损坏指令单词。
 - 提供“帮助”及“help”专用子命令，调用 GameRenderer.render_help() 列出全量指令的使用教程 and 中英文别名（包含免前缀模式提示），当输入未知指令时系统应当引导用户使用帮助指令。
-- 新增命令设计规范：系统在添加任何新指令时，必须同步添加对应的纯英文命令变体，并且必须支持至少一个快捷命令（如英文缩写、别名或单字快捷指令）。同时，必须在 main.py 的免前缀拦截白名单（如 valid_cmds 或 town_cmds）中同步补全注册 these 新增命令及其英文别名，强制确保新命令的免前缀快捷支持。
+- 新增命令设计规范：系统在添加任何新指令时，必须同步添加对应的纯英文命令变体，并且必须支持至少一个快捷命令（如英文缩写、别名或单字快捷指令）。同时，必须在 main.py 的免前缀拦截白名单（如 valid_cmds 或 town_cmds）中同步补全注册这些新增命令及其英文别名，强制确保新命令的免前缀快捷支持。
 - **始终豁免指令规范**：确立“队列”（queue/q）、“查询”（query/info/i）、“任务”（quest/quests）和“背包”（bag/inventory/inv）为系统级的**始终豁免指令**。这些指令在包含当前及未来可能引入的所有游戏状态中（如战斗、探索、主城、对话、主菜单等）均被允许执行；并且在对话等特殊输入拦截状态中，必须作为系统指令优先处理，绝对禁止作为非指令文本或对话选项被消费。
 
 ### 2.5 数据驱动与配置分离规范
@@ -160,7 +199,7 @@
 
 ### 2.8 上帝类拆分与现代化 OOP 规范
 - **包与文件细粒度拆分原则（禁止堆叠逻辑）**：绝对禁止在单个 Python 源代码文件内混合堆叠两个或以上不同职责/业务维度的逻辑。在设计与开发时优先遵循“能分就分，能拆就拆”的去上帝类化思想，且单个非二进制文件总行数超过 1000 行时必须强制物理拆分与重构。
-- **禁止无限将逻辑堆叠进单个类**：核心引擎类（如 `BattleEngine`、`CLIRouter`、`ExploreEngine`）禁止无限膨胀。如果某个类的代码行数或职责过多，必须根据单一职责原则（SRP）进行重构，将相关业务逻辑组合委派给专门的子战略类（如 `CombatResolver`、`CardPlayer`、`EnemyTurnController`），由原上帝类作为 Facade 门面对外提供一致的 API 兼容。
+- **禁止无限将逻辑堆叠进单个类**：核心引擎类（如 `BattleEngine`、`CLIRouter`、`ExploreEngine`）禁止无限膨胀。如果某个类的代码行数或职责过多，必须根据单一职责原则（SRP）进行重构，将相关业务逻辑组合委派给专门的子战略类（如 `CombatResolver`、`CardPlayer`、`EnemyTurnController`），由原上帝类作为 Facade 门面对外提供一致 of API 兼容。
 - **被管监听与被动反应机制解耦**：遗物（Relic）、战斗 Buff、护符（Amulet）等具有监听游戏动作（如战斗开始、摸牌、受到伤害等）并产生被动副作用特性的系统，绝对禁止在战斗主循环中硬编码查询。必须将这些被动逻辑解耦为独立的事件观察者（Observer，如 `RelicTriggerHandler`），通过订阅 `event_bus` 实施原子交互。
 - **避免编写大量重复逻辑**：严禁采用复制粘贴形式编写相似的游戏控制或效果逻辑。通用的判断、数值伤害缩放、文字排版等基础规则，必须抽象封装为基类核心流程（Template Method）或共享工具函数（Utility Functions）。
 - **声明式自动注册**：对于新增加的事件分支、指令动作或卡牌种类，禁止手动硬编码关联的 if-else 或全局字典映射。统一使用 Python 的 `__init_subclass__` 或装饰器机制，在子类文件被加载时自动将类实例或类对象发布到全局注册表，确保完全的开闭原则（OCP）支持。
@@ -186,48 +225,34 @@
 - 中文文案与语法纯正性：在编写或生成中文本地化文本（如卡牌/护符描述、系统播报、NPC对话和随机事件文案等）时，必须确保中文语法的纯正性，严禁出现非预期的中英混杂介词（如将中文助词“的”误写为英文介词“of”）。
 
 ### 2.12 文档与规范同步更新规范
-- 如果在开发中更改了与本文档（AGENTS.md）内容有关的部分（例如目录结构调整、全局开发规范变更、新机制规范设计、新模式扩展或指令/动作规范调整等），则必须同步更新此文档，确保开发人员与 AI Agent 的参考指引时效一致。
+- **强制双向同步规则**：AI 助手在开发、重构或修改代码后，必须主动评估是否影响了主规范或各子规范的描述。
+- **主规范同步**：如果开发中更改了全局结构、目录布局、通用设计原则或全局架构，必须同步更新根目录 `AGENTS.md`（即本文档）。
+- **子规范同步**：如果修改了肉鸽模式（Rogue Mode）、主城/咖啡馆模式、或者对决模式（Duel Mode）的具体业务逻辑、机制、卡牌、指令或测试场景，**必须无条件一并更新对应的子规范文档（`game/core/battle/AGENTS.md` 或 `game/core/duel/AGENTS.md`）**。绝对禁止规范内容落后于代码行为。
+
+### 2.13 调试与辅助分析脚本规范
+- **禁止在项目工作区残留非测试性辅助脚本**：项目根目录及其子目录（包括项目根目录下的 `scratch/` 目录）只允许存放核心开发源码、正式的集成/系统测试及单元测试用例。绝对禁止把任何临时性的辅助数据分析、词条提取、语法检查等开发阶段临时脚本留在项目工作区中。
+- **强制使用会话脑区进行调试存储**：任何开发或调试过程中所编写的非正式测试用途辅助脚本，必须且仅能存储在会话脑区 (Brain) 的 scratch 目录（即 `<appDataDir>\brain\<conversation-id>/scratch/`）中，确保项目工作区的绝对整洁，规避造成不必要的脚本堆叠。
 
 ---
 
 ## 3. 代码编辑与扩展指引
 
-在对项目进行代码编辑、新增卡牌、添加指令或修改系统播报时，应遵守以下编辑指引：
-
-### 3.1 对决模式卡牌开发与扩展指引
-- 数据配置分离：新增对决卡牌时，需在 game/data/duel_card_data.py 中的 DUEL_CARD_CONFIG 字典里添加其静态属性定义（包含 cost_a、cost_ba、rarity、type、desc等）。
-- 卡牌效果注册：需在 game/entities/cards/duel.py 中实现具体的卡牌效果逻辑类，继承自 DuelCardImpl / CardImpl，并使用装饰器 @register_card(cid) 进行全局注册。
-- 0 注释原则：在新增卡牌类时，严禁编写任何 # 井号注释和 docstring 说明文档。
-
-### 3.2 播报及反馈文案修改指引
-- 系统消息数据驱动：对决模式中所有的局内外系统广播、错误提示、操作反馈、胜负判决和帮助文本，均统一定义在 game/data/duel_template_data.py 中的 DUEL_BROADCAST_TEMPLATES 字典中。
-- 禁止在逻辑代码中硬编码任何中文提示语。所有提示文案的修改必须只在 duel_template_data.py 中进行，并在调用处通过 DUEL_BROADCAST_TEMPLATES["key_name"].format(...) 动态注入。
-
-### 3.3 指令与动作扩展指引
-- 局外指令：若要为对决模式新增局外指令，必须在 game/core/duel/commands.py 中编写继承自 DuelCommandHandler 类的具体处理器类，并通过 names 参数传入其支持的指令名别名列表。
-- 局内动作：若要新增局内打牌动作，必须在 game/core/duel/actions.py 中编写继承自 DuelActionHandler 类的具体动作处理器，并通过 names 参数传入支持的动作名别名列表。
-- 装配机制：系统在运行初始化加载 commands.py 和 actions.py 时，会自动利用 __init_subclass__ 钩子将 these 指令类和动作类实例化并挂载到全局路由中，无需手动在路由器中编写额外的 switch 分支。
-
-### 3.4 文字冒险（主城）模式本地化修改指引
-- 主城所有系统提示、菜单交互、物品及房间渲染、切磋胜负结算文案等均已实现完全的 I18N 本地化分离，统一定义在 game/data/town/zh_cn_town.json 中。
-- 逻辑代码（包括 town_engine.py, town.py 和 cli_router.py 等）严禁硬编码任何中文字符串，所有交互文本和渲染提示必须通过加载该 JSON 本地化配置文件并使用 zh_cn.get("global").get("key_name") 等方式进行动态回填或格式化渲染。
+### 3.1 文字冒险（主城）模式本地化修改指引
+- 主城所有系统提示、菜单交互、物品及房间渲染、切磋胜负结算文案等均已实现完全的本地化分离，统一定义在 `game/data/town/` 目录下（如 `zh_cn_global.json`、`zh_cn_npcs.json` 等）。
+- 逻辑代码（包括 `town_engine.py` 等）严禁硬编码任何中文字符串。所有交互文本和渲染提示必须通过加载相应的 JSON 本地化配置文件，并以获取键值的方式进行动态回填或格式化渲染。
 
 ---
 
 ## 4. 测试与运行异常规范
 
 ### 4.1 Windows 本地命令行测试运行异常提示
-在 Windows 环境下使用 PowerShell 或 CMD 直接运行测试脚本时，可能遇到以下两类环境问题：
-1. 模块导入失败（ModuleNotFoundError）：若遇到无法导入 game 的错误，需在运行前显式指定 PYTHONPATH 环境变量（例如在 PowerShell 中执行：$env:PYTHONPATH="."）。
-2. 控制台字符集编码错误（UnicodeEncodeError）：若在控制台打印带有各类圆形字符等 Unicode 符号时发生编码报错，需在执行前将 Python 的控制台编码指定为 utf-8（例如在 PowerShell 中执行：$env:PYTHONIOENCODING="utf-8"）。
-3. 别名挂起与高 CPU 占用问题：在 Windows 环境下，严禁使用 `python` 命令运行脚本，必须统一使用 `py` 命令行启动器工具（例如 `py scratch/test_flow.py`），以规避触发 Windows 系统默认 of App Execution Aliases 机制，防止外壳包装进程静默死循环挂起并持续耗费 CPU 资源。
+- 在 Windows 环境下使用 PowerShell 或 CMD 直接运行测试脚本时，可能遇到以下两类环境问题：
+  1. 模块导入失败（ModuleNotFoundError）：若遇到无法导入 game 的错误，需在运行前显式指定 PYTHONPATH 环境变量（例如在 PowerShell 中执行：`$env:PYTHONPATH="."`）。
+  2. 控制台字符集编码错误（UnicodeEncodeError）：若在控制台打印带有各类圆形字符等 Unicode 符号时发生编码报错，需在执行前将 Python 的控制台编码指定为 utf-8（例如在 PowerShell 中执行：`$env:PYTHONIOENCODING="utf-8"`）。
+  3. 别名挂起与高 CPU 占用问题：在 Windows 环境下，严禁使用 `python` 命令运行脚本，必须统一使用 `py` 命令行启动器工具（例如 `py scratch/test_flow.py`），以规避触发 Windows 系统默认的 App Execution Aliases 机制，防止外壳包装进程静默死循环挂起并持续耗费 CPU 资源。
 
 ### 4.2 测试豁免规则
 - 针对仅涉及纯数值微调或修正的改动（例如修改卡牌的伤害、护盾、治疗数值等静态数据配置，而不涉及控制流、游戏状态逻辑修改或新功能开发），无需运行自动化仿真及流验证测试。
 
 ### 4.3 单元测试编写规范
-为确保项目自动化测试流程的正确性与可维护性，编写新的单元测试和集成测试时必须遵守以下规范：
-- 源码零注释约束：所有的测试脚本（包括 scratch/test_flow.py 和 scratch/test_duel.py）同样被视为 Python 源码，其中绝对禁止包含任何以井号字符开头的注释和 docstring 文档字符串。
-- 免前缀与用户输入模拟：新编写的单元和集成测试禁止直接调用底层 cli_router.handle_command，必须默认开启 stats.rogue_mode = True 以启用免前缀模式，并且全部通过调用 run_command(plugin, "command_string") 传入完整命令文本来直接模拟真实用户的输入行为。
-- 目标血量保护设计：在测试高额伤害的卡牌、随从或特殊状态效果时，应当将承受伤害的敌方目标或随从目标的生命值上限（max_hp）及当前生命值（hp）设定为极高数值（如 9999），以防止目标由于伤害过高而意外死亡并被系统从活动实体字典中移除，导致后续测试指令执行因找不到目标而触发 KeyError 或断言失败。
-- 对决牌组完整校验：在对决模式（Duel Mode）的单元测试中，为测试玩家模拟初始化的卡组必须包含 25 张到 50 张卡牌，且同名卡牌的放置数量上限为 4 张。必须通过此局外牌组合法性校验，否则对局引擎将无法开启并返回空实例（None），导致后续的打牌和回合测试发生 AttributeError。
+- 源码零注释约束：所有的测试脚本（包括 `scratch/test_flow.py` 和 `scratch/test_duel.py`）同样被视为 Python 源码，其中绝对禁止包含任何以井号字符开头的注释和 docstring 文档字符串。

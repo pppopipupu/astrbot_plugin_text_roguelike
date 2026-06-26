@@ -1,5 +1,9 @@
 # 魔法肉鸽卡牌游戏插件 - 肉鸽模式开发规范文档 (AGENTS.md)
 
+> [!IMPORTANT]
+> ## 📢 同步更新规则 (MANDATORY DOCUMENTATION SYNC RULE)
+> **如果你修改了肉鸽模式（Rogue Mode）或主城/咖啡馆模式的代码，导致任何现有规范描述过时或引入了新机制、新卡牌、新指令或新测试流程，你必须无条件一并更新此文档！** 绝对禁止代码行为与本规范文档脱节。
+
 本文档面向在此项目的肉鸽模式上进行开发和维护的 AI Agent 及开发人员，定义了肉鸽模式专有的代码开发规范以及测试准则。
 
 关于注释约束、Dataclass 继承、事件驱动（OCP）、注册机制以及 Windows 环境测试等通用开发规范，请参阅主规范指引：[根目录 AGENTS.md](file:///c:/Users/pppop/Desktop/azuki/astrbot_plugin_text_roguelike/AGENTS.md)。
@@ -95,4 +99,5 @@
 
 ### 2.3 单元测试编写规范
 - 源码零注释约束：所有的测试代码与测试脚本均视为源码的一部分，其中绝对禁止包含任何以井号字符开头的注释和 docstring 文档字符串。
+- 免前缀与用户输入模拟：新编写的单元和集成测试禁止直接调用底层 cli_router.handle_command，必须默认开启 stats.rogue_mode = True 以启用免前缀模式，并且全部通过调用 run_command(plugin, "command_string") 传入完整命令文本来直接模拟真实用户的输入行为。
 - 目标血量保护设计：在测试伤害类卡牌（如冰霜新星、深渊崩塌等）时，为防止测试用敌人在前几轮打牌中直接死亡并被系统从 enemies 列表中删除，导致后续测试指令执行因找不到目标而报错，应当在测试点中将敌方目标的 hp 和 max_hp 设置为高数值（如 9999）。
