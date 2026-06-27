@@ -8,18 +8,32 @@ class EnemyTurnController:
 
     def sync_enemy_intents(self, enemy: EnemyState):
         from ...models.state import EnemyIntentState
+        has_phase_transition = any(it.type == "phase_transition" for it in enemy.intents)
+        if has_phase_transition:
+            enemy.intent_a_type = ""
+            enemy.intent_a_val = 0
+            enemy.intent_a_desc = ""
+            enemy.intent_a2_type = ""
+            enemy.intent_a2_val = 0
+            enemy.intent_a2_desc = ""
+            enemy.intent_ba_type = ""
+            enemy.intent_ba_val = 0
+            enemy.intent_ba_desc = ""
+            enemy.intent_ba2_type = ""
+            enemy.intent_ba2_val = 0
+            enemy.intent_ba2_desc = ""
         has_old_active = False
         old_intents = []
-        if enemy.intent_a_desc and "已取消" not in enemy.intent_a_desc and "眩晕" not in enemy.intent_a_desc:
+        if not has_phase_transition and enemy.intent_a_desc and "已取消" not in enemy.intent_a_desc and "眩晕" not in enemy.intent_a_desc:
             old_intents.append(EnemyIntentState(type=enemy.intent_a_type, val=enemy.intent_a_val, desc=enemy.intent_a_desc, cost_a=1, cost_ba=0))
             has_old_active = True
-        if getattr(enemy, "intent_a2_desc", None) and "已取消" not in enemy.intent_a2_desc:
+        if not has_phase_transition and getattr(enemy, "intent_a2_desc", None) and "已取消" not in enemy.intent_a2_desc:
             old_intents.append(EnemyIntentState(type=enemy.intent_a2_type, val=enemy.intent_a2_val, desc=enemy.intent_a2_desc, cost_a=1, cost_ba=0))
             has_old_active = True
-        if enemy.intent_ba_desc and "已取消" not in enemy.intent_ba_desc:
+        if not has_phase_transition and enemy.intent_ba_desc and "已取消" not in enemy.intent_ba_desc:
             old_intents.append(EnemyIntentState(type=enemy.intent_ba_type, val=enemy.intent_ba_val, desc=enemy.intent_ba_desc, cost_a=0, cost_ba=1))
             has_old_active = True
-        if getattr(enemy, "intent_ba2_desc", None) and "已取消" not in enemy.intent_ba2_desc:
+        if not has_phase_transition and getattr(enemy, "intent_ba2_desc", None) and "已取消" not in getattr(enemy, "intent_ba2_desc", ""):
             old_intents.append(EnemyIntentState(type=enemy.intent_ba2_type, val=enemy.intent_ba2_val, desc=enemy.intent_ba2_desc, cost_a=0, cost_ba=1))
             has_old_active = True
 

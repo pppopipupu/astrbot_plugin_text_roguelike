@@ -110,11 +110,11 @@
   },
   "pppopipupu": {
     "name": "pppopipupu",
-    "desc": "训练靶场终极的神秘高手。平时在靶场旁安详钓鱼，一旦受到致命伤会苏醒并爆发出恐怖的觉醒破坏力。",
-    "welcome": "🐟 pppopipupu：'啊……又钓上来一条虚空之鱼。'",
+    "desc": "NaN",
+    "welcome": "🐟 pppopipupu：为什么我的中指腱鞘炎还不好",
     "idle_talk": [
-      "🐟 pppopipupu：'听说虚空之门尤格-索托斯临死时会吞噬虚空能量觉醒，二阶段有巨额反弹。'",
-      "🐟 pppopipupu：'我其实不太喜欢打架，钓鱼多舒服。你可千万别攻击我，我发起脾气来连我自己都怕。'"
+      "🐟 pppopipupu：'vibe虽然不可靠，但真的很爽...但是爽之后的擦屁股就难受了，必须找到一个平衡'",
+      "🐟 pppopipupu：'你知道吗，anima base v1模型真的很好用，我已经对跑的图不知道🦌晕几次了。记住一定要在负面提示词加bad feet missing finger，这模型很容易崩手崩脚'"
     ],
     "option_idle": "与pppopipupu闲聊",
     "option_challenge": "发起切磋挑战",
