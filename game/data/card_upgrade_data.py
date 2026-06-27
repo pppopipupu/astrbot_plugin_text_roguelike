@@ -455,7 +455,7 @@ CARD_UPGRADE_CONFIG = {
     },
     "wizard_antimagic_field": {
         "cost_ba": 0,
-        "desc": "清除我方所有负面 Buff 与敌方所有正面 Buff，你本回合免疫非物理伤害。消耗。"
+        "desc": "清除场上所有生物的所有 Buff，并使所有护符消失（不触发谢幕曲且不进入墓地）。消耗。"
     },
     "wizard_time_ravage": {
         "desc": "对目标造成 25 点真实伤害，并使其获得 3 层【虚弱】与 3 层【易伤】，且你获得 1A 行动点。消耗。"

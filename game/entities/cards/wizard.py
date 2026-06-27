@@ -378,21 +378,16 @@ class WizardPrismaticWallCard(Card):
 @register_card("wizard_antimagic_field")
 class WizardAntimagicFieldCard(Card):
     def execute(self, run, target, engine) -> str:
+        run.player.buffs.clear()
+        for enemy in run.enemies:
+            enemy.buffs.clear()
+        if run.player.minions:
+            for m in run.player.minions.values():
+                m.buffs.clear()
+        run.player.amulets.clear()
         if self.upgraded:
-            from ..buffs import is_debuff
-            run.player.buffs = [b for b in run.player.buffs if not is_debuff(b.id)]
-            for enemy in run.enemies:
-                enemy.buffs = [b for b in enemy.buffs if is_debuff(b.id)]
-            engine._add_buff_to(run.player, "antimagic_immune", "反魔法屏障", "免疫本回合所有非物理伤害", 1)
-            return "掌控禁魔法阵展开！清除了玩家的负面状态与敌人的所有增益，且你本回合将免疫非物理伤害！"
+            return "反魔法力场+席卷了战场！清除了场上所有生物的所有 Buff，并使所有护符消失（不触发谢幕曲且不进入墓地）。"
         else:
-            run.player.buffs.clear()
-            for enemy in run.enemies:
-                enemy.buffs.clear()
-            if run.player.minions:
-                for m in run.player.minions.values():
-                    m.buffs.clear()
-            run.player.amulets.clear()
             return "反魔法力场席卷了战场！清除了场上所有生物的所有 Buff，并使所有护符消失（不触发谢幕曲且不进入墓地）。"
 
 @register_card("wizard_time_ravage")
