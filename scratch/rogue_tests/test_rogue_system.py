@@ -402,7 +402,7 @@ class TestRogueSystem(unittest.TestCase):
             stats = save_manager.load_stats("test_user_reader")
             self.assertEqual(stats.reader_page, 1)
             
-            res4 = await run_command(plugin, "q", sender_id="test_user_reader")
+            res4 = await run_command(plugin, "exit", sender_id="test_user_reader")
             self.assertIn("已退出阅读器", res4)
             stats = save_manager.load_stats("test_user_reader")
             self.assertFalse(stats.reader_active)
@@ -597,7 +597,7 @@ class TestRogueSystem(unittest.TestCase):
             save_manager.save_save("test_user_discover", run)
             
             await run_command(plugin, "使用 1", sender_id="test_user_discover")
-            res_cancel = await run_command(plugin, "q", sender_id="test_user_discover")
+            res_cancel = await run_command(plugin, "exit", sender_id="test_user_discover")
             self.assertIn("取消发掘操作", res_cancel)
             run = save_manager.load_save("test_user_discover")
             self.assertEqual(len(run.node_data.get("state_stack", [])), 0)

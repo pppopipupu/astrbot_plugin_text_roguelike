@@ -77,7 +77,7 @@ class CLIRouter:
                     self.save_manager.save_save(user_id, run)
                 else:
                     input_str = " ".join(parts).strip()
-                    if input_str in ("取消", "cancel", "abandon", "放弃", "q"):
+                    if input_str in ("取消", "cancel", "abandon", "放弃", "exit", "quit"):
                         state_stack.pop()
                         self.save_manager.save_save(user_id, run)
                         return "❌ 取消使用操作。", False
@@ -142,7 +142,7 @@ class CLIRouter:
                         return "❌ 取消使用操作。", False
             elif stype == "discover_selection":
                 input_str = " ".join(parts).strip()
-                if input_str in ("取消", "cancel", "abandon", "放弃", "q"):
+                if input_str in ("取消", "cancel", "abandon", "放弃", "exit", "quit"):
                     state_stack.pop()
                     self.engine.battle_engine.rollback_suspended_card(run)
                     self.save_manager.save_save(user_id, run)
@@ -152,7 +152,7 @@ class CLIRouter:
                     parts = ["选择"] + parts
                     sub = "选择"
                 if sub not in ("选择", "c"):
-                    return "❌ 你必须从消耗堆中选择卡牌。请输入：选择 <卡牌序号>（如：选择 1），或输入 取消/q 放弃发掘。", False
+                    return "❌ 你必须从消耗堆中选择卡牌。请输入：选择 <卡牌序号>（如：选择 1），或输入 取消/exit/quit 放弃发掘。", False
                 if len(parts) < 2:
                     return "❌ 请提供卡牌序号，例如：选择 1", False
                 try:
@@ -180,7 +180,7 @@ class CLIRouter:
                     return self.engine.battle_engine._append_logs_to_res(run, res), False
             elif stype == "overload_star_select":
                 input_str = " ".join(parts).strip()
-                if input_str in ("取消", "cancel", "abandon", "放弃", "q"):
+                if input_str in ("取消", "cancel", "abandon", "放弃", "exit", "quit"):
                     state_stack.pop()
                     self.engine.battle_engine.rollback_suspended_card(run)
                     self.save_manager.save_save(user_id, run)
@@ -190,7 +190,7 @@ class CLIRouter:
                     parts = ["选择"] + parts
                     sub = "选择"
                 if sub not in ("选择", "c"):
-                    return "❌ 你必须选择一张手牌保留。请输入：选择 <手牌序号>（如：选择 1），或输入 取消/q 放弃使用。", False
+                    return "❌ 你必须选择一张手牌保留。请输入：选择 <手牌序号>（如：选择 1），或输入 取消/exit/quit 放弃使用。", False
                 if len(parts) < 2:
                     return "❌ 请提供手牌序号，例如：选择 1", False
                 try:
@@ -330,18 +330,15 @@ class CLIRouter:
                 "队列", "queue", "q"
             )
             if first_cmd in exempt_cmds:
-                if first_cmd == "q" and run and run.node_data.get("state_stack"):
-                    pass
-                else:
-                    handler = self._command_handlers.get(first_cmd)
-                    if handler:
-                        if curr_state in getattr(handler, "allowed_states", []):
-                            res_list = list(handler.execute(self, user_id, parts))
-                            yield "\n".join(res_list)
-                            return
-                        else:
-                            yield f"❌ 指令【{first_cmd}】在当前状态下不可用。"
-                            return
+                handler = self._command_handlers.get(first_cmd)
+                if handler:
+                    if curr_state in getattr(handler, "allowed_states", []):
+                        res_list = list(handler.execute(self, user_id, parts))
+                        yield "\n".join(res_list)
+                        return
+                    else:
+                        yield f"❌ 指令【{first_cmd}】在当前状态下不可用。"
+                        return
         is_town_combat = run is not None and run.node_data.get("is_town_combat", False)
         if not parts:
             if run:

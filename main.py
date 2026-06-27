@@ -527,9 +527,9 @@ class MyPlugin(Star):
             parts = clean_str.split()
             if parts:
                 cmd = parts[0].lower()
-                if cmd in ("下一页", "n", "next", "上一页", "b", "back", "prev", "退出", "q", "quit", "exit"):
+                if cmd in ("下一页", "n", "next", "上一页", "b", "back", "prev", "退出", "quit", "exit"):
                     event.stop_event()
-                    if cmd in ("退出", "q", "quit", "exit"):
+                    if cmd in ("退出", "quit", "exit"):
                         stats.reader_active = False
                         self.save_manager.save_stats(user_id, stats)
                         return event.plain_result("🚪 已退出阅读器。")
@@ -670,7 +670,7 @@ class MyPlugin(Star):
                 elif curr_state == "town":
                     town_nav_cmds = {
                         "w", "a", "s", "d", "up", "down", "left", "right", 
-                        "退出", "quit", "exit", "q", "回城", "home", 
+                        "退出", "quit", "exit", "回城", "home", 
                         "拿取", "捡起", "take", "pick", "使用", "use", 
                         "交互", "talk", "interact", "inter", "talk_to"
                     }

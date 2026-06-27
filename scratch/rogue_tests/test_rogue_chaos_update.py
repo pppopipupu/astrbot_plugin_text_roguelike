@@ -375,7 +375,7 @@ class TestRogueChaosUpdate(unittest.TestCase):
         
         from game.core.cli_router import CLIRouter
         router = CLIRouter(sm, ge)
-        parts = ["q"]
+        parts = ["exit"]
         router._execute_sub_action("test_discover_cancel", run, parts)
         self.assertEqual(len(run.node_data.get("state_stack", [])), 0)
         self.assertEqual(player.actions, 3)
