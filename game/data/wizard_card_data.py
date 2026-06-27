@@ -363,7 +363,7 @@ WIZARD_CARD_CONFIG = {
         "type": "spell",
         "cost_a": 1,
         "cost_ba": 1,
-        "desc": "清除全场所有单位的 Buff 状态，摧毁全部护符，你本回合免疫非物理伤害。消耗。",
+        "desc": "清除场上所有生物的所有 Buff，并使所有护符消失（不触发谢幕曲且不进入墓地）。消耗。",
         "rarity": "rare",
         "exhaust": True,
         "feedback": "你在战场中心展开了【反魔法力场】，清除了全场魔法流！"

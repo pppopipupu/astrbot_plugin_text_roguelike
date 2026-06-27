@@ -389,9 +389,11 @@ class WizardAntimagicFieldCard(Card):
             run.player.buffs.clear()
             for enemy in run.enemies:
                 enemy.buffs.clear()
+            if run.player.minions:
+                for m in run.player.minions.values():
+                    m.buffs.clear()
             run.player.amulets.clear()
-            engine._add_buff_to(run.player, "antimagic_immune", "反魔法屏障", "免疫本回合所有非物理伤害", 1)
-            return "反魔法力场席卷了战场！清除了所有单位的 Buff 并摧毁了玩家所有的护符，且你本回合将免疫非物理伤害！"
+            return "反魔法力场席卷了战场！清除了场上所有生物的所有 Buff，并使所有护符消失（不触发谢幕曲且不进入墓地）。"
 
 @register_card("wizard_time_ravage")
 class WizardTimeRavageCard(Card):

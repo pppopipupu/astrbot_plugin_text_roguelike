@@ -653,6 +653,19 @@ class TestRogueCardMech2(unittest.TestCase):
         self.assertTrue(any(b.id == "weak" for b in enemy.buffs))
         self.assertFalse(any(b.id == "strength" for b in enemy.buffs))
         
+        player.buffs = [BuffState(id="strength", name="力量", desc="", stacks=3)]
+        enemy.buffs = [BuffState(id="weak", name="虚弱", desc="", stacks=1)]
+        from game.models.state import MinionState
+        player.minions = {"1": MinionState(id="royal_guard", name="皇家卫兵", hp=10, max_hp=10, atk=3, buffs=[BuffState(id="ward", name="守护", desc="", stacks=1)], actions=1, bonus_actions=0)}
+        player.amulets = {"1": AmuletState(id="some_amulet", name="测试护符", countdown=3, desc="测试描述")}
+        card_anti_normal = CardState("wizard_antimagic_field", upgraded=False)
+        anti_obj_normal = ALL_CARDS.get(card_anti_normal)
+        anti_obj_normal.execute(run, None, engine)
+        self.assertEqual(len(player.buffs), 0)
+        self.assertEqual(len(enemy.buffs), 0)
+        self.assertEqual(len(player.minions["1"].buffs), 0)
+        self.assertEqual(len(player.amulets), 0)
+        
         enemy.hp = 200
         enemy.buffs = []
         player.action_a = 3
