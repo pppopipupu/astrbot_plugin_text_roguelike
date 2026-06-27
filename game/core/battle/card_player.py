@@ -656,6 +656,10 @@ class CardPlayer:
             enemy_actions = f"⏳ [时间停止] 额外回合进行中（剩余 {extra_turns - 1} 个额外回合），敌人全部陷入静止。"
         else:
             enemy_actions = self.engine._enemy_turn(run)
+        if self.engine.is_battle_won(run):
+            self.handle_battle_win(run)
+            self._reindex_minions(p)
+            return self.engine._append_logs_to_res(run, f"{enemy_actions}\n🎉 战斗胜利！敌方单位已被全部击败。")
         if p.hp <= 0:
             settle_msg = self.engine.save_manager.settle_game_and_delete(run.user_id, run, is_victory=False)
             return f"{enemy_actions}\n💀 冒险结束。你被击败了！存档已被清除。\n{settle_msg}"

@@ -151,8 +151,8 @@ class StrengthBuff(BuffImpl):
 class FlameBarrierBuff(BuffImpl):
     def on_damage_take_defend(self, event, buff_state, entity, engine):
         if entity == event.run.player and event.target == "p0" and event.source.startswith("e"):
-            engine._damage_target(event.run, event.source, buff_state.stacks, damage_type="true")
-            engine._log_event(event.run, f"🔥 [火焰屏障] 对攻击源造成了 {buff_state.stacks} 点反弹伤害。")
+            engine._damage_target(event.run, event.source, buff_state.stacks, damage_type="fire")
+            engine._log_event(event.run, f"🔥 [火焰屏障] 对攻击源造成了 {buff_state.stacks} 点反弹火焰伤害。")
 
     def on_turn_start(self, event, buff_state, entity):
         if event.is_player == (entity == event.run.player):
