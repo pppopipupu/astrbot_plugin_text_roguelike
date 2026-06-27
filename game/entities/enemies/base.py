@@ -41,7 +41,7 @@ class EnemyTemplate:
             desc = f"防御 (获得 {val} 护盾)"
         return itype, val, desc
 
-    def _perform_attack(self, run, engine, enemy, dmg: int, logs: List[str]):
+    def _perform_attack(self, run, engine, enemy, dmg: int, logs: List[str], damage_type: str = "bludgeoning"):
         p = run.player
         import random
         strength = 0
@@ -61,7 +61,7 @@ class EnemyTemplate:
             target = p.minions[target_key]
             m_name = target.name
             before_len = len(run.node_data.get("battle_logs", []))
-            engine._damage_target(run, f"p{target_key}", final_dmg, source=f"enemy:{enemy.name}", damage_type="bludgeoning")
+            engine._damage_target(run, f"p{target_key}", final_dmg, source=f"enemy:{enemy.name}", damage_type=damage_type)
             after_logs = run.node_data.get("battle_logs", [])
             if len(after_logs) > before_len:
                 dmg_msg = after_logs.pop()
@@ -72,14 +72,14 @@ class EnemyTemplate:
                 target = p.minions[target_key]
                 m_name = target.name
                 before_len = len(run.node_data.get("battle_logs", []))
-                engine._damage_target(run, f"p{target_key}", final_dmg, source=f"enemy:{enemy.name}", damage_type="bludgeoning")
+                engine._damage_target(run, f"p{target_key}", final_dmg, source=f"enemy:{enemy.name}", damage_type=damage_type)
                 after_logs = run.node_data.get("battle_logs", [])
                 if len(after_logs) > before_len:
                     dmg_msg = after_logs.pop()
                     logs.append(f"敌人【{enemy.name}】攻击了我方随从【{m_name}】。{dmg_msg}")
             else:
                 before_len = len(run.node_data.get("battle_logs", []))
-                engine._damage_target(run, "p0", final_dmg, source=f"enemy:{enemy.name}", damage_type="bludgeoning")
+                engine._damage_target(run, "p0", final_dmg, source=f"enemy:{enemy.name}", damage_type=damage_type)
                 after_logs = run.node_data.get("battle_logs", [])
                 if len(after_logs) > before_len:
                     dmg_msg = after_logs.pop()

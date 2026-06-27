@@ -20,7 +20,7 @@ DAMAGE_TYPE_NAMES = {
     "slashing": "挥砍",
     "thunder": "雷鸣",
     "true": "真实",
-    "attack": "物理",
+    "attack": "钝击",
     "effect": "效果",
     "spell": "法术"
 }
@@ -230,7 +230,7 @@ class CombatResolver:
                 final_dmg = final_dmg * (10 ** stacks)
         if target == "p0" and any(b.id == "antimagic_immune" for b in p.buffs):
             dtype_str = damage_type.value if hasattr(damage_type, "value") else str(damage_type)
-            if dtype_str not in {"slashing", "piercing", "bludgeoning", "attack"}:
+            if dtype_str not in {"slashing", "piercing", "bludgeoning"}:
                 final_dmg = 0
         is_fatal = False
         is_true = False

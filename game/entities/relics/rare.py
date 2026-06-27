@@ -56,7 +56,7 @@ class VoidLensRelic(RelicImpl):
 
 class CenturionMailRelic(RelicImpl):
     def on_damage_calculate(self, event, run, engine):
-        if event.target == "p0" and event.damage_type in ("slashing", "piercing", "bludgeoning", "attack"):
+        if event.target == "p0" and event.damage_type in ("slashing", "piercing", "bludgeoning"):
             event.modified_damage = max(0, event.modified_damage - 2)
 
 class PriestCharmRelic(RelicImpl):
@@ -101,15 +101,15 @@ class LengSpiderVenomRelic(RelicImpl):
     def on_damage_take(self, event, run, engine):
         if event.source == "p0" and event.target.startswith("e"):
             dtype = event.damage_type
-            if dtype in ("slashing", "piercing", "bludgeoning", "attack"):
+            if dtype in ("slashing", "piercing", "bludgeoning"):
                 import random
                 if random.random() < 0.5:
                     try:
                         idx = int(event.target[1:]) - 1
                         if 0 <= idx < len(run.enemies):
                             enemy = run.enemies[idx]
-                            engine._add_buff_to(enemy, "minor_vulnerable", "轻度物理易伤", "受到的物理伤害增加 50%", 1)
-                            engine._log_event(run, f"🕷️ [冷蛛毒腺] 触发！使【{enemy.name}】获得 1 层【轻度物理易伤】。")
+                            engine._add_buff_to(enemy, "minor_vulnerable", "轻度易伤", "受到的所有类型伤害增加 50%", 1)
+                            engine._log_event(run, f"🕷️ [冷蛛毒腺] 触发！使【{enemy.name}】获得 1 层【轻度易伤】。")
                     except ValueError:
                         pass
 

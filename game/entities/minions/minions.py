@@ -423,7 +423,7 @@ class BannerBearerTemplate(MinionTemplate):
                     if is_upgraded:
                         engine._gain_shield(run, f"p{grid}", 3)
                         shield_msg = f"，且【{m.name}】获得 3 点护盾"
-                    engine._log_event(run, f"🎺 【{m.name}】被动触发！由于打出了物理卡牌，使我方随从【{chosen_minion.name}】重置了攻击次数，且攻击力本回合 +{val}{shield_msg}。")
+                    engine._log_event(run, f"🎺 【{m.name}】被动触发！由于打出了挥砍、钝击或穿刺卡牌，使我方随从【{chosen_minion.name}】重置了攻击次数，且攻击力本回合 +{val}{shield_msg}。")
 
 
 class RoyalGuardTemplate(MinionTemplate):
@@ -439,7 +439,7 @@ class RoyalGuardTemplate(MinionTemplate):
             if first_enemy:
                 engine._damage_target(run, first_enemy, dmg, damage_type=dtype, source=f"p{grid}")
                 tname = engine._get_target_name(run, first_enemy)
-                engine._log_event(run, f"🛡️ 【{m.name}】在场触发被动：玩家获得护盾使自身攻击力永久提升 {val}，且对【{tname}】造成了 {dmg} 点物理伤害。")
+                engine._log_event(run, f"🛡️ 【{m.name}】在场触发被动：玩家获得护盾使自身攻击力永久提升 {val}，且对【{tname}】发起反击。")
 
 
 class GarrisonLeaderTemplate(MinionTemplate):

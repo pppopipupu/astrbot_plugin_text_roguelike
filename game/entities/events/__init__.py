@@ -1,4 +1,5 @@
 from typing import Optional
+from ...data.map_config import MapConfig
 from .base import EventOption, EventTemplate
 from .registry import EVENT_OPTIONS_REGISTRY
 from ...data.event_data import EVENT_CONFIG
@@ -96,7 +97,7 @@ ALL_EVENTS = [
             LeaveEventOption("婉言谢绝并离开", "leave_event", "fairy_tea")
         ],
         min_stage=2,
-        max_stage=9
+        max_stage=12
     ),
     EventTemplate(
         "void_contract",
@@ -107,8 +108,8 @@ ALL_EVENTS = [
             AbsorbVoidOption("将虚空吞噬", "absorb_void"),
             LeaveEventOption("拒绝契约并离开", "leave_event", "void_contract")
         ],
-        min_stage=12,
-        max_stage=19
+        min_stage=14,
+        max_stage=MapConfig.COMMON_EVENT_MAX_STAGE
     ),
     EventTemplate(
         "forge_furnace",
@@ -121,7 +122,7 @@ ALL_EVENTS = [
             LeaveEventOption("安全离开", "leave_event", "forge_furnace")
         ],
         min_stage=2,
-        max_stage=19
+        max_stage=MapConfig.COMMON_EVENT_MAX_STAGE
     ),
     EventTemplate(
         "portal_chamber",
@@ -131,8 +132,8 @@ ALL_EVENTS = [
             ArcanePortalOption("获得卡牌【万能钥匙】，但卡组中会被塞入一张诅咒卡【空间撕裂】", "arcane_portal"),
             LeaveEventOption("悄然离开", "leave_event", "portal_chamber")
         ],
-        min_stage=21,
-        max_stage=24
+        min_stage=27,
+        max_stage=30
     ),
     EventTemplate(
         "void_library",
@@ -143,7 +144,7 @@ ALL_EVENTS = [
             SacrificeMindOption("献祭部分心智", "sacrifice_mind")
         ],
         min_stage=6,
-        max_stage=12
+        max_stage=16
     ),
     EventTemplate(
         "goblin_blackmarket",
@@ -153,8 +154,8 @@ ALL_EVENTS = [
             RobBlackmarketOption("强行抢劫黑市", "rob_blackmarket"),
             SellFleshOption("出售血肉", "sell_flesh")
         ],
-        min_stage=13,
-        max_stage=20
+        min_stage=14,
+        max_stage=MapConfig.COMMON_EVENT_MAX_STAGE
     ),
     EventTemplate(
         "time_fountain_trial",
@@ -164,8 +165,8 @@ ALL_EVENTS = [
             AccelerateCinderOption("加速自身薪火", "accelerate_cinder"),
             TouchTimeRiftOption("触碰时间裂隙", "touch_time_rift")
         ],
-        min_stage=21,
-        max_stage=25
+        min_stage=27,
+        max_stage=31
     ),
     EventTemplate(
         "astral_caravan_disaster",

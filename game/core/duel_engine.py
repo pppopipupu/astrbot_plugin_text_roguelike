@@ -115,7 +115,7 @@ class DuelEngine:
             cid_for_cfg = "duel_" + cid_for_cfg
         cfg = DUEL_CARD_CONFIG.get(cid_for_cfg, {})
         dtype = cfg.get("damage_type", "")
-        is_spell = (card.type == "spell" and dtype not in ("slashing", "bludgeoning", "piercing", "attack"))
+        is_spell = (card.type == "spell" and dtype not in ("slashing", "bludgeoning", "piercing"))
         
         temporal_buff = next((b for b in p.buffs if b.id == "temporal_quest"), None)
         if temporal_buff and is_spell:
@@ -137,7 +137,7 @@ class DuelEngine:
                 p.hand.append("duel_reward_ancient_resonance")
                 self._log_event(event.run, "🎉 [任务达成] 远古共鸣完成！获得了奖励卡【秘钥绽放】！")
                 
-        is_physical = (dtype in ("slashing", "bludgeoning", "piercing", "attack"))
+        is_physical = (dtype in ("slashing", "bludgeoning", "piercing"))
         arms_buff = next((b for b in p.buffs if b.id == "arms_quest"), None)
         if arms_buff and is_physical:
             progress = event.run.node_data.get("arms_quest_progress", 0) + 1

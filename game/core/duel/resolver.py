@@ -101,7 +101,7 @@ class DuelResolver:
         if opp_grid == "e1":
             p1_id = run.node_data["player1_id"]
             target_name = run.node_data.get("player2_name" if run.user_id == p1_id else "player1_name", "对手")
-            self.engine._damage_target(run, "e1", m.atk, source=f"p{my_grid}", damage_type="attack")
+            self.engine._damage_target(run, "e1", m.atk, source=f"p{my_grid}", damage_type="bludgeoning")
             res = f"我方随从【{m.name}】攻击了敌方领主【{target_name}】。"
         elif opp_grid.startswith("e") and len(opp_grid) > 1:
             try:
@@ -115,9 +115,9 @@ class DuelResolver:
             enemy_m = p2.minions[opp_grid_clean]
             target_name = enemy_m.name
             res = f"我方随从【{m.name}】攻击了敌方随从【{target_name}】。"
-            self.engine._damage_target(run, opp_grid, m.atk, source=f"p{my_grid}", damage_type="attack")
+            self.engine._damage_target(run, opp_grid, m.atk, source=f"p{my_grid}", damage_type="bludgeoning")
             if opp_grid_clean in p2.minions:
-                self.engine._damage_target(run, f"p{my_grid}", enemy_m.atk, source=opp_grid, damage_type="attack")
+                self.engine._damage_target(run, f"p{my_grid}", enemy_m.atk, source=opp_grid, damage_type="bludgeoning")
         else:
             return "❌ 攻击目标非法，随从只能攻击 e1-e7。"
         return res

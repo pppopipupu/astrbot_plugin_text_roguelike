@@ -33,4 +33,4 @@ class CultistKakaTemplate(EnemyTemplate):
             engine._add_buff_to(enemy, "ritual", "仪式", "每回合开始时，获得等同于此状态层数的力量", 1)
             logs.append(f"【{enemy.name}】大喊：“咔咔！”，开始施展神秘仪式！")
         elif intent.type == "peck":
-            self._perform_attack(run, engine, enemy, intent.val, logs)
+            self._perform_attack(run, engine, enemy, intent.val, logs, damage_type="piercing")

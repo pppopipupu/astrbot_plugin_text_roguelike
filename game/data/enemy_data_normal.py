@@ -274,7 +274,7 @@ ENEMY_NORMAL_CONFIG = {
         "hp": "15",
         "actions": "1A 0BA",
         "intents": [
-            {"id": "rage_bite", "val": 4, "desc": "狂暴撕咬 (造成 4 物理伤害，半血以下时伤害翻倍)"},
+            {"id": "rage_bite", "val": 4, "desc": "狂暴撕咬 (造成 4 点穿刺伤害，半血以下时伤害翻倍)"},
             {"id": "evil_gaze", "val": 5, "desc": "邪恶凝视 (获得 5 护盾)"}
         ]
     },
@@ -284,7 +284,7 @@ ENEMY_NORMAL_CONFIG = {
         "hp": "6",
         "actions": "1A 0BA",
         "intents": [
-            {"id": "attack", "desc": "攻击 (造成 2 物理伤害)"}
+            {"id": "attack", "desc": "攻击 (造成 2 点钝击伤害)"}
         ]
     },
     "虚空游荡者": {
@@ -359,7 +359,7 @@ ENEMY_NORMAL_CONFIG = {
             {"id": "tentacles", "val": 6, "desc": "触须缠绕 (造成 6 心灵伤害并使你受擒)"},
             {"id": "mind_blast", "val": 8, "desc": "心灵震爆 (造成 8 心灵伤害并使你眩晕)"},
             {"id": "extract_brain", "val": 25, "desc": "采脑 (对受擒的你造成 25 穿刺伤害)"},
-            {"id": "magic_missile", "val": 3, "desc": "奥术飞弹 (造成 3 魔法伤害，重复 3 次)"},
+            {"id": "magic_missile", "val": 3, "desc": "奥术飞弹 (造成 3 点力场伤害，重复 3 次)"},
             {"id": "shield_spell", "val": 12, "desc": "护盾术 (获得 12 护盾并净化 1 负面状态)"}
         ]
     },
@@ -400,7 +400,7 @@ ENEMY_NORMAL_CONFIG = {
         "actions": "1A 0BA",
         "intents": [
             {"id": "caw", "val": 0, "desc": "咔咔！ (第一回合必定施展仪式，此后每回合获得 1 层力量)"},
-            {"id": "peck", "val": 6, "desc": "啄击 (造成 6 物理伤害)"}
+            {"id": "peck", "val": 6, "desc": "啄击 (造成 6 点穿刺伤害)"}
         ]
     },
     "星界幼犬": {
@@ -428,7 +428,7 @@ ENEMY_NORMAL_CONFIG = {
         "hp": "10",
         "actions": "1A 0BA",
         "intents": [
-            {"id": "bone_slash", "val": 3, "desc": "骨刃挥砍 (造成 3 点物理伤害)"}
+            {"id": "bone_slash", "val": 3, "desc": "骨刃挥砍 (造成 3 点挥砍伤害)"}
         ]
     },
     "深潜者": {
@@ -489,7 +489,7 @@ ENEMY_NORMAL_CONFIG = {
         "intents": [
             {"id": "venom_bite", "val": 7, "desc": "剧毒啃咬 (造成 7 穿刺伤害并施加物理易伤)"},
             {"id": "web_trap", "val": 8, "desc": "蛛网束缚 (获得 8 护盾并丢弃玩家 1 张手牌)"},
-            {"id": "spider_jump", "val": 8, "desc": "跳跃突袭 (造成 8 点物理伤害)"}
+            {"id": "spider_jump", "val": 8, "desc": "跳跃突袭 (造成 8 点钝击伤害)"}
         ]
     },
     "米·戈": {

@@ -114,7 +114,7 @@ class TestRogueMinions(unittest.TestCase):
         )
         res = engine.card_player.minion_attack(run, "1", "1")
         self.assertEqual(enemy.hp, 16)
-        self.assertIn("造成 4 点物理伤害", res)
+        self.assertIn("造成 4 点钝击伤害", res)
 
     def test_minion_defeat_non_summon_and_win(self):
         class DummySaveManager:

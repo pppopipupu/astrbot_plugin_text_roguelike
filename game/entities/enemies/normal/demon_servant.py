@@ -33,7 +33,7 @@ class DemonServantTemplate(EnemyTemplate):
                     if b.id == "strength":
                         strength += b.stacks
             final_dmg = val + strength
-            self._perform_attack(run, engine, enemy, final_dmg, logs)
+            self._perform_attack(run, engine, enemy, final_dmg, logs, damage_type="piercing")
         elif intent.type == "evil_gaze":
             enemy.shield += intent.val
             logs.append(f"【{enemy.name}】施展邪恶凝视，获得 {intent.val} 点护盾。")

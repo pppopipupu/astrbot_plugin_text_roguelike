@@ -1,6 +1,7 @@
 import random
 from typing import Optional
 from ..models.state import GameRun, PlayerState, EnemyState, Card
+from ..data.map_config import MapConfig
 from .battle.base import BaseBattleEngine
 from .battle.combat_resolver import CombatResolver
 from .battle.card_player import CardPlayer
@@ -155,7 +156,7 @@ class BattleEngine(BaseBattleEngine):
                     )]
                     run.node_data["boss_name"] = "雷霆领主"
                     run.node_data["thunder_lord_turn"] = 1
-            elif p.stage == 25:
+            elif p.stage == MapConfig.GATE_BOSS_STAGE:
                 boss_name = random.choice(["腐化之心", "Icerainboww"])
                 if boss_name == "腐化之心":
                     run.enemies = [EnemyState(
@@ -184,7 +185,7 @@ class BattleEngine(BaseBattleEngine):
                     )]
                     run.node_data["boss_name"] = "Icerainboww"
                     run.node_data["icerainboww_turn"] = 1
-            elif p.stage == 31:
+            elif p.stage == MapConfig.AVERGOMON_STAGE:
                 run.enemies = [EnemyState(
                     name="亚弗戈蒙",
                     hp=180,
@@ -196,7 +197,7 @@ class BattleEngine(BaseBattleEngine):
                     max_bonus_actions=1
                 )]
                 run.node_data["boss_name"] = "亚弗戈蒙"
-            elif p.stage == 32:
+            elif p.stage == MapConfig.FINAL_BOSS_STAGE:
                 run.enemies = [EnemyState(
                     name="虚空之门·尤格-索托斯",
                     hp=200,

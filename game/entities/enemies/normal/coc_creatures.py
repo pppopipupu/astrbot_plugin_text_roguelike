@@ -78,9 +78,9 @@ class GhoulTemplate(EnemyTemplate):
                         strength += b.stacks
             final_dmg = val + strength
             self._perform_attack(run, engine, enemy, final_dmg, logs)
-            engine._add_buff_to(run.player, "minor_vulnerable", "轻度物理易伤", "受到的物理伤害增加 50%", 1)
+            engine._add_buff_to(run.player, "minor_vulnerable", "轻度易伤", "受到的所有类型伤害增加 50%", 1)
             if logs:
-                logs[-1] += "，并对你施加了 1 层【轻度物理易伤】"
+                logs[-1] += "，并对你施加了 1 层【轻度易伤】"
         elif intent.type == "claw_slash":
             val = intent.val
             strength = 0

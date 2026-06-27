@@ -51,7 +51,7 @@ class NecromancerTemplate(EnemyTemplate):
                 intents=[EnemyIntentState(
                     type="attack",
                     val=2,
-                    desc="攻击 (造成 2 物理伤害)",
+                    desc="攻击 (造成 2 点钝击伤害)",
                     cost_a=1,
                     cost_ba=0
                 )]

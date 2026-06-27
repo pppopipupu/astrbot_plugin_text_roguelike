@@ -185,7 +185,7 @@ class SummonMinionCard(Card):
             if self.id == "mercenary+":
                 chosen_target = target if (target and target.startswith("e")) else engine._get_first_alive_enemy(run)
                 if chosen_target:
-                    engine._damage_target(run, chosen_target, self.minion_atk, source=f"p{grid}", damage_type="attack")
+                    engine._damage_target(run, chosen_target, self.minion_atk, source=f"p{grid}", damage_type="bludgeoning")
                     tname = engine._get_target_name(run, chosen_target)
                     battlecry_msg = f"\n⚔️ [入场曲] 【雇佣兵+】立即攻击了【{tname}】，造成了 {self.minion_atk} 点伤害！"
             elif self.id == "shield_guard+":

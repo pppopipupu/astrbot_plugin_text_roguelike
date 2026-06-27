@@ -1,6 +1,7 @@
 import random
 from typing import Optional, List, Dict
 from ..models.state import GameRun, PlayerState
+from ..data.map_config import MapConfig
 from ..entities import ALL_CARDS, get_relic_name
 from ..entities.events import ALL_EVENTS, get_option_by_action
 
@@ -11,7 +12,7 @@ class ExploreEngine:
 
     def _init_event_node(self, run: GameRun):
         stage = run.player.stage
-        valid_events = [e for e in ALL_EVENTS if getattr(e, "min_stage", 2) <= stage <= getattr(e, "max_stage", 19)]
+        valid_events = [e for e in ALL_EVENTS if getattr(e, "min_stage", 2) <= stage <= getattr(e, "max_stage", MapConfig.COMMON_EVENT_MAX_STAGE)]
         if not valid_events:
             valid_events = ALL_EVENTS
         event = random.choice(valid_events)

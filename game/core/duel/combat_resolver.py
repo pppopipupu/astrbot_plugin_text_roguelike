@@ -18,7 +18,7 @@ DAMAGE_TYPE_NAMES = {
     "slashing": "挥砍",
     "thunder": "雷鸣",
     "true": "真实",
-    "attack": "物理",
+    "attack": "钝击",
     "effect": "效果",
     "spell": "法术"
 }

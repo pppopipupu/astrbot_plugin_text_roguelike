@@ -3,6 +3,7 @@ import json
 from dataclasses import asdict
 from typing import Optional, Tuple, Dict, List
 from .state import GameRun, PlayerState, EnemyState, MinionState, AmuletState, BuffState, UserStats, current_user_id, register_stat_recorder, get_user_id
+from ..data.map_config import MapConfig
 
 class SaveManager:
     _default_data_dir = None
@@ -422,11 +423,11 @@ class SaveManager:
         unlock_msg = ""
         stats = self.load_stats(user_id)
         if is_victory:
-            if stage >= 25:
+            if stage == MapConfig.FINAL_BOSS_STAGE:
                 gp_gained += 3000
                 victory_bonus = "（含超最终通关奖励 3000 GP）"
-                stats.yog_sothoth_kill_count = getattr(stats, "yog_sothoth_kill_count", 0) + 1
                 unlock_msg = "\n\n🎉 特别提示：你成功击败了先古的超最终BOSS【虚空之门·尤格-索托斯】！你已完成了最伟大的先古救赎！"
+
             else:
                 gp_gained += 1000
                 victory_bonus = "（含通关奖励 1000 GP）"

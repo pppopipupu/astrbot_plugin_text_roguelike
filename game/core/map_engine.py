@@ -1,6 +1,7 @@
 import random
 from typing import Optional, List, Dict
 from ..models.state import GameRun, PlayerState, EnemyState, MinionState, AmuletState, Card
+from ..data.map_config import MapConfig
 from .explore_engine import ExploreEngine
 
 class MapEngine:
@@ -144,20 +145,17 @@ class MapEngine:
             options = selected_relics + selected_cards
             random.shuffle(options)
             run.node_data = {"options": options, "style": style}
-        elif p.stage in (13, 26):
+        elif p.stage in MapConfig.CAFE_STAGES:
             from .cafe_engine import CafeEngine
             cafe = CafeEngine(self.save_manager, self)
             cafe.init_cafe(run)
-        elif p.stage in (12, 25, 31, 32):
+        elif p.stage in MapConfig.BOSS_STAGES:
             run.node_type = "battle"
             self.battle_engine._init_battle_node(run, "boss")
         else:
-            if p.stage == 2:
-                self._generate_map_network(run, 2, 12)
-            elif p.stage == 14:
-                self._generate_map_network(run, 14, 25)
-            elif p.stage == 27:
-                self._generate_map_network(run, 27, 32)
+            if p.stage in MapConfig.STAGE_NETWORKS:
+                s_start, s_end = MapConfig.STAGE_NETWORKS[p.stage]
+                self._generate_map_network(run, s_start, s_end)
             
             run.node_type = "map_select"
             nodes_layer = run.map_data.get("nodes", {}).get(str(p.stage), [])
@@ -216,18 +214,15 @@ class MapEngine:
         
         tot = run.map_data["total_treasures"]
         treasure_layers = []
-        if start_s == 2:
-            num_t = 2 if tot == 5 else 1
-            treasure_layers = random.sample(range(3, 12), num_t)
-        elif start_s == 14:
-            treasure_layers = random.sample(range(15, 25), 2)
-        elif start_s == 27:
-            treasure_layers = random.sample(range(27, 31), 1)
+        if start_s in MapConfig.TREASURE_LAYERS_CONFIG:
+            t_start, t_end = MapConfig.TREASURE_LAYERS_CONFIG[start_s]
+            num_t = 2 if (start_s == 2 and tot == 5) or start_s == 14 else 1
+            treasure_layers = random.sample(range(t_start, t_end), num_t)
 
         types_pool = ["battle", "event", "shop", "elite", "rest"]
         for s in range(start_s, end_s + 1):
             s_str = str(s)
-            if s in (12, 25, 31, 32):
+            if s in MapConfig.BOSS_STAGES:
                 nodes[s_str].append({
                     "id": f"{s}_0",
                     "type": "boss",

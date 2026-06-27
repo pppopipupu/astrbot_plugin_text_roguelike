@@ -1,6 +1,8 @@
 import random
 from typing import Optional
 from ...models.state import GameRun, PlayerState, EnemyState, MinionState, Card, check_and_replace_fireball
+from ...data.map_config import MapConfig
+
 from ...entities import ALL_CARDS, ALL_MINIONS, ALL_AMULETS, get_relic_name, get_relic_impl
 from ...models.events import (
     CardPlayEvent, CardPlayedEvent, CardExhaustEvent, CardDiscardEvent,
@@ -506,7 +508,7 @@ class CardPlayer:
             return f"❌ 敌方格子 [{opp_grid}] 没有合法的敌人目标。"
         enemy = run.enemies[opp_idx]
         opp_grid = f"e{opp_idx+1}"
-        self.engine._damage_target(run, opp_grid, m.atk, source=f"p{my_grid}", damage_type="attack")
+        self.engine._damage_target(run, opp_grid, m.atk, source=f"p{my_grid}", damage_type="bludgeoning")
         res = f"我方随从【{m.name}】攻击了敌人【{enemy.name}】。"
         self.engine.save_manager.save_save(run.user_id, run)
         has_damaged = False
@@ -788,16 +790,16 @@ class CardPlayer:
         p.gold += reward_gold
         stats = self.engine.save_manager.load_stats(run.user_id)
         has_gatekey = getattr(stats, "unlocked_gatekey", False)
-        if p.stage == 32:
+        if p.stage == MapConfig.FINAL_BOSS_STAGE:
             run.node_type = "victory"
             stats.yog_sothoth_kill_count = getattr(stats, "yog_sothoth_kill_count", 0) + 1
             self.engine.save_manager.save_stats(run.user_id, stats)
-        elif p.stage == 25 and not has_gatekey:
+        elif p.stage == MapConfig.GATE_BOSS_STAGE and not has_gatekey:
             run.node_type = "victory"
             if run.node_data.get("boss_name") == "Icerainboww":
                 stats.killed_icerainboww = True
                 self.engine.save_manager.save_stats(run.user_id, stats)
-        elif p.stage == 25 and has_gatekey:
+        elif p.stage == MapConfig.GATE_BOSS_STAGE and has_gatekey:
             run.node_type = "boss_chest"
             p_class = getattr(stats, "selected_class", "法师")
             class_mythic_cards = ["neutral_plane_shift", "neutral_omega"]
