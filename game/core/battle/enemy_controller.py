@@ -151,6 +151,9 @@ class EnemyTurnController:
                     continue
                 enemy.actions = max(0, enemy.actions - it.cost_a)
                 enemy.bonus_actions = max(0, enemy.bonus_actions - it.cost_ba)
+                if it.type == "phase_transition":
+                    logs.append(f"⏳ 【{enemy.name}】正在进行【{it.desc.split(' (')[0]}】！此回合免疫所有伤害。")
+                    continue
                 template.execute_intent(run, self.engine, enemy, it, logs)
         evt_turn_end = TurnEndEvent(run, is_player=False)
         self.engine.event_bus.dispatch(evt_turn_end)

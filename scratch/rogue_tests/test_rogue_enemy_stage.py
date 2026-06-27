@@ -630,10 +630,11 @@ class TestRogueEnemyStage(unittest.TestCase):
         player.hp = 100
         boss.hp = 220
         boss.shield = 0
+        boss.buffs = [b for b in boss.buffs if b.id != "phase_transition_immune"]
         engine._damage_target(run, "e1", 20, damage_type="slashing")
         self.assertEqual(boss.hp, 210)
         self.assertEqual(echo_enemy.hp, 5)
-        self.assertEqual(player.hp, 97)
+        self.assertEqual(player.hp, 100)
         
         player.actions = 0
         player.bonus_actions = 1
@@ -730,5 +731,19 @@ class TestRogueEnemyStage(unittest.TestCase):
         enemy.hp = 50
         player.hand = [CardState("strike")]
         engine.card_player.end_turn(run)
+        self.assertEqual(enemy.hp, 50)
+
+    def test_phase_transition_immune_damage_blocks(self):
+        class DummySaveManager:
+            def save_save(self, user_id, run): pass
+        engine = BattleEngine(DummySaveManager())
+        player = PlayerState(hp=80, max_hp=80, shield=10, gold=100, stage=1)
+        enemy = EnemyState("测试敌人", 50, 50, 0)
+        run = GameRun(user_id="test_pt", node_type="battle", player=player, enemies=[enemy])
+        from game.models.state import BuffState
+        enemy.buffs.append(BuffState(id="phase_transition_immune", name="转换阶段", stacks=1, desc="处于转换阶段状态，免疫所有伤害"))
+        engine._damage_target(run, "e1", 10, damage_type="slashing")
+        self.assertEqual(enemy.hp, 50)
+        engine._damage_target(run, "e1", 15, damage_type="true")
         self.assertEqual(enemy.hp, 50)
 

@@ -515,9 +515,7 @@ class TimeLordPassiveBuff(BuffImpl):
                     event.engine.combat_resolver.damage_target(event.run, f"e{idx}", shared_dmg, source="effect", damage_type="true")
                     event.engine._log_event(event.run, f"🔮 【时空残影】作为肉盾，为亚弗戈蒙分担了 {shared_dmg} 点伤害！")
             
-            if event.modified_damage > 0:
-                event.engine._damage_target(event.run, "p0", 3, source=f"buff:{entity.name}", damage_type="true")
-                event.engine._log_event(event.run, f"⚡ 【{entity.name}】的时空壁垒触发，对玩家反弹了 3 点真实伤害！")
+            pass
 
 
 class PendulumResonanceBuff(BuffImpl):
@@ -537,6 +535,18 @@ class PendulumResonanceBuff(BuffImpl):
 
 class SplitToTenBuff(BuffImpl):
     pass
+
+
+class PhaseTransitionImmuneBuff(BuffImpl):
+    def on_damage_calculate_defend(self, event, buff_state, entity):
+        event.modified_damage = 0
+
+    def on_turn_end(self, event, buff_state, entity):
+        if not event.is_player and entity in event.run.enemies:
+            buff_state.stacks -= 1
+            if buff_state.stacks <= 0:
+                if buff_state in entity.buffs:
+                    entity.buffs.remove(buff_state)
 
 
 for name, obj in list(globals().items()):

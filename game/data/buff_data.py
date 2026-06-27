@@ -322,6 +322,10 @@ BUFF_CONFIG = {
         "name": "终焉庇护",
         "desc": "每回合开始获得 20 护盾，且攻击力永久 +2；受到伤害时反弹 1 点真实伤害与 2 点力场伤害"
     },
+    "phase_transition_immune": {
+        "name": "转换阶段",
+        "desc": "处于转换阶段状态，免疫所有伤害"
+    },
 
     "ancient_wisdom_buff": {
         "name": "古老智慧",

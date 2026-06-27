@@ -91,8 +91,18 @@ class PppopipupuTemplate(EnemyTemplate):
             enemy.max_actions = 1
             enemy.max_bonus_actions = 0
             enemy.buffs.clear()
+            from ...models.state import BuffState, EnemyIntentState
+            enemy.buffs.append(BuffState(id="phase_transition_immune", name="转换阶段", stacks=1, desc="处于转换阶段状态，免疫所有伤害"))
             run.node_data["pppopipupu_phase"] = 2
             enemy.intents.clear()
+            enemy.intents.append(EnemyIntentState(
+                type="phase_transition",
+                val=0,
+                desc="热更新 (转换阶段：正在热更新插件中，暂时拒绝一切伤害请求的TCP握手)",
+                cost_a=1,
+                cost_ba=0
+            ))
+            engine.enemy_controller.sync_enemy_intents(enemy)
             engine._log_event(run, "🌟 pppopipupu 在致命伤下苏醒了！无尽的力场虚空能重新充满了他的身躯！他进入了神级觉醒形态！")
 
     def roll_intents(self, run, engine, enemy) -> List[EnemyIntentState]:
