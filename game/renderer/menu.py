@@ -338,11 +338,15 @@ def render_deck(run: GameRun) -> str:
         "📜 当前拥有的卡组 (共 %d 张)" % len(run.player.deck),
         ""
     ]
+    from ..models.state import ensure_card_state
     counts = {}
     for cid in run.player.deck:
-        counts[cid] = counts.get(cid, 0) + 1
+        c_state = ensure_card_state(cid)
+        counts[c_state] = counts.get(c_state, 0) + 1
     idx = 1
-    for cid, count in sorted(counts.items()):
+    def get_sort_key(item):
+        return (item[0].id, 1 if item[0].upgraded else 0, tuple(item[0].gems or []))
+    for cid, count in sorted(counts.items(), key=get_sort_key):
         card = ALL_CARDS.get(cid)
         if card:
             color_type = "⚫" if card.color == "curse" else ("🔴" if card.color == "warrior" else ("🔵" if card.color == "wizard" else "⚪"))

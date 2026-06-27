@@ -647,11 +647,9 @@ class TestRogueCardMech2(unittest.TestCase):
         card_anti = CardState("wizard_antimagic_field", upgraded=True)
         anti_obj = ALL_CARDS.get(card_anti)
         anti_obj.execute(run, None, engine)
-        self.assertTrue(any(b.id == "strength" for b in player.buffs))
-        self.assertFalse(any(b.id == "weak" for b in player.buffs))
-        self.assertEqual(len(player.amulets), 1)
-        self.assertTrue(any(b.id == "weak" for b in enemy.buffs))
-        self.assertFalse(any(b.id == "strength" for b in enemy.buffs))
+        self.assertEqual(len(player.buffs), 0)
+        self.assertEqual(len(enemy.buffs), 0)
+        self.assertEqual(len(player.amulets), 0)
         
         player.buffs = [BuffState(id="strength", name="力量", desc="", stacks=3)]
         enemy.buffs = [BuffState(id="weak", name="虚弱", desc="", stacks=1)]
@@ -780,5 +778,12 @@ class TestRogueCardMech2(unittest.TestCase):
         from game.models.events import TurnStartEvent
         engine.event_bus.dispatch(TurnStartEvent(run, is_player=True))
         self.assertEqual(player.bonus_actions, 2)
+
+        card_echo = CardState("echo_form", upgraded=False)
+        echo_obj = ALL_CARDS.get(card_echo)
+        self.assertTrue(echo_obj.ethereal)
+        card_echo_up = CardState("echo_form", upgraded=True)
+        echo_up_obj = ALL_CARDS.get(card_echo_up)
+        self.assertTrue(echo_up_obj.ethereal)
 
 

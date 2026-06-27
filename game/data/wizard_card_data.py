@@ -196,8 +196,9 @@ WIZARD_CARD_CONFIG = {
         "type": "ability",
         "cost_a": 2,
         "cost_ba": 1,
-        "desc": "本场战斗中，你每回合打出的卡牌额外打出，每张牌最多回响 5 次，多余层数顺延至后续卡牌。",
+        "desc": "本场战斗中，你每回合打出的卡牌额外打出，每张牌最多回响 5 次，多余层数顺延至后续卡牌。虚无。",
         "rarity": "epic",
+        "ethereal": True,
         "feedback": "使用了【{name}】，获得了【回响形态】buff（每回合打出的卡牌额外打出，每张牌最多回响 5 次，多余层数顺延至后续卡牌，可叠加）。"
     },
     "calculated_gamble": {
@@ -364,7 +365,7 @@ WIZARD_CARD_CONFIG = {
         "cost_a": 1,
         "cost_ba": 1,
         "desc": "清除场上所有生物的所有 Buff，并使所有护符消失（不触发谢幕曲且不进入墓地）。消耗。",
-        "rarity": "rare",
+        "rarity": "epic",
         "exhaust": True,
         "feedback": "你在战场中心展开了【反魔法力场】，清除了全场魔法流！"
     },

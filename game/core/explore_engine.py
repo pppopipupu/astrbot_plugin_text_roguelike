@@ -158,10 +158,14 @@ class ExploreEngine:
 
         elif run.node_type == "treasure":
             if run.node_data.get("state") == "pending_remove":
+                from ..models.state import ensure_card_state
                 counts = {}
                 for c_id in p.deck:
-                    counts[c_id] = counts.get(c_id, 0) + 1
-                sorted_items = sorted(counts.items())
+                    c_state = ensure_card_state(c_id)
+                    counts[c_state] = counts.get(c_state, 0) + 1
+                def get_sort_key(item):
+                    return (item[0].id, 1 if item[0].upgraded else 0, tuple(item[0].gems or []))
+                sorted_items = sorted(counts.items(), key=get_sort_key)
                 if option_idx < 1 or option_idx > len(sorted_items):
                     return "❌ 无效的卡牌序号。"
                 cid = sorted_items[option_idx - 1][0]
@@ -395,10 +399,14 @@ class ExploreEngine:
 
     def remove_card_from_deck(self, run: GameRun, deck_idx: int) -> str:
         p = run.player
+        from ..models.state import ensure_card_state
         counts = {}
         for c in p.deck:
-            counts[c] = counts.get(c, 0) + 1
-        sorted_items = sorted(counts.items(), key=lambda item: (item[0].id, item[0].upgraded))
+            c_state = ensure_card_state(c)
+            counts[c_state] = counts.get(c_state, 0) + 1
+        def get_sort_key(item):
+            return (item[0].id, 1 if item[0].upgraded else 0, tuple(item[0].gems or []))
+        sorted_items = sorted(counts.items(), key=get_sort_key)
         if deck_idx < 1 or deck_idx > len(sorted_items):
             return "❌ 无效的卡牌序号。"
         c_state = sorted_items[deck_idx - 1][0]
@@ -422,10 +430,14 @@ class ExploreEngine:
 
     def upgrade_card_in_deck(self, run: GameRun, deck_idx: int) -> str:
         p = run.player
+        from ..models.state import ensure_card_state
         counts = {}
         for c in p.deck:
-            counts[c] = counts.get(c, 0) + 1
-        sorted_items = sorted(counts.items(), key=lambda item: (item[0].id, item[0].upgraded))
+            c_state = ensure_card_state(c)
+            counts[c_state] = counts.get(c_state, 0) + 1
+        def get_sort_key(item):
+            return (item[0].id, 1 if item[0].upgraded else 0, tuple(item[0].gems or []))
+        sorted_items = sorted(counts.items(), key=get_sort_key)
         
         if deck_idx < 1 or deck_idx > len(sorted_items):
             return "❌ 无效的卡牌序号。"
@@ -488,10 +500,14 @@ class ExploreEngine:
 
     def gem_insert_choose(self, run: GameRun, deck_idx: int) -> str:
         p = run.player
+        from ..models.state import ensure_card_state
         counts = {}
         for c_id in p.deck:
-            counts[c_id] = counts.get(c_id, 0) + 1
-        sorted_items = sorted(counts.items())
+            c_state = ensure_card_state(c_id)
+            counts[c_state] = counts.get(c_state, 0) + 1
+        def get_sort_key(item):
+            return (item[0].id, 1 if item[0].upgraded else 0, tuple(item[0].gems or []))
+        sorted_items = sorted(counts.items(), key=get_sort_key)
         if deck_idx < 1 or deck_idx > len(sorted_items):
             return "❌ 无效的卡牌序号。"
         cid = sorted_items[deck_idx - 1][0]
