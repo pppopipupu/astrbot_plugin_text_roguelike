@@ -126,6 +126,16 @@ class EnemyTurnController:
 
     def enemy_turn(self, run: GameRun) -> str:
         logs = []
+        pending = run.node_data.get("pending_transitions", {})
+        if pending:
+            active_enemies = list(run.enemies)
+            for enemy in active_enemies:
+                if enemy.name in pending:
+                    target_phase = pending.pop(enemy.name)
+                    template = get_enemy_template(enemy.name)
+                    if hasattr(template, "apply_phase_transition"):
+                        template.apply_phase_transition(run, enemy, target_phase, self.engine, logs)
+            run.node_data["pending_transitions"] = pending
         decay_enemies = []
         for idx, enemy in enumerate(run.enemies):
             if enemy.hp > 0 and enemy.shield > 0:

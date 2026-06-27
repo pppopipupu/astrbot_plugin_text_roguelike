@@ -104,6 +104,9 @@ class EnemyTemplate:
             enemy.shield += intent.val
             logs.append(f"敌人【{enemy.name}】进行防守，获得 {intent.val} 点护盾。")
 
+    def apply_phase_transition(self, run, enemy, target_phase: int, engine, logs: list):
+        pass
+
 ALL_ENEMIES = {}
 
 def register_enemy(name: str):

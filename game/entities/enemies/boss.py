@@ -561,21 +561,13 @@ class BossYogSothothTemplate(EnemyTemplate):
     def on_enemy_before_death(self, run, enemy, event, engine):
         if enemy.name == "虚空之门·尤格-索托斯":
             event.cancel()
-            enemy.name = "【觉醒】虚空之门·尤格-索托斯"
-            enemy.max_hp = 260
-            enemy.hp = 260
-            enemy.shield = 30
-            enemy.actions = 2
-            enemy.bonus_actions = 2
-            enemy.max_actions = 2
-            enemy.max_bonus_actions = 2
-            enemy.buffs.clear()
+            enemy.hp = 1
+            enemy.shield = 0
+            if "pending_transitions" not in run.node_data:
+                run.node_data["pending_transitions"] = {}
+            run.node_data["pending_transitions"][enemy.name] = 2
             from ...models.state import BuffState, EnemyIntentState
-            enemy.buffs.append(BuffState(id="end_gate_passive", name="终焉之门", stacks=1, desc="每回合开始时获得 15 点护盾，且清除自身所有负面效果，受到伤害时 30% 几率反弹 4 点真实伤害"))
             enemy.buffs.append(BuffState(id="phase_transition_immune", name="转换阶段", stacks=1, desc="处于转换阶段状态，免疫所有伤害"))
-            run.node_data["yog_sothoth_phase"] = 2
-            run.node_data["yog_sothoth_turn"] = 0
-            run.node_data["is_void_corrupted"] = True
             enemy.intents.clear()
             enemy.intents.append(EnemyIntentState(
                 type="phase_transition",
@@ -585,10 +577,66 @@ class BossYogSothothTemplate(EnemyTemplate):
                 cost_ba=0
             ))
             engine.enemy_controller.sync_enemy_intents(enemy)
-            engine._log_event(run, "🌟 虚空之门·尤格-索托斯破裂了！狂暴的虚空能量从中倾泻而出，虚空之门在坍缩中重新觉醒！进入了觉醒形态！")
-            engine._log_event(run, f"💬 【觉醒】虚空之门·尤格-索托斯：‘{run.player.name}，你的挣扎在无光之海中毫无意义。虚空已将 you 锁死，直面你的终焉吧！’")
+            engine._log_event(run, "⚠️ 虚空之门·尤格-索托斯受到了致命伤，即将触发第二阶段觉醒！它正凝聚力场进入转换阶段...")
         elif enemy.name == "【觉醒】虚空之门·尤格-索托斯":
             event.cancel()
+            enemy.hp = 1
+            enemy.shield = 0
+            if "pending_transitions" not in run.node_data:
+                run.node_data["pending_transitions"] = {}
+            run.node_data["pending_transitions"][enemy.name] = 3
+            from ...models.state import BuffState, EnemyIntentState
+            enemy.buffs.append(BuffState(id="phase_transition_immune", name="转换阶段", stacks=1, desc="处于转换阶段状态，免疫所有伤害"))
+            enemy.intents.clear()
+            enemy.intents.append(EnemyIntentState(
+                type="phase_transition",
+                val=0,
+                desc="终焉显化 (转换阶段：终焉临界中，此回合免疫所有伤害)",
+                cost_a=1,
+                cost_ba=0
+            ))
+            engine.enemy_controller.sync_enemy_intents(enemy)
+            engine._log_event(run, "⚠️ 【觉醒】虚空之门·尤格-索托斯受到了致命伤，即将触发第三阶段觉醒！它正凝聚力场进入转换阶段...")
+        elif enemy.name == "【终焉】虚空之门·尤格-索托斯":
+            event.cancel()
+            enemy.hp = 1
+            enemy.shield = 0
+            if "pending_transitions" not in run.node_data:
+                run.node_data["pending_transitions"] = {}
+            run.node_data["pending_transitions"][enemy.name] = 4
+            from ...models.state import BuffState, EnemyIntentState
+            enemy.buffs.append(BuffState(id="phase_transition_immune", name="转换阶段", stacks=1, desc="处于转换阶段状态，免疫所有伤害"))
+            enemy.intents.clear()
+            enemy.intents.append(EnemyIntentState(
+                type="phase_transition",
+                val=0,
+                desc="万物归一 (转换阶段：维度代码崩溃，万物收敛中，此回合免疫所有伤害)",
+                cost_a=1,
+                cost_ba=0
+            ))
+            engine.enemy_controller.sync_enemy_intents(enemy)
+            engine._log_event(run, "⚠️ 【终焉】虚空之门·尤格-索托斯受到了致命伤，即将触发第四阶段觉醒！它正凝聚力场进入转换阶段...")
+
+    def apply_phase_transition(self, run, enemy, target_phase: int, engine, logs: list):
+        from ...models.state import BuffState
+        if target_phase == 2:
+            enemy.name = "【觉醒】虚空之门·尤格-索托斯"
+            enemy.max_hp = 260
+            enemy.hp = 260
+            enemy.shield = 30
+            enemy.actions = 2
+            enemy.bonus_actions = 2
+            enemy.max_actions = 2
+            enemy.max_bonus_actions = 2
+            enemy.buffs.clear()
+            enemy.buffs.append(BuffState(id="end_gate_passive", name="终焉之门", stacks=1, desc="每回合开始时获得 15 点护盾，且清除自身所有负面效果，受到伤害时 30% 几率反弹 4 点真实伤害"))
+            enemy.buffs.append(BuffState(id="phase_transition_immune", name="转换阶段", stacks=1, desc="处于转换阶段状态，免疫所有伤害"))
+            run.node_data["yog_sothoth_phase"] = 2
+            run.node_data["yog_sothoth_turn"] = 0
+            run.node_data["is_void_corrupted"] = True
+            logs.append("🌟 虚空之门·尤格-索托斯破裂了！狂暴的虚空能量从中倾泻而出，虚空之门在坍缩中重新觉醒！进入了觉醒形态！")
+            logs.append(f"💬 【觉醒】虚空之门·尤格-索托斯：‘{run.player.name}，你的挣扎在无光之海中毫无意义。虚空已将 you 锁死，直面你的终焉吧！’")
+        elif target_phase == 3:
             enemy.name = "【终焉】虚空之门·尤格-索托斯"
             enemy.max_hp = 300
             enemy.hp = 300
@@ -1048,21 +1096,13 @@ class BossAforgomonTemplate(EnemyTemplate):
     def on_enemy_before_death(self, run, enemy, event, engine):
         if enemy.name == "亚弗戈蒙":
             event.cancel()
-            enemy.name = "【时空主宰】亚弗戈蒙"
-            enemy.max_hp = 220
-            enemy.hp = 220
-            enemy.shield = 40
-            enemy.actions = 3
-            enemy.bonus_actions = 1
-            enemy.max_actions = 3
-            enemy.max_bonus_actions = 1
-            enemy.buffs.clear()
+            enemy.hp = 1
+            enemy.shield = 0
+            if "pending_transitions" not in run.node_data:
+                run.node_data["pending_transitions"] = {}
+            run.node_data["pending_transitions"][enemy.name] = 2
             from ...models.state import BuffState, EnemyIntentState
-            enemy.buffs.append(BuffState(id="time_lord_passive", name="时空主宰", stacks=1, desc="每回合开始获得 20 护盾，且清除自身所有负面效果；受到伤害时 50% 几率召唤时空残影；分担 50% 伤害"))
             enemy.buffs.append(BuffState(id="phase_transition_immune", name="转换阶段", stacks=1, desc="处于转换阶段状态，免疫所有伤害"))
-            engine._add_buff_to(run.player, "pendulum_resonance", "钟摆共振", "回合结束时若动作点全光则受打出牌数*2点真伤惩罚，保留至少1A 1BA则获得额外抽取2张牌的奖赏", 1)
-            run.node_data["aforgomon_phase"] = 2
-            run.node_data["aforgomon_turn"] = 0
             enemy.intents.clear()
             enemy.intents.append(EnemyIntentState(
                 type="phase_transition",
@@ -1072,8 +1112,27 @@ class BossAforgomonTemplate(EnemyTemplate):
                 cost_ba=0
             ))
             engine.enemy_controller.sync_enemy_intents(enemy)
-            engine._log_event(run, "⏳ 虚空中回荡起清脆的钟鸣，亚弗戈蒙的身影在无数个平行时空交错叠加，最终汇聚为无法名状的伟岸实体！")
-            engine._log_event(run, f"💬 【时空主宰】亚弗戈蒙：‘时间的织网已被你扯碎，{run.player.name}。现在，在无尽轮回的钟摆共鸣中，化为微尘吧！’")
+            engine._log_event(run, "⚠️ 亚弗戈蒙受到了致命伤，即将触发形态觉醒！它凝聚周围的时空裂隙进入转换阶段...")
+
+    def apply_phase_transition(self, run, enemy, target_phase: int, engine, logs: list):
+        from ...models.state import BuffState
+        if target_phase == 2:
+            enemy.name = "【时空主宰】亚弗戈蒙"
+            enemy.max_hp = 220
+            enemy.hp = 220
+            enemy.shield = 40
+            enemy.actions = 3
+            enemy.bonus_actions = 1
+            enemy.max_actions = 3
+            enemy.max_bonus_actions = 1
+            enemy.buffs.clear()
+            enemy.buffs.append(BuffState(id="time_lord_passive", name="时空主宰", stacks=1, desc="每回合开始获得 20 护盾，且清除自身所有负面效果；受到伤害时 50% 几率召唤时空残影；分担 50% 伤害"))
+            enemy.buffs.append(BuffState(id="phase_transition_immune", name="转换阶段", stacks=1, desc="处于转换阶段状态，免疫所有伤害"))
+            engine._add_buff_to(run.player, "pendulum_resonance", "钟摆共振", "回合结束时若动作点全光则受打出牌数*2点真伤惩罚，保留至少1A 1BA则获得额外抽取2张牌的奖赏", 1)
+            run.node_data["aforgomon_phase"] = 2
+            run.node_data["aforgomon_turn"] = 0
+            logs.append("⏳ 虚空中回荡起清脆的钟鸣，亚弗戈蒙的身影在无数个平行时空交错叠加，最终汇聚为无法名状的伟岸实体！")
+            logs.append(f"💬 【时空主宰】亚弗戈蒙：‘时间的织网已被你扯碎，{run.player.name}。现在，在无尽轮回的钟摆共鸣中，化为微尘吧！’")
 
     def roll_intents(self, run, engine, enemy) -> List['EnemyIntentState']:
         from ...models.state import EnemyIntentState

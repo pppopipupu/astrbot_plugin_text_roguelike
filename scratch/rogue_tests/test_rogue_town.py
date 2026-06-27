@@ -240,13 +240,13 @@ class TestRogueTown(unittest.TestCase):
                 run, "e1", 10, source="player", damage_type="slashing"
             )
 
-            self.assertEqual(enemy.name, "【觉醒】pppopipupu")
-            self.assertEqual(enemy.hp, 9999)
-
-            plugin.engine.battle_engine.enemy_controller.roll_enemy_intent(run)
+            self.assertEqual(enemy.name, "pppopipupu")
+            self.assertEqual(enemy.hp, 1)
 
             res = plugin.engine.battle_engine.enemy_controller.enemy_turn(run)
-            self.assertIn("猛击", res)
+            self.assertEqual(enemy.name, "【觉醒】pppopipupu")
+            self.assertEqual(enemy.hp, 9999)
+            self.assertIn("热更新", res)
 
             save_manager.delete_save("test_user")
 

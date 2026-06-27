@@ -82,18 +82,13 @@ class PppopipupuTemplate(EnemyTemplate):
     def on_enemy_before_death(self, run, enemy, event, engine):
         if enemy.name == "pppopipupu":
             event.cancel()
-            enemy.name = "【觉醒】pppopipupu"
-            enemy.max_hp = 9999
-            enemy.hp = 9999
+            enemy.hp = 1
             enemy.shield = 0
-            enemy.actions = 1
-            enemy.bonus_actions = 0
-            enemy.max_actions = 1
-            enemy.max_bonus_actions = 0
-            enemy.buffs.clear()
+            if "pending_transitions" not in run.node_data:
+                run.node_data["pending_transitions"] = {}
+            run.node_data["pending_transitions"][enemy.name] = 2
             from ...models.state import BuffState, EnemyIntentState
             enemy.buffs.append(BuffState(id="phase_transition_immune", name="转换阶段", stacks=1, desc="处于转换阶段状态，免疫所有伤害"))
-            run.node_data["pppopipupu_phase"] = 2
             enemy.intents.clear()
             enemy.intents.append(EnemyIntentState(
                 type="phase_transition",
@@ -103,7 +98,23 @@ class PppopipupuTemplate(EnemyTemplate):
                 cost_ba=0
             ))
             engine.enemy_controller.sync_enemy_intents(enemy)
-            engine._log_event(run, "🌟 pppopipupu 在致命伤下苏醒了！无尽的力场虚空能重新充满了他的身躯！他进入了神级觉醒形态！")
+            engine._log_event(run, "⚠️ pppopipupu 受到了致命伤害，但他似乎正在通过某种方式重写代码... 进入了【转换阶段】状态！")
+
+    def apply_phase_transition(self, run, enemy, target_phase: int, engine, logs: list):
+        if target_phase == 2:
+            enemy.name = "【觉醒】pppopipupu"
+            enemy.max_hp = 9999
+            enemy.hp = 9999
+            enemy.shield = 0
+            enemy.actions = 1
+            enemy.bonus_actions = 0
+            enemy.max_actions = 1
+            enemy.max_bonus_actions = 0
+            enemy.buffs.clear()
+            from ...models.state import BuffState
+            enemy.buffs.append(BuffState(id="phase_transition_immune", name="转换阶段", stacks=1, desc="处于转换阶段状态，免疫所有伤害"))
+            run.node_data["pppopipupu_phase"] = 2
+            logs.append("🌟 pppopipupu 在致命伤下苏醒了！无尽的力场虚空能重新充满了他的身躯！他进入了神级觉醒形态！")
 
     def roll_intents(self, run, engine, enemy) -> List[EnemyIntentState]:
         phase = run.node_data.get("pppopipupu_phase", 1)

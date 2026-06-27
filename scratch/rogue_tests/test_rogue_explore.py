@@ -511,6 +511,9 @@ class TestRogueExplore(unittest.TestCase):
             enemies=[EnemyState("虚空之门·尤格-索托斯", 5, 5, 0, max_actions=0)]
         )
         engine.combat_resolver.damage_target(run, "e1", 10, damage_type="bludgeoning")
+        self.assertEqual(run.enemies[0].name, "虚空之门·尤格-索托斯")
+        self.assertEqual(run.enemies[0].hp, 1)
+        engine._enemy_turn(run)
         self.assertEqual(run.enemies[0].name, "【觉醒】虚空之门·尤格-索托斯")
         self.assertEqual(run.enemies[0].hp, 260)
         self.assertTrue(any(b.id == "end_gate_passive" for b in run.enemies[0].buffs))

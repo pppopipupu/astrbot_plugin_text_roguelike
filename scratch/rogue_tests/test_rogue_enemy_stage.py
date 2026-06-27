@@ -568,6 +568,9 @@ class TestRogueEnemyStage(unittest.TestCase):
         self.assertTrue(len(boss.intents) >= 2)
         
         engine._damage_target(run, "e1", 180, damage_type="true")
+        self.assertEqual(boss.name, "亚弗戈蒙")
+        self.assertEqual(boss.hp, 1)
+        engine._enemy_turn(run)
         self.assertEqual(boss.name, "【时空主宰】亚弗戈蒙")
         self.assertEqual(boss.hp, 220)
         self.assertEqual(boss.max_hp, 220)
