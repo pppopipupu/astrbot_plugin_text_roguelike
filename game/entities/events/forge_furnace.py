@@ -14,24 +14,23 @@ class OverloadForgeOption(EventOption, action="overload_forge", text="过载重�
     def _run_effect(self, run, engine) -> str:
         p = run.player
         if random.random() < 0.8:
-            counts = {}
-            for c_id in p.deck:
-                if not c_id.endswith("+") and c_id in CARD_UPGRADE_CONFIG:
-                    counts[c_id] = counts.get(c_id, 0) + 1
-            upgradable = list(counts.keys())
-            if not upgradable:
+            upgradable_cards = []
+            for card_state in p.deck:
+                if not card_state.upgraded and card_state.id in CARD_UPGRADE_CONFIG:
+                    upgradable_cards.append(card_state)
+            if not upgradable_cards:
                 res = "熔炉隆隆作响，但你的卡组中没有可以升级的卡牌！你并没有受到任何效果。"
             else:
                 upgraded_names = []
-                to_upgrade = random.sample(upgradable, min(2, len(upgradable)))
-                for cid in to_upgrade:
-                    p.deck.remove(cid)
-                    p.deck.append(cid + "+")
-                    upgraded_names.append(ALL_CARDS[cid].name)
+                to_upgrade = random.sample(upgradable_cards, min(2, len(upgradable_cards)))
+                for card_state in to_upgrade:
+                    card_state.upgraded = True
+                    upgraded_names.append(ALL_CARDS[card_state.id].name)
                 res = f"🔥 熔炉光芒大盛！你成功将卡组中的【{'】和【'.join(upgraded_names)}】随机升级为了它们的强力变体！"
         else:
+            from ...models.state import CardState
             p.hp -= 8
-            p.deck.append("curse_pain")
+            p.deck.append(CardState.from_cid("curse_pain"))
             res = "💥 糟糕！熔炉突然发生能量逆流！熔炉的狂暴能量反噬了你（受到 8 点伤害，且1张【苦恼】卡牌已加入卡组）。"
         engine.enter_next_stage(run)
         engine.save_manager.save_save(run.user_id, run)
@@ -56,10 +55,11 @@ class ForgeBackfireOption(EventOption, action="forge_backfire", text="汲取熔�
 
 class ShatterForgeOption(EventOption, action="shatter_forge", text="强行破坏熔炉"):
     def _run_effect(self, run, engine) -> str:
+        from ...models.state import CardState
         p = run.player
         p.gold += 50
         p.hp -= 6
-        p.deck.append("curse_dazed")
+        p.deck.append(CardState.from_cid("curse_dazed"))
         relics_pool = ["lucky_coin", "red_bottle", "leather_armor", "whetstone", "ready_pack", "arcane_rune", "ancient_eye", "gold_compass", "dragon_blood", "energy_core", "heavy_armor"]
         available_relics = [r for r in relics_pool if r not in p.relics]
         got_relic = ""
