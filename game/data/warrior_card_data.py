@@ -485,7 +485,7 @@ WARRIOR_CARD_CONFIG = {
         "cost_ba": 1,
         "desc": "获得薪火之源buff，回合开始时额外获得 1A 1BA。消耗。",
         "exhaust": True,
-        "rarity": "rare",
+        "rarity": "epic",
         "feedback": "使用了【薪火之源】，获得了薪火之源状态！"
     }
 }
