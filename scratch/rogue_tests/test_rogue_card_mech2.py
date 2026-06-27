@@ -758,3 +758,14 @@ class TestRogueCardMech2(unittest.TestCase):
         self.assertEqual(run.node_type, "boss_chest")
         self.assertTrue(any(opt["id"] == "infinite_hourglass" for opt in run.node_data["options"]))
 
+        # 13. 神话遗物: 无限沙漏
+        player.relics = ["infinite_hourglass"]
+        run.node_data = {}
+        engine._init_battle_node(run)
+        self.assertEqual(run.node_data.get("extra_turns_left"), 1)
+        player.bonus_actions = 1
+        from game.models.events import TurnStartEvent
+        engine.event_bus.dispatch(TurnStartEvent(run, is_player=True))
+        self.assertEqual(player.bonus_actions, 2)
+
+

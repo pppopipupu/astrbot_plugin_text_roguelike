@@ -2,7 +2,7 @@ RELIC_CONFIG = {
     "infinite_hourglass": {
         "name": "无限沙漏",
         "rarity": "mythic",
-        "desc": "每场战斗开始时额外获得 1 个动作点 (A) 和 2 个额外动作点 (BA)。",
+        "desc": "每场战斗开始时，直接获得 1 层时间停止状态（额外获得 1 个额外回合）。",
         "price": 300
     },
     "ancient_eye": {
