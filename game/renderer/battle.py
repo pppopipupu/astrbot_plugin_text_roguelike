@@ -119,10 +119,14 @@ def render_battle(run: GameRun) -> str:
                         enemy_buff_strs.append(f"{b.name}")
                 buff_desc = " | Buff: " + " ".join(enemy_buff_strs)
             e_name = enemy.name
+            if e_name == "【万物归一】虚空之门·尤格-索托斯" or enemy.max_hp == 2147483647:
+                hp_text = f"0x{enemy.hp:X}/0x{enemy.max_hp:X}"
+            else:
+                hp_text = f"{enemy.hp}/{enemy.max_hp}"
             if run.node_data.get("is_void_corrupted"):
                 e_name = void_corrupt_text(e_name)
                 intent_str = void_corrupt_text(intent_str)
-            lines.append(f" 格子 [{idx}] 敌人：{e_name} (❤️ HP {enemy.hp}/{enemy.max_hp}{shield_str}{buff_desc} | ⚡ 动作 {enemy.actions}A {enemy.bonus_actions}BA | ⚔️ 意图：{intent_str})")
+            lines.append(f" 格子 [{idx}] 敌人：{e_name} (❤️ HP {hp_text}{shield_str}{buff_desc} | ⚡ 动作 {enemy.actions}A {enemy.bonus_actions}BA | ⚔️ 意图：{intent_str})")
     lines.append("")
     lines.append("【你的手牌】")
     if not p.hand:
@@ -279,10 +283,14 @@ def render_detailed_battle(run: GameRun) -> str:
             if ba_parts:
                 intent_parts.append(f"附赠动作(BA)：{' + '.join(ba_parts)}")
             intent_str = " | ".join(intent_parts) if intent_parts else "无意图"
+            if e_name == "【万物归一】虚空之门·尤格-索托斯" or enemy.max_hp == 2147483647:
+                hp_text = f"0x{enemy.hp:X}/0x{enemy.max_hp:X}"
+            else:
+                hp_text = f"{enemy.hp}/{enemy.max_hp}"
             if run.node_data.get("is_void_corrupted"):
                 e_name = void_corrupt_text(e_name)
                 intent_str = void_corrupt_text(intent_str)
-            lines.append(f"  格子 [{idx}] 敌人：{e_name} (HP {enemy.hp}/{enemy.max_hp}{shield_str} | 动作 {enemy.actions}A {enemy.bonus_actions}BA)")
+            lines.append(f"  格子 [{idx}] 敌人：{e_name} (HP {hp_text}{shield_str} | 动作 {enemy.actions}A {enemy.bonus_actions}BA)")
             lines.append(f"    行动意图：{intent_str}")
             if getattr(enemy, "buffs", None):
                 lines.append("    敌人Buff：")

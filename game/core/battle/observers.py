@@ -425,12 +425,37 @@ class EnemyTriggerHandler:
     def __init__(self, event_bus, engine):
         self.engine = engine
         event_bus.subscribe(EnemyBeforeDeathEvent, self.on_enemy_before_death)
+        event_bus.subscribe(CardPlayEvent, self.on_card_play)
+        event_bus.subscribe(TurnStartEvent, self.on_turn_start)
+        event_bus.subscribe(TurnEndEvent, self.on_turn_end)
 
     def on_enemy_before_death(self, event):
         from ...entities import get_enemy_template
         template = get_enemy_template(event.enemy.name)
         if template and hasattr(template, "on_enemy_before_death"):
             template.on_enemy_before_death(event.run, event.enemy, event, self.engine)
+
+    def on_card_play(self, event):
+        from ...entities import get_enemy_template
+        for enemy in list(event.run.enemies):
+            template = get_enemy_template(enemy.name)
+            if template and hasattr(template, "on_card_play"):
+                template.on_card_play(event, enemy, self.engine)
+
+    def on_turn_start(self, event):
+        from ...entities import get_enemy_template
+        for enemy in list(event.run.enemies):
+            template = get_enemy_template(enemy.name)
+            if template and hasattr(template, "on_turn_start"):
+                template.on_turn_start(event, enemy, self.engine)
+
+    def on_turn_end(self, event):
+        from ...entities import get_enemy_template
+        for enemy in list(event.run.enemies):
+            template = get_enemy_template(enemy.name)
+            if template and hasattr(template, "on_turn_end"):
+                template.on_turn_end(event, enemy, self.engine)
+
 
 
 class CardTriggerHandler:

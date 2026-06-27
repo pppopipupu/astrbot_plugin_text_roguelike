@@ -482,7 +482,7 @@ def render_shop(stats: UserStats) -> str:
             item6_title = " [6] ？？？ - 状态：未解锁"
             item6_desc = "     └─ 击败未知的最终BOSS解锁。"
 
-    killed_yog = getattr(stats, "killed_yog_sothoth", False)
+    killed_yog = getattr(stats, "yog_sothoth_kill_count", 0) > 0
     if killed_yog:
         item7_title = " [7] 尤格-索托斯 - 状态：已解锁"
         item7_desc = "     └─ 击败超最终BOSS尤格-索托斯解锁。"

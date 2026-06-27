@@ -430,5 +430,110 @@ ENEMY_NORMAL_CONFIG = {
         "intents": [
             {"id": "bone_slash", "val": 3, "desc": "骨刃挥砍 (造成 3 点物理伤害)"}
         ]
+    },
+    "深潜者": {
+        "name": "深潜者",
+        "type": "normal",
+        "hp": "14 (+ 2 * 关卡数)",
+        "actions": "1A 0BA",
+        "intents": [
+            {"id": "tsunami_strike", "val": 5, "desc": "海啸重击 (造成 5 伤害，若有盾额外造成 3 真实伤害)"},
+            {"id": "defend", "val": 6, "desc": "潮汐之盾 (获得 6 护盾)"}
+        ]
+    },
+    "食尸鬼": {
+        "name": "食尸鬼",
+        "type": "normal",
+        "hp": "15 (+ 2 * 关卡数)",
+        "actions": "1A 0BA",
+        "intents": [
+            {"id": "rot_bite", "val": 5, "desc": "腐烂咬击 (造成 5 伤害并施加 1 层物理易伤)"},
+            {"id": "claw_slash", "val": 6, "desc": "撕裂爪击 (造成 6 伤害)"}
+        ]
+    },
+    "夜魇": {
+        "name": "夜魇",
+        "type": "normal",
+        "hp": "20 (+ 2 * 关卡数)",
+        "actions": "1A 0BA",
+        "intents": [
+            {"id": "tickle_claw", "val": 7, "desc": "搔痒爪 (造成 7 心灵伤害)"},
+            {"id": "void_glide", "val": 8, "desc": "虚空滑翔 (获得 8 护盾，下回合额外获得 1 个动作)"}
+        ]
+    },
+    "夏塔克鸟": {
+        "name": "夏塔克鸟",
+        "type": "normal",
+        "hp": "22 (+ 2 * 关卡数)",
+        "actions": "1A 0BA",
+        "intents": [
+            {"id": "wind_buffet", "val": 8, "desc": "狂风拍击 (造成 8 点力场伤害)"},
+            {"id": "shriek", "val": 5, "desc": "尖啸 (造成 5 点心灵伤害，且丢弃玩家 1 张手牌)"}
+        ]
+    },
+    "空鬼": {
+        "name": "空鬼",
+        "type": "normal",
+        "hp": "26 (+ 2 * 关卡数)",
+        "actions": "1A 0BA",
+        "intents": [
+            {"id": "phase_strike", "val": 9, "desc": "相位打击 (造成 9 点真实伤害)"},
+            {"id": "dimensional_shift", "val": 10, "desc": "维度偏移 (获得 10 护盾)"}
+        ]
+    },
+    "冷蛛": {
+        "name": "冷蛛",
+        "type": "elite",
+        "hp": "36 (+ 3 * 关卡数)",
+        "actions": "1A 1BA",
+        "intents": [
+            {"id": "venom_bite", "val": 7, "desc": "剧毒啃咬 (造成 7 穿刺伤害并施加物理易伤)"},
+            {"id": "web_trap", "val": 8, "desc": "蛛网束缚 (获得 8 护盾并丢弃玩家 1 张手牌)"},
+            {"id": "spider_jump", "val": 8, "desc": "跳跃突袭 (造成 8 点物理伤害)"}
+        ]
+    },
+    "米·戈": {
+        "name": "米·戈",
+        "type": "elite",
+        "hp": "34 (+ 3 * 关卡数)",
+        "actions": "1A 1BA",
+        "intents": [
+            {"id": "electric_probe", "val": 6, "desc": "电击探针 (造成 6 闪电伤害，使玩家下回合少抽 1 张牌)"},
+            {"id": "brain_case", "val": 9, "desc": "大脑提取 (造成 9 心灵伤害)"},
+            {"id": "bio_shield", "val": 10, "desc": "生物护盾 (获得 10 护盾并净化自身 1 负面 Buff)"}
+        ]
+    },
+    "修格斯": {
+        "name": "修格斯",
+        "type": "elite",
+        "hp": "55 (+ 3 * 关卡数)",
+        "actions": "1A 1BA",
+        "intents": [
+            {"id": "acid_splash", "val": 8, "desc": "强酸泼溅 (造成 8 点伤害并剥夺玩家 1 BA)"},
+            {"id": "slime_cocoon", "val": 14, "desc": "粘液茧 (获得 14 护盾)"},
+            {"id": "ooze_strike", "val": 12, "desc": "软泥撞击 (造成 12 伤害)"}
+        ]
+    },
+    "星之精": {
+        "name": "星之精",
+        "type": "elite",
+        "hp": "48 (+ 3 * 关卡数)",
+        "actions": "1A 1BA",
+        "intents": [
+            {"id": "blood_drain", "val": 8, "desc": "鲜血虹吸 (造成 8 黯蚀伤害，回复自身 8 点生命)"},
+            {"id": "invisible_stalker", "val": 10, "desc": "隐形潜行 (获得 10 护盾，下回合伤害增加 4)"},
+            {"id": "talon_rend", "val": 11, "desc": "利爪撕裂 (造成 11 伤害)"}
+        ]
+    },
+    "克苏鲁之星之眷族": {
+        "name": "克苏鲁之星之眷族",
+        "type": "elite",
+        "hp": "130 (+ 3 * 关卡数)",
+        "actions": "2A 0BA",
+        "intents": [
+            {"id": "cosmic_blast", "val": 16, "desc": "宇宙冲击 (造成 16 力场伤害)"},
+            {"id": "cthulhu_gaze", "val": 10, "desc": "克苏鲁之视 (造成 10 心灵伤害，下回合减少玩家 1A)"},
+            {"id": "star_regeneration", "val": 15, "desc": "星光再生 (获得 15 护盾，并回复 10 生命)"}
+        ]
     }
 }

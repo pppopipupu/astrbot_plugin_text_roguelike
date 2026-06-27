@@ -97,6 +97,46 @@ class ShadowTentacleRelic(RelicImpl):
 class MindflayerBrainRelic(RelicImpl):
     pass
 
+class LengSpiderVenomRelic(RelicImpl):
+    def on_damage_take(self, event, run, engine):
+        if event.source == "p0" and event.target.startswith("e"):
+            dtype = event.damage_type
+            if dtype in ("slashing", "piercing", "bludgeoning", "attack"):
+                import random
+                if random.random() < 0.5:
+                    try:
+                        idx = int(event.target[1:]) - 1
+                        if 0 <= idx < len(run.enemies):
+                            enemy = run.enemies[idx]
+                            engine._add_buff_to(enemy, "minor_vulnerable", "轻度物理易伤", "受到的物理伤害增加 50%", 1)
+                            engine._log_event(run, f"🕷️ [冷蛛毒腺] 触发！使【{enemy.name}】获得 1 层【轻度物理易伤】。")
+                    except ValueError:
+                        pass
+
+class MigoLightningGunRelic(RelicImpl):
+    def on_battle_start(self, run, engine):
+        engine._log_event(run, "🔫 [米·戈电击枪] 触发！释放高频电磁波！")
+        for idx in range(len(run.enemies) - 1, -1, -1):
+            target_str = f"e{idx+1}"
+            engine.combat_resolver.damage_target(run, target_str, 5, source="relic:migo_lightning_gun", damage_type="lightning")
+
+class ShoggothSlimeRelic(RelicImpl):
+    def on_damage_take(self, event, run, engine):
+        if event.target == "p0" and event.amount > 0:
+            is_true = (event.damage_type == "true" or event.damage_type == "TRUE")
+            last_shield = run.node_data.get("last_shield_before_dmg", 0)
+            if is_true or event.amount > last_shield:
+                engine._log_event(run, "🦠 [修格斯粘液] 触发！受伤失去生命，获得 4 点护盾。")
+                engine._gain_shield(run, "p0", 4)
+
+class StarVampireProboscisRelic(RelicImpl):
+    def on_card_played(self, event, run, engine):
+        card = event.card
+        if getattr(card, "exhaust", False) or getattr(card, "id", "") == "curse_dimensional_tear":
+            engine._log_event(run, "🩸 [星之吸管] 触发！打出消耗牌，回复 2 点生命值。")
+            engine._heal_target(run, "p0", 2)
+
+
 
 for name, obj in list(globals().items()):
     if isinstance(obj, type) and issubclass(obj, RelicImpl) and obj is not RelicImpl:

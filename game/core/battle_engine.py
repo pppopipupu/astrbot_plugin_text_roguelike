@@ -211,6 +211,17 @@ class BattleEngine(BaseBattleEngine):
                 run.node_data["boss_name"] = "虚空之门·尤格-索托斯"
                 run.node_data["yog_sothoth_phase"] = 1
                 run.node_data["yog_sothoth_turn"] = 1
+                stats = self.save_manager.load_stats(run.user_id)
+                if stats:
+                    stats.yog_sothoth_challenge_count = getattr(stats, "yog_sothoth_challenge_count", 0) + 1
+                    self.save_manager.save_stats(run.user_id, stats)
+                    challenge_count = stats.yog_sothoth_challenge_count
+                else:
+                    challenge_count = 1
+                if challenge_count == 1:
+                    self._log_event(run, "💬 【虚空之门·尤格-索托斯】：‘渺小的灵魂，竟敢踏足终焉的视界。虚空之门将把你吞噬。’")
+                else:
+                    self._log_event(run, f"💬 【虚空之门·尤格-索托斯】：‘又一次……你再一次回到了这里，{run.player.name}。但无论多少次尝试，这扇门永远是你的死路！’")
             else:
                 boss_name = random.choice(["远古红龙", "雷霆领主"])
                 if boss_name == "远古红龙":
@@ -241,11 +252,11 @@ class BattleEngine(BaseBattleEngine):
         elif difficulty == "elite":
             from ..data.enemy_data import ENEMY_CONFIG
             if p.stage <= 12:
-                elite_pool = ["地精百夫长", "石像鬼祭司", "狂暴兽王", "夺心魔"]
+                elite_pool = ["地精百夫长", "石像鬼祭司", "狂暴兽王", "夺心魔", "冷蛛", "米·戈"]
             elif p.stage <= 25:
-                elite_pool = ["黑曜石巨灵", "幽灵大魔法师", "暗影影魔", "夺心魔"]
+                elite_pool = ["黑曜石巨灵", "幽灵大魔法师", "暗影影魔", "夺心魔", "修格斯", "星之精"]
             else:
-                elite_pool = ["末日守卫", "亡灵巫师", "夺心魔奥术师", "吉斯洋基至高指挥官", "虚空潜伏者"]
+                elite_pool = ["末日守卫", "亡灵巫师", "夺心魔奥术师", "吉斯洋基至高指挥官", "虚空潜伏者", "克苏鲁之星之眷族"]
             run.enemies = []
             base_name = random.choice(elite_pool)
             run.node_data["elite_name"] = base_name
@@ -277,11 +288,11 @@ class BattleEngine(BaseBattleEngine):
         else:
             from ..data.enemy_data import ENEMY_CONFIG
             if p.stage <= 12:
-                normal_pool = ["地精突袭者", "石像鬼守卫", "堕落学徒", "狂暴野兽", "邪教徒咔咔"]
+                normal_pool = ["地精突袭者", "石像鬼守卫", "堕落学徒", "狂暴野兽", "邪教徒咔咔", "深潜者", "食尸鬼"]
             elif p.stage <= 25:
-                normal_pool = ["幽灵法师", "冰霜史莱姆", "骷髅弓箭手", "剧毒蜘蛛", "邪教徒咔咔"]
+                normal_pool = ["幽灵法师", "冰霜史莱姆", "骷髅弓箭手", "剧毒蜘蛛", "邪教徒咔咔", "夜魇", "夏塔克鸟"]
             else:
-                normal_pool = ["黑曜石巨人", "暗影刺客", "吉斯洋基海盗", "虚空行者"]
+                normal_pool = ["黑曜石巨人", "暗影刺客", "吉斯洋基海盗", "虚空行者", "空鬼"]
             run.enemies = []
             num_enemies = random.randint(1, 3)
             selected_names = [random.choice(normal_pool) for _ in range(num_enemies)]

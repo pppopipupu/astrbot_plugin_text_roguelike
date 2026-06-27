@@ -673,5 +673,95 @@ class HeroAnthemCard(Card):
         engine._draw_cards(p, 1, run)
         return f"你唱响了【英雄赞歌】，身体洋溢着金色的气场（获得了 {shield} 点护盾，并抽了 1 张牌）！"
 
+@register_card("elder_guidance")
+class ElderGuidanceCard(Card):
+    def execute(self, run, target, engine) -> str:
+        p = run.player
+        engine._add_buff_to(p, "all_resonance", "万物共振", "你的最终伤害呈指数翻倍增长", 1)
+        removed = []
+        for b in list(p.buffs):
+            from ..buffs import is_debuff
+            if is_debuff(b.id):
+                p.buffs.remove(b)
+                removed.append(b.name)
+        engine._draw_cards(p, 3, run)
+        clean_msg = f"，解除了你的【{'、'.join(removed)}】负面状态" if removed else ""
+        return f"👴 向导长老指点迷津！你清空了所有杂念{clean_msg}，并连续抽取了 3 张卡牌！"
+
+@register_card("ironclad_rampart")
+class IroncladRampartCard(Card):
+    def execute(self, run, target, engine) -> str:
+        p = run.player
+        engine._add_buff_to(p, "all_resonance", "万物共振", "你的最终伤害呈指数翻倍增长", 1)
+        p.shield += 30
+        dmg = 15
+        if not target or not target.startswith("e"):
+            if run.enemies:
+                target = "e1"
+            else:
+                return "❌ 没有可攻击的目标。"
+        before_len = len(run.node_data.get("battle_logs", []))
+        engine._damage_target(run, target, dmg, damage_type="bludgeoning", card=self)
+        after_logs = run.node_data.get("battle_logs", [])
+        dmg_msg = after_logs.pop() if len(after_logs) > before_len else ""
+        return f"🔨 铁匠艾恩克拉德在战场上升起精钢壁垒！你获得了 30 点护盾，重锤砸落：{dmg_msg}"
+
+@register_card("jack_brew")
+class JackBrewCard(Card):
+    def execute(self, run, target, engine) -> str:
+        p = run.player
+        engine._add_buff_to(p, "all_resonance", "万物共振", "你的最终伤害呈指数翻倍增长", 1)
+        engine._heal_target(run, "p0", 15)
+        p.actions += 1
+        p.bonus_actions += 1
+        return f"🍺 酒保杰克递上一杯冰镇烈性黑麦酒！你一饮而尽，生命值恢复了 15 点，且感到浑身充满了力量（获得 1A 1BA 动作点）！"
+
+@register_card("merchant_collection")
+class MerchantCollectionCard(Card):
+    def execute(self, run, target, engine) -> str:
+        p = run.player
+        engine._add_buff_to(p, "all_resonance", "万物共振", "你的最终伤害呈指数翻倍增长", 1)
+        from .base import ALL_CARDS
+        card_pool = list(ALL_CARDS.keys())
+        p_class = getattr(engine.save_manager.load_stats(run.user_id), "selected_class", "法师")
+        target_color = "warrior" if p_class == "战士" else "wizard"
+        from ...entities.cards.market import is_card_available
+        stats = engine.save_manager.load_stats(run.user_id)
+        class_cards = [
+            cid for cid in card_pool
+            if ALL_CARDS[cid].rarity in ("legendary", "mythic")
+            and not cid.startswith("curse_")
+            and not cid.startswith("duel_")
+            and ALL_CARDS[cid].color == target_color
+            and is_card_available(cid, stats)
+        ]
+        if not class_cards:
+            class_cards = [
+                cid for cid in card_pool
+                if ALL_CARDS[cid].rarity in ("legendary", "mythic")
+                and not cid.startswith("curse_")
+                and not cid.startswith("duel_")
+            ]
+        import random
+        chosen = random.sample(class_cards, min(2, len(class_cards)))
+        added_names = []
+        from ...models.state import CardState
+        for cid in chosen:
+            cstate = CardState(id=cid, upgraded=True)
+            p.hand.append(cstate)
+            added_names.append(ALL_CARDS[cid].name)
+            run.node_data.setdefault("merchant_collection_free_cards", []).append(cid)
+        return f"🃏 卡牌商人掏出他的神话珍藏！你将升级版的【{'】和【'.join(added_names)}】加入了手牌，且它们在本回合的消耗全部降为 0！"
+
+@register_card("bard_epic")
+class BardEpicCard(Card):
+    def execute(self, run, target, engine) -> str:
+        p = run.player
+        engine._add_buff_to(p, "all_resonance", "万物共振", "你的最终伤害呈指数翻倍增长", 1)
+        engine._add_buff_to(p, "strength", "力量", "造成的伤害增加", 2)
+        engine._add_buff_to(p, "double_tap_buff", "双发", "打出的物理伤害牌会额外打出 1 次", 1)
+        return f"🎵 迷路的诗人为你高歌一曲英雄绝响之歌！歌声穿透灵魂，使你获得了 2 层【力量】与 1 层【双发】状态！"
+
+
 
 

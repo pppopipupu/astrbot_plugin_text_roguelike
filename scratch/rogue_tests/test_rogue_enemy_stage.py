@@ -652,3 +652,83 @@ class TestRogueEnemyStage(unittest.TestCase):
         engine.event_bus.dispatch(evt_end2)
         self.assertEqual(player.hp, 100)
         self.assertEqual(run.node_data.get("draw_penalty_next_turn"), -2)
+
+    def test_coc_creatures_and_relics(self):
+        class DummySaveManager:
+            def save_save(self, user_id, run):
+                pass
+            def delete_save(self, user_id):
+                pass
+            def load_stats(self, user_id):
+                return None
+        sm = DummySaveManager()
+        engine = BattleEngine(sm)
+        player = PlayerState(hp=80, max_hp=80, shield=10, gold=100, stage=1, relics=["leng_spider_venom", "migo_lightning_gun", "shoggoth_slime", "star_vampire_proboscis", "starspawn_core"])
+        
+        from game.entities.enemies.normal.coc_creatures import DeepOneTemplate, GhoulTemplate, ShantakTemplate
+        from game.entities.enemies.elite.coc_elites import MigoTemplate, StarspawnOfCthulhuTemplate
+        from game.models.state import EnemyIntentState, CardState
+        
+        deep_one = EnemyState("深潜者", 20, 20, 0)
+        run = GameRun(user_id="test_coc", node_type="battle", player=player, enemies=[deep_one])
+        deep_temp = DeepOneTemplate("深潜者")
+        logs_deep = []
+        intent_deep = EnemyIntentState(type="tsunami_strike", val=5, desc="")
+        deep_temp.execute_intent(run, engine, deep_one, intent_deep, logs_deep)
+        self.assertTrue(player.shield < 10)
+        
+        migo = EnemyState("米·戈", 30, 30, 0)
+        run_migo = GameRun(user_id="test_coc_migo", node_type="battle", player=player, enemies=[migo])
+        migo_temp = MigoTemplate("米·戈")
+        logs_migo = []
+        intent_migo = EnemyIntentState(type="bio_shield", val=10, desc="")
+        engine._add_buff_to(migo, "stun", "眩晕", "", 1)
+        migo_temp.execute_intent(run_migo, engine, migo, intent_migo, logs_migo)
+        self.assertFalse(any(b.id == "stun" for b in migo.buffs))
+        
+        migo.shield = 0
+        from game.models.events import BattleStartEvent
+        evt_start = BattleStartEvent(run=run_migo)
+        engine.event_bus.dispatch(evt_start)
+        self.assertEqual(migo.hp, 25)
+        
+        engine._damage_target(run_migo, "p0", 10, damage_type="slashing")
+        self.assertEqual(player.shield, 4)
+        
+        from game.models.events import CardPlayedEvent, Card
+        card_dummy = Card(id="test_card", name="测试牌", cost_a=1, cost_ba=0, type="spell", rarity="common", desc="", color="neutral")
+        setattr(card_dummy, "exhaust", True)
+        evt_played = CardPlayedEvent(run=run, card=card_dummy, target="e1")
+        engine.event_bus.dispatch(evt_played)
+        self.assertTrue(player.hp > 70)
+        
+        player.bonus_actions = 1
+        from game.models.events import TurnEndEvent
+        evt_end = TurnEndEvent(run=run_migo, is_player=True)
+        engine.event_bus.dispatch(evt_end)
+        self.assertEqual(migo.hp, 15)
+
+    def test_mindflayer_brain_modification(self):
+        class DummySaveManager:
+            def save_save(self, user_id, run):
+                pass
+            def delete_save(self, user_id):
+                pass
+            def load_stats(self, user_id):
+                return None
+        sm = DummySaveManager()
+        engine = BattleEngine(sm)
+        player = PlayerState(hp=80, max_hp=80, shield=10, gold=100, stage=1, relics=["mindflayer_brain"])
+        enemy = EnemyState("测试敌人", 50, 50, 0)
+        run = GameRun(user_id="test_mindflayer", node_type="battle", player=player, enemies=[enemy])
+        
+        from game.models.state import CardState
+        player.hand = [CardState("strike")]
+        engine.card_player.discard_card(run, player.hand[0])
+        self.assertEqual(enemy.hp, 47)
+        
+        enemy.hp = 50
+        player.hand = [CardState("strike")]
+        engine.card_player.end_turn(run)
+        self.assertEqual(enemy.hp, 50)
+

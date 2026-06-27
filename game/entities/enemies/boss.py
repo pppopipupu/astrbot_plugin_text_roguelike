@@ -468,6 +468,96 @@ class BossThunderLordTemplate(EnemyTemplate):
 
 @register_enemy("虚空之门·尤格-索托斯")
 class BossYogSothothTemplate(EnemyTemplate):
+    def on_turn_start(self, event, enemy, engine):
+        if not event.is_player:
+            return
+        run = event.run
+        p = run.player
+        run.node_data["merchant_collection_free_cards"] = []
+        if run.node_data.get("yog_sothoth_phase", 1) == 4:
+            run.node_data["yog_sothoth_turn"] = run.node_data.get("yog_sothoth_turn", 0) + 1
+            import random
+            npc_options = [
+                ("Guide_Elder", "elder_guidance", "👴 向导长老：‘老夫活了这把年纪，什么大风大浪没见过！区区虚空，岂能断我人族薪火！孩子，看好了，这是历代先驱指引的光芒！’"),
+                ("Blacksmith_Ironclad", "ironclad_rampart", "🔨 铁匠艾恩克拉德：‘喂！臭小子！接着这个！这可是老子用太阳之火和九天陨铁融了三天三夜打造的精钢壁垒！别给我打碎了！’"),
+                ("Bartender_Jack", "jack_brew", "🍺 酒保杰克：‘哈！看来我来得正是时候！战斗结束了我们再痛饮，但现在——把这壶我藏了百年的“秘密佳酿”喝下去！给我站起来！’"),
+                ("Market_Merchant", "merchant_collection", "🃏 卡牌商人：‘嘿！别小看了商人的野心！虚空又如何？既然是卡牌的对决，我的货架上就永远有能逆转战局的神话藏品！收下它！’"),
+                ("Lost_Bard", "bard_epic", "🎵 迷路的诗人：‘琴弦虽已在虚空中沙哑，但我听见了你胸腔中不屈的律动！在这终焉的余烬里，我将为你弹奏最后一曲英雄史诗！高歌吧！’")
+            ]
+            chosen_npc = random.choice(npc_options)
+            npc_id, card_id, quote = chosen_npc
+            from ...models.state import CardState
+            npc_card_state = CardState(id=card_id, upgraded=True)
+            p.hand.append(npc_card_state)
+            card_name = "专属助战卡"
+            if card_id == "elder_guidance":
+                card_name = "长老的先古指引"
+            elif card_id == "ironclad_rampart":
+                card_name = "艾恩克拉德的壁垒"
+            elif card_id == "jack_brew":
+                card_name = "杰克的烈性黑啤"
+            elif card_id == "merchant_collection":
+                card_name = "商人的神话藏品"
+            elif card_id == "bard_epic":
+                card_name = "诗人的绝响之歌"
+            engine._log_event(run, f"🌟 {quote}\n🎁 助战卡牌【{card_name}】已加入你的手牌！")
+
+    def on_card_play(self, event, enemy, engine):
+        run = event.run
+        p = run.player
+        card = event.card
+        if run.node_data.get("intangible_whisper_active"):
+            run.node_data.pop("intangible_whisper_active", None)
+            import random
+            if card.type == "spell" and getattr(card, "base_dmg", 0) > 0:
+                my_targets = ["p0"] + [f"p{k}" for k in p.minions.keys()]
+                event.target = random.choice(my_targets)
+                engine._log_event(run, f"🌀 [无形低语重定向] 你的心智被耳边的低语重塑！你原本指向敌人的法术【{card.name}】被强行偏转，指向了【{engine._get_target_name(run, event.target)}】！")
+            elif card.type == "spell" and getattr(card, "heal_amount", 0) > 0:
+                if run.enemies:
+                    event.target = f"e{random.randint(1, len(run.enemies))}"
+                    engine._log_event(run, f"🌀 [无形低语重定向] 混乱的魔力让你敌友不分！你治愈生命的秘法被强行偏转，为敌人【{engine._get_target_name(run, event.target)}】注入了活力！")
+            elif card.type == "attack" or card.id.startswith("warrior_"):
+                my_targets = ["p0"] + [f"p{k}" for k in p.minions.keys()]
+                event.target = random.choice(my_targets)
+                engine._log_event(run, f"🌀 [无形低语重定向] 你的心智被低语重塑！你原本的物理攻击【{card.name}】被强行偏转，指向了【{engine._get_target_name(run, event.target)}】！")
+
+        if card.id in run.node_data.get("merchant_collection_free_cards", []):
+            event.cost_a = 0
+            event.cost_ba = 0
+
+        if run.node_data.get("yog_sothoth_phase", 1) == 4 and card.type == "spell":
+            import random
+            if random.random() < 0.30:
+                event.cancel()
+                p.actions = max(0, p.actions - event.cost_a)
+                p.bonus_actions = max(0, p.bonus_actions - event.cost_ba)
+                hand_idx = run.node_data.get("current_playing_card_hand_idx", 0)
+                if 0 <= hand_idx < len(p.hand):
+                    c_state = p.hand.pop(hand_idx)
+                else:
+                    c_state = None
+                if c_state:
+                    p.exhaust_pile.append(c_state)
+                    from ...models.events import CardExhaustEvent
+                    exhaust_evt = CardExhaustEvent(run, c_state, "void_distortion_cancel")
+                    engine.event_bus.dispatch(exhaust_evt)
+                engine._log_event(run, f"⚠️ [时空紊乱] 尤格-索托斯的真理力场扭曲，【{card.name}】还未释放便被强制消耗！")
+                run.node_data["cards_played_this_turn"] = run.node_data.get("cards_played_this_turn", 0) + 1
+                engine.save_manager.save_save(run.user_id, run)
+
+    def on_turn_end(self, event, enemy, engine):
+        if not event.is_player:
+            return
+        run = event.run
+        p = run.player
+        if run.node_data.get("yog_sothoth_phase", 1) == 4 and len(p.hand) == 0:
+            engine.combat_resolver.damage_target(run, "p0", 10, source="yog_sothoth_passive", damage_type="true")
+            engine._log_event(run, "⚠️ [万物归一] 由于回合结束时你没有任何手牌，受到了尤格-索托斯【万物归一】的 10 点真实伤害！")
+        for cs in p.hand:
+            if cs.id == "curse_intangible_whisper":
+                run.node_data["intangible_whisper_active"] = True
+
     def on_enemy_before_death(self, run, enemy, event, engine):
         if enemy.name == "虚空之门·尤格-索托斯":
             event.cancel()
@@ -507,6 +597,32 @@ class BossYogSothothTemplate(EnemyTemplate):
             enemy.intents.clear()
             engine._log_event(run, "🌟 虚空之门爆发出极具毁灭性的光华，次元壁垒彻底粉碎！门扉之中显露出难以名状的混沌本质——终焉降临！")
             engine._log_event(run, f"💬 【终焉】虚空之门·尤格-索托斯：‘万物归于虚无。{run.player.name}，化为这片坍缩维度的一部分吧！’")
+        elif enemy.name == "【终焉】虚空之门·尤格-索托斯":
+            event.cancel()
+            enemy.name = "【万物归一】虚空之门·尤格-索托斯"
+            enemy.max_hp = 2147483647
+            enemy.hp = 2147483647
+            enemy.shield = 80
+            enemy.actions = 3
+            enemy.bonus_actions = 3
+            enemy.max_actions = 3
+            enemy.max_bonus_actions = 3
+            enemy.buffs.clear()
+            from ...models.state import BuffState
+            enemy.buffs.append(BuffState(id="transcendence_passive", name="万物归一", stacks=1, desc="每回合开始获得 30 护盾，净化自身负面 Buff。任何被打出的法术卡牌有 30% 几率因为时空紊乱直接被消耗且无效果。每回合结束时，玩家如果没有任何手牌则受到 10 点真实伤害。"))
+            run.node_data["yog_sothoth_phase"] = 4
+            run.node_data["yog_sothoth_turn"] = 0
+            run.node_data["is_void_corrupted"] = True
+            enemy.intents.clear()
+            stats = engine.save_manager.load_stats(run.user_id)
+            challenge_count = getattr(stats, "yog_sothoth_challenge_count", 1)
+            engine._log_event(run, "🌟 警告：检测到未捕获的致命异常！时空封印已被彻底从内存中抹除！尤格-索托斯将其本体跨过碎裂的时空屏障，游戏数据已被强行改写——进入第四阶段——【万物归一】！")
+            if challenge_count == 1:
+                engine._log_event(run, f"💬 【万物归一】虚空之门·尤格-索托斯：‘愚蠢的观测者，你以为这仅仅是一场游戏？你的手牌、你的属性、连同你在这个插件里的整个生涯存档……都将收敛为万物归一的尘埃！’")
+            else:
+                engine._log_event(run, f"💬 【万物归一】虚空之门·尤格-索托斯：‘你还没有放弃吗？在你无数次的失败尝试中，这行改写代码已经被执行了成千上万次。这一次，老友，我们将迎来永恒的归一！’")
+            engine._log_event(run, "🌟 虚空开始剧烈震荡，系统的代码和物理法则已经濒临崩溃……就在此时，你身后亮起了一道温暖的金光，是先古主城的守护者和居民们！他们穿越了破碎的次元裂缝，前来助你一力！")
+
 
     def roll_intents(self, run, engine, enemy) -> List['EnemyIntentState']:
         from ...models.state import EnemyIntentState
@@ -553,7 +669,7 @@ class BossYogSothothTemplate(EnemyTemplate):
                 intents_list.append(EnemyIntentState(type="doomsday_tide", val=10, desc="灭世之潮 (对玩家与所有随从造成 10 点真实伤害，穿透护盾，并恢复自身 15 点生命值)", cost_a=1, cost_ba=0))
                 intents_list.append(EnemyIntentState(type="strength_infuse", val=2, desc="力量注入 (敌方全体获得 2 层力量)", cost_a=0, cost_ba=1))
                 intents_list.append(EnemyIntentState(type="void_shield_large", val=20, desc="虚空大盾 (获得 20 点护盾并净化自身 1 负面 Buff)", cost_a=0, cost_ba=1))
-        else:
+        elif phase == 3:
             if cycle == 1:
                 intents_list.append(EnemyIntentState(type="time_collapse", val=14, desc="时空坍缩 (造成 14 点力场伤害，玩家下回合动作减少 1A 1BA，且洗入 2 张空间撕裂)", cost_a=1, cost_ba=0))
                 intents_list.append(EnemyIntentState(type="doomsday_tide", val=12, desc="灭世之潮 (对玩家与所有随从造成 12 点真实伤害，穿透护盾，并恢复自身 15 点生命值)", cost_a=1, cost_ba=0))
@@ -562,7 +678,7 @@ class BossYogSothothTemplate(EnemyTemplate):
                 intents_list.append(EnemyIntentState(type="abyss_exhaust", val=1, desc="深渊耗竭 (使玩家获得 1 层虚空耗竭 Buff)", cost_a=0, cost_ba=1))
             elif cycle == 2:
                 intents_list.append(EnemyIntentState(type="all_gates_open", val=20, desc="万门齐开 (召唤 2 个虚空潜伏者，敌方全体获得 2 层力量；若格子满则造成 20 点心灵伤害)", cost_a=1, cost_ba=0))
-                intents_list.append(EnemyIntentState(type="doomsday_tide", val=12, desc="灭世之潮 (对玩家与所有随从造成 12 点真实伤害，穿透护盾，并恢复自身 15 点生命值)", cost_a=1, cost_ba=0))
+                intents_list.append(EnemyIntentState(type="doomsday_tide", val=12, desc="灭世之潮 (对玩家与所有随随造成 12 点真实伤害，穿透护盾，并恢复自身 15 点生命值)", cost_a=1, cost_ba=0))
                 intents_list.append(EnemyIntentState(type="abyss_gaze", val=12, desc="深渊凝视 (造成 12 点心灵伤害，使玩家下回合少抽 2 张牌)", cost_a=1, cost_ba=0))
                 intents_list.append(EnemyIntentState(type="strength_infuse", val=2, desc="力量注入 (敌方全体获得 2 层力量)", cost_a=0, cost_ba=1))
                 intents_list.append(EnemyIntentState(type="end_whisper", val=6, desc="终焉低语 (造成 6 点心灵伤害，且迫使玩家随机丢弃 1 张手牌)", cost_a=0, cost_ba=1))
@@ -578,6 +694,29 @@ class BossYogSothothTemplate(EnemyTemplate):
                 intents_list.append(EnemyIntentState(type="doomsday_tide", val=10, desc="灭世之潮 (对玩家与所有随从造成 10 点真实伤害，穿透护盾，并恢复自身 15 点生命值)", cost_a=1, cost_ba=0))
                 intents_list.append(EnemyIntentState(type="strength_infuse", val=2, desc="力量注入 (敌方全体获得 2 层力量)", cost_a=0, cost_ba=1))
                 intents_list.append(EnemyIntentState(type="void_shield_large", val=20, desc="虚空大盾 (获得 20 点护盾并净化自身 1 负面 Buff)", cost_a=0, cost_ba=1))
+        else:
+            if cycle == 1:
+                intents_list.append(EnemyIntentState(type="meta_code_injection", val=15, desc="底层代码篡改 (造成 15 点心灵伤害，注入恶意 Traceback 数据，并伪造删除卡牌警告)", cost_a=1, cost_ba=0))
+                intents_list.append(EnemyIntentState(type="void_storm", val=12, desc="虚空风暴 (对玩家与所有我方随从造成 12 点力场伤害)", cost_a=1, cost_ba=0))
+                intents_list.append(EnemyIntentState(type="input_hijack", val=12, desc="指令输入劫持 (造成 12 点心灵伤害，洗入 2 张【无形低语】)", cost_a=1, cost_ba=0))
+                intents_list.append(EnemyIntentState(type="void_shield_large", val=30, desc="虚空大盾 (获得 30 点护盾并清除 1 个负面 Buff)", cost_a=0, cost_ba=1))
+            elif cycle == 2:
+                intents_list.append(EnemyIntentState(type="data_overflow", val=15, desc="数据溢出攻击 (造成 3 次 5 点力场伤害，且混淆界面生命数值显示)", cost_a=1, cost_ba=0))
+                intents_list.append(EnemyIntentState(type="doomsday_tide", val=15, desc="灭世之潮 (对玩家及所有随从造成 15 点真实伤害，自身恢复 20 生命)", cost_a=1, cost_ba=0))
+                intents_list.append(EnemyIntentState(type="strength_infuse", val=3, desc="力量注入 (敌方全体获得 3 层力量)", cost_a=0, cost_ba=1))
+                intents_list.append(EnemyIntentState(type="end_whisper", val=8, desc="终焉低语 (造成 8 点心灵伤害，迫使下回合随机弃 2 张牌)", cost_a=0, cost_ba=1))
+            elif cycle == 3:
+                intents_list.append(EnemyIntentState(type="save_erase", val=0, desc="存档抹除 (获得 35 护盾，并尝试抹除 5 枚金币；若无金币则扣除生命上限)", cost_a=1, cost_ba=0))
+                intents_list.append(EnemyIntentState(type="time_collapse", val=15, desc="时空坍缩 (造成 15 点力场伤害，玩家下回合减少 1A 1BA，洗入 2 张空间撕裂)", cost_a=1, cost_ba=0))
+                intents_list.append(EnemyIntentState(type="mana_block", val=2, desc="魔力阻断 (使玩家获得 2 层魔力泄漏 Buff)", cost_a=0, cost_ba=1))
+                intents_list.append(EnemyIntentState(type="reality_shatter", val=12, desc="现实碎裂 (造成 12 点真实伤害)", cost_a=0, cost_ba=1))
+            else:
+                intents_list.append(EnemyIntentState(type="meta_code_injection", val=15, desc="底层代码篡改 (造成 15 点心灵伤害，注入恶意 Traceback)", cost_a=1, cost_ba=0))
+                intents_list.append(EnemyIntentState(type="data_overflow", val=15, desc="数据溢出攻击 (造成 15 点力场伤害，生命混淆)", cost_a=1, cost_ba=0))
+                intents_list.append(EnemyIntentState(type="input_hijack", val=12, desc="指令输入劫持 (造成 12 点心灵伤害，洗入 2 张【无形低语】)", cost_a=1, cost_ba=0))
+                intents_list.append(EnemyIntentState(type="void_shield_large", val=30, desc="虚空大盾 (获得 30 点护盾)", cost_a=0, cost_ba=1))
+        return intents_list
+
         return intents_list
 
 
@@ -805,10 +944,77 @@ class BossYogSothothTemplate(EnemyTemplate):
             after_logs = run.node_data.get("battle_logs", [])
             dmg_msg = after_logs.pop() if len(after_logs) > before_len else ""
             logs.append(f"【{enemy.name}】引爆现实碎裂，对玩家造成真实伤害。{dmg_msg}")
+
+        elif intent.type == "meta_code_injection":
+            before_len = len(run.node_data.get("battle_logs", []))
+            engine._damage_target(run, "p0", val, source=f"enemy:{enemy.name}", damage_type="psychic")
+            after_logs = run.node_data.get("battle_logs", [])
+            dmg_msg = after_logs.pop() if len(after_logs) > before_len else ""
+            logs.append(f"【{enemy.name}】引动了底层代码篡改。{dmg_msg}")
+            logs.append(
+                "Traceback (most recent call last):\n"
+                "  File \"game/core/battle_engine.py\", line 212, in run_combat_turn\n"
+                "    raise DimensionCollapseError(\"Yog-Sothoth injected malicious bytes into GameRun.state.\")\n"
+                "game.core.battle.exceptions.DimensionCollapseError: 维度坍缩：存档已损坏？不，尤格-索托斯篡改了底层代码！\n"
+                "💬 【万物归一】虚空之门·尤格-索托斯：‘在我的真理之下，你们的代码不过是虚无的泥潭。下一个回合，如果你没有打出任何一张【防御】卡牌，我将从你的卡组中删去最珍贵的一张卡！’"
+            )
+
+        elif intent.type == "data_overflow":
+            before_len = len(run.node_data.get("battle_logs", []))
+            for _ in range(3):
+                engine._damage_target(run, "p0", 5, source=f"enemy:{enemy.name}", damage_type="force")
+            after_logs = run.node_data.get("battle_logs", [])
+            dmg_msgs = []
+            while len(after_logs) > before_len:
+                dmg_msgs.append(after_logs.pop())
+            dmg_msgs.reverse()
+            dmg_summary = " ".join(dmg_msgs)
+            logs.append(f"【{enemy.name}】引爆了数据溢出攻击！{dmg_summary}")
+            logs.append(
+                "⚠️ 【数据溢出警告】\n"
+                "SYSTEM_DETECTED_ERROR: PLAYER_HP_OVERFLOW [HP: -9999 / 9999]\n"
+                "但由于先古守护的底层数据冗余重构，你的实际生命值未受影响。"
+            )
+
+        elif intent.type == "save_erase":
+            enemy.shield += 35
+            gold_removed = 0
+            hp_limit_removed = 0
+            if p.gold >= 5:
+                p.gold -= 5
+                gold_removed = 5
+            else:
+                p.hp = max(1, p.hp - 5)
+                p.max_hp = max(10, p.max_hp - 5)
+                hp_limit_removed = 5
+            if gold_removed:
+                logs.append(
+                    f"【{enemy.name}】施展了时空抹除，试图擦除你的存在，获得了 35 点护盾！\n"
+                    "⚠️ 尤格-索托斯正在读取你的存档... 试图执行 delete_save()...\n"
+                    "🛡️ 先古防火墙防御成功！但你仍丢失了 5 枚金币！"
+                )
+            else:
+                logs.append(
+                    f"【{enemy.name}】施展了时空抹除，试图擦除你的存在，获得了 35 点护盾！\n"
+                    "⚠️ 尤格-索托斯正在读取你的存档... 试图执行 delete_save()...\n"
+                    f"🛡️ 先古防火墙防御成功！但时空抹除的余波导致你的生命上限被永久削减了 {hp_limit_removed} 点！"
+                )
+
+        elif intent.type == "input_hijack":
+            before_len = len(run.node_data.get("battle_logs", []))
+            engine._damage_target(run, "p0", val, source=f"enemy:{enemy.name}", damage_type="psychic")
+            after_logs = run.node_data.get("battle_logs", [])
+            dmg_msg = after_logs.pop() if len(after_logs) > before_len else ""
+            p.draw_pile.append("curse_intangible_whisper")
+            p.draw_pile.append("curse_intangible_whisper")
+            random.shuffle(p.draw_pile)
+            logs.append(f"【{enemy.name}】引动了指令输入劫持。{dmg_msg}，且将 2 张【无形低语】洗入了你的抽牌堆！")
+
         return "\n".join(logs)
 
 register_enemy("【觉醒】虚空之门·尤格-索托斯")(BossYogSothothTemplate)
 register_enemy("【终焉】虚空之门·尤格-索托斯")(BossYogSothothTemplate)
+register_enemy("【万物归一】虚空之门·尤格-索托斯")(BossYogSothothTemplate)
 
 @register_enemy("亚弗戈蒙")
 class BossAforgomonTemplate(EnemyTemplate):

@@ -254,8 +254,38 @@ RELIC_CONFIG = {
     "mindflayer_brain": {
         "name": "夺心魔脑核",
         "rarity": "rare",
-        "desc": "每当你因为卡牌效果或回合结束弃牌时，对随机敌人造成 3 点心灵伤害。",
+        "desc": "每当你因为卡牌效果弃牌时，对随机敌人造成 3 点心灵伤害。",
         "price": 70
+    },
+    "leng_spider_venom": {
+        "name": "冷蛛毒腺",
+        "rarity": "rare",
+        "desc": "你造成的物理伤害有 50% 概率对目标施加 1 层【轻度物理易伤】。",
+        "price": 70
+    },
+    "migo_lightning_gun": {
+        "name": "米·戈电击枪",
+        "rarity": "rare",
+        "desc": "战斗开始时，对所有敌方角色造成 5 点闪电伤害。",
+        "price": 70
+    },
+    "shoggoth_slime": {
+        "name": "修格斯粘液",
+        "rarity": "rare",
+        "desc": "每当你受到伤害时，获得 4 点护盾。",
+        "price": 70
+    },
+    "star_vampire_proboscis": {
+        "name": "星之吸管",
+        "rarity": "rare",
+        "desc": "每当你打出具有【消耗】词条的卡牌时，回复 2 点生命值。",
+        "price": 70
+    },
+    "starspawn_core": {
+        "name": "眷族之核",
+        "rarity": "epic",
+        "desc": "回合结束时，若你本回合结束保留了至少 1 个附赠动作点 (BA)，对随机敌方角色造成 10 点力场伤害。",
+        "price": 120
     },
     "doomsday_core": {
         "name": "末日核心",

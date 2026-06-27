@@ -559,7 +559,7 @@ class TestRogueExplore(unittest.TestCase):
         player.stage = 32
         engine.card_player.handle_battle_win(run)
         self.assertEqual(run.node_type, "victory")
-        self.assertTrue(sm.stats.killed_yog_sothoth)
+        self.assertTrue(sm.stats.yog_sothoth_kill_count > 0)
 
     def test_amulet_exhaust_and_graveyard(self):
         class DummySaveManager:

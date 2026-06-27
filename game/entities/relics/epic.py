@@ -290,6 +290,16 @@ class AnthemRelic1(RelicImpl):
         if "anthem_relic_1" in p.relics:
             p.relics.remove("anthem_relic_1")
 
+class StarspawnCoreRelic(RelicImpl):
+    def on_turn_end(self, event, run, engine):
+        if event.is_player and run.player.bonus_actions >= 1:
+            alive = [e for e in run.enemies if e.hp > 0]
+            if alive:
+                import random
+                target_enemy = random.choice(alive)
+                idx = run.enemies.index(target_enemy) + 1
+                engine._log_event(run, f"🌌 [眷族之核] 触发！本回合结束保留了 BA，对【{target_enemy.name}】造成 10 点力场伤害！")
+                engine.combat_resolver.damage_target(run, f"e{idx}", 10, source="relic:starspawn_core", damage_type="force")
 
 
 for name, obj in list(globals().items()):

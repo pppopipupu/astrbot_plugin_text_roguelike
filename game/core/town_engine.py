@@ -135,7 +135,7 @@ class TownEngine:
             if icerainboww_enabled:
                 killed_icerainboww = getattr(stats, "killed_icerainboww", False)
                 items_list.append(("Icerainboww" if killed_icerainboww else "？？？", None, killed_icerainboww, False))
-            killed_yog = getattr(stats, "killed_yog_sothoth", False)
+            killed_yog = getattr(stats, "yog_sothoth_kill_count", 0) > 0
             items_list.append(("尤格-索托斯" if killed_yog else "？？？", None, killed_yog, False))
             for idx, (name, price, is_unlocked, buyable) in enumerate(items_list):
                 if buyable:

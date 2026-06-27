@@ -208,21 +208,26 @@ class CombatResolver:
             return grid
         return None
 
-    def damage_target(self, run: GameRun, target: str, dmg: int, source: str = "effect", damage_type: str = "effect", card: Optional[Card] = None):
-        target_name = self.get_target_name(run, target)
+    def damage_target(self, game_run_context: GameRun, target: str, dmg: int, source: str = "effect", damage_type: str = "effect", card: Optional[Card] = None):
+        target_name = self.get_target_name(game_run_context, target)
         if card is None:
-            cid = run.node_data.get("current_playing_card_cid")
+            cid = game_run_context.node_data.get("current_playing_card_cid")
             if cid:
                 from ...entities.cards.base import ALL_CARDS
                 card = ALL_CARDS.get(cid)
-        if run.node_data.get("current_playing_card_cid"):
-            run.node_data["card_played_triggered_dmg"] = True
+        if game_run_context.node_data.get("current_playing_card_cid"):
+            game_run_context.node_data["card_played_triggered_dmg"] = True
         if source in ("p0", "player", "effect"):
             dmg = self._apply_gem_dmg(card, dmg)
-        calc_evt = DamageCalculateEvent(run, card, source, target, damage_type, dmg, dmg)
+        calc_evt = DamageCalculateEvent(game_run_context, card, source, target, damage_type, dmg, dmg)
         self.engine.event_bus.dispatch(calc_evt)
         final_dmg = max(0, calc_evt.modified_damage)
-        p = run.player
+        p = game_run_context.player
+        if source in ("p0", "player", "effect"):
+            resonance_buff = next((b for b in p.buffs if b.id == "all_resonance"), None)
+            if resonance_buff:
+                stacks = resonance_buff.stacks
+                final_dmg = final_dmg * (10 ** stacks)
         if target == "p0" and any(b.id == "antimagic_immune" for b in p.buffs):
             dtype_str = damage_type.value if hasattr(damage_type, "value") else str(damage_type)
             if dtype_str not in {"slashing", "piercing", "bludgeoning", "attack"}:
@@ -241,8 +246,8 @@ class CombatResolver:
                 if idx < 0: idx = 0
             except ValueError:
                 idx = 0
-            if 0 <= idx < len(run.enemies):
-                e = run.enemies[idx]
+            if 0 <= idx < len(game_run_context.enemies):
+                e = game_run_context.enemies[idx]
                 if is_true:
                     hp_dmg = final_dmg
                     e.hp -= final_dmg
@@ -256,22 +261,22 @@ class CombatResolver:
                         e.hp -= hp_dmg
                         e.shield = 0
                 if e.hp <= 0:
-                    before_death_evt = EnemyBeforeDeathEvent(run, e)
+                    before_death_evt = EnemyBeforeDeathEvent(game_run_context, e)
                     self.engine.event_bus.dispatch(before_death_evt)
                     if before_death_evt.cancelled:
                         pass
                     else:
                         is_fatal = True
                         p.enemy_graveyard.append(e.name)
-                        run.enemies.pop(idx)
-                        death_evt = MinionDeathEvent(run, e.name, target, e.name, True)
+                        game_run_context.enemies.pop(idx)
+                        death_evt = MinionDeathEvent(game_run_context, e.name, target, e.name, True)
                         self.engine.event_bus.dispatch(death_evt)
-                take_evt = DamageTakeEvent(run, source, target, final_dmg, is_fatal, damage_type)
+                take_evt = DamageTakeEvent(game_run_context, source, target, final_dmg, is_fatal, damage_type)
                 self.engine.event_bus.dispatch(take_evt)
         elif target == "p0":
-            run.node_data["last_shield_before_dmg"] = p.shield
+            game_run_context.node_data["last_shield_before_dmg"] = p.shield
             if final_dmg > 0:
-                run.node_data["player_damaged_this_turn"] = True
+                game_run_context.node_data["player_damaged_this_turn"] = True
             if is_true:
                 hp_dmg = final_dmg
                 p.hp -= final_dmg
@@ -296,12 +301,12 @@ class CombatResolver:
                     if source.startswith("e"):
                         ref_dmg = 5 if is_upg else 3
                         buff_prefix = "虹光屏障+" if is_upg else "虹光屏障"
-                        self.engine._log_event(run, f"🌈 [{buff_prefix}] 触发属性反射反击！")
-                        self.damage_target(run, source, ref_dmg, source="p0", damage_type="fire")
-                        self.damage_target(run, source, ref_dmg, source="p0", damage_type="cold")
-                        self.damage_target(run, source, ref_dmg, source="p0", damage_type="lightning")
-                        self.damage_target(run, source, ref_dmg, source="p0", damage_type="poison")
-            take_evt = DamageTakeEvent(run, source, target, final_dmg, is_fatal, damage_type)
+                        self.engine._log_event(game_run_context, f"🌈 [{buff_prefix}] 触发属性反射反击！")
+                        self.damage_target(game_run_context, source, ref_dmg, source="p0", damage_type="fire")
+                        self.damage_target(game_run_context, source, ref_dmg, source="p0", damage_type="cold")
+                        self.damage_target(game_run_context, source, ref_dmg, source="p0", damage_type="lightning")
+                        self.damage_target(game_run_context, source, ref_dmg, source="p0", damage_type="poison")
+            take_evt = DamageTakeEvent(game_run_context, source, target, final_dmg, is_fatal, damage_type)
             self.engine.event_bus.dispatch(take_evt)
         elif target.startswith("p"):
             grid = target[1:]
@@ -313,10 +318,10 @@ class CombatResolver:
                     is_fatal = True
                     p.minion_graveyard.append(m.id)
                     del p.minions[grid]
-                    death_evt = MinionDeathEvent(run, m.id, target, m.name, False)
+                    death_evt = MinionDeathEvent(game_run_context, m.id, target, m.name, False)
                     self.engine.event_bus.dispatch(death_evt)
                     self.engine._reindex_minions(p)
-                take_evt = DamageTakeEvent(run, source, target, final_dmg, is_fatal, damage_type)
+                take_evt = DamageTakeEvent(game_run_context, source, target, final_dmg, is_fatal, damage_type)
                 self.engine.event_bus.dispatch(take_evt)
         damage_type_str = damage_type.value if hasattr(damage_type, "value") else str(damage_type)
         type_name = DAMAGE_TYPE_NAMES.get(damage_type_str, "物理" if damage_type_str == "attack" else "特殊")
@@ -328,4 +333,4 @@ class CombatResolver:
                 log_msg += f"，对护盾造成 {shield_dmg} 伤害"
             if hp_dmg > 0:
                 log_msg += f"，对生命造成 {hp_dmg} 伤害"
-        self.engine._log_event(run, log_msg)
+        self.engine._log_event(game_run_context, log_msg)

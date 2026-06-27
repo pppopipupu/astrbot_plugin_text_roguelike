@@ -765,7 +765,7 @@ class TestRogueTown(unittest.TestCase):
             stats = save_manager.load_stats("test_user")
             stats.unlocked_subclasses.append("神秘物品")
             stats.killed_icerainboww = True
-            stats.killed_yog_sothoth = True
+            stats.yog_sothoth_kill_count = 1
             save_manager.save_stats("test_user", stats)
 
             await run_command(plugin, ".rogue talk 神秘店主")

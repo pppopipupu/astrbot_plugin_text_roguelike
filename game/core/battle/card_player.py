@@ -235,8 +235,11 @@ class CardPlayer:
 
         play_evt = CardPlayEvent(run, card, target, req_a, req_ba)
         self.engine.event_bus.dispatch(play_evt)
+        if play_evt.cancelled:
+            return f"⚠️ 【时空紊乱】 尤格-索托斯的真理力场发生扭曲！你打出的法术【{card.name}】还未生效，就直接在虚空涟漪中被强制消耗了！"
         req_a = play_evt.cost_a
         req_ba = play_evt.cost_ba
+        target = play_evt.target
         if p.actions < req_a or p.bonus_actions < req_ba:
             return f"❌ 你的动作资源不足（需要 {req_a}A {req_ba}BA，当前 {p.actions}A {p.bonus_actions}BA）。"
         p.actions -= req_a
@@ -589,6 +592,7 @@ class CardPlayer:
         p = run.player
         evt_end = TurnEndEvent(run, is_player=True)
         self.engine.event_bus.dispatch(evt_end)
+
         retained = []
         temp_retains = list(run.node_data.get("temp_retain_cards", []))
         for c_state in p.hand:
@@ -611,14 +615,6 @@ class CardPlayer:
                 self.engine.event_bus.dispatch(exhaust_evt)
             else:
                 p.discard_pile.append(c_state)
-                if "mindflayer_brain" in p.relics:
-                    alive = [e for e in run.enemies if e.hp > 0]
-                    if alive:
-                        import random
-                        target_enemy = random.choice(alive)
-                        idx = run.enemies.index(target_enemy) + 1
-                        self.engine._log_event(run, f"🧠 [夺心魔脑核] 触发！回合结束弃牌对【{target_enemy.name}】造成 3 点心灵伤害！")
-                        self.engine.combat_resolver.damage_target(run, f"e{idx}", 3, source="relic:mindflayer_brain", damage_type="psychic")
         p.hand = retained
         run.node_data["temp_retain_cards"] = []
         for ak, av in list(p.amulets.items()):
@@ -716,6 +712,7 @@ class CardPlayer:
             p.buffs.remove(discard_buff)
             if discarded_names:
                 self.engine._log_event(run, f"💨 [回合开始弃牌] 由于受到怪物的干扰，你被迫丢弃了手牌：{', '.join(discarded_names)}。")
+
         self.engine._roll_enemy_intent(run)
         run.node_data["cards_played_this_turn"] = 0
         run.node_data["action_surge_turn_used"] = False
@@ -764,7 +761,12 @@ class CardPlayer:
                 "亡灵巫师": "necromancer_skull",
                 "夺心魔奥术师": "arcanist_hand",
                 "吉斯洋基至高指挥官": "commander_medal",
-                "虚空潜伏者": "stalker_eye"
+                "虚空潜伏者": "stalker_eye",
+                "冷蛛": "leng_spider_venom",
+                "米·戈": "migo_lightning_gun",
+                "修格斯": "shoggoth_slime",
+                "星之精": "star_vampire_proboscis",
+                "克苏鲁之星之眷族": "starspawn_core"
             }
             if elite_name in elite_relic_map:
                 rid = elite_relic_map[elite_name]
@@ -778,7 +780,7 @@ class CardPlayer:
         has_gatekey = getattr(stats, "unlocked_gatekey", False)
         if p.stage == 32:
             run.node_type = "victory"
-            stats.killed_yog_sothoth = True
+            stats.yog_sothoth_kill_count = getattr(stats, "yog_sothoth_kill_count", 0) + 1
             self.engine.save_manager.save_stats(run.user_id, stats)
         elif p.stage == 25 and not has_gatekey:
             run.node_type = "victory"

@@ -411,5 +411,76 @@ NEUTRAL_CARD_SPELLS = {
         "rarity": "curse",
         "exhaust": True,
         "feedback": "狂暴的魔力在经络中逆流！"
+    },
+    "elder_guidance": {
+        "name": "长老的先古指引",
+        "color": "neutral",
+        "type": "spell",
+        "cost_a": 0,
+        "cost_ba": 0,
+        "desc": "移除你所有的负面状态，并抽 3 张卡牌。消耗。",
+        "rarity": "mythic",
+        "exhaust": True,
+        "feedback": "使用了【长老的先古指引】！"
+    },
+    "ironclad_rampart": {
+        "name": "艾恩克拉德的壁垒",
+        "color": "neutral",
+        "type": "spell",
+        "cost_a": 0,
+        "cost_ba": 0,
+        "desc": "获得 30 点护盾，并对目标造成 15 点物理钝击伤害。消耗。",
+        "rarity": "mythic",
+        "exhaust": True,
+        "base_dmg": 15,
+        "damage_type": "bludgeoning",
+        "feedback": "使用了【艾恩克拉德的壁垒】！"
+    },
+    "jack_brew": {
+        "name": "杰克的烈性黑啤",
+        "color": "neutral",
+        "type": "spell",
+        "cost_a": 0,
+        "cost_ba": 0,
+        "desc": "恢复 15 点生命值，并获得 1A 1BA。消耗。",
+        "rarity": "mythic",
+        "exhaust": True,
+        "heal_amount": 15,
+        "feedback": "使用了【杰克的烈性黑啤】！"
+    },
+    "merchant_collection": {
+        "name": "商人的神话藏品",
+        "color": "neutral",
+        "type": "spell",
+        "cost_a": 0,
+        "cost_ba": 0,
+        "desc": "随机将 2 张升级过的职业传奇或神话卡牌加入手牌，本回合打出它们消耗为 0。消耗。",
+        "rarity": "mythic",
+        "exhaust": True,
+        "feedback": "使用了【商人的神话藏品】！"
+    },
+    "bard_epic": {
+        "name": "诗人的绝响之歌",
+        "color": "neutral",
+        "type": "spell",
+        "cost_a": 0,
+        "cost_ba": 0,
+        "desc": "使你获得 2 层【力量】和 1 层【双发】。消耗。",
+        "rarity": "mythic",
+        "exhaust": True,
+        "feedback": "使用了【诗人的绝响之歌】！"
+    },
+    "curse_intangible_whisper": {
+        "name": "无形低语",
+        "color": "neutral",
+        "type": "curse",
+        "cost_a": 1,
+        "cost_ba": 0,
+        "desc": "保留。打出此卡无任何正面效果，但会使你下一回合少抽 3 张牌。如果在回合结束时仍被保留在手牌里，会在下一回合随机将你打出的第一张卡牌的目标重定向。消耗。",
+        "rarity": "curse",
+        "retain": True,
+        "exhaust": True,
+        "feedback": "你被打出的【无形低语】所蛊惑，思维产生了剧烈动摇！"
     }
 }
+

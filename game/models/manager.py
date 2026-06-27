@@ -47,7 +47,8 @@ class SaveManager:
                 selected_subclass=d.get("selected_subclass", ""),
                 killed_icerainboww=d.get("killed_icerainboww", False),
                 unlocked_gatekey=d.get("unlocked_gatekey", False),
-                killed_yog_sothoth=d.get("killed_yog_sothoth", False),
+                yog_sothoth_kill_count=d.get("yog_sothoth_kill_count", 0),
+                yog_sothoth_challenge_count=d.get("yog_sothoth_challenge_count", 0),
                 reader_active=d.get("reader_active", False),
                 reader_page=d.get("reader_page", 1),
                 reader_title=d.get("reader_title", ""),
@@ -424,7 +425,7 @@ class SaveManager:
             if stage >= 25:
                 gp_gained += 3000
                 victory_bonus = "（含超最终通关奖励 3000 GP）"
-                stats.killed_yog_sothoth = True
+                stats.yog_sothoth_kill_count = getattr(stats, "yog_sothoth_kill_count", 0) + 1
                 unlock_msg = "\n\n🎉 特别提示：你成功击败了先古的超最终BOSS【虚空之门·尤格-索托斯】！你已完成了最伟大的先古救赎！"
             else:
                 gp_gained += 1000

@@ -50,7 +50,8 @@ class UserStats:
     selected_subclass: str = ""
     killed_icerainboww: bool = False
     unlocked_gatekey: bool = False
-    killed_yog_sothoth: bool = False
+    yog_sothoth_kill_count: int = 0
+    yog_sothoth_challenge_count: int = 0
     reader_active: bool = False
     reader_page: int = 1
     reader_title: str = ""
