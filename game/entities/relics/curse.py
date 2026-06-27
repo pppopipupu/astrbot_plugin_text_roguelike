@@ -44,8 +44,8 @@ class WitherSeedRelic(RelicImpl):
 class ShadowCurseRelic(RelicImpl):
     def on_card_played(self, event, run, engine):
         if event.card.type == "spell" and not event.card.id.startswith("demon_contract"):
-            engine._damage_target(run, "p0", 2, source="shadow_curse", damage_type="true")
-            engine._log_event(run, "🕸️ [影之诅咒] 触发：失去 2 点生命值。")
+            engine._damage_target(run, "p0", 1, source="shadow_curse", damage_type="force")
+            engine._log_event(run, "🕸️ [影之诅咒] 触发：受到 1 点力场伤害。")
 
 class GlacierChillRelic(RelicImpl):
     def on_turn_start(self, event, run, engine):

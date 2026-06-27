@@ -194,7 +194,7 @@ RELIC_CONFIG = {
     "shadow_curse": {
         "name": "影之诅咒",
         "rarity": "curse",
-        "desc": "每当玩家打出一张法术牌时，失去 2 点生命值。",
+        "desc": "每当你打出一张法术牌，受到 1 点力场伤害。",
         "price": 80
     },
     "glacier_chill": {
