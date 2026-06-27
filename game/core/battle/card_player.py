@@ -246,6 +246,15 @@ class CardPlayer:
         p.bonus_actions -= req_ba
         p.hand.pop(hand_idx - 1)
         
+        split_to_ten_active = False
+        split_to_ten_buff = next((b for b in p.buffs if b.id == "split_to_ten"), None)
+        if split_to_ten_buff and split_to_ten_buff.stacks > 0:
+            split_to_ten_active = True
+            split_to_ten_buff.stacks -= 1
+            if split_to_ten_buff.stacks <= 0:
+                p.buffs.remove(split_to_ten_buff)
+        run.node_data["split_to_ten_active"] = split_to_ten_active
+        
         initial_stack_len = len(run.node_data.get("state_stack", []))
         run.node_data["current_playing_card_cid"] = cid
         run.node_data["current_playing_card_hand_idx"] = hand_idx - 1
@@ -310,6 +319,7 @@ class CardPlayer:
             run.node_data["current_playing_card_id"] = ""
             run.node_data["current_playing_card_cid"] = ""
             run.node_data.pop("current_playing_card_hand_idx", None)
+            run.node_data.pop("split_to_ten_active", None)
 
         if not suspend_post_play:
             played_count = run.node_data.get("cards_played_this_turn", 0)
@@ -787,6 +797,34 @@ class CardPlayer:
             if run.node_data.get("boss_name") == "Icerainboww":
                 stats.killed_icerainboww = True
                 self.engine.save_manager.save_stats(run.user_id, stats)
+        elif p.stage == 25 and has_gatekey:
+            run.node_type = "boss_chest"
+            p_class = getattr(stats, "selected_class", "法师")
+            class_mythic_cards = ["neutral_plane_shift", "neutral_omega"]
+            if p_class == "战士":
+                class_mythic_cards.append("warrior_hematopoiesis")
+            else:
+                class_mythic_cards.append("wizard_split_to_ten")
+            
+            mythic_relics = ["infinite_hourglass"]
+            available_relics = [r for r in mythic_relics if r not in p.relics]
+            
+            options = []
+            if available_relics:
+                relic_choice = random.choice(available_relics)
+                options.append({"type": "relic", "id": relic_choice})
+            
+            needed = 3 - len(options)
+            chosen_cards = random.sample(class_mythic_cards, min(needed, len(class_mythic_cards)))
+            for c in chosen_cards:
+                options.append({"type": "card", "id": c})
+                
+            run.node_data = {
+                "title": "🏆 BOSS 战利品：神话宝箱",
+                "desc": "你击败了第二阶段的守护者！在它的身后，一尊散发着七彩神圣微光的【神话宝箱】缓缓升起。\n请选择你要继承的一件神话秘宝：",
+                "options": options
+            }
+            self.engine.save_manager.save_save(run.user_id, run)
         else:
             run.node_type = "reward"
             card_pool = list(ALL_CARDS.keys())

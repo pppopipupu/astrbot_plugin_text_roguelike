@@ -378,5 +378,16 @@ WIZARD_CARD_CONFIG = {
         "rarity": "epic",
         "exhaust": True,
         "feedback": "你咏唱了【时光蹂躏】，目标敌人的生命力在瞬息间迅速老去衰败！"
+    },
+    "wizard_split_to_ten": {
+        "name": "一分为十",
+        "color": "wizard",
+        "type": "spell",
+        "cost_a": 0,
+        "cost_ba": 1,
+        "desc": "获得 1 层【一分为十】Buff。消耗。",
+        "rarity": "mythic",
+        "exhaust": True,
+        "feedback": "施放了【一分为十】！"
     }
 }

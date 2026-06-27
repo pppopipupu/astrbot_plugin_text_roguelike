@@ -535,6 +535,10 @@ class PendulumResonanceBuff(BuffImpl):
                 run.node_data["draw_penalty_next_turn"] = run.node_data.get("draw_penalty_next_turn", 0) - 2
 
 
+class SplitToTenBuff(BuffImpl):
+    pass
+
+
 for name, obj in list(globals().items()):
     if isinstance(obj, type) and issubclass(obj, BuffImpl) and obj is not BuffImpl:
         if not getattr(obj, "auto_register", True):

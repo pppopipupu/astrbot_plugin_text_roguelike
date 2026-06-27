@@ -46,6 +46,10 @@ BUFF_CONFIG = {
         "desc": "每当玩家打出一张牌，玩家受到 1 点力场伤害",
         "is_debuff": True
     },
+    "split_to_ten": {
+        "name": "一分为十",
+        "desc": "接下来打出的 X 张卡牌会额外再打出 10 次（可与重放、回响乘算）"
+    },
     "strength": {
         "name": "力量",
         "desc": "造成的伤害增加"

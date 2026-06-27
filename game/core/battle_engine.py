@@ -343,7 +343,17 @@ class BattleEngine(BaseBattleEngine):
         return self.card_player.minion_skill(run, my_grid, skill_idx, target)
 
     def _execute_card_effect(self, run: GameRun, card: Card, target: Optional[str] = None) -> str:
-        return card.execute(run, target, self)
+        res = card.execute(run, target, self)
+        if run.node_data.get("split_to_ten_active"):
+            for _ in range(10):
+                if self.is_battle_won(run):
+                    break
+                extra_res = card.execute(run, target, self)
+                from ..models.events import CardPlayedEvent
+                played_evt = CardPlayedEvent(run, card, target, extra_res, is_extra=True)
+                self.event_bus.dispatch(played_evt)
+                run.node_data.setdefault("extra_play_msgs", []).append(f" 🔀 [一分为十触发] {played_evt.feedback}")
+        return res
 
     def get_modified_spell_damage(self, run: GameRun, card: Card, damage: int) -> int:
         return self.combat_resolver.get_modified_spell_damage(run, card, damage)

@@ -470,6 +470,17 @@ NEUTRAL_CARD_SPELLS = {
         "exhaust": True,
         "feedback": "使用了【诗人的绝响之歌】！"
     },
+    "neutral_omega": {
+        "name": "Omega",
+        "color": "neutral",
+        "type": "spell",
+        "cost_a": 1,
+        "cost_ba": 0,
+        "desc": "以随机顺序打出目前手牌中的所有卡牌的复制品。消耗。",
+        "rarity": "mythic",
+        "exhaust": True,
+        "feedback": "引导了【Omega】的终极涟漪！"
+    },
     "curse_intangible_whisper": {
         "name": "无形低语",
         "color": "neutral",

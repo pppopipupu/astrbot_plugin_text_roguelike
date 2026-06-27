@@ -415,4 +415,13 @@ class WizardTimeRavageCard(Card):
             msg += " 你获得了 1A 时间补偿！"
         return msg
 
+@register_card("wizard_split_to_ten")
+class WizardSplitToTenCard(Card):
+    def execute(self, run, target, engine) -> str:
+        stacks = 2 if self.upgraded else 1
+        from ...data.buff_data import BUFF_CONFIG
+        buff_info = BUFF_CONFIG.get("split_to_ten", {})
+        engine._add_buff_to(run.player, "split_to_ten", buff_info.get("name", "一分为十"), buff_info.get("desc", ""), stacks)
+        return f"使用了【{self.name}】，获得了 {stacks} 层【一分为十】Buff！"
+
 

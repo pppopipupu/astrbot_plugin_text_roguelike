@@ -542,7 +542,7 @@ class TestRogueExplore(unittest.TestCase):
         player.stage = 25
         sm.stats.unlocked_gatekey = True
         engine.card_player.handle_battle_win(run)
-        self.assertEqual(run.node_type, "reward")
+        self.assertEqual(run.node_type, "boss_chest")
         player.hand = ["void_beacon"]
         player.actions = 2
         player.bonus_actions = 1

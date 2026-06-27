@@ -447,6 +447,7 @@ def render_tutorial() -> str:
 
 
 def render_shop(stats: UserStats) -> str:
+    from game.data.shop_data import SHOP_ITEMS
     import random
     gp = getattr(stats, "gp", 0)
     unlocked = getattr(stats, "unlocked_subclasses", [])
@@ -460,7 +461,7 @@ def render_shop(stats: UserStats) -> str:
         "“...嘘，悄悄看，我这儿可都是从无尽时空深处淘来的宝贝。”",
         "“又是你，旅者？只要GP足够，我这里的东西随时都可以归你。”",
         "“想要掌控时间，还是驾驭元素？或者……你对那件‘神秘物品’感兴趣？”",
-        "“奥术的轨迹是有限的，但金钱 and 力量的秘密是无限的。”",
+        "“奥术的轨迹是有限的，但金钱与力量的秘密是无限的。”",
         "“有些东西并不存在于当下的时空，但在这里，一切皆有可能。”",
         "“外面的风暴越来越近了，或许你该准备点真正强力的武器？”"
     ]
@@ -500,16 +501,16 @@ def render_shop(stats: UserStats) -> str:
         f"💰 我的 GP：{gp}",
         "",
         "【货架商品】",
-        f" [1] 时序法师子职业 - 售价：2888 GP （状态：{status_time}）",
-        "     └─ 操控时间。初始牌组中加入 1 张传奇卡牌“时间停止”（追加 3 个额外回合）。",
-        f" [2] 塑能法师子职业 - 售价：2888 GP （状态：{status_element}）",
-        "     └─ 元素爆发。所有法术伤害提升 15%，且抓取火球术时 40% 几率替换为流星爆。",
-        f" [3] 秘钥学者子职业 - 售价：2888 GP （状态：{status_key}）",
-        "     └─ 门扉共鸣。打出护符时回复 3 生命且获得 4 护盾。抓取卡牌时 35% 几率替换为“秘钥共鸣”。",
-        f" [4] 门之钥匙 - 售价：3000 GP （状态：{status_gatekey}）",
-        "     └─ 传说之钥。开启先古之门，20层击败BOSS后可进入5层长的“先古境地”！",
-        f" [5] 神秘物品 - 售价：66666 GP （状态：{status_mystery}）",
-        "     └─ 一件蕴藏着奇异力量的物件，购买后会永久保存在收藏中。",
+        f" [1] 时序法师子职业 - 售价：{SHOP_ITEMS['时序法师']['price']} GP （状态：{status_time}）",
+        f"     └─ {SHOP_ITEMS['时序法师']['desc']}",
+        f" [2] 塑能法师子职业 - 售价：{SHOP_ITEMS['塑能法师']['price']} GP （状态：{status_element}）",
+        f"     └─ {SHOP_ITEMS['塑能法师']['desc']}",
+        f" [3] 秘钥学者子职业 - 售价：{SHOP_ITEMS['秘钥学者']['price']} GP （状态：{status_key}）",
+        f"     └─ {SHOP_ITEMS['秘钥学者']['desc']}",
+        f" [4] 门之钥匙 - 售价：{SHOP_ITEMS['门之钥匙']['price']} GP （状态：{status_gatekey}）",
+        f"     └─ {SHOP_ITEMS['门之钥匙']['desc']}",
+        f" [5] 神秘物品 - 售价：{SHOP_ITEMS['神秘物品']['price']} GP （状态：{status_mystery}）",
+        f"     └─ {SHOP_ITEMS['神秘物品']['desc']}",
         item6_title,
         item6_desc,
         item7_title,

@@ -125,12 +125,13 @@ class TownEngine:
             from ..models.manager import SaveManager
             boss_cfg = SaveManager().load_admin_config()
             icerainboww_enabled = boss_cfg.get("icerainboww_enabled", True)
+            from game.data.shop_data import SHOP_ITEMS
             items_list = [
-                ("时序法师", 2888, "时序法师" in unlocked, True),
-                ("塑能法师", 2888, "塑能法师" in unlocked, True),
-                ("秘钥学者", 2888, "秘钥学者" in unlocked, True),
-                ("门之钥匙", 3000, has_gatekey, True),
-                ("神秘物品", 66666, "神秘物品" in unlocked, True)
+                ("时序法师", SHOP_ITEMS["时序法师"]["price"], "时序法师" in unlocked, True),
+                ("塑能法师", SHOP_ITEMS["塑能法师"]["price"], "塑能法师" in unlocked, True),
+                ("秘钥学者", SHOP_ITEMS["秘钥学者"]["price"], "秘钥学者" in unlocked, True),
+                ("门之钥匙", SHOP_ITEMS["门之钥匙"]["price"], has_gatekey, True),
+                ("神秘物品", SHOP_ITEMS["神秘物品"]["price"], "神秘物品" in unlocked, True)
             ]
             if icerainboww_enabled:
                 killed_icerainboww = getattr(stats, "killed_icerainboww", False)

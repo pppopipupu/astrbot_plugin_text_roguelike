@@ -212,7 +212,24 @@ class ExploreEngine:
                 }
                 
                 self.start_gem_insert_flow(run, gift_gem_id, "card_select", next_node_data)
-                return "宝箱开启成功。"
+        elif run.node_type == "boss_chest":
+            options = run.node_data.get("options", [])
+            if option_idx < 1 or option_idx > len(options):
+                return "❌ 无效的选择序号。"
+            chosen = options[option_idx - 1]
+            type_ = chosen["type"]
+            id_ = chosen["id"]
+            if type_ == "relic":
+                p.relics.append(id_)
+                msg = f"🏆 你获得了神话遗物【{get_relic_name(id_)}】！"
+            else:
+                from ..models.state import CardState
+                p.deck.append(CardState(id=id_))
+                msg = f"🏆 你获得了神话卡牌【{ALL_CARDS[id_].name}】！"
+            
+            self.map_engine.enter_next_stage(run)
+            self.save_manager.save_save(run.user_id, run)
+            return f"{msg}神话宝箱在刺目的光芒中碎裂消逝，开启下一关。"
 
         elif run.node_type == "reward":
             if run.node_data.get("no_reward"):

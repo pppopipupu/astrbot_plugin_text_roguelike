@@ -479,6 +479,39 @@ class UnminedGemCard(Card):
         else:
             return f"使用了【{self.name}】，但手牌为空，未触发重放赋予效果。"
 
+@register_card("neutral_omega")
+class NeutralOmegaCard(Card):
+    def execute(self, run, target, engine) -> str:
+        p = run.player
+        import copy
+        import random
+        from .base import ALL_CARDS
+        hand_copies = [copy.deepcopy(cid) for cid in p.hand]
+        random.shuffle(hand_copies)
+        
+        for copy_cid in hand_copies:
+            if engine.is_battle_won(run):
+                break
+            card_obj = ALL_CARDS.get(copy_cid)
+            if not card_obj or getattr(card_obj, "unplayable", False):
+                continue
+            card_target = None
+            if card_obj.type == "spell":
+                p0_spells = {"first_aid", "get_ready", "adrenaline", "mana_potion", "mass_healing_word", "refresh_spirit", "shield", "misty_step", "arcane_intellect", "calculated_gamble", "time_warp", "time_stop", "archmage_wish"}
+                if card_obj.id in p0_spells:
+                    card_target = "p0"
+                else:
+                    card_target = engine._get_first_alive_enemy(run)
+            extra_res = engine._execute_card_effect(run, card_obj, card_target)
+            from ...models.events import CardPlayedEvent
+            played_evt = CardPlayedEvent(run, card_obj, card_target, extra_res, is_extra=True)
+            engine.event_bus.dispatch(played_evt)
+            run.node_data.setdefault("extra_play_msgs", []).append(f" 🌀 [Omega 复制品打出] {played_evt.feedback}")
+            if hasattr(card_obj, "execute_tags"):
+                card_obj.execute_tags(run, card_target, engine)
+                
+        return "🌌 引导了【Omega】的终极涟漪！"
+
 @register_card("discover")
 class DiscoverCard(Card):
     def execute(self, run, target, engine) -> str:

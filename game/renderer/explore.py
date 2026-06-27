@@ -197,3 +197,40 @@ def render_card_select(run: GameRun) -> str:
         lines.append("💬 选择指令：/rogue c <序号>")
     lines.append("━━━━━━━━━━━━━━━━━━━━")
     return "\n".join(lines)
+
+def render_boss_chest(run: GameRun) -> str:
+    p = run.player
+    data = run.node_data
+    title = data.get("title", "BOSS 战利品：神话宝箱")
+    desc = data.get("desc", "")
+    relics_str = ""
+    if p.relics:
+        relics_str = "\n🎒 遗物：" + " ".join([f"【{get_relic_name(r)}】" for r in p.relics])
+    lines = [
+        "━━━━━━━━━━━━━━━━━━━━",
+        f"🏆 【{title}】",
+        f"{run.player.name}：❤️ HP {p.hp}/{p.max_hp} | 🪙 金币 {p.gold}" + relics_str,
+        "",
+        desc,
+        ""
+    ]
+    options = data.get("options", [])
+    from ..entities import get_relic_desc
+    for idx, opt in enumerate(options, 1):
+        type_ = opt.get("type")
+        id_ = opt.get("id")
+        if type_ == "relic":
+            lines.append(f" [{idx}] 🎒 神话遗物【{get_relic_name(id_)}】 - {get_relic_desc(id_)}")
+        elif type_ == "card":
+            card = ALL_CARDS.get(id_)
+            if card:
+                color_ch = "⚫" if card.color == "curse" else ("🔵" if card.color == "wizard" else "⚪")
+                cost_str = get_card_cost_str(card)
+                lines.append(f" [{idx}] {color_ch} 神话卡牌【{card.name}】 (消耗: {cost_str}) - {card.desc}")
+    lines.append("━━━━━━━━━━━━━━━━━━━━")
+    if p.fold_guide:
+        lines.append("💬 提示：操作指南已折叠。输入 /rogue 折叠 可展开。")
+    else:
+        lines.append("💬 选择指令：/rogue c <序号>")
+    lines.append("━━━━━━━━━━━━━━━━━━━━")
+    return "\n".join(lines)

@@ -572,3 +572,23 @@ class WarriorSourceOfCinderCard(Card):
     def execute(self, run, target, engine) -> str:
         engine._add_buff_to(run.player, "source_of_cinder", "薪火之源", "每回合开始额外获得 1A 1BA", 1)
         return "你获得了【薪火之源】状态！"
+
+@register_card("warrior_hematopoiesis")
+class WarriorHematopoiesisCard(Card):
+    def execute(self, run, target, engine) -> str:
+        p = run.player
+        shield_val = p.shield
+        p.shield = 0
+        
+        factor = 1.5 if self.upgraded else 1.0
+        temp_hp = int(shield_val * factor)
+        p.hp += temp_hp
+        
+        import math
+        draw_count = math.ceil(shield_val / 10)
+        drawn_msg = ""
+        if draw_count > 0:
+            engine.card_player.draw_cards(p, draw_count, run)
+            drawn_msg = f"，抽取了 {draw_count} 张牌"
+            
+        return f"使用了【{self.name}】，将 {shield_val} 点护盾转化为了 {temp_hp} 点临时生命值{drawn_msg}。"

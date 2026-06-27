@@ -577,10 +577,17 @@ class TestRogueCardMech2(unittest.TestCase):
 
     def test_market_cards_upgraded(self):
         class DummySaveManager:
+            def __init__(self):
+                from game.models.state import UserStats
+                self.stats = UserStats()
             def save_save(self, user_id, run):
                 pass
             def delete_save(self, user_id):
                 pass
+            def load_stats(self, user_id):
+                return self.stats
+            def save_stats(self, user_id, stats):
+                self.stats = stats
         sm = DummySaveManager()
         engine = BattleEngine(sm)
         player = PlayerState(
@@ -702,3 +709,52 @@ class TestRogueCardMech2(unittest.TestCase):
         player.stage = 32
         res2 = shift_obj.execute(run, None, engine)
         self.assertIn("❌", res2)
+
+        # 9. 神话卡牌: Omega
+        player.hand = ["fire_bolt", "shield"]
+        player.actions = 2
+        run.enemies = [EnemyState(name="小木人", hp=100, max_hp=100, shield=0, actions=1, bonus_actions=1)]
+        card_omega = CardState("neutral_omega", upgraded=True)
+        omega_obj = ALL_CARDS.get(card_omega)
+        omega_obj.execute(run, None, engine)
+        self.assertLess(run.enemies[0].hp, 100)
+        self.assertGreater(player.shield, 0)
+
+        # 10. 一分为十 Buff 与乘算复制
+        run.enemies = [EnemyState(name="小木人", hp=9999, max_hp=9999, shield=0, actions=1, bonus_actions=1)]
+        player.buffs = [BuffState(id="split_to_ten", name="一分为十", desc="", stacks=1)]
+        player.hand = [CardState("fire_bolt")]
+        player.actions = 2
+        engine.play_card(run, 1, "e1")
+        self.assertEqual(run.enemies[0].hp, 9966)
+
+        # 11. 神话卡牌: 造血
+        player.shield = 20
+        player.hp = 10
+        player.max_hp = 40
+        card_hem = CardState("warrior_hematopoiesis")
+        hem_obj = ALL_CARDS.get(card_hem)
+        hem_obj.execute(run, None, engine)
+        self.assertEqual(player.shield, 0)
+        self.assertEqual(player.hp, 30)
+
+        player.shield = 20
+        player.hp = 10
+        card_hem_up = CardState("warrior_hematopoiesis", upgraded=True)
+        hem_up_obj = ALL_CARDS.get(card_hem_up)
+        hem_up_obj.execute(run, None, engine)
+        self.assertEqual(player.shield, 0)
+        self.assertEqual(player.hp, 40)
+
+        # 12. 击败第二阶段 BOSS 神话宝箱
+        player.stage = 25
+        run.node_data = {"boss_name": "Icerainboww"}
+        run.enemies = []
+        stats = sm.load_stats("test_market_upgraded_user")
+        stats.unlocked_gatekey = True
+        sm.save_stats("test_market_upgraded_user", stats)
+
+        engine.card_player.handle_battle_win(run)
+        self.assertEqual(run.node_type, "boss_chest")
+        self.assertTrue(any(opt["id"] == "infinite_hourglass" for opt in run.node_data["options"]))
+

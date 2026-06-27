@@ -471,5 +471,16 @@ CARD_UPGRADE_CONFIG = {
     },
     "neutral_plane_shift": {
         "desc": "传送脱逃离开遭遇战，且获得 40 金币空间遗珍。在 25 层与 32 层 BOSS 战中禁用。即逝。"
+    },
+    "neutral_omega": {
+        "cost_a": 0,
+        "cost_ba": 0,
+        "desc": "以随机顺序打出目前手牌中的所有卡牌的复制品。免费。消耗。"
+    },
+    "wizard_split_to_ten": {
+        "desc": "获得 2 层【一分为十】Buff。消耗。"
+    },
+    "warrior_hematopoiesis": {
+        "desc": "将现有的所有护盾变为在这场战斗生效的 1.5 倍临时生命值，抽取护盾数除10（向上取整）数量的卡牌。消耗。"
     }
 }

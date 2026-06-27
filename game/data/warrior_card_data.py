@@ -487,5 +487,16 @@ WARRIOR_CARD_CONFIG = {
         "exhaust": True,
         "rarity": "epic",
         "feedback": "使用了【薪火之源】，获得了薪火之源状态！"
+    },
+    "warrior_hematopoiesis": {
+        "name": "造血",
+        "color": "warrior",
+        "type": "spell",
+        "cost_a": 1,
+        "cost_ba": 0,
+        "desc": "将现有的所有护盾变为在这场战斗生效的临时生命值，抽取护盾数除10（向上取整）数量的卡牌。消耗。",
+        "rarity": "mythic",
+        "exhaust": True,
+        "feedback": "使用了【造血】！"
     }
 }
