@@ -157,16 +157,20 @@ class ActionRouter:
                 except ValueError:
                     return "❌ 序号必须是数字。", False, False
                 p = run.player
-                if idx < 1 or idx > len(p.exhaust_pile):
-                    return f"❌ 无效的消耗堆序号。当前消耗堆有 {len(p.exhaust_pile)} 张卡牌。", False, False
-                cid = p.exhaust_pile.pop(idx - 1)
+                valid_exhaust = [c for c in p.exhaust_pile if c.id != "discover"]
+                if idx < 1 or idx > len(valid_exhaust):
+                    return f"❌ 无效的消耗堆序号。当前可发掘卡牌有 {len(valid_exhaust)} 张。", False, False
+                target_card = valid_exhaust[idx - 1]
+                real_idx = p.exhaust_pile.index(target_card)
+                cid = p.exhaust_pile.pop(real_idx)
                 p.hand.append(cid)
                 card_name = ALL_CARDS[cid].name if cid in ALL_CARDS else "未知卡牌"
                 top_state.setdefault("selected", []).append(cid)
                 req_count = top_state.get("count", 1)
-                if len(top_state["selected"]) < req_count and p.exhaust_pile:
+                valid_exhaust_after = [c for c in p.exhaust_pile if c.id != "discover"]
+                if len(top_state["selected"]) < req_count and valid_exhaust_after:
                     self.save_manager.save_save(user_id, run)
-                    exhaust_list = "\n".join(f"{i+1}. {ALL_CARDS[c].name}" for i, c in enumerate(p.exhaust_pile))
+                    exhaust_list = "\n".join(f"{i+1}. {ALL_CARDS[c].name}" for i, c in enumerate(valid_exhaust_after))
                     return f"✨ 你发掘了【{card_name}】并加入手牌。请继续选择第 {len(top_state['selected']) + 1} 张发掘卡牌：\n{exhaust_list}", False, True
                 else:
                     state_stack.pop()

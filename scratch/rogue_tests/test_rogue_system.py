@@ -533,7 +533,7 @@ class TestRogueSystem(unittest.TestCase):
             save_manager.save_save("test_user_discover", run)
             
             res_empty = await run_command(plugin, "使用 1", sender_id="test_user_discover")
-            self.assertIn("消耗堆中没有任何卡牌", res_empty)
+            self.assertIn("没有任何可以发掘的卡牌", res_empty)
             
             run = save_manager.load_save("test_user_discover")
             run.player.exhaust_pile = ["dagger_throw", "first_aid", "adrenaline"]
@@ -604,7 +604,19 @@ class TestRogueSystem(unittest.TestCase):
             self.assertTrue(event_cancel.stopped)
             self.assertTrue(any("取消发掘操作" in r for r in event_cancel.results))
             run = save_manager.load_save("test_user_discover")
-            self.assertEqual(len(run.node_data.get("state_stack", [])), 0)
+            run = save_manager.load_save("test_user_discover")
+            run.player.exhaust_pile = ["discover", "dagger_throw", "discover+"]
+            run.player.hand = ["discover", "first_aid"]
+            run.player.actions = 2
+            save_manager.save_save("test_user_discover", run)
+            res_excl = await run_command(plugin, "使用 1", sender_id="test_user_discover")
+            self.assertIn("1. 匕首投掷", res_excl)
+            self.assertNotIn("发掘+", res_excl)
+            self.assertNotIn("2. ", res_excl.split("━━━━━━━━━━━━━━━━━━━━")[0])
+            res_sel_fail = await run_command(plugin, "选择 2", sender_id="test_user_discover")
+            self.assertIn("无效的消耗堆序号", res_sel_fail)
+            res_sel_ok = await run_command(plugin, "选择 1", sender_id="test_user_discover")
+            self.assertIn("获得了【匕首投掷】", res_sel_ok)
             
             save_manager.delete_save("test_user_discover")
             

@@ -517,8 +517,9 @@ class DiscoverCard(Card):
     def execute(self, run, target, engine) -> str:
         from .base import ALL_CARDS
         p = run.player
-        if not p.exhaust_pile:
-            return f"❌ 你的消耗堆中没有任何卡牌，【{self.name}】未能发掘出任何东西。"
+        valid_exhaust = [c for c in p.exhaust_pile if c.id != "discover"]
+        if not valid_exhaust:
+            return f"❌ 你的消耗堆中没有任何可以发掘的卡牌，【{self.name}】未能发掘出任何东西。"
 
         if target is not None:
             parts_str = str(target)
@@ -533,7 +534,7 @@ class DiscoverCard(Card):
                 if p_str.isdigit():
                     indices.append(int(p_str) - 1)
             
-            valid_indices = [idx for idx in indices if 0 <= idx < len(p.exhaust_pile)]
+            valid_indices = [idx for idx in indices if 0 <= idx < len(valid_exhaust)]
             max_count = 2 if self.upgraded else 1
             valid_indices = valid_indices[:max_count]
             
@@ -541,7 +542,9 @@ class DiscoverCard(Card):
                 valid_indices.sort(reverse=True)
                 selected_names = []
                 for idx in valid_indices:
-                    cid = p.exhaust_pile.pop(idx)
+                    target_card = valid_exhaust[idx]
+                    real_idx = p.exhaust_pile.index(target_card)
+                    cid = p.exhaust_pile.pop(real_idx)
                     p.hand.append(cid)
                     selected_names.append(ALL_CARDS[cid].name if cid in ALL_CARDS else "未知卡牌")
                 selected_names.reverse()
@@ -554,7 +557,7 @@ class DiscoverCard(Card):
             "count": 2 if self.upgraded else 1,
             "selected": []
         })
-        exhaust_list = "\n".join(f"{i+1}. {ALL_CARDS[c].name}" for i, c in enumerate(p.exhaust_pile))
+        exhaust_list = "\n".join(f"{i+1}. {ALL_CARDS[c].name}" for i, c in enumerate(valid_exhaust))
         return f"🔮 请选择一张卡牌发掘并加入手牌（使用 选择 <序号>）：\n{exhaust_list}"
 
 @register_card("neutral_power_word_kill")
