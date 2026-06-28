@@ -30,7 +30,11 @@ class UseCommand(CommandHandler, names=["使用", "p"], allowed_states=["battle"
             queue_str = "[" + ", ".join(converted_items) + "]"
             results = []
             success = router._execute_queue(user_id, run, queue_str, results)
-            yield "\n".join(results) + "\n" + GameRenderer.render_game(run)
+            run = router.save_manager.load_save(user_id)
+            if not run:
+                yield "\n".join(results)
+            else:
+                yield "\n".join(results) + "\n" + GameRenderer.render_game(run)
             return success
         else:
             res, term, success = router._execute_sub_action(user_id, run, parts)

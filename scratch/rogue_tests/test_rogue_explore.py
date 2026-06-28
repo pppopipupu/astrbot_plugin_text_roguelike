@@ -715,3 +715,56 @@ class TestRogueExplore(unittest.TestCase):
         self.assertEqual(wizard_styles_11, {"default", "abyss", "glacier"})
 
         plugin.save_manager.load_stats = original_load_stats
+
+    def test_max_hp_event_debuffs_and_time_sand_blessing(self):
+        from game.entities.events.chaos_events import BurnVoidBooksOption, SellFleshOption, DrinkTimeSandOption, RepairEngineOption
+        from game.entities.events.lost_maze import FishPoolOption
+        from game.entities.events.void_contract import ContractLegendOption
+        from game.entities.events.portal_chamber import ContractPortalOption
+        plugin = MyPlugin(DummyContext())
+        engine = plugin.engine
+        user_id = "test_max_hp"
+        plugin.save_manager.delete_save(user_id)
+        player = PlayerState(hp=40, max_hp=40, shield=0, gold=100, stage=1)
+        run = GameRun(user_id=user_id, node_type="event", player=player, enemies=[])
+        BurnVoidBooksOption()._run_effect(run, engine)
+        self.assertEqual(player.max_hp, 33)
+        player.max_hp = 40
+        player.hp = 40
+        SellFleshOption()._run_effect(run, engine)
+        self.assertEqual(player.max_hp, 35)
+        player.max_hp = 40
+        player.hp = 40
+        player.relics = []
+        DrinkTimeSandOption()._run_effect(run, engine)
+        self.assertEqual(player.max_hp, 30)
+        self.assertEqual(player.hp, 30)
+        self.assertIn("time_sand_blessing", player.relics)
+        player.max_hp = 40
+        player.hp = 40
+        RepairEngineOption()._run_effect(run, engine)
+        self.assertEqual(player.max_hp, 35)
+        player.max_hp = 40
+        player.hp = 40
+        while True:
+            player.max_hp = 40
+            player.hp = 40
+            res = FishPoolOption()._run_effect(run, engine)
+            if "最大生命上限减少了" in res:
+                break
+        self.assertEqual(player.max_hp, 38)
+        player.max_hp = 40
+        player.hp = 40
+        ContractLegendOption()._run_effect(run, engine)
+        self.assertEqual(player.max_hp, 37)
+        player.max_hp = 40
+        player.hp = 40
+        ContractPortalOption()._run_effect(run, engine)
+        self.assertEqual(player.max_hp, 38)
+        player.relics = ["time_sand_blessing"]
+        player.bonus_actions = 1
+        from game.models.events import TurnStartEvent
+        evt = TurnStartEvent(run, is_player=True)
+        engine.battle_engine.event_bus.dispatch(evt)
+        self.assertEqual(player.bonus_actions, 3)
+        plugin.save_manager.delete_save(user_id)

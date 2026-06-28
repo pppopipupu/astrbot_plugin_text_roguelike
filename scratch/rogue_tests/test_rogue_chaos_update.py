@@ -133,8 +133,8 @@ class TestRogueChaosUpdate(unittest.TestCase):
         eng.stage_entered = False
         opt2 = BurnVoidBooksOption()
         res2 = opt2.execute(run, eng)
-        self.assertEqual(player.max_hp, 15)
-        self.assertEqual(player.hp, 15)
+        self.assertEqual(player.max_hp, 23)
+        self.assertEqual(player.hp, 23)
         self.assertIn("doomsday_core", player.relics)
         self.assertTrue(eng.stage_entered)
 
@@ -172,8 +172,8 @@ class TestRogueChaosUpdate(unittest.TestCase):
         eng.stage_entered = False
         opt7 = SellFleshOption()
         res7 = opt7.execute(run, eng)
-        self.assertEqual(player.max_hp, 20)
-        self.assertEqual(player.hp, 20)
+        self.assertEqual(player.max_hp, 25)
+        self.assertEqual(player.hp, 25)
         self.assertEqual(player.gold, 90)
         self.assertTrue(eng.stage_entered)
 
@@ -182,8 +182,8 @@ class TestRogueChaosUpdate(unittest.TestCase):
         eng.stage_entered = False
         opt8 = DrinkTimeSandOption()
         res8 = opt8.execute(run, eng)
-        self.assertEqual(player.max_hp, 15)
-        self.assertEqual(player.hp, 15)
+        self.assertEqual(player.max_hp, 23)
+        self.assertEqual(player.hp, 23)
         self.assertIn("time_sand_blessing", player.relics)
         self.assertTrue(eng.stage_entered)
 
@@ -221,8 +221,8 @@ class TestRogueChaosUpdate(unittest.TestCase):
         opt12 = RepairEngineOption()
         res12 = opt12.execute(run, eng)
         self.assertEqual(player.gold, 70)
-        self.assertEqual(player.max_hp, 20)
-        self.assertEqual(player.hp, 20)
+        self.assertEqual(player.max_hp, 25)
+        self.assertEqual(player.hp, 25)
         self.assertTrue(eng.stage_entered)
 
         player.hp = 30

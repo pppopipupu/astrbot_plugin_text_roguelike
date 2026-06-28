@@ -4,7 +4,7 @@ from .base import EventOption
 class ContractPortalOption(EventOption, action="contract_portal", text="献祭最大生命换取遗物"):
     def _run_effect(self, run, engine) -> str:
         p = run.player
-        cost_hp = math.ceil(p.max_hp * 0.1)
+        cost_hp = math.ceil(p.max_hp * 0.05)
         p.max_hp = max(5, p.max_hp - cost_hp)
         p.hp = min(p.hp, p.max_hp)
         if "portal_fragment" not in p.relics:

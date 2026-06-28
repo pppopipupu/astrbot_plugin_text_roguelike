@@ -326,7 +326,7 @@ RELIC_CONFIG = {
     "time_sand_blessing": {
         "name": "时间沙之赐福",
         "rarity": "epic",
-        "desc": "每个回合开始时额外获得 1 个附赠动作（BA）。",
+        "desc": "每个回合开始时额外获得 2 个附赠动作（BA）。",
         "price": 0
     },
     "gladiator_belt": {

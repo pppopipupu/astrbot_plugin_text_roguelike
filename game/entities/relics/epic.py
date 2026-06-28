@@ -290,6 +290,12 @@ class AnthemRelic1(RelicImpl):
         if "anthem_relic_1" in p.relics:
             p.relics.remove("anthem_relic_1")
 
+class TimeSandBlessingRelic(RelicImpl):
+    def on_turn_start(self, event, run, engine):
+        if event.is_player:
+            run.player.bonus_actions += 2
+            engine._log_event(run, "⏳ [时间沙之赐福] 触发！回合开始时，你额外获得了 2 个附赠动作（BA）！")
+
 class StarspawnCoreRelic(RelicImpl):
     def on_turn_end(self, event, run, engine):
         if event.is_player and run.player.bonus_actions >= 1:
