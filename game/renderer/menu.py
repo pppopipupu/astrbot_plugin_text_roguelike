@@ -128,53 +128,7 @@ def get_rogue_relic_library_items() -> list:
         items.append(f"🎒 {rname} ({rname_rarity}) - {desc} | 售价: {price} 金币")
     return items
 
-def get_duel_card_library_items() -> list:
-    from ..entities.cards.duel import ALL_DUEL_CARDS
-    neutrals = []
-    wizard_cards = []
-    warrior_cards = []
-    rarity_map = {
-        "common": "普通",
-        "rare": "稀有",
-        "epic": "珍奇",
-        "legendary": "传奇",
-        "mythic": "神话",
-        "artifact": "神器",
-        "curse": "诅咒"
-    }
-    for cid, card in ALL_DUEL_CARDS.items():
-        cost_a = getattr(card, "cost_a", 0)
-        cost_ba = getattr(card, "cost_ba", 0)
-        cost_strs = []
-        if cost_a > 0 or cost_ba > 0:
-            if cost_a > 0:
-                cost_strs.append(f"{cost_a}A")
-            if cost_ba > 0:
-                cost_strs.append(f"{cost_ba}BA")
-            cost_str = " ".join(cost_strs)
-        else:
-            cost_str = "0 消耗"
-            
-        type_ch = ""
-        if card.type == "spell":
-            type_ch = "法术"
-        elif card.type == "amulet":
-            type_ch = f"护符(吟唱 {card.countdown})"
-        elif card.type == "ability":
-            type_ch = "能力"
-        elif card.type == "minion":
-            type_ch = "随从"
-        rname = rarity_map.get(getattr(card, "rarity", "common"), "普通")
-        info = f"• {card.name} [{type_ch}] <{rname}> 消耗: {cost_str} - {card.desc}"
-        
-        if card.color == "neutral":
-            neutrals.append(f"[中立] {info}")
-        elif card.color == "warrior":
-            warrior_cards.append(f"[战士] {info}")
-        else:
-            wizard_cards.append(f"[法师] {info}")
-            
-    return neutrals + wizard_cards + warrior_cards
+
 
 def render_reader_page(stats: UserStats) -> str:
     total_items = len(stats.reader_items)
