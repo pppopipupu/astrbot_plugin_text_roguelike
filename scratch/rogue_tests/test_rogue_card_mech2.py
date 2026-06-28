@@ -676,6 +676,7 @@ class TestRogueCardMech2(unittest.TestCase):
         self.assertEqual(player.action_a, 4)
         
         enemy.hp = 120
+        enemy.buffs = []
         card_kill = CardState("neutral_power_word_kill", upgraded=True)
         kill_obj = ALL_CARDS.get(card_kill)
         res = kill_obj.execute(run, "e1", engine)

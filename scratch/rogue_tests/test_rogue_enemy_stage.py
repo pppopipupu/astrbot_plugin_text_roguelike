@@ -788,3 +788,23 @@ class TestRogueEnemyStage(unittest.TestCase):
         self.assertEqual(len(player.hand), 7)
         self.assertEqual(player.bonus_actions, 2)
 
+    def test_time_ravage_vulnerable_mechanism(self):
+        class DummySaveManager:
+            def save_save(self, user_id, run): pass
+            def load_stats(self, user_id): return None
+        engine = BattleEngine(DummySaveManager())
+        player = PlayerState(hp=80, max_hp=80, shield=0, gold=100, stage=1)
+        enemy = EnemyState("测试地精", 50, 50, 0)
+        run = GameRun(user_id="test_time_ravage", node_type="battle", player=player, enemies=[enemy])
+        engine._add_buff_to(enemy, "vulnerable", "易伤", "受到的所有类型伤害翻倍", 2)
+        self.assertTrue(any(b.id == "vulnerable" for b in enemy.buffs))
+        engine.combat_resolver.damage_target(run, "e1", 10, source="p0", damage_type="fire")
+        self.assertEqual(enemy.hp, 30)
+        from game.models.events import TurnEndEvent
+        evt_end = TurnEndEvent(run, is_player=False)
+        engine.event_bus.dispatch(evt_end)
+        buff = next(b for b in enemy.buffs if b.id == "vulnerable")
+        self.assertEqual(buff.stacks, 1)
+        engine.event_bus.dispatch(evt_end)
+        self.assertFalse(any(b.id == "vulnerable" for b in enemy.buffs))
+

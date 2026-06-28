@@ -62,7 +62,9 @@ class BeatOfDeathBuff(BuffImpl):
         engine._log_event(event.run, "💔 [死亡律动]")
         engine._damage_target(event.run, "p0", dmg, source="beat_of_death", damage_type="force")
 
+@register_buff("minor_vulnerable")
 class GenericMinorVulnerableBuff(BuffImpl):
+    auto_register = False
     def on_damage_calculate_defend(self, event, buff_state, entity):
         event.modified_damage = int(event.modified_damage * 1.5)
 
@@ -72,7 +74,9 @@ class GenericMinorVulnerableBuff(BuffImpl):
             if buff_state.stacks <= 0:
                 entity.buffs.remove(buff_state)
 
+@register_buff("vulnerable")
 class GenericVulnerableBuff(BuffImpl):
+    auto_register = False
     def on_damage_calculate_defend(self, event, buff_state, entity):
         event.modified_damage = int(event.modified_damage * 2)
 
