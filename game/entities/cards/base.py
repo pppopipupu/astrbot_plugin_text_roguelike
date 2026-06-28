@@ -320,6 +320,16 @@ class CardRegistryDict(dict):
         if card_state.no_copy:
             card.copy = 0
 
+        if getattr(card_state, "power_penalty", 0) > 0:
+            penalty = card_state.power_penalty
+            if getattr(card, "base_dmg", 0) > 0:
+                card.base_dmg = max(0, card.base_dmg - penalty)
+            if getattr(card, "heal_amount", 0) > 0:
+                card.heal_amount = max(0, card.heal_amount - penalty)
+            if getattr(card, "shield_amount", 0) > 0:
+                card.shield_amount = max(0, card.shield_amount - penalty)
+            card.desc = card.desc + f" （魔力受损：效果降低 {penalty}）"
+
         return card
 
     def __contains__(self, key):

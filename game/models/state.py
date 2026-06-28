@@ -86,9 +86,10 @@ class CardState:
     replay: int = 0
     fragile: int = 0
     no_copy: bool = False
+    power_penalty: int = 0
 
     def __hash__(self):
-        return hash((self.id, self.upgraded, tuple(self.gems), self.return_left, self.replay, self.fragile, self.no_copy))
+        return hash((self.id, self.upgraded, tuple(self.gems), self.return_left, self.replay, self.fragile, self.no_copy, self.power_penalty))
 
     def __eq__(self, other):
         if isinstance(other, str):
@@ -100,7 +101,8 @@ class CardState:
                         self.return_left == temp_state.return_left and 
                         self.replay == temp_state.replay and 
                         self.fragile == temp_state.fragile and 
-                        self.no_copy == temp_state.no_copy)
+                        self.no_copy == temp_state.no_copy and
+                        self.power_penalty == getattr(temp_state, "power_penalty", 0))
             except:
                 return False
         if not isinstance(other, CardState):
@@ -111,7 +113,8 @@ class CardState:
                 self.return_left == other.return_left and 
                 self.replay == other.replay and 
                 self.fragile == other.fragile and 
-                self.no_copy == other.no_copy)
+                self.no_copy == other.no_copy and
+                self.power_penalty == other.power_penalty)
 
     def __lt__(self, other):
         if isinstance(other, str):

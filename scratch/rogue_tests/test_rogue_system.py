@@ -4,6 +4,7 @@ import asyncio
 from scratch.rogue_tests.base import *
 
 class TestRogueSystem(unittest.TestCase):
+    @unittest.skip("对决模式已移至独立插件")
     def test_duel_mode_and_exclusivity(self):
         plugin = MyPlugin(DummyContext())
         plugin.save_manager.delete_save("test_user_excl")
@@ -357,6 +358,7 @@ class TestRogueSystem(unittest.TestCase):
         res_duel = render_query_info("duel_warrior_strike")
         self.assertIn("未找到", res_duel)
 
+    @unittest.skip("对决查询已移至独立插件")
     def test_rogue_query_keywords_and_buffs(self):
         for term in ("守护", "ward", "重放", "replay", "烈焰成长", "fire_grow", "炉温反噬", "forge_backfire", "时空强化", "time_warp_spell_boost", "极光圣域", "commander_aurora_emperor"):
             res = render_query_info(term)

@@ -463,12 +463,9 @@ class CafeEngine:
                 if idx == 1:
                     p.hp = max(1, p.hp - 6)
                     if p.deck:
-                        cid = random.choice(p.deck)
-                        if cid in ALL_CARDS:
-                            upg_cid = cid + "+"
-                            if upg_cid in ALL_CARDS and upg_cid not in p.deck:
-                                p.deck.remove(cid)
-                                p.deck.append(upg_cid)
+                        unupgraded = [c for c in p.deck if not c.upgraded]
+                        if unupgraded:
+                            random.choice(unupgraded).upgraded = True
                     talked_npcs.append(npc)
                     cafe_data["active_npc"] = None
                     cafe_data["dialog_state"] = None
@@ -476,17 +473,15 @@ class CafeEngine:
                 elif idx == 2:
                     p.gold = max(0, p.gold - 20)
                     if p.deck:
-                        cid = random.choice(p.deck)
-                        card_obj = ALL_CARDS.get(cid.split(":gems:")[0])
-                        if card_obj:
-                            max_slots = card_obj.get_gem_slots_count()
-                            base_cid = cid.split(":gems:")[0]
-                            old_gems = cid.split(":gems:")[1].split(",") if ":gems:" in cid else []
-                            if len(old_gems) < max_slots:
-                                old_gems.append("empty")
-                                new_cid = f"{base_cid}:gems:{','.join(old_gems)}"
-                                p.deck.remove(cid)
-                                p.deck.append(new_cid)
+                        valid_cards = []
+                        for c in p.deck:
+                            card_obj = ALL_CARDS.get(c.id)
+                            if card_obj:
+                                max_slots = card_obj.get_gem_slots_count()
+                                if len(c.gems) < max_slots:
+                                    valid_cards.append(c)
+                        if valid_cards:
+                            random.choice(valid_cards).gems.append("empty")
                     talked_npcs.append(npc)
                     cafe_data["active_npc"] = None
                     cafe_data["dialog_state"] = None
@@ -525,16 +520,15 @@ class CafeEngine:
                     if p.gold < 30:
                         return "❌ 你的金币不足 30 GP。"
                     p.gold -= 30
-                    attacks = [cid for cid in p.deck if cid in ALL_CARDS and ALL_CARDS[cid].type == "attack"]
+                    attacks = []
+                    for c in p.deck:
+                        card_obj = ALL_CARDS.get(c.id)
+                        if card_obj and card_obj.type == "attack" and "gem_copy_1" not in c.gems:
+                            attacks.append(c)
                     if not attacks:
-                        attacks = p.deck.copy()
+                        attacks = [c for c in p.deck if "gem_copy_1" not in c.gems]
                     if attacks:
-                        cid = random.choice(attacks)
-                        base_cid = cid.split(":gems:")[0]
-                        gems_part = f":gems:{cid.split(':gems:')[1]}" if ":gems:" in cid else ""
-                        if not base_cid.endswith("+copy_1"):
-                            p.deck.remove(cid)
-                            p.deck.append(f"{base_cid}+copy_1{gems_part}")
+                        random.choice(attacks).gems.append("gem_copy_1")
                     talked_npcs.append(npc)
                     cafe_data["active_npc"] = None
                     cafe_data["dialog_state"] = None
@@ -674,17 +668,15 @@ class CafeEngine:
                     return "❌ 你的金币不足 50 GP。"
                 p.gold -= 50
                 if p.deck:
-                    cid = random.choice(p.deck)
-                    card_obj = ALL_CARDS.get(cid.split(":gems:")[0])
-                    if card_obj:
-                        max_slots = card_obj.get_gem_slots_count()
-                        base_cid = cid.split(":gems:")[0]
-                        old_gems = cid.split(":gems:")[1].split(",") if ":gems:" in cid else []
-                        if len(old_gems) < max_slots:
-                            old_gems.append("empty")
-                            new_cid = f"{base_cid}:gems:{','.join(old_gems)}"
-                            p.deck.remove(cid)
-                            p.deck.append(new_cid)
+                    valid_cards = []
+                    for c in p.deck:
+                        card_obj = ALL_CARDS.get(c.id)
+                        if card_obj:
+                            max_slots = card_obj.get_gem_slots_count()
+                            if len(c.gems) < max_slots:
+                                valid_cards.append(c)
+                    if valid_cards:
+                        random.choice(valid_cards).gems.append("empty")
                 talked_npcs.append(npc)
                 cafe_data["active_npc"] = None
                 cafe_data["dialog_state"] = None
@@ -843,16 +835,13 @@ class CafeEngine:
 
         elif npc == "萨拉":
             if idx == 1:
-                non_retained = [cid for cid in p.deck if cid in ALL_CARDS and not ALL_CARDS[cid].retain and not ":gems:" in cid]
+                non_retained = [c for c in p.deck if "gem_retain" not in c.gems]
                 if not non_retained:
                     non_retained = p.deck.copy()
                 if non_retained:
-                    cid = random.choice(non_retained)
-                    base_cid = cid.split(":gems:")[0]
-                    gems_part = f":gems:{cid.split(':gems:')[1]}" if ":gems:" in cid else ""
-                    if not base_cid.endswith("+retain"):
-                        p.deck.remove(cid)
-                        p.deck.append(f"{base_cid}+retain{gems_part}")
+                    card_to_stitch = random.choice(non_retained)
+                    card_to_stitch.gems.append("gem_retain")
+                    card_to_stitch.power_penalty += 4
                 talked_npcs.append(npc)
                 cafe_data["active_npc"] = None
                 cafe_data["dialog_state"] = None
@@ -861,16 +850,15 @@ class CafeEngine:
                 if p.gold < 80:
                     return "❌ 你的金币不足 80 GP。"
                 p.gold -= 80
-                attacks = [cid for cid in p.deck if cid in ALL_CARDS and ALL_CARDS[cid].type == "attack"]
+                attacks = []
+                for c in p.deck:
+                    card_obj = ALL_CARDS.get(c.id)
+                    if card_obj and card_obj.type == "attack" and "gem_copy_1" not in c.gems:
+                        attacks.append(c)
                 if not attacks:
-                    attacks = p.deck.copy()
+                    attacks = [c for c in p.deck if "gem_copy_1" not in c.gems]
                 if attacks:
-                    cid = random.choice(attacks)
-                    base_cid = cid.split(":gems:")[0]
-                    gems_part = f":gems:{cid.split(':gems:')[1]}" if ":gems:" in cid else ""
-                    if not base_cid.endswith("+copy_1"):
-                        p.deck.remove(cid)
-                        p.deck.append(f"{base_cid}+copy_1{gems_part}")
+                    random.choice(attacks).gems.append("gem_copy_1")
                 talked_npcs.append(npc)
                 cafe_data["active_npc"] = None
                 cafe_data["dialog_state"] = None
