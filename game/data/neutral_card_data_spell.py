@@ -372,9 +372,9 @@ NEUTRAL_CARD_SPELLS = {
         "type": "attack",
         "cost_a": 1,
         "cost_ba": 0,
-        "desc": "造成 30 点力场伤害。消耗。",
+        "desc": "造成 36 点力场伤害。力量对该牌伤害的加成效果乘以 4。消耗。",
         "rarity": "rare",
-        "base_dmg": 30,
+        "base_dmg": 36,
         "damage_type": "force",
         "exhaust": True,
         "feedback": "引导漫天星辰砸落，对【{target}】使用【星界坠击】！"

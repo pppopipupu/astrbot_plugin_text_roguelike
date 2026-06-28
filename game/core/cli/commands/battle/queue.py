@@ -13,7 +13,8 @@ class QueueCommand(CommandHandler, names=["队列", "q", "queue", "qi", "queue_i
         if run:
             results = []
             router._execute_queue(user_id, run, full_arg, results, interrupt_on_fail=is_qi)
-            if run.player.hp <= 0:
+            run = router.save_manager.load_save(user_id)
+            if not run or run.player.hp <= 0:
                 yield "\n".join(results)
             else:
                 yield "\n".join(results) + "\n" + GameRenderer.render_game(run)

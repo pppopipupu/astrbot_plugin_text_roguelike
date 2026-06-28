@@ -180,7 +180,7 @@ class CardPlayer:
             if target is None:
                 if is_emperor_eye:
                     pass
-                elif card.type == "spell":
+                elif card.type in ("spell", "attack"):
                     p0_spells = {"first_aid", "get_ready", "adrenaline", "mana_potion", "mass_healing_word", "refresh_spirit", "shield", "misty_step", "arcane_intellect", "calculated_gamble", "time_warp", "time_stop", "archmage_wish"}
                     if card.id in p0_spells:
                         target = "p0"

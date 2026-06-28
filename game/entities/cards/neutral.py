@@ -683,19 +683,13 @@ class NeutralEmperorEyeCard(Card):
 class AstralStrikeCard(Card):
     def execute(self, run, target, engine) -> str:
         p = run.player
-        dmg = 36 if self.upgraded else 30
-        if not target or not target.startswith("e"):
+        dmg = 48 if self.upgraded else 36
+        if not target:
+            target = "e1"
+        if not target.startswith("e"):
             return "❌ 请指定敌方目标（例如：p 卡牌序号 e1）。"
         res = engine.combat_resolver.damage_target(run, target, dmg, source="p0", damage_type="force")
-        gem_msg = ""
-        if self.upgraded:
-            from ...data.gem_data import GEM_CONFIG
-            import random
-            gem_id = random.choice(list(GEM_CONFIG.keys()))
-            gem_name = GEM_CONFIG[gem_id]["name"]
-            run.node_data.setdefault("pending_gems", []).append(gem_id)
-            gem_msg = f"\n💎 【星界坠击+】额外共鸣！你额外收获了一颗被虚空能量包裹的宝石【{gem_name}】，它将在战斗结束后供你进行镶嵌！"
-        return f"你引导星辰砸落！{res}{gem_msg}"
+        return f"你引导星辰砸落！{res}"
 
 @register_card("neutral_hero_anthem")
 class HeroAnthemCard(Card):

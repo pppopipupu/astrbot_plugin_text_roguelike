@@ -787,4 +787,53 @@ class TestRogueCardMech2(unittest.TestCase):
         echo_up_obj = ALL_CARDS.get(card_echo_up)
         self.assertTrue(echo_up_obj.ethereal)
 
+    def test_astral_strike_logic(self):
+        from game.models.state import CardState
+        class DummySaveManager:
+            def save_save(self, user_id, run):
+                pass
+            def delete_save(self, user_id):
+                pass
+            def load_stats(self, user_id):
+                class DummyStats:
+                    selected_class = "战士"
+                return DummyStats()
+        sm = DummySaveManager()
+        engine = BattleEngine(sm)
+        player = PlayerState(
+            hp=50,
+            max_hp=50,
+            shield=0,
+            gold=100,
+            stage=1,
+            deck=["neutral_astral_strike"],
+            hand=["neutral_astral_strike"],
+            actions=10,
+            bonus_actions=10
+        )
+        run = GameRun(
+            user_id="test_astral_strike",
+            node_type="battle",
+            player=player,
+            enemies=[EnemyState("测试敌人", 100, 100, 0)]
+        )
+        engine.play_card(run, 1)
+        self.assertEqual(run.enemies[0].hp, 64)
+        run.enemies = [EnemyState("测试敌人", 100, 100, 0)]
+        player.hand = ["neutral_astral_strike"]
+        engine._add_buff_to(player, "strength", "力量", "", 2)
+        engine.play_card(run, 1)
+        self.assertEqual(run.enemies[0].hp, 56)
+        player.buffs = []
+        run.enemies = [EnemyState("测试敌人", 100, 100, 0)]
+        player.hand = [CardState("neutral_astral_strike", upgraded=True)]
+        engine.play_card(run, 1)
+        self.assertEqual(run.enemies[0].hp, 52)
+        self.assertEqual(len(run.node_data.get("pending_gems", [])), 0)
+        run.enemies = [EnemyState("测试敌人", 100, 100, 0)]
+        player.hand = [CardState("neutral_astral_strike", upgraded=True)]
+        engine._add_buff_to(player, "strength", "力量", "", 2)
+        engine.play_card(run, 1)
+        self.assertEqual(run.enemies[0].hp, 42)
+
 

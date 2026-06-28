@@ -9,5 +9,8 @@ class SpecialCommand(CommandHandler, names=["特殊", "sa"], allowed_states=["ba
             yield "❌ 你当前没有正在进行的游戏。"
             return
         res, term, success = router._execute_sub_action(user_id, run, parts)
-        yield res + "\n" + GameRenderer.render_game(run)
+        if term or (run and run.node_data.get("in_queue")):
+            yield res
+        else:
+            yield res + "\n" + GameRenderer.render_game(run)
         return success

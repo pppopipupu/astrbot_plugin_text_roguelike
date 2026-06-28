@@ -861,3 +861,36 @@ class TestRogueEnemyStage(unittest.TestCase):
         res2 = render_battle(run)
         self.assertIn("造成 5 点伤害", res2)
 
+    def test_queue_rendering_flow(self):
+        class DummySaveManager:
+            def __init__(self):
+                self.saves = {}
+                self.stats = {}
+            def save_save(self, user_id, run):
+                self.saves[user_id] = run
+            def delete_save(self, user_id):
+                self.saves.pop(user_id, None)
+            def load_save(self, user_id):
+                return self.saves.get(user_id)
+            def load_stats(self, user_id):
+                class DummyStats:
+                    selected_class = "战士"
+                return DummyStats()
+        dummy_save = DummySaveManager()
+        engine = BattleEngine(dummy_save)
+        player = PlayerState(hp=80, max_hp=80, shield=0, gold=100, stage=1)
+        player.deck = ["strike", "strike"]
+        from game.models.state import ensure_card_state
+        player.hand = [ensure_card_state("adrenaline"), ensure_card_state("get_ready")]
+        player.actions = 2
+        player.bonus_actions = 2
+        enemy = EnemyState("邪教徒咔咔 A", 50, 50, 0)
+        run = GameRun(user_id="test_render_q", node_type="battle", player=player, enemies=[enemy])
+        dummy_save.save_save("test_render_q", run)
+        from game.core.cli_router import CLIRouter
+        router = CLIRouter(dummy_save, engine)
+        res_list = list(router.handle_command("test_render_q", ["q", "[p 1, p 2]"]))
+        res_combined = "\n".join(res_list)
+        self.assertEqual(res_combined.count("⚔️ 【第 1 关"), 1)
+
+

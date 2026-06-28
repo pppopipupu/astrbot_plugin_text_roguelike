@@ -34,7 +34,7 @@ class UseCommand(CommandHandler, names=["使用", "p"], allowed_states=["battle"
             return success
         else:
             res, term, success = router._execute_sub_action(user_id, run, parts)
-            if term:
+            if term or (run and run.node_data.get("in_queue")):
                 yield res
             else:
                 yield res + "\n" + GameRenderer.render_game(run)
