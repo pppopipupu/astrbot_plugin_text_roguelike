@@ -599,8 +599,10 @@ class TestRogueSystem(unittest.TestCase):
             save_manager.save_save("test_user_discover", run)
             
             await run_command(plugin, "使用 1", sender_id="test_user_discover")
-            res_cancel = await run_command(plugin, "exit", sender_id="test_user_discover")
-            self.assertIn("取消发掘操作", res_cancel)
+            event_cancel = DummyEvent("exit", sender_id="test_user_discover")
+            await plugin.shortcut_rogue(event_cancel)
+            self.assertTrue(event_cancel.stopped)
+            self.assertTrue(any("取消发掘操作" in r for r in event_cancel.results))
             run = save_manager.load_save("test_user_discover")
             self.assertEqual(len(run.node_data.get("state_stack", [])), 0)
             

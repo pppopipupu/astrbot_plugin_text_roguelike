@@ -146,6 +146,9 @@ class HeadlessGameServer:
 
         first_word = parts[0].lower()
         is_game_cmd = False
+        cancel_cmds = {"取消", "cancel", "abandon", "放弃", "exit", "quit", "退出"}
+        if run and run.node_data.get("state_stack") and first_word in cancel_cmds:
+            is_game_cmd = True
         curr_state = self._get_current_state(user_id, run, stats)
 
         if curr_state == "dialog":
