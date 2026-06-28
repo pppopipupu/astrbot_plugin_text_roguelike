@@ -142,6 +142,20 @@ class TestRogueBasic(unittest.TestCase):
             await plugin.shortcut_rogue(event_alias_overview)
             self.assertTrue(event_alias_overview.stopped)
             self.assertIn("魔法肉鸽卡牌总览", "\n".join(event_alias_overview.results))
+
+            event_qi = DummyEvent("queue_interrupt [未知指令_测试, 帮助]", sender_id="test_user_rogue")
+            await plugin.shortcut_rogue(event_qi)
+            self.assertTrue(event_qi.stopped)
+            qi_res = "\n".join(event_qi.results)
+            self.assertIn("未知操作", qi_res)
+            self.assertNotIn("游戏指令帮助", qi_res)
+
+            event_qi2 = DummyEvent("中断队列 [未知指令_测试, 帮助]", sender_id="test_user_rogue")
+            await plugin.shortcut_rogue(event_qi2)
+            self.assertTrue(event_qi2.stopped)
+            qi_res2 = "\n".join(event_qi2.results)
+            self.assertIn("未知操作", qi_res2)
+            self.assertNotIn("游戏指令帮助", qi_res2)
             
             event_alias_abandon = DummyEvent("abandon confirm", sender_id="test_user_rogue")
             await plugin.shortcut_rogue(event_alias_abandon)

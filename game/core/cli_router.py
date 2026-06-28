@@ -18,11 +18,11 @@ class CLIRouter:
         self._command_handlers = CommandHandler.registry
         self.town_engine = TownEngine(save_manager, engine)
 
-    def _execute_sub_action(self, user_id: str, run, parts: list[str]) -> Tuple[str, bool]:
+    def _execute_sub_action(self, user_id: str, run, parts: list[str]) -> Tuple[str, bool, bool]:
         return self.action_router.execute_action(self, user_id, run, parts)
 
-    def _execute_queue(self, user_id: str, run, queue_content: str, results: list[str]) -> bool:
-        return self.queue_processor.execute_queue(self, user_id, run, queue_content, results)
+    def _execute_queue(self, user_id: str, run, queue_content: str, results: list[str], interrupt_on_fail: bool = False) -> bool:
+        return self.queue_processor.execute_queue(self, user_id, run, queue_content, results, interrupt_on_fail)
 
     def _handle_town_combat_settle(self, user_id: str, run: GameRun, original_res: str) -> str:
         latest_run = self.save_manager.load_save(user_id)
@@ -100,7 +100,9 @@ class CLIRouter:
                 "状态", "status",
                 "统计", "stat", "stats",
                 "地图", "map",
-                "队列", "queue", "q"
+                "队列", "queue", "q",
+                "mode", "模式",
+                "qi", "queue_interrupt", "中断队列"
             )
             if first_cmd in exempt_cmds:
                 handler = self._command_handlers.get(first_cmd)
@@ -205,7 +207,7 @@ class CLIRouter:
                 return
 
         if run and run.node_data.get("state_stack"):
-            res, term = self._execute_sub_action(user_id, run, parts)
+            res, term, success = self._execute_sub_action(user_id, run, parts)
             if is_town_combat:
                 yield self._handle_town_combat_settle(user_id, run, res)
             else:

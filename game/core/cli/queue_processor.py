@@ -5,7 +5,7 @@ class QueueProcessor:
         self.save_manager = save_manager
         self.engine = engine
 
-    def execute_queue(self, router, user_id: str, run, queue_content: str, results: list[str]) -> bool:
+    def execute_queue(self, router, user_id: str, run, queue_content: str, results: list[str], interrupt_on_fail: bool = False) -> bool:
         content = queue_content.strip()
         if content.startswith("[") and content.endswith("]"):
             content = content[1:-1].strip()
@@ -17,9 +17,9 @@ class QueueProcessor:
             if not parts_sub:
                 continue
             first_sub = parts_sub[0].lower()
-            if first_sub in ("队列", "q", "queue"):
+            if first_sub in ("队列", "q", "queue", "qi", "queue_interrupt", "中断队列"):
                 sub_content = item[len(parts_sub[0]):].strip()
-                term = self.execute_queue(router, user_id, run, sub_content, results)
+                term = self.execute_queue(router, user_id, run, sub_content, results, interrupt_on_fail)
                 if term:
                     return True
             else:
@@ -27,14 +27,24 @@ class QueueProcessor:
                 if cmd_handler:
                     curr_state = run.node_type if run else "menu"
                     if curr_state in getattr(cmd_handler, "allowed_states", []):
-                        res_list = list(cmd_handler.execute(router, user_id, parts_sub))
+                        gen = cmd_handler.execute(router, user_id, parts_sub)
+                        res_list = []
+                        success = True
+                        try:
+                            while True:
+                                res_list.append(next(gen))
+                        except StopIteration as e:
+                            success = e.value if e.value is not None else True
                         res = "\n".join(res_list)
                     else:
                         res = f"❌ 指令【{first_sub}】在当前状态下不可用。"
+                        success = False
                     term = False
                 else:
-                    res, term = router.action_router.execute_action(router, user_id, run, parts_sub)
+                    res, term, success = router.action_router.execute_action(router, user_id, run, parts_sub)
                 results.append(res)
+                if interrupt_on_fail and not success:
+                    return True
                 if term:
                     return True
         return False

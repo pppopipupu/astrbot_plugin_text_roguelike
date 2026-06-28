@@ -9,5 +9,5 @@ class ActionHandler:
             for action in actions:
                 cls.registry[action] = cls()
 
-    def execute(self, router, user_id: str, run, parts: list[str]) -> Tuple[str, bool]:
+    def execute(self, router, user_id: str, run, parts: list[str]) -> Tuple[str, bool, bool]:
         raise NotImplementedError

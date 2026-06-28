@@ -352,7 +352,7 @@ class TestRogueExplore(unittest.TestCase):
             player=player,
             enemies=[]
         )
-        res, should_terminate = router._execute_sub_action("test_non_battle_user", run, ["使用", "1"])
+        res, should_terminate, success = router._execute_sub_action("test_non_battle_user", run, ["使用", "1"])
         self.assertEqual(res, "❌ 只有在战斗中才能使用卡牌。")
         self.assertFalse(should_terminate)
         self.assertEqual(run.node_type, "covenant")

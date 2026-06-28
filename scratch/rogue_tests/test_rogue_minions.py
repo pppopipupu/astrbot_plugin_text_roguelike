@@ -152,7 +152,7 @@ class TestRogueMinions(unittest.TestCase):
             player=player,
             enemies=[enemy_non_summon, enemy_summon]
         )
-        res, term = router._execute_sub_action("test_user", run, ["随从", "1", "攻击", "e1"])
+        res, term, success = router._execute_sub_action("test_user", run, ["随从", "1", "攻击", "e1"])
         self.assertEqual(enemy_non_summon.hp, 0)
         self.assertTrue(term)
         self.assertEqual(run.node_type, "reward")

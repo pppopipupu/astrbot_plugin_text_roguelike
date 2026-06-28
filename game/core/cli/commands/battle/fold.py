@@ -8,5 +8,6 @@ class FoldCommand(CommandHandler, names=["折叠", "f", "fold"], allowed_states=
         if not run:
             yield "❌ 你当前没有正在进行的游戏。"
             return
-        res, term = router._execute_sub_action(user_id, run, parts)
+        res, term, success = router._execute_sub_action(user_id, run, parts)
         yield res + "\n" + GameRenderer.render_game(run)
+        return success

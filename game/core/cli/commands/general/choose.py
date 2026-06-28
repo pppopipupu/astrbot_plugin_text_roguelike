@@ -13,5 +13,6 @@ class ChooseCommand(CommandHandler, names=["选择", "c"], allowed_states=["menu
                     return
             yield "❌ 你当前没有正在进行的游戏。"
             return
-        res, term = router._execute_sub_action(user_id, run, parts)
+        res, term, success = router._execute_sub_action(user_id, run, parts)
         yield res + "\n" + GameRenderer.render_game(run)
+        return success

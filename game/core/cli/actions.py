@@ -3,18 +3,19 @@ from .base import ActionHandler
 from ...entities import ALL_CARDS
 
 class UseAction(ActionHandler, actions=["使用", "p"]):
-    def execute(self, router, user_id: str, run, parts: list[str]) -> Tuple[str, bool]:
+    def execute(self, router, user_id: str, run, parts: list[str]) -> Tuple[str, bool, bool]:
         if len(parts) < 2:
-            return "❌ 请提供手牌序号，例如：使用 1", False
+            return "❌ 请提供手牌序号，例如：使用 1", False, False
         try:
             idx = int(parts[1])
         except ValueError:
-            return "❌ 序号必须是数字。", False
+            return "❌ 序号必须是数字。", False, False
         target = " ".join(parts[2:]) if len(parts) > 2 else None
         res = router.engine.play_card(run, idx, target)
+        success = "❌" not in res
         if run.player.hp <= 0:
             settle_msg = router.save_manager.settle_game_and_delete(user_id, run, is_victory=False)
-            return f"{res}\n💀 你被击败了！当前进度已清空。\n{settle_msg}", True
+            return f"{res}\n💀 你被击败了！当前进度已清空。\n{settle_msg}", True, success
         if router.engine.is_battle_won(run):
             router.engine._handle_battle_win(run)
             if run.node_type == "victory":
@@ -24,15 +25,15 @@ class UseAction(ActionHandler, actions=["使用", "p"]):
                     boss_name = run.enemies[0].name
                 if not boss_name:
                     boss_name = "最终BOSS"
-                return f"{res}\n🎉 恭喜你击败了{boss_name}，通关成功！\n{settle_msg}", True
+                return f"{res}\n🎉 恭喜你击败了{boss_name}，通关成功！\n{settle_msg}", True, success
             else:
-                return f"{res}\n🎉 战斗胜利！你击败了敌方所有单位。", True
-        return res, False
+                return f"{res}\n🎉 战斗胜利！你击败了敌方所有单位。", True, success
+        return res, False, success
 
 class MinionAction(ActionHandler, actions=["随从", "m"]):
-    def execute(self, router, user_id: str, run, parts: list[str]) -> Tuple[str, bool]:
+    def execute(self, router, user_id: str, run, parts: list[str]) -> Tuple[str, bool, bool]:
         if len(parts) < 3:
-            return "❌ 参数不足。用法：随从 <我方格子> 攻击/技能 <目标/序号>", False
+            return "❌ 参数不足。用法：随从 <我方格子> 攻击/技能 <目标/序号>", False, False
         my_grid_raw = parts[1]
         action = parts[2]
         if my_grid_raw in ("all", "所有", "*"):
@@ -44,13 +45,15 @@ class MinionAction(ActionHandler, actions=["随从", "m"]):
                 if g in run.player.minions:
                     grids.append(g)
         if not grids:
-            return f"❌ 找不到我方随从格子 [{my_grid_raw}]。", False
+            return f"❌ 找不到我方随从格子 [{my_grid_raw}]。", False, False
         results = []
         for g in grids:
             if run.player.hp <= 0:
-                return "\n".join(results) + "\n💀 你被击败了！当前进度已清空。", True
+                success = not any("❌" in r for r in results) if results else False
+                return "\n".join(results) + "\n💀 你被击败了！当前进度已清空。", True, success
             if router.engine.is_battle_won(run):
                 router.engine._handle_battle_win(run)
+                success = not any("❌" in r for r in results) if results else False
                 if run.node_type == "victory":
                     settle_msg = router.save_manager.settle_game_and_delete(user_id, run, is_victory=True)
                     boss_name = run.node_data.get("boss_name")
@@ -58,9 +61,9 @@ class MinionAction(ActionHandler, actions=["随从", "m"]):
                         boss_name = run.enemies[0].name
                     if not boss_name:
                         boss_name = "最终BOSS"
-                    return "\n".join(results) + f"\n🎉 恭喜你击败了{boss_name}，通关成功！\n{settle_msg}", True
+                    return "\n".join(results) + f"\n🎉 恭喜你击败了{boss_name}，通关成功！\n{settle_msg}", True, success
                 else:
-                    return "\n".join(results) + "\n🎉 战斗胜利！你击败了敌方所有单位。", True
+                    return "\n".join(results) + "\n🎉 战斗胜利！你击败了敌方所有单位。", True, success
             if action in ("攻击", "a", "attack"):
                 opp_grid = parts[3] if len(parts) > 3 else None
                 res = router.engine.minion_attack(run, g, opp_grid)
@@ -78,11 +81,12 @@ class MinionAction(ActionHandler, actions=["随从", "m"]):
                 res = router.engine.minion_skill(run, g, skill_idx, target)
                 results.append(res)
             else:
-                return "❌ 未知的随从指令。", False
+                return "❌ 未知的随从指令。", False, False
         res_combined = "\n".join(results)
+        success = not any("❌" in r for r in results) if results else False
         if run.player.hp <= 0:
             settle_msg = router.save_manager.settle_game_and_delete(user_id, run, is_victory=False)
-            return f"{res_combined}\n💀 你被击败了！当前进度已清空。\n{settle_msg}", True
+            return f"{res_combined}\n💀 你被击败了！当前进度已清空。\n{settle_msg}", True, success
         if router.engine.is_battle_won(run):
             router.engine._handle_battle_win(run)
             if run.node_type == "victory":
@@ -92,15 +96,15 @@ class MinionAction(ActionHandler, actions=["随从", "m"]):
                     boss_name = run.enemies[0].name
                 if not boss_name:
                     boss_name = "最终BOSS"
-                return f"{res_combined}\n🎉 恭喜你击败了{boss_name}，通关成功！\n{settle_msg}", True
+                return f"{res_combined}\n🎉 恭喜你击败了{boss_name}，通关成功！\n{settle_msg}", True, success
             else:
-                return f"{res_combined}\n🎉 战斗胜利！你击败了敌方所有单位。", True
-        return res_combined, False
+                return f"{res_combined}\n🎉 战斗胜利！你击败了敌方所有单位。", True, success
+        return res_combined, False, success
 
 class ChooseAction(ActionHandler, actions=["选择", "c"]):
-    def execute(self, router, user_id: str, run, parts: list[str]) -> Tuple[str, bool]:
+    def execute(self, router, user_id: str, run, parts: list[str]) -> Tuple[str, bool, bool]:
         if len(parts) < 2:
-            return "❌ 请提供选项序号，例如：选择 1", False
+            return "❌ 请提供选项序号，例如：选择 1", False, False
         try:
             idx = int(parts[1])
         except ValueError:
@@ -109,58 +113,61 @@ class ChooseAction(ActionHandler, actions=["选择", "c"]):
                 if run.node_data.get("pending_remove"):
                     run.node_data["pending_remove"] = False
                     router.save_manager.save_save(user_id, run)
-                    return "🧹 已取消卡牌移除操作。", False
+                    return "🧹 已取消卡牌移除操作。", False, True
                 if run.node_data.get("pending_upgrade"):
                     run.node_data["pending_upgrade"] = False
                     router.save_manager.save_save(user_id, run)
-                    return "🔨 已取消卡牌升级操作。", False
+                    return "🔨 已取消卡牌升级操作。", False, True
                 if run.node_type == "gem_insert":
                     res = router.engine.gem_insert_cancel(run)
-                    return res, False
+                    return res, False, "❌" not in res
             if arg in ("wizard", "warrior", "wiz", "war", "法师", "战士", "选择", "时序法师", "塑能法师", "秘钥学者"):
-                return "❌ 切换职业请在局外使用 /rogue class 命令。\n💡 选择命令 c 仅用于局内选项选择，无法用于选择职业。", False
-            return "❌ 序号必须是数字。", False
+                return "❌ 切换职业请在局外使用 /rogue class 命令。\n💡 选择命令 c 仅用于局内选项选择，无法用于选择职业。", False, False
+            return "❌ 序号必须是数字。", False, False
         if run.node_type == "gem_insert":
             res = router.engine.gem_insert_choose(run, idx)
-            return res, False
+            return res, False, "❌" not in res
         if run.node_data.get("pending_upgrade"):
             res = router.engine.upgrade_card_in_deck(run, idx)
+            success = "❌" not in res
             if run.player.hp <= 0:
                 settle_msg = router.save_manager.settle_game_and_delete(user_id, run, is_victory=False)
-                return f"{res}\n💀 你在荒野的意外中丧生了！当前进度已清空。\n{settle_msg}", True
-            return res, False
+                return f"{res}\n💀 你在荒野的意外中丧生了！当前进度已清空。\n{settle_msg}", True, success
+            return res, False, success
         elif run.node_type == "shop" and run.node_data.get("pending_remove"):
             res = router.engine.remove_card_from_deck(run, idx)
-            return res, False
+            return res, False, "❌" not in res
         else:
             res = router.engine.choose_option(run, idx)
+            success = "❌" not in res
             if run.player.hp <= 0:
                 settle_msg = router.save_manager.settle_game_and_delete(user_id, run, is_victory=False)
-                return f"{res}\n💀 你在荒野的意外中丧生了！当前进度已清空。\n{settle_msg}", True
+                return f"{res}\n💀 你在荒野的意外中丧生了！当前进度已清空。\n{settle_msg}", True, success
             if res == "REMOVE_FLOW":
                 run.node_data["pending_remove"] = True
                 router.save_manager.save_save(user_id, run)
-                return "🧹 净化服务已启动。请查看你的卡组，并再次输入 c <卡牌序号> 来从卡组中移除该牌。可以通过 /rogue deck 查看卡牌序号。", False
+                return "🧹 净化服务已启动。请查看你的卡组，并再次输入 c <卡牌序号> 来从卡组中移除该牌。可以通过 /rogue deck 查看卡牌序号。", False, True
             elif res == "UPGRADE_FLOW":
                 run.node_data["pending_upgrade"] = True
                 router.save_manager.save_save(user_id, run)
-                return "🔨 卡牌升级强化已启动。请查看你的卡组，并输入 c <卡牌序号> 来使你的卡牌永久升级为带【+】的强力变体。可以通过 /rogue deck 查看卡牌序号。", False
+                return "🔨 卡牌升级强化已启动。请查看你的卡组，并输入 c <卡牌序号> 来使你的卡牌永久升级为带【+】的强力变体。可以通过 /rogue deck 查看卡牌序号。", False, True
             else:
-                return res, False
+                return res, False, success
 
 class SpecialAction(ActionHandler, actions=["特殊", "sa"]):
-    def execute(self, router, user_id: str, run, parts: list[str]) -> Tuple[str, bool]:
+    def execute(self, router, user_id: str, run, parts: list[str]) -> Tuple[str, bool, bool]:
         if len(parts) < 2:
-            return "❌ 请提供手牌序号，例如：sa 1", False
+            return "❌ 请提供手牌序号，例如：sa 1", False, False
         try:
             idx = int(parts[1])
         except ValueError:
-            return "❌ 序号必须是数字。", False
+            return "❌ 序号必须是数字。", False, False
         target = parts[2] if len(parts) > 2 else None
         res = router.engine.play_special_action(run, idx, target)
+        success = "❌" not in res
         if run.player.hp <= 0:
             settle_msg = router.save_manager.settle_game_and_delete(user_id, run, is_victory=False)
-            return f"{res}\n💀 你被击败了！当前进度已清空。\n{settle_msg}", True
+            return f"{res}\n💀 你被击败了！当前进度已清空。\n{settle_msg}", True, success
         if router.engine.is_battle_won(run):
             router.engine._handle_battle_win(run)
             if run.node_type == "victory":
@@ -170,21 +177,22 @@ class SpecialAction(ActionHandler, actions=["特殊", "sa"]):
                     boss_name = run.enemies[0].name
                 if not boss_name:
                     boss_name = "最终BOSS"
-                return f"{res}\n🎉 恭喜你击败了{boss_name}，通关成功！\n{settle_msg}", True
+                return f"{res}\n🎉 恭喜你击败了{boss_name}，通关成功！\n{settle_msg}", True, success
             else:
-                return f"{res}\n🎉 战斗胜利！你击败了敌方所有单位。", True
-        return res, False
+                return f"{res}\n🎉 战斗胜利！你击败了敌方所有单位。", True, success
+        return res, False, success
 
 class EndTurnAction(ActionHandler, actions=["结束", "e"]):
-    def execute(self, router, user_id: str, run, parts: list[str]) -> Tuple[str, bool]:
+    def execute(self, router, user_id: str, run, parts: list[str]) -> Tuple[str, bool, bool]:
         res = router.engine.end_turn(run)
+        success = "❌" not in res
         if "冒险结束" in res or router.engine.is_battle_won(run):
-            return res, True
-        return res, False
+            return res, True, success
+        return res, False, success
 
 class FoldAction(ActionHandler, actions=["折叠", "f", "fold"]):
-    def execute(self, router, user_id: str, run, parts: list[str]) -> Tuple[str, bool]:
+    def execute(self, router, user_id: str, run, parts: list[str]) -> Tuple[str, bool, bool]:
         run.player.fold_guide = not run.player.fold_guide
         router.save_manager.save_save(user_id, run)
         state_str = "已折叠" if run.player.fold_guide else "已展开"
-        return f"🔮 操作指南状态：【{state_str}】。", False
+        return f"🔮 操作指南状态：【{state_str}】。", False, True

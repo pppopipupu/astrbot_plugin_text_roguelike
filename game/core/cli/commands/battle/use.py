@@ -29,11 +29,13 @@ class UseCommand(CommandHandler, names=["使用", "p"], allowed_states=["battle"
                     converted_items.append(f"使用 {item}")
             queue_str = "[" + ", ".join(converted_items) + "]"
             results = []
-            router._execute_queue(user_id, run, queue_str, results)
+            success = router._execute_queue(user_id, run, queue_str, results)
             yield "\n".join(results) + "\n" + GameRenderer.render_game(run)
+            return success
         else:
-            res, term = router._execute_sub_action(user_id, run, parts)
+            res, term, success = router._execute_sub_action(user_id, run, parts)
             if term:
                 yield res
             else:
                 yield res + "\n" + GameRenderer.render_game(run)
+            return success

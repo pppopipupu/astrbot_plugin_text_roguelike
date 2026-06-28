@@ -190,7 +190,7 @@ class TestRogueEnemyStage(unittest.TestCase):
             enemies=[enemy],
             node_data={"boss_name": "Icerainboww"}
         )
-        res, term = router._execute_sub_action("test_victory_user", run, ["使用", "1", "e1"])
+        res, term, success = router._execute_sub_action("test_victory_user", run, ["使用", "1", "e1"])
         self.assertTrue(term)
         self.assertIn("恭喜你击败了Icerainboww，通关成功！", res)
         self.assertNotIn("腐化之心", res)
