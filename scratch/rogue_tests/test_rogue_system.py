@@ -771,4 +771,10 @@ class TestRogueSystem(unittest.TestCase):
         if os.path.exists(stats_path):
             os.remove(stats_path)
 
+    def test_query_pendulum_resonance(self):
+        from game.renderer.query import render_query_info
+        res = render_query_info("钟摆共振")
+        self.assertIn("钟摆共振", res)
+        self.assertIn("受打出牌数*2点真伤惩罚", res)
+
 

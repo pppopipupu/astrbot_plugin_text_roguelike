@@ -1,4 +1,9 @@
 BUFF_CONFIG = {
+    "pendulum_resonance": {
+        "name": "钟摆共振",
+        "desc": "回合结束时若动作点全光则受打出牌数*2点真伤惩罚，保留至少1A 1BA则获得额外抽取2张牌的奖赏",
+        "is_debuff": True
+    },
     "bleed": {
         "name": "流血",
         "desc": "每回合开始时，受到 4 点真实伤害，层数减少 1",
