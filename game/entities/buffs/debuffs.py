@@ -100,9 +100,7 @@ class WeakBuff(BuffImpl):
             except ValueError:
                 pass
         if is_owner:
-            dtype_str = event.damage_type.value if hasattr(event.damage_type, "value") else str(event.damage_type)
-            if dtype_str in ("slashing", "bludgeoning", "piercing"):
-                event.modified_damage = max(0, event.modified_damage - buff_state.stacks * 3)
+            event.modified_damage = int(event.modified_damage * 0.5)
 
     def on_turn_end(self, event, buff_state, entity):
         if event.is_player == (entity == event.run.player):

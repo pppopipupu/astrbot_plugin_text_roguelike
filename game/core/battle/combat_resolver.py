@@ -222,6 +222,12 @@ class CombatResolver:
         acting_enemy_idx = game_run_context.node_data.get("current_acting_enemy_idx")
         if acting_enemy_idx is not None and (source.startswith("enemy:") or source in ("effect", "yog_sothoth_passive")):
             source = f"e{acting_enemy_idx+1}"
+        elif source.startswith("enemy:"):
+            enemy_name = source[6:]
+            for i, e in enumerate(game_run_context.enemies):
+                if e.name == enemy_name:
+                    source = f"e{i+1}"
+                    break
         calc_evt = DamageCalculateEvent(game_run_context, card, source, target, damage_type, dmg, dmg)
         self.engine.event_bus.dispatch(calc_evt)
         final_dmg = max(0, calc_evt.modified_damage)

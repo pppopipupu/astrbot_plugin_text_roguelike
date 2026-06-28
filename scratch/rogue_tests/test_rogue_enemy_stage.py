@@ -825,10 +825,14 @@ class TestRogueEnemyStage(unittest.TestCase):
         player.deck = ["strike", "strike"]
         enemy = EnemyState("测试地精", 50, 50, 0)
         run = GameRun(user_id="test_weak", node_type="battle", player=player, enemies=[enemy])
-        engine._add_buff_to(enemy, "weak", "虚弱", "造成的物理伤害减少 3 点", 1)
+        engine._add_buff_to(enemy, "weak", "虚弱", "造成的伤害减少 50%", 1)
         run.node_data["current_acting_enemy_idx"] = 0
         engine.combat_resolver.damage_target(run, "p0", 10, source="enemy:测试地精", damage_type="bludgeoning")
-        self.assertEqual(player.hp, 73)
+        self.assertEqual(player.hp, 75)
+        enemy.buffs = []
+        engine._add_buff_to(enemy, "strength", "力量", "物理伤害增加 3 点", 3)
+        engine.combat_resolver.damage_target(run, "p0", 10, source="enemy:测试地精", damage_type="bludgeoning")
+        self.assertEqual(player.hp, 62)
         if "current_acting_enemy_idx" in run.node_data:
             del run.node_data["current_acting_enemy_idx"]
         from game.core.cli_router import CLIRouter
@@ -853,7 +857,7 @@ class TestRogueEnemyStage(unittest.TestCase):
             def save_save(self, user_id, run): pass
             def load_stats(self, user_id): return None
         engine = BattleEngine(DummySaveManager())
-        engine._add_buff_to(enemy, "weak", "虚弱", "造成的物理伤害减少 3 点", 1)
+        engine._add_buff_to(enemy, "weak", "虚弱", "造成的伤害减少 50%", 1)
         res2 = render_battle(run)
-        self.assertIn("造成 7 点伤害", res2)
+        self.assertIn("造成 5 点伤害", res2)
 

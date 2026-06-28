@@ -365,7 +365,7 @@ BUFF_CONFIG = {
     },
     "weak": {
         "name": "虚弱",
-        "desc": "造成的物理伤害减少 3 点",
+        "desc": "造成的伤害减少 50%",
         "is_debuff": True
     },
     "flame_barrier_buff": {

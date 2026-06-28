@@ -22,7 +22,9 @@ def adjust_intent_desc_with_modifiers(desc: str, strength: int, weak: int) -> st
         prefix = match.group(1)
         val = int(match.group(2))
         suffix = match.group(3)
-        final_val = max(0, val + strength - weak * 3)
+        base = val + strength
+        final_val = int(base * 0.5) if weak > 0 else base
+        final_val = max(0, final_val)
         return f"{prefix}{final_val}{suffix}"
     pattern = r"(造成\s*)(\d+)(\s*(?:点)?伤害)"
     return re.sub(pattern, repl, desc)

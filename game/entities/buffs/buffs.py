@@ -136,11 +136,22 @@ class WishPowerBuff(BuffImpl):
 
 class StrengthBuff(BuffImpl):
     def on_damage_calculate(self, event, buff_state, entity):
-        if entity == event.run.player and event.source == "p0":
+        is_owner = False
+        if entity == event.run.player:
+            if event.source == "p0":
+                is_owner = True
+        elif entity in event.run.enemies:
+            try:
+                idx = event.run.enemies.index(entity)
+                if event.source == f"e{idx+1}":
+                    is_owner = True
+            except ValueError:
+                pass
+        if is_owner:
             dtype_str = event.damage_type.value if hasattr(event.damage_type, "value") else str(event.damage_type)
             if dtype_str in ("slashing", "bludgeoning", "piercing"):
                 mult = 1
-                if event.card:
+                if entity == event.run.player and event.card:
                     card_id = event.card.id
                     if card_id.startswith("duel_"):
                         card_id = card_id[5:]

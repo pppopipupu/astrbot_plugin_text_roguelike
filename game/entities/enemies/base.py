@@ -44,13 +44,7 @@ class EnemyTemplate:
     def _perform_attack(self, run, engine, enemy, dmg: int, logs: List[str], damage_type: str = "bludgeoning"):
         p = run.player
         import random
-        strength = 0
-        if enemy.name != "腐化之心":
-            if getattr(enemy, "buffs", None):
-                for b in enemy.buffs:
-                    if b.id == "strength":
-                        strength += b.stacks
-        final_dmg = dmg + strength
+        final_dmg = dmg
         ward_grids = []
         if p.minions:
             for grid, mstate in p.minions.items():
