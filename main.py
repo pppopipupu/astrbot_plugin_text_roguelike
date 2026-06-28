@@ -39,7 +39,10 @@ except ImportError:
         def debug(self, *args, **kwargs): pass
     logger = DummyLogger()
 
-from game.core.headless_server import HeadlessGameServer
+if __package__:
+    from .game.core.headless_server import HeadlessGameServer
+else:
+    from game.core.headless_server import HeadlessGameServer
 
 @register("astrbot_plugin_text_roguelike", "pppopipupu", "基于 DND 5.5E 背景的纯文字回合制肉鸽卡牌游戏插件，带有持久化存档等功能。", "1.0.0")
 class MyPlugin(Star):
