@@ -178,7 +178,12 @@ class EnemyTurnController:
                 if it.type == "phase_transition":
                     logs.append(f"⏳ 【{enemy.name}】正在进行【{it.desc.split(' (')[0]}】！此回合免疫所有伤害。")
                     continue
-                template.execute_intent(run, self.engine, enemy, it, logs)
+                run.node_data["current_acting_enemy_idx"] = run.enemies.index(enemy)
+                try:
+                    template.execute_intent(run, self.engine, enemy, it, logs)
+                finally:
+                    if "current_acting_enemy_idx" in run.node_data:
+                        del run.node_data["current_acting_enemy_idx"]
         evt_turn_end = TurnEndEvent(run, is_player=False)
         self.engine.event_bus.dispatch(evt_turn_end)
         for enemy in run.enemies:

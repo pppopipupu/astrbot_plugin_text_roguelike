@@ -15,14 +15,15 @@ def void_corrupt_text(text: str) -> str:
                 chars[i] = random.choice(['░', '▒', '▓', '■', '?', '▰', '▱'])
     return "".join(chars)
 
-def adjust_intent_desc_with_strength(desc: str, strength: int) -> str:
-    if strength <= 0:
+def adjust_intent_desc_with_modifiers(desc: str, strength: int, weak: int) -> str:
+    if strength == 0 and weak == 0:
         return desc
     def repl(match):
         prefix = match.group(1)
         val = int(match.group(2))
         suffix = match.group(3)
-        return f"{prefix}{val + strength}{suffix}"
+        final_val = max(0, val + strength - weak * 3)
+        return f"{prefix}{final_val}{suffix}"
     pattern = r"(造成\s*)(\d+)(\s*(?:点)?伤害)"
     return re.sub(pattern, repl, desc)
 
@@ -85,10 +86,13 @@ def render_battle(run: GameRun) -> str:
     else:
         for idx, enemy in enumerate(run.enemies, 1):
             strength = 0
+            weak = 0
             if getattr(enemy, "buffs", None):
                 for b in enemy.buffs:
                     if b.id == "strength":
                         strength += b.stacks
+                    elif b.id == "weak":
+                        weak += b.stacks
             intent_parts = []
             a_parts = []
             ba_parts = []
@@ -96,7 +100,7 @@ def render_battle(run: GameRun) -> str:
                 desc = it.cancelled_desc if it.cancelled else it.desc
                 if not desc:
                     continue
-                desc = adjust_intent_desc_with_strength(desc, strength)
+                desc = adjust_intent_desc_with_modifiers(desc, strength, weak)
                 if it.cost_ba > 0:
                     ba_parts.append(desc)
                 else:
@@ -262,10 +266,13 @@ def render_detailed_battle(run: GameRun) -> str:
             shield_str = f" | 🛡️ 护盾 {enemy.shield}" if enemy.shield > 0 else ""
             e_name = enemy.name
             strength = 0
+            weak = 0
             if getattr(enemy, "buffs", None):
                 for b in enemy.buffs:
                     if b.id == "strength":
                         strength += b.stacks
+                    elif b.id == "weak":
+                        weak += b.stacks
             intent_parts = []
             a_parts = []
             ba_parts = []
@@ -273,7 +280,7 @@ def render_detailed_battle(run: GameRun) -> str:
                 desc = it.cancelled_desc if it.cancelled else it.desc
                 if not desc:
                     continue
-                desc = adjust_intent_desc_with_strength(desc, strength)
+                desc = adjust_intent_desc_with_modifiers(desc, strength, weak)
                 if it.cost_ba > 0:
                     ba_parts.append(desc)
                 else:

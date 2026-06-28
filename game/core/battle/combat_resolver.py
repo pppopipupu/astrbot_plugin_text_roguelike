@@ -219,6 +219,9 @@ class CombatResolver:
             game_run_context.node_data["card_played_triggered_dmg"] = True
         if source in ("p0", "player", "effect"):
             dmg = self._apply_gem_dmg(card, dmg)
+        acting_enemy_idx = game_run_context.node_data.get("current_acting_enemy_idx")
+        if acting_enemy_idx is not None and (source.startswith("enemy:") or source in ("effect", "yog_sothoth_passive")):
+            source = f"e{acting_enemy_idx+1}"
         calc_evt = DamageCalculateEvent(game_run_context, card, source, target, damage_type, dmg, dmg)
         self.engine.event_bus.dispatch(calc_evt)
         final_dmg = max(0, calc_evt.modified_damage)

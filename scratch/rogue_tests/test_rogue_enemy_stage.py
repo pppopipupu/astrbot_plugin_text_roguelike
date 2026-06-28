@@ -808,3 +808,52 @@ class TestRogueEnemyStage(unittest.TestCase):
         engine.event_bus.dispatch(evt_end)
         self.assertFalse(any(b.id == "vulnerable" for b in enemy.buffs))
 
+    def test_monster_weak_and_queue_deck(self):
+        class DummySaveManager:
+            def __init__(self):
+                self.saves = {}
+                self.stats = {}
+            def save_save(self, user_id, run):
+                self.saves[user_id] = run
+            def load_save(self, user_id):
+                return self.saves.get(user_id)
+            def load_stats(self, user_id):
+                return self.stats.get(user_id)
+        dummy_save = DummySaveManager()
+        engine = BattleEngine(dummy_save)
+        player = PlayerState(hp=80, max_hp=80, shield=0, gold=100, stage=1)
+        player.deck = ["strike", "strike"]
+        enemy = EnemyState("测试地精", 50, 50, 0)
+        run = GameRun(user_id="test_weak", node_type="battle", player=player, enemies=[enemy])
+        engine._add_buff_to(enemy, "weak", "虚弱", "造成的物理伤害减少 3 点", 1)
+        run.node_data["current_acting_enemy_idx"] = 0
+        engine.combat_resolver.damage_target(run, "p0", 10, source="enemy:测试地精", damage_type="bludgeoning")
+        self.assertEqual(player.hp, 73)
+        if "current_acting_enemy_idx" in run.node_data:
+            del run.node_data["current_acting_enemy_idx"]
+        from game.core.cli_router import CLIRouter
+        router = CLIRouter(dummy_save, engine)
+        router.save_manager.save_save("test_weak", run)
+        results = []
+        router._execute_queue("test_weak", run, "[deck]", results)
+        self.assertTrue(any("当前拥有的卡组" in r for r in results))
+
+    def test_weak_changes_intent_display(self):
+        from game.models.state import EnemyIntentState
+        from game.renderer.battle import render_battle
+        player = PlayerState(hp=80, max_hp=80, shield=0, gold=100, stage=1)
+        enemy = EnemyState("测试地精", 50, 50, 0)
+        enemy.buffs = []
+        enemy.intents = [EnemyIntentState(type="attack", val=10, desc="攻击 (造成 10 点伤害)")]
+        run = GameRun(user_id="test_display", node_type="battle", player=player, enemies=[enemy])
+        res1 = render_battle(run)
+        self.assertIn("造成 10 点伤害", res1)
+        from game.core.battle_engine import BattleEngine
+        class DummySaveManager:
+            def save_save(self, user_id, run): pass
+            def load_stats(self, user_id): return None
+        engine = BattleEngine(DummySaveManager())
+        engine._add_buff_to(enemy, "weak", "虚弱", "造成的物理伤害减少 3 点", 1)
+        res2 = render_battle(run)
+        self.assertIn("造成 7 点伤害", res2)
+
