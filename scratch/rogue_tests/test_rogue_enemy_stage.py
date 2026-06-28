@@ -776,3 +776,15 @@ class TestRogueEnemyStage(unittest.TestCase):
         self.assertEqual(len(player.hand), 4)
         self.assertFalse(any(b.id == "discard_next_turn" for b in player.buffs))
 
+    def test_ready_pack_relic(self):
+        class DummySaveManager:
+            def save_save(self, user_id, run): pass
+            def load_stats(self, user_id): return None
+        engine = BattleEngine(DummySaveManager())
+        player = PlayerState(hp=80, max_hp=80, shield=10, gold=100, stage=1, relics=["ready_pack"])
+        player.deck = ["strike", "strike", "strike", "strike", "strike", "strike", "strike", "strike"]
+        run = GameRun(user_id="test_relic_pack", node_type="battle", player=player, enemies=[])
+        engine._init_battle_node(run)
+        self.assertEqual(len(player.hand), 7)
+        self.assertEqual(player.bonus_actions, 2)
+

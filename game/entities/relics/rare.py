@@ -9,6 +9,7 @@ class ReadyPackRelic(RelicImpl):
         self.ba_bonus = 1
 
     def on_battle_start(self, run, engine):
+        run.player.bonus_actions += self.ba_bonus
         engine._log_event(run, f"🎒 [准备背包] 触发：本场战斗初始附赠动作（BA）+{self.ba_bonus}。")
 
     def modify_initial_draw(self, run, draw_count: int, engine) -> int:
