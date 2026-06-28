@@ -7,7 +7,7 @@ class ClassCommand(CommandHandler, names=["职业", "class"], allowed_states=["m
         selected_class = getattr(stats, "selected_class", "法师")
         selected_subclass = getattr(stats, "selected_subclass", "") or "无"
         if len(parts) == 1:
-            from game.data.shop_data import SHOP_ITEMS
+            from .....data.shop_data import SHOP_ITEMS
             gp = getattr(stats, "gp", 0)
             unlocked = getattr(stats, "unlocked_subclasses", [])
             status_time = f"已解锁" if "时序法师" in unlocked else f"未解锁（{SHOP_ITEMS['时序法师']['price']} GP）"
@@ -89,7 +89,7 @@ class ClassCommand(CommandHandler, names=["职业", "class"], allowed_states=["m
                     return
                 unlocked = getattr(stats, "unlocked_subclasses", [])
                 if subclass_name not in unlocked:
-                    from game.data.shop_data import SHOP_ITEMS
+                    from .....data.shop_data import SHOP_ITEMS
                     price = SHOP_ITEMS.get(subclass_name, {}).get("price", 2888)
                     yield f"❌ 你尚未解锁【{subclass_name}】。需要消耗 {price} GP，请前往主城商店与神秘店主对话购买。"
                     return

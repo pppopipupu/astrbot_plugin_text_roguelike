@@ -828,4 +828,17 @@ class TestRogueTown(unittest.TestCase):
 
         asyncio.run(run_victory_test())
 
+    def test_no_absolute_imports_from_game(self):
+        import os
+        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        targets = [
+            os.path.join(base_dir, "game", "core", "town", "dialog_handler.py"),
+            os.path.join(base_dir, "game", "core", "cli", "commands", "general", "class_cmd.py"),
+            os.path.join(base_dir, "game", "core", "town_engine.py")
+        ]
+        for path in targets:
+            with open(path, "r", encoding="utf-8") as f:
+                content = f.read()
+            self.assertNotIn("from game.data", content)
+
 

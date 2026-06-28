@@ -125,7 +125,7 @@ class TownEngine:
             from ..models.manager import SaveManager
             boss_cfg = SaveManager().load_admin_config()
             icerainboww_enabled = boss_cfg.get("icerainboww_enabled", True)
-            from game.data.shop_data import SHOP_ITEMS
+            from ..data.shop_data import SHOP_ITEMS
             items_list = [
                 ("时序法师", SHOP_ITEMS["时序法师"]["price"], "时序法师" in unlocked, True),
                 ("塑能法师", SHOP_ITEMS["塑能法师"]["price"], "塑能法师" in unlocked, True),

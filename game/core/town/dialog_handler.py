@@ -135,7 +135,7 @@ def handle_sub_dialog(town_engine, stats: UserStats, npc_id: str, choice_lower: 
         from ...models.manager import SaveManager
         boss_cfg = SaveManager().load_admin_config()
         icerainboww_enabled = boss_cfg.get("icerainboww_enabled", True)
-        from game.data.shop_data import SHOP_ITEMS
+        from ...data.shop_data import SHOP_ITEMS
         unlocked = getattr(stats, "unlocked_subclasses", [])
         has_gatekey = getattr(stats, "unlocked_gatekey", False)
         items_list = [
