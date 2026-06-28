@@ -47,5 +47,5 @@ class AncientWardenTemplate(EnemyTemplate):
             engine._add_buff_to(enemy, "strength", "力量", "造成的伤害增加", 3)
             logs.append(f"【{enemy.name}】先古充能，获得了 3 层力量。")
         elif intent.type == "space_lock":
-            p.actions = max(0, p.actions - 1)
-            logs.append(f"【{enemy.name}】空间闭锁，使玩家下回合减少 1 个动作点（A）。")
+            engine._add_buff_to(run.player, "drain_a", "时间纠缠", "在下一回合开始时，你将失去等同于此状态层数的动作点 (A)", 1)
+            logs.append(f"【{enemy.name}】空间闭锁，使玩家在下一回合失去 1 个动作点（A）。")

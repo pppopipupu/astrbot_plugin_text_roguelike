@@ -177,21 +177,8 @@ class ShantakTemplate(EnemyTemplate):
             after_logs = run.node_data.get("battle_logs", [])
             dmg_msg = after_logs.pop() if len(after_logs) > before_len else ""
             
-            p = run.player
-            discard_msg = ""
-            if p.hand:
-                import random
-                idx = random.randint(0, len(p.hand) - 1)
-                discarded = p.hand.pop(idx)
-                p.discard_pile.append(discarded)
-                from ....models.events import CardDiscardEvent
-                discard_evt = CardDiscardEvent(run, discarded.id if hasattr(discarded, "id") else discarded, "enemy")
-                engine.event_bus.dispatch(discard_evt)
-                
-                from ....entities.cards.base import ALL_CARDS
-                card_obj = ALL_CARDS.get(discarded.id if hasattr(discarded, "id") else discarded)
-                cname = card_obj.name if card_obj else str(discarded)
-                discard_msg = f"，并强迫你丢弃了 1 张手牌【{cname}】"
+            engine._add_buff_to(run.player, "discard_next_turn", "下回合弃牌", "在下一回合开始时，你将随机丢弃等同于此状态层数的手牌", 1)
+            discard_msg = "，并使玩家在下一回合开始时将被迫随机丢弃 1 张手牌"
             
             logs.append(f"【{enemy.name}】发出凄厉尖啸。{dmg_msg}{discard_msg}。")
 

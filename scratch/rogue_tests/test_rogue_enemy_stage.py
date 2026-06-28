@@ -617,7 +617,7 @@ class TestRogueEnemyStage(unittest.TestCase):
         intent_tl = EnemyIntentState(type="temporal_lock", val=5, desc="", cost_a=0, cost_ba=1)
         logs_tl = []
         aforgomon_temp.execute_intent(run, engine, boss, intent_tl, logs_tl)
-        self.assertEqual(len(player.hand), 0)
+        self.assertTrue(any(b.id == "discard_next_turn" for b in player.buffs))
         
         import unittest.mock as mock
         with mock.patch("random.random", return_value=0.1):
@@ -749,4 +749,30 @@ class TestRogueEnemyStage(unittest.TestCase):
         self.assertEqual(enemy.hp, 50)
         engine._damage_target(run, "e1", 15, damage_type="true")
         self.assertEqual(enemy.hp, 50)
+
+    def test_monster_intent_buffs_and_deductions(self):
+        class DummySaveManager:
+            def save_save(self, user_id, run): pass
+            def load_stats(self, user_id): return None
+        engine = BattleEngine(DummySaveManager())
+        player = PlayerState(hp=80, max_hp=80, shield=10, gold=100, stage=1)
+        enemy = EnemyState("测试敌人", 50, 50, 0)
+        run = GameRun(user_id="test_intents", node_type="battle", player=player, enemies=[enemy])
+        engine._add_buff_to(player, "drain_a", "时间纠缠", "在下一回合开始时，你将失去等同于此状态层数的动作点 (A)", 1)
+        engine._add_buff_to(player, "drain_ba", "虚空纠缠", "在下一回合开始时，你将失去等同于此状态层数的附赠动作点 (BA)", 1)
+        engine._add_buff_to(player, "discard_next_turn", "下回合弃牌", "在下一回合开始时，你将随机丢弃等同于此状态层数的手牌", 2)
+        self.assertTrue(any(b.id == "drain_a" for b in player.buffs))
+        self.assertTrue(any(b.id == "drain_ba" for b in player.buffs))
+        self.assertTrue(any(b.id == "discard_next_turn" for b in player.buffs))
+        from game.models.state import CardState
+        player.deck = ["strike", "strike", "strike", "strike", "strike", "strike", "strike", "strike"]
+        player.hand = []
+        player.draw_pile = player.deck.copy()
+        engine.card_player.end_turn(run)
+        self.assertEqual(player.actions, 1)
+        self.assertEqual(player.bonus_actions, 0)
+        self.assertFalse(any(b.id == "drain_a" for b in player.buffs))
+        self.assertFalse(any(b.id == "drain_ba" for b in player.buffs))
+        self.assertEqual(len(player.hand), 4)
+        self.assertFalse(any(b.id == "discard_next_turn" for b in player.buffs))
 

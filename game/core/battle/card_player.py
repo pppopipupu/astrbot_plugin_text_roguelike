@@ -681,12 +681,6 @@ class CardPlayer:
             decay_info = "🛡️ 护盾流失：" + "，".join(decay_msgs) + "\n"
         p.actions = 2
         p.bonus_actions = 1
-        if run.node_data.get("drain_ba"):
-            p.bonus_actions = max(0, p.bonus_actions - 1)
-            run.node_data.pop("drain_ba", None)
-        if run.node_data.get("drain_a"):
-            p.actions = max(0, p.actions - 1)
-            run.node_data.pop("drain_a", None)
         evt_start = TurnStartEvent(run, is_player=True)
         self.engine.event_bus.dispatch(evt_start)
         if getattr(p, "subclass", "") == "时序法师":

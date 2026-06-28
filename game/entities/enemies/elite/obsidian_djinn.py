@@ -26,8 +26,8 @@ class ObsidianDjinnTemplate(EnemyTemplate):
         p = run.player
         if intent.type == "quake":
             self._perform_attack(run, engine, enemy, intent.val, logs)
-            p.bonus_actions = max(0, p.bonus_actions - 1)
-            logs.append(f"【{enemy.name}】引发地震，剥夺了玩家 1 个附赠动作点 (BA)。")
+            engine._add_buff_to(run.player, "drain_ba", "虚空纠缠", "在下一回合开始时，你将失去等同于此状态层数的附赠动作点 (BA)", 1)
+            logs.append(f"【{enemy.name}】引发地震，使玩家在下一回合失去 1 个附赠动作点 (BA)。")
         elif intent.type == "defend":
             enemy.shield += intent.val
             logs.append(f"【{enemy.name}】加固外壳，获得 {intent.val} 点护盾。")

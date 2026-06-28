@@ -197,8 +197,8 @@ class BossCorruptedHeartTemplate(EnemyTemplate):
             logs.append(f"【{enemy.name}】获得 {intent.val} 点护盾。")
             
         elif intent.type == "drain_ba":
-            run.node_data["drain_ba"] = True
-            logs.append(f"【{enemy.name}】吟唱【虚空之歌】，玩家将在下一回合失去 1 个附赠动作点 (BA)。")
+            engine._add_buff_to(run.player, "drain_ba", "虚空纠缠", "在下一回合开始时，你将失去等同于此状态层数的附赠动作点 (BA)", 1)
+            logs.append(f"【{enemy.name}】吟唱【虚空之歌】，使玩家在下一回合失去 1 个附赠动作点 (BA)。")
             
         elif intent.type == "heart_strike":
             dmg = intent.val + strength
@@ -290,7 +290,7 @@ class BossIcerainbowwTemplate(EnemyTemplate):
                 if len(after_logs) > before_len:
                     dmg_msg = after_logs.pop()
                     logs.append(f"【{enemy.name}】用冰雨弓攻击玩家。{dmg_msg}")
-            run.node_data["drain_a"] = True
+            engine._add_buff_to(run.player, "drain_a", "时间纠缠", "在下一回合开始时，你将失去等同于此状态层数的动作点 (A)", 1)
             logs.append(f"【{enemy.name}】射出冰雨弓，使玩家在下一回合失去 1 个动作点 (A)。")
  
         elif intent.type == "fury":
@@ -904,12 +904,12 @@ class BossYogSothothTemplate(EnemyTemplate):
             engine._damage_target(run, "p0", val, source=f"enemy:{enemy.name}", damage_type="force")
             after_logs = run.node_data.get("battle_logs", [])
             dmg_msg = after_logs.pop() if len(after_logs) > before_len else ""
-            run.node_data["drain_a"] = True
-            run.node_data["drain_ba"] = True
+            engine._add_buff_to(run.player, "drain_a", "时间纠缠", "在下一回合开始时，你将失去等同于此状态层数的动作点 (A)", 1)
+            engine._add_buff_to(run.player, "drain_ba", "虚空纠缠", "在下一回合开始时，你将失去等同于此状态层数的附赠动作点 (BA)", 1)
             p.draw_pile.append("curse_dimensional_tear")
             p.draw_pile.append("curse_dimensional_tear")
             random.shuffle(p.draw_pile)
-            logs.append(f"【{enemy.name}】施展时空坍缩，使玩家下回合减少 1A 1BA，且洗入 2 张【空间撕裂】。{dmg_msg}")
+            logs.append(f"【{enemy.name}】施展时空坍缩，使玩家在下一回合失去 1A 1BA，且洗入 2 张【空间撕裂】。{dmg_msg}")
 
         elif intent.type == "chaos_beam":
             before_len = len(run.node_data.get("battle_logs", []))
@@ -1209,7 +1209,7 @@ class BossAforgomonTemplate(EnemyTemplate):
             engine._damage_target(run, "p0", val, source=f"enemy:{enemy.name}", damage_type="force")
             after_logs = run.node_data.get("battle_logs", [])
             dmg_msg = after_logs.pop() if len(after_logs) > before_len else ""
-            run.node_data["drain_a"] = True
+            engine._add_buff_to(run.player, "drain_a", "时间纠缠", "在下一回合开始时，你将失去等同于此状态层数的动作点 (A)", 1)
             logs.append(f"【{enemy.name}】施展时间之链对玩家造成伤害。{dmg_msg}，且使玩家在下一回合失去 1 个动作点 (A)。")
         elif intent.type == "portal_implosion":
             extra = 5 if p.shield > 0 else 0
@@ -1248,7 +1248,7 @@ class BossAforgomonTemplate(EnemyTemplate):
             engine._damage_target(run, "p0", val, source=f"enemy:{enemy.name}", damage_type="thunder")
             after_logs = run.node_data.get("battle_logs", [])
             dmg_msg = after_logs.pop() if len(after_logs) > before_len else ""
-            logs.append(f"【{enemy.name}】敲响银钟，低沉 of 银钟轰鸣震荡灵魂。{dmg_msg}")
+            logs.append(f"【{enemy.name}】敲响银钟，低沉的银钟轰鸣震荡灵魂。{dmg_msg}")
             if has_resonance:
                 before_len2 = len(run.node_data.get("battle_logs", []))
                 engine._damage_target(run, "p0", 5, source=f"enemy:{enemy.name}", damage_type="true")
@@ -1276,19 +1276,8 @@ class BossAforgomonTemplate(EnemyTemplate):
             engine._damage_target(run, "p0", val, source=f"enemy:{enemy.name}", damage_type="psychic")
             after_logs = run.node_data.get("battle_logs", [])
             dmg_msg = after_logs.pop() if len(after_logs) > before_len else ""
-            logs.append(f"【{enemy.name}】施展时间锁定。{dmg_msg}")
-            if p.hand:
-                import random
-                idx = random.randint(0, len(p.hand) - 1)
-                discarded = p.hand.pop(idx)
-                from ...entities import ALL_CARDS
-                card_name = "未知卡牌"
-                if discarded in ALL_CARDS:
-                    card_name = ALL_CARDS[discarded].name
-                elif discarded.id in ALL_CARDS:
-                    card_name = ALL_CARDS[discarded.id].name
-                engine._discard_card(run, discarded)
-                logs.append(f"💨 时间被锁定，你被迫随机丢弃了手牌：【{card_name}】。")
+            engine._add_buff_to(run.player, "discard_next_turn", "下回合弃牌", "在下一回合开始时，你将随机丢弃等同于此状态层数的手牌", 1)
+            logs.append(f"【{enemy.name}】施展时间锁定。{dmg_msg}，且使玩家在下一回合开始时将被迫随机丢弃 1 张手牌。")
         return "\n".join(logs)
 
 register_enemy("【时空主宰】亚弗戈蒙")(BossAforgomonTemplate)
