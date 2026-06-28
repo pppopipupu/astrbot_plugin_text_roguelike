@@ -604,9 +604,16 @@ class TestRogueSystem(unittest.TestCase):
             self.assertTrue(event_cancel.stopped)
             self.assertTrue(any("取消发掘操作" in r for r in event_cancel.results))
             run = save_manager.load_save("test_user_discover")
-            run = save_manager.load_save("test_user_discover")
-            run.player.exhaust_pile = ["discover", "dagger_throw", "discover+"]
-            run.player.hand = ["discover", "first_aid"]
+            from game.models.state import CardState
+            run.player.exhaust_pile = [
+                CardState(id="discover", upgraded=False),
+                CardState(id="dagger_throw"),
+                CardState(id="discover", upgraded=True)
+            ]
+            run.player.hand = [
+                CardState(id="discover"),
+                CardState(id="first_aid")
+            ]
             run.player.actions = 2
             save_manager.save_save("test_user_discover", run)
             res_excl = await run_command(plugin, "使用 1", sender_id="test_user_discover")

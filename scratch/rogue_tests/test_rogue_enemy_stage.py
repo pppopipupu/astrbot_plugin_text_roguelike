@@ -925,5 +925,60 @@ class TestRogueEnemyStage(unittest.TestCase):
         res_combined = "\n".join(res_list)
         self.assertEqual(res_combined.count("⚔️ 【第 1 关"), 1)
 
+    def test_yog_sothoth_phase_transitions(self):
+        class DummySaveManager:
+            def __init__(self):
+                self.saves = {}
+                self.stats = {}
+            def save_save(self, user_id, run):
+                self.saves[user_id] = run
+            def delete_save(self, user_id):
+                self.saves.pop(user_id, None)
+            def load_save(self, user_id):
+                return self.saves.get(user_id)
+            def load_stats(self, user_id):
+                class DummyStats:
+                    selected_class = "战士"
+                    yog_sothoth_challenge_count = 1
+                return DummyStats()
+        dummy_save = DummySaveManager()
+        from game.core.battle_engine import BattleEngine
+        engine = BattleEngine(dummy_save)
+        from game.models.state import PlayerState, EnemyState, GameRun
+        player = PlayerState(hp=100, max_hp=100, shield=0, gold=100, stage=32)
+        enemy = EnemyState("虚空之门·尤格-索托斯", 200, 200, 0)
+        run = GameRun(user_id="test_yog_trans", node_type="battle", player=player, enemies=[enemy])
+        dummy_save.save_save("test_yog_trans", run)
+        from game.models.events import EnemyBeforeDeathEvent
+        from game.entities.enemies.boss import BossYogSothothTemplate
+        template = BossYogSothothTemplate("虚空之门·尤格-索托斯")
+        evt = EnemyBeforeDeathEvent(run, enemy)
+        template.on_enemy_before_death(run, enemy, evt, engine)
+        self.assertTrue(evt.cancelled)
+        self.assertEqual(enemy.hp, 1)
+        self.assertEqual(run.node_data["pending_transitions"][enemy.name], 2)
+        logs = []
+        template.apply_phase_transition(run, enemy, 2, engine, logs)
+        self.assertEqual(enemy.name, "【觉醒】虚空之门·尤格-索托斯")
+        self.assertEqual(enemy.hp, 260)
+        enemy.name = "【觉醒】虚空之门·尤格-索托斯"
+        evt2 = EnemyBeforeDeathEvent(run, enemy)
+        template.on_enemy_before_death(run, enemy, evt2, engine)
+        self.assertTrue(evt2.cancelled)
+        self.assertEqual(enemy.hp, 1)
+        self.assertEqual(run.node_data["pending_transitions"][enemy.name], 3)
+        template.apply_phase_transition(run, enemy, 3, engine, logs)
+        self.assertEqual(enemy.name, "【终焉】虚空之门·尤格-索托斯")
+        self.assertEqual(enemy.hp, 300)
+        enemy.name = "【终焉】虚空之门·尤格-索托斯"
+        evt3 = EnemyBeforeDeathEvent(run, enemy)
+        template.on_enemy_before_death(run, enemy, evt3, engine)
+        self.assertTrue(evt3.cancelled)
+        self.assertEqual(enemy.hp, 1)
+        self.assertEqual(run.node_data["pending_transitions"][enemy.name], 4)
+        template.apply_phase_transition(run, enemy, 4, engine, logs)
+        self.assertEqual(enemy.name, "【万物归一】虚空之门·尤格-索托斯")
+        self.assertEqual(enemy.hp, 2147483647)
+
 
 

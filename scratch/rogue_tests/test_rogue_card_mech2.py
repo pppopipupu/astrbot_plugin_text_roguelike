@@ -488,8 +488,23 @@ class TestRogueCardMech2(unittest.TestCase):
         player.buffs = [BuffState(id="strength", name="力量", desc="", stacks=2)]
         player.hand = ["break_limits"]
         player.actions = 2
+        player.bonus_actions = 1
         engine.play_card(run, 1)
         self.assertEqual(next(b for b in player.buffs if b.id == "strength").stacks, 4)
+        
+        player.buffs = [BuffState(id="strength", name="力量", desc="", stacks=2000)]
+        player.hand = ["break_limits"]
+        player.actions = 2
+        player.bonus_actions = 1
+        engine.play_card(run, 1)
+        self.assertEqual(next(b for b in player.buffs if b.id == "strength").stacks, 4000)
+
+        player.buffs = [BuffState(id="strength", name="力量", desc="", stacks=2001)]
+        player.hand = ["break_limits"]
+        player.actions = 2
+        player.bonus_actions = 1
+        engine.play_card(run, 1)
+        self.assertEqual(next(b for b in player.buffs if b.id == "strength").stacks, 2001)
         
         enemy.buffs = []
         player.hand = ["abyss_collapse"]

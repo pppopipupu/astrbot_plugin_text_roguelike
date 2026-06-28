@@ -663,8 +663,7 @@ class BossYogSothothTemplate(EnemyTemplate):
             engine.enemy_controller.sync_enemy_intents(enemy)
             engine._log_event(run, "🌟 虚空之门爆发出极具毁灭性的光华，次元壁垒彻底粉碎！门扉之中显露出难以名状的混沌本质——终焉降临！")
             engine._log_event(run, f"💬 【终焉】虚空之门·尤格-索托斯：‘万物归于虚无。{run.player.name}，化为这片坍缩维度的一部分吧！’")
-        elif enemy.name == "【终焉】虚空之门·尤格-索托斯":
-            event.cancel()
+        elif target_phase == 4:
             enemy.name = "【万物归一】虚空之门·尤格-索托斯"
             enemy.max_hp = 2147483647
             enemy.hp = 2147483647
@@ -688,6 +687,8 @@ class BossYogSothothTemplate(EnemyTemplate):
                 cost_a=1,
                 cost_ba=0
             ))
+            logs.append("🌟 虚空之门彻底失去控制，整个战场的时空维度开始崩解！不可名状的终极恐怖——万物归一，降临了！")
+            logs.append(f"💬 【万物归一】虚空之门·尤格-索托斯：‘万物归一……这是你们注定的归宿。’")
             engine.enemy_controller.sync_enemy_intents(enemy)
             stats = engine.save_manager.load_stats(run.user_id)
             challenge_count = getattr(stats, "yog_sothoth_challenge_count", 1)

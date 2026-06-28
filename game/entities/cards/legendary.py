@@ -108,10 +108,11 @@ class BreakLimitsCard(Card):
         doubled_count = 0
         for b in p.buffs:
             if not is_debuff(b.id):
-                b.stacks *= 2
-                if getattr(b, "stacks2", None) is not None:
-                    b.stacks2 *= 2
-                doubled_count += 1
+                if b.stacks <= 2000:
+                    b.stacks *= 2
+                    if getattr(b, "stacks2", None) is not None:
+                        b.stacks2 *= 2
+                    doubled_count += 1
         p.actions += 1
         if self.upgraded:
             p.bonus_actions += 1

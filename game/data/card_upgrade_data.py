@@ -222,7 +222,7 @@ CARD_UPGRADE_CONFIG = {
     "break_limits": {
         "cost_a": 2,
         "cost_ba": 0,
-        "desc": "使你的所有正面 Buff 计数器翻倍，并获得 1A 1BA。消耗。"
+        "desc": "使你的所有层数不高于 2000 的正面 Buff 计数器翻倍，并获得 1A 1BA。消耗。"
     },
     "abyss_collapse": {
         "cost_a": 1,

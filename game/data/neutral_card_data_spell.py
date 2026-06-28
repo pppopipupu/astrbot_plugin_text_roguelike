@@ -202,10 +202,10 @@ NEUTRAL_CARD_SPELLS = {
         "type": "spell",
         "cost_a": 2,
         "cost_ba": 1,
-        "desc": "使你的所有正面 Buff 计数器翻倍，并获得 1A。消耗。",
+        "desc": "使你的所有层数不高于 2000 的正面 Buff 计数器翻倍，并获得 1A。消耗。",
         "rarity": "legendary",
         "exhaust": True,
-        "feedback": "突破了极限！使所有正面 Buff 层数翻倍，并获得了 1A。"
+        "feedback": "突破了极限！使层数不高于 2000 的正面 Buff 层数翻倍，并获得了 1A。"
     },
     "abyss_collapse": {
         "name": "深渊崩塌",
