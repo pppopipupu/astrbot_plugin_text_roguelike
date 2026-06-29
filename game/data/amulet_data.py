@@ -1,4 +1,14 @@
 AMULET_CONFIG = {
+    "energy_core": {
+        "name": "能量核心",
+        "countdown": 1,
+        "desc": "谢幕曲：你获得 1A 1BA。"
+    },
+    "energy_core+": {
+        "name": "能量核心+",
+        "countdown": 1,
+        "desc": "谢幕曲：你获得 2A 1BA。"
+    },
     "lucky_coin": {
         "name": "幸运金币",
         "countdown": 3,

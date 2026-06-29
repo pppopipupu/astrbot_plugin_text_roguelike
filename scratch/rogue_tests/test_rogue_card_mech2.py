@@ -851,4 +851,92 @@ class TestRogueCardMech2(unittest.TestCase):
         engine.play_card(run, 1)
         self.assertEqual(run.enemies[0].hp, 42)
 
+    def test_meteor_strike_and_strike_of_all(self):
+        from game.models.state import CardState
+        self.assertEqual(ALL_CARDS.get("discover").color, "warrior")
+        self.assertEqual(ALL_CARDS.get("meteor_strike").color, "wizard")
+        self.assertEqual(ALL_CARDS.get("strike_of_all").color, "warrior")
+
+        class DummySaveManager:
+            def save_save(self, user_id, run):
+                pass
+            def delete_save(self, user_id):
+                pass
+            def load_stats(self, user_id):
+                class DummyStats:
+                    selected_class = "战士"
+                    killed_icerainboww = False
+                return DummyStats()
+            def record_stage_passed(self, user_id):
+                pass
+
+        sm = DummySaveManager()
+        engine = BattleEngine(sm)
+
+        player = PlayerState(
+            hp=50,
+            max_hp=50,
+            shield=0,
+            gold=100,
+            stage=1,
+            deck=["warrior_strike", "strike_of_all", "meteor_strike", "warrior_defend"],
+            hand=["meteor_strike"],
+            actions=10,
+            bonus_actions=10,
+            draw_pile=["warrior_strike"],
+            discard_pile=["discover"],
+            exhaust_pile=[]
+        )
+        run = GameRun(
+            user_id="test_user_meteor",
+            node_type="battle",
+            player=player,
+            enemies=[EnemyState("测试怪物A", 100, 100, 0), EnemyState("测试怪物B", 100, 100, 0)]
+        )
+
+        res = engine.play_card(run, 1)
+        self.assertNotIn("❌", res)
+        self.assertNotIn("⚠️", res)
+
+        total_hp = sum(e.hp for e in run.enemies)
+        self.assertEqual(total_hp, 80)
+        self.assertTrue(any(a.id == "energy_core" for a in player.amulets.values()))
+
+        grid = [g for g, a in player.amulets.items() if a.id == "energy_core"][0]
+        amulet = player.amulets[grid]
+        self.assertEqual(amulet.countdown, 1)
+
+        player.hand = [CardState("meteor_strike", upgraded=True)]
+        player.amulets.clear()
+        engine.play_card(run, 1)
+        self.assertEqual(len(run.enemies), 0)
+        self.assertTrue(any(a.id == "energy_core+" for a in player.amulets.values()))
+
+        grid_upg = [g for g, a in player.amulets.items() if a.id == "energy_core+"][0]
+        amulet_upg = player.amulets[grid_upg]
+        self.assertEqual(amulet_upg.countdown, 1)
+
+        from game.entities.amulets.amulets import ALL_AMULETS
+        player.actions = 0
+        player.bonus_actions = 0
+        lw_msg = ALL_AMULETS["energy_core"].on_death(run, grid_upg, True, engine)
+        self.assertEqual(lw_msg, "你获得 2A 1BA。")
+        self.assertEqual(player.actions, 2)
+        self.assertEqual(player.bonus_actions, 1)
+
+        player.deck = ["warrior_strike", "warrior_strike", "strike_of_all"]
+        player.draw_pile = ["warrior_strike"]
+        player.discard_pile = ["warrior_strike"]
+        player.exhaust_pile = ["warrior_strike"]
+        player.hand = ["strike_of_all"]
+        player.actions = 10
+        player.bonus_actions = 10
+        run.enemies = [EnemyState("测试怪物A", 100, 100, 0)]
+
+        engine.play_card(run, 1)
+        self.assertEqual(run.enemies[0].hp, 82)
+        self.assertEqual(player.hand.count("warrior_strike"), 3)
+
+
+
 

@@ -1,4 +1,14 @@
 WIZARD_CARD_CONFIG = {
+    "meteor_strike": {
+        "name": "陨石打击",
+        "color": "wizard",
+        "type": "spell",
+        "cost_a": 4,
+        "cost_ba": 0,
+        "desc": "对场上的随机敌人造成 30 点钝击伤害，此操作重复执行 4 次，在自己的战场上召唤一个【能量核心】护符。",
+        "rarity": "legendary",
+        "feedback": "召唤了陨石！"
+    },
     "fire_bolt": {
         "name": "火焰弹",
         "color": "wizard",

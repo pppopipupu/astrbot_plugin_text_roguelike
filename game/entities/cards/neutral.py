@@ -511,55 +511,6 @@ class NeutralOmegaCard(Card):
                 card_obj.execute_tags(run, card_target, engine)
                 
         return "🌌 引导了【Omega】的终极涟漪！"
-
-@register_card("discover")
-class DiscoverCard(Card):
-    def execute(self, run, target, engine) -> str:
-        from .base import ALL_CARDS
-        p = run.player
-        valid_exhaust = [c for c in p.exhaust_pile if c.id != "discover"]
-        if not valid_exhaust:
-            return f"❌ 你的消耗堆中没有任何可以发掘的卡牌，【{self.name}】未能发掘出任何东西。"
-
-        if target is not None:
-            parts_str = str(target)
-            if "," in parts_str:
-                parts = parts_str.split(",")
-            else:
-                parts = parts_str.split()
-            
-            indices = []
-            for p_str in parts:
-                p_str = p_str.strip()
-                if p_str.isdigit():
-                    indices.append(int(p_str) - 1)
-            
-            valid_indices = [idx for idx in indices if 0 <= idx < len(valid_exhaust)]
-            max_count = 2 if self.upgraded else 1
-            valid_indices = valid_indices[:max_count]
-            
-            if valid_indices:
-                valid_indices.sort(reverse=True)
-                selected_names = []
-                for idx in valid_indices:
-                    target_card = valid_exhaust[idx]
-                    real_idx = p.exhaust_pile.index(target_card)
-                    cid = p.exhaust_pile.pop(real_idx)
-                    p.hand.append(cid)
-                    selected_names.append(ALL_CARDS[cid].name if cid in ALL_CARDS else "未知卡牌")
-                selected_names.reverse()
-                return f"✨ 你使用【{self.name}】发掘了消耗堆中的【{', '.join(selected_names)}】并加入了手牌。"
-            else:
-                return "❌ 提供的消耗堆序号不合法或消耗堆中没有对应的卡牌。"
-
-        run.node_data.setdefault("state_stack", []).append({
-            "type": "discover_selection",
-            "count": 2 if self.upgraded else 1,
-            "selected": []
-        })
-        exhaust_list = "\n".join(f"{i+1}. {ALL_CARDS[c].name}" for i, c in enumerate(valid_exhaust))
-        return f"🔮 请选择一张卡牌发掘并加入手牌（使用 选择 <序号>）：\n{exhaust_list}"
-
 @register_card("neutral_power_word_kill")
 class NeutralPowerWordKillCard(Card):
     def execute(self, run, target, engine) -> str:

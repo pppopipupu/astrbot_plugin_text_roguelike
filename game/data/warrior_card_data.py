@@ -1,4 +1,25 @@
 WARRIOR_CARD_CONFIG = {
+    "discover": {
+        "name": "发掘",
+        "color": "warrior",
+        "type": "spell",
+        "cost_a": 1,
+        "cost_ba": 0,
+        "desc": "从消耗堆选择一张卡牌加入手牌。消耗。",
+        "rarity": "rare",
+        "exhaust": True,
+        "feedback": "使用了【发掘】。"
+    },
+    "strike_of_all": {
+        "name": "万物一打",
+        "color": "warrior",
+        "type": "spell",
+        "cost_a": 2,
+        "cost_ba": 0,
+        "desc": "造成 1.5^X * 8 点物理伤害，将弃牌堆、抽牌堆、消耗堆中所有名称含“打击”的卡牌抽入手牌。X为牌组中名称含“打击”的卡牌数量。",
+        "rarity": "legendary",
+        "feedback": "对【{target}】使用了【万物一打】。"
+    },
     "warrior_strike": {
         "name": "打击",
         "color": "warrior",

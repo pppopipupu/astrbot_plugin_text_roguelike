@@ -592,3 +592,93 @@ class WarriorHematopoiesisCard(Card):
             drawn_msg = f"，抽取了 {draw_count} 张牌"
             
         return f"使用了【{self.name}】，将 {shield_val} 点护盾转化为了 {temp_hp} 点临时生命值{drawn_msg}。"
+
+@register_card("discover")
+class DiscoverCard(Card):
+    def execute(self, run, target, engine) -> str:
+        from .base import ALL_CARDS
+        p = run.player
+        valid_exhaust = [c for c in p.exhaust_pile if c.id != "discover"]
+        if not valid_exhaust:
+            return f"❌ 你的消耗堆中没有任何可以发掘的卡牌，【{self.name}】未能发掘出任何东西。"
+
+        if target is not None:
+            parts_str = str(target)
+            if "," in parts_str:
+                parts = parts_str.split(",")
+            else:
+                parts = parts_str.split()
+            
+            indices = []
+            for p_str in parts:
+                p_str = p_str.strip()
+                if p_str.isdigit():
+                    indices.append(int(p_str) - 1)
+            
+            valid_indices = [idx for idx in indices if 0 <= idx < len(valid_exhaust)]
+            max_count = 2 if self.upgraded else 1
+            valid_indices = valid_indices[:max_count]
+            
+            if valid_indices:
+                valid_indices.sort(reverse=True)
+                selected_names = []
+                for idx in valid_indices:
+                    target_card = valid_exhaust[idx]
+                    real_idx = p.exhaust_pile.index(target_card)
+                    cid = p.exhaust_pile.pop(real_idx)
+                    p.hand.append(cid)
+                    selected_names.append(ALL_CARDS[cid].name if cid in ALL_CARDS else "未知卡牌")
+                selected_names.reverse()
+                return f"✨ 你使用【{self.name}】发掘了消耗堆中的【{', '.join(selected_names)}】并加入了手牌。"
+            else:
+                return "❌ 提供的消耗堆序号不合法或消耗堆中没有对应的卡牌。"
+
+        run.node_data.setdefault("state_stack", []).append({
+            "type": "discover_selection",
+            "count": 2 if self.upgraded else 1,
+            "selected": []
+        })
+        exhaust_list = "\n".join(f"{i+1}. {ALL_CARDS[c].name}" for i, c in enumerate(valid_exhaust))
+        return f"🔮 请选择一张卡牌发掘并加入手牌（使用 选择 <序号>）：\n{exhaust_list}"
+
+@register_card("strike_of_all")
+class StrikeOfAllCard(Card):
+    def execute(self, run, target, engine) -> str:
+        from .base import ALL_CARDS
+        p = run.player
+        X = 0
+        for cid in p.deck:
+            card = ALL_CARDS.get(cid)
+            if card and "打击" in card.name:
+                X += 1
+        base_coef = 12 if self.upgraded else 8
+        dmg = int((1.5 ** X) * base_coef)
+        name = engine._get_target_name(run, target)
+        dmg = engine.get_modified_spell_damage(run, self, dmg)
+        engine._damage_target(run, target, dmg, damage_type="slashing", card=self)
+        moved_cards = []
+        for cid in list(p.draw_pile):
+            card = ALL_CARDS.get(cid)
+            if card and "打击" in card.name:
+                p.draw_pile.remove(cid)
+                p.hand.append(cid)
+                moved_cards.append(card.name)
+        for cid in list(p.discard_pile):
+            card = ALL_CARDS.get(cid)
+            if card and "打击" in card.name:
+                p.discard_pile.remove(cid)
+                p.hand.append(cid)
+                moved_cards.append(card.name)
+        for cid in list(p.exhaust_pile):
+            card = ALL_CARDS.get(cid)
+            if card and "打击" in card.name:
+                p.exhaust_pile.remove(cid)
+                p.hand.append(cid)
+                moved_cards.append(card.name)
+        msg = f"对【{name}】造成了 {dmg} 点挥砍伤害（X={X}）。"
+        if moved_cards:
+            msg += f"将【{', '.join(moved_cards)}】从各个牌堆抽回了手牌。"
+        else:
+            msg += "未在抽牌堆、弃牌堆或消耗堆中找到任何名称含“打击”的卡牌。"
+        return msg
+

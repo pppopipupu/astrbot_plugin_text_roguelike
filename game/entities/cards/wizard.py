@@ -421,4 +421,33 @@ class WizardSplitToTenCard(Card):
         engine._add_buff_to(run.player, "split_to_ten", buff_info.get("name", "一分为十"), buff_info.get("desc", ""), stacks)
         return f"使用了【{self.name}】，获得了 {stacks} 层【一分为十】Buff！"
 
-
+@register_card("meteor_strike")
+class MeteorStrikeCard(Card):
+    def execute(self, run, target, engine) -> str:
+        import random
+        from ...models.state import AmuletState
+        base_dmg = 40 if self.upgraded else 30
+        dmg = engine.get_modified_spell_damage(run, self, base_dmg)
+        hits = []
+        for _ in range(4):
+            if not run.enemies:
+                break
+            enemy = random.choice(run.enemies)
+            curr_idx = run.enemies.index(enemy)
+            engine._damage_target(run, f"e{curr_idx+1}", dmg, damage_type="bludgeoning", card=self)
+            hits.append(enemy.name)
+        grid = engine._get_free_grid(run.player)
+        amulet_msg = ""
+        if grid:
+            deploy_id = "energy_core+" if self.upgraded else "energy_core"
+            deploy_name = "能量核心+" if self.upgraded else "能量核心"
+            desc_val = "2A 1BA" if self.upgraded else "1A 1BA"
+            deploy_desc = f"谢幕曲：你获得 {desc_val}。"
+            run.player.amulets[grid] = AmuletState(deploy_id, deploy_name, 1, deploy_desc)
+            amulet_msg = f"在格子 [{grid}] 部署了【{deploy_name}】护符。"
+        else:
+            amulet_msg = "战场格子已满，部署【能量核心】失败。"
+        if not hits:
+            return f"使用【陨石打击】攻击了寂静的战场。{amulet_msg}"
+        hits_summary = ", ".join(hits)
+        return f"召唤陨石打击！对随机目标（{hits_summary}）共造成了 {len(hits)} 次钝击伤害。{amulet_msg}"

@@ -254,7 +254,19 @@ class BladeRegimentBannerAmulet(AmuletTemplate):
         engine._heal_target(run, "p0", heal)
         return f"对所有敌人造成了 {dmg} 点真实伤害，且为玩家回复了 {heal} 点生命。"
 
+class EnergyCoreAmulet(AmuletTemplate):
+    def on_death(self, run, grid, is_upgraded, engine) -> str:
+        if is_upgraded:
+            run.player.actions += 2
+            run.player.bonus_actions += 1
+            return "你获得 2A 1BA。"
+        else:
+            run.player.actions += 1
+            run.player.bonus_actions += 1
+            return "你获得 1A 1BA。"
+
 ALL_AMULETS = {
+    "energy_core": EnergyCoreAmulet(),
     "lucky_coin": LuckyCoinAmulet(),
     "mage_ward": MageWardAmulet(),
     "thorns_necklace": ThornsNecklaceAmulet(),
