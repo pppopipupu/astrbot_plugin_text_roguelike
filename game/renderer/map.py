@@ -81,11 +81,11 @@ def render_map_select(run: GameRun) -> str:
     lines.append("前方道路出现了分支，请选择你前往的下一个节点：")
     for idx, opt in enumerate(options, 1):
         lines.append(f" [{idx}] {opt.get('desc', '')}")
-    lines.append("━━━━━━━━━━━━━━━━━━━━")
     if p.fold_guide:
         lines.append("💬 提示：操作指南已折叠。输入 /rogue 折叠 可展开。")
     else:
         lines.append("💬 选择路线指令：/rogue c <分支序号>")
+    lines.append("💡 提示：输入 /rogue help 或 help 可查看指令用法帮助。")
     lines.append("━━━━━━━━━━━━━━━━━━━━")
     return "\n".join(lines)
 

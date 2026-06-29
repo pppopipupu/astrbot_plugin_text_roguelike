@@ -942,7 +942,39 @@ class TestRogueCardMech2(unittest.TestCase):
         self.assertIn("能量核心", query_res)
         self.assertIn("energy_core", query_res)
 
+    def test_help_and_menu_guides(self):
+        from game.renderer import GameRenderer
+        help_text = GameRenderer.render_help()
+        self.assertIn("bag", help_text)
+        self.assertIn("quest", help_text)
+        self.assertIn("lock", help_text)
+        self.assertIn("map", help_text)
+        self.assertIn("qi", help_text)
+        self.assertIn("draw", help_text)
+        self.assertIn("mg (eg)", help_text)
+        self.assertIn("exit (quit/取消)", help_text)
+        self.assertIn("talk", help_text)
+        
+        menu_text = GameRenderer.render_menu()
+        self.assertIn("💡 提示：输入 /rogue help 或 help 可查看指令用法帮助。", menu_text)
 
-
-
+        class DummyPlayer:
+            def __init__(self):
+                self.stage = 1
+                self.hp = 100
+                self.max_hp = 100
+                self.gold = 100
+                self.relics = []
+                self.name = "测试玩家"
+                self.fold_guide = False
+        class DummyGameRun:
+            def __init__(self):
+                self.player = DummyPlayer()
+                self.node_data = {"options": [{"desc": "前往分支1"}]}
+                self.map_data = {"nodes": {}}
+        
+        run = DummyGameRun()
+        from game.renderer.map import render_map_select
+        map_text = render_map_select(run)
+        self.assertIn("💡 提示：输入 /rogue help 或 help 可查看指令用法帮助。", map_text)
 
