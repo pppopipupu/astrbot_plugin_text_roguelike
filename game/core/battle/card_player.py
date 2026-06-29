@@ -103,9 +103,11 @@ class CardPlayer:
                     p.hand.append(cid)
                     drawn_cards.append(cid)
                 else:
-                    if not hand_full_logged and run is not None:
-                        self.engine._log_event(run, "⚠️ 提示：手牌已达上限，无法抽取更多卡牌。")
-                        hand_full_logged = True
+                    p.discard_pile.append(cid)
+                    if run is not None:
+                        card_obj = ALL_CARDS.get(cid)
+                        card_name = card_obj.name if card_obj else "未知卡牌"
+                        self.engine._log_event(run, f"⚠️ 提示：手牌已满，卡牌【{card_name}】被放入弃牌堆。")
         if run is not None:
             if reshuffled:
                 self.engine._log_event(run, "🔄 弃牌堆已重新洗入抽牌堆。")

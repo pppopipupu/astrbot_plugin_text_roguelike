@@ -891,7 +891,7 @@ class TestRogueCardMech2(unittest.TestCase):
             user_id="test_user_meteor",
             node_type="battle",
             player=player,
-            enemies=[EnemyState("测试怪物A", 100, 100, 0), EnemyState("测试怪物B", 100, 100, 0)]
+            enemies=[EnemyState("测试怪物A", 9999, 9999, 0), EnemyState("测试怪物B", 9999, 9999, 0)]
         )
 
         res = engine.play_card(run, 1)
@@ -899,7 +899,7 @@ class TestRogueCardMech2(unittest.TestCase):
         self.assertNotIn("⚠️", res)
 
         total_hp = sum(e.hp for e in run.enemies)
-        self.assertEqual(total_hp, 80)
+        self.assertEqual(total_hp, 19878)
         self.assertTrue(any(a.id == "energy_core" for a in player.amulets.values()))
 
         grid = [g for g, a in player.amulets.items() if a.id == "energy_core"][0]
@@ -909,7 +909,9 @@ class TestRogueCardMech2(unittest.TestCase):
         player.hand = [CardState("meteor_strike", upgraded=True)]
         player.amulets.clear()
         engine.play_card(run, 1)
-        self.assertEqual(len(run.enemies), 0)
+        self.assertEqual(len(run.enemies), 2)
+        total_hp_upg = sum(e.hp for e in run.enemies)
+        self.assertEqual(total_hp_upg, 19718)
         self.assertTrue(any(a.id == "energy_core+" for a in player.amulets.values()))
 
         grid_upg = [g for g, a in player.amulets.items() if a.id == "energy_core+"][0]
@@ -931,11 +933,12 @@ class TestRogueCardMech2(unittest.TestCase):
         player.hand = ["strike_of_all"]
         player.actions = 10
         player.bonus_actions = 10
-        run.enemies = [EnemyState("测试怪物A", 100, 100, 0)]
+        run.enemies = [EnemyState("测试怪物A", 9999, 9999, 0)]
 
         engine.play_card(run, 1)
-        self.assertEqual(run.enemies[0].hp, 82)
+        self.assertEqual(run.enemies[0].hp, 9981)
         self.assertEqual(player.hand.count("warrior_strike"), 3)
+
 
         from game.renderer.query import render_query_info
         query_res = render_query_info("能量核心")

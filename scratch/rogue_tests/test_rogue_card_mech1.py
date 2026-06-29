@@ -762,4 +762,40 @@ class TestRogueCardMech1(unittest.TestCase):
         engine.resolve_suspended_card(run)
         self.assertTrue(any(c.id == "discover" for c in player.exhaust_pile))
 
+    def test_hand_limit_draw_to_discard(self):
+        player = PlayerState(
+            hp=30,
+            max_hp=30,
+            shield=0,
+            gold=100,
+            stage=2,
+            deck=[],
+            draw_pile=["dagger_throw"],
+            discard_pile=[],
+            exhaust_pile=[],
+            graveyard=[],
+            hand=["fire_bolt"] * 12,
+            actions=2,
+            bonus_actions=1
+        )
+        enemy = EnemyState(
+            name="测试敌人",
+            hp=20,
+            max_hp=20,
+            shield=0
+        )
+        run = GameRun(
+            user_id="test_user_hand_limit",
+            node_type="battle",
+            player=player,
+            enemies=[enemy]
+        )
+        plugin = MyPlugin(DummyContext())
+        engine = plugin.engine.battle_engine
+        engine.card_player.draw_cards(player, 1, run)
+        self.assertEqual(len(player.hand), 12)
+        self.assertEqual(len(player.discard_pile), 1)
+        self.assertEqual(player.discard_pile[0], "dagger_throw")
+
+
 
