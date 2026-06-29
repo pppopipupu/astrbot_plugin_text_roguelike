@@ -937,6 +937,12 @@ class TestRogueCardMech2(unittest.TestCase):
         self.assertEqual(run.enemies[0].hp, 82)
         self.assertEqual(player.hand.count("warrior_strike"), 3)
 
+        from game.renderer.query import render_query_info
+        query_res = render_query_info("能量核心")
+        self.assertIn("能量核心", query_res)
+        self.assertIn("energy_core", query_res)
+
+
 
 
 

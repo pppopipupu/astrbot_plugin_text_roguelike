@@ -5,6 +5,7 @@ from ..data.card_data import CARD_CONFIG
 from ..data.enemy_data import ENEMY_CONFIG
 from ..data.keyword_data import KEYWORD_CONFIG
 from ..data.gem_data import GEM_CONFIG
+from ..data.amulet_data import AMULET_CONFIG
 from .menu import get_card_cost_str
 
 def render_query_info(query_str: str) -> str:
@@ -207,6 +208,21 @@ def render_query_info(query_str: str) -> str:
                     lines.append(f"升级效果：{up_card.desc}")
                     lines.append("")
                     
+    for aid, cfg in AMULET_CONFIG.items():
+        if tier_filter:
+            continue
+        q_clean = q_search[:-1] if q_search.endswith("+") else q_search
+        match_keyword = (not q_clean) or (q_clean == aid.lower()) or (q_clean == cfg.get("name", "").lower()) or (q_clean in aid.lower()) or (q_clean in cfg.get("name", "").lower())
+        if match_keyword:
+            found = True
+            aname = cfg.get("name", aid)
+            desc = cfg.get("desc", "")
+            cd = cfg.get("countdown", 1)
+            lines.append(f"🔔 护符：{aname} (ID: {aid})")
+            lines.append(f"吟唱时间：{cd} 回合")
+            lines.append(f"效果：{desc}")
+            lines.append("")
+
     for eid, cfg in ENEMY_CONFIG.items():
         if tier_filter:
             continue
