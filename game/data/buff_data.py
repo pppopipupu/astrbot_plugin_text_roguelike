@@ -445,5 +445,15 @@ BUFF_CONFIG = {
         "name": "时间纠缠",
         "desc": "在下一回合开始时，你将失去等同于此状态层数的动作点 (A)",
         "is_debuff": True
+    },
+    "poison": {
+        "name": "中毒",
+        "desc": "每回合开始时，受到层数点毒素伤害，层数减少 1",
+        "is_debuff": True
+    },
+    "doom": {
+        "name": "灾厄",
+        "desc": "每回合开始时，若生命值小于层数，则直接被消灭并死亡",
+        "is_debuff": True
     }
 }

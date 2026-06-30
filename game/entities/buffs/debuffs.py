@@ -243,6 +243,60 @@ class BleedBuff(BuffImpl):
                 entity.buffs.remove(buff_state)
 
 
+class PoisonBuff(BuffImpl):
+    def on_turn_start(self, event, buff_state, entity):
+        run = event.run
+        engine = event.engine
+        if entity == run.player:
+            target = "p0"
+        elif entity in run.enemies:
+            try:
+                idx = run.enemies.index(entity)
+                target = f"e{idx+1}"
+            except ValueError:
+                return
+        else:
+            target = None
+            for grid, m in run.player.minions.items():
+                if m == entity:
+                    target = f"p{grid}"
+                    break
+            if not target:
+                return
+        damage = buff_state.stacks
+        engine._log_event(run, f"🤢 【{entity.name}】受到中毒造成的 {damage} 点毒素伤害！")
+        engine._damage_target(run, target, damage, source="poison", damage_type="poison")
+        buff_state.stacks -= 1
+        if buff_state.stacks <= 0:
+            if buff_state in entity.buffs:
+                entity.buffs.remove(buff_state)
+
+
+class DoomBuff(BuffImpl):
+    def on_turn_start(self, event, buff_state, entity):
+        run = event.run
+        engine = event.engine
+        if entity == run.player:
+            target = "p0"
+        elif entity in run.enemies:
+            try:
+                idx = run.enemies.index(entity)
+                target = f"e{idx+1}"
+            except ValueError:
+                return
+        else:
+            target = None
+            for grid, m in run.player.minions.items():
+                if m == entity:
+                    target = f"p{grid}"
+                    break
+            if not target:
+                return
+        if entity.hp < buff_state.stacks:
+            engine._log_event(run, f"💀 灾厄降临！【{entity.name}】的生命值小于灾厄阈值 {buff_state.stacks}，直接走向灭亡！")
+            engine._damage_target(run, target, entity.hp, source="doom", damage_type="true")
+
+
 for name, obj in list(globals().items()):
     if isinstance(obj, type) and issubclass(obj, BuffImpl) and obj is not BuffImpl:
         if not getattr(obj, "auto_register", True):

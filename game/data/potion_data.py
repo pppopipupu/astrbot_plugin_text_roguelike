@@ -40,8 +40,8 @@ POTION_CONFIG = {
     "poison_potion": {
         "name": "剧毒药水",
         "rarity": "rare",
-        "drink_desc": "受到 10 点真实伤害，被施加 4 层【中毒】。",
-        "throw_desc": "对目标造成 10 点真实伤害，施加 4 层【中毒】。"
+        "drink_desc": "受到 10 点毒素伤害，被施加 4 层【中毒】状态。",
+        "throw_desc": "对目标造成 10 点毒素伤害，施加 4 层【中毒】状态。"
     },
     "cleanse_potion": {
         "name": "净化药水",

@@ -111,6 +111,42 @@ class TestRoguePotions(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(run.enemies), 1)
         self.assertLess(run.enemies[0].hp, 30)
 
+        run = self.plugin.save_manager.load_save(self.user_id)
+        run.player.potions = ["poison_potion"]
+        self.plugin.save_manager.save_save(self.user_id, run)
+        res = await run_command(self.plugin, "投掷 1 e1", self.user_id)
+        self.assertIn("投掷了【剧毒药水】", res)
+        self.assertIn("造成 10 点毒素伤害并施加 4 层【中毒】", res)
+
+        run = self.plugin.save_manager.load_save(self.user_id)
+        run.enemies = [
+            EnemyState(name="精英兽人", hp=50, max_hp=50, shield=0)
+        ]
+        run.enemies[0].buffs = [
+            BuffState(id="poison", name="中毒", desc="", stacks=5),
+            BuffState(id="doom", name="灾厄", desc="", stacks=10)
+        ]
+        self.plugin.save_manager.save_save(self.user_id, run)
+        res = await run_command(self.plugin, "结束", self.user_id)
+        self.assertIn("受到中毒造成的 5 点毒素伤害", res)
+
+        run = self.plugin.save_manager.load_save(self.user_id)
+        run.enemies = [
+            EnemyState(name="精英兽人", hp=5, max_hp=50, shield=0),
+            EnemyState(name="小骷髅", hp=20, max_hp=20, shield=0)
+        ]
+        run.enemies[0].buffs = [
+            BuffState(id="doom", name="灾厄", desc="", stacks=10)
+        ]
+        self.plugin.save_manager.save_save(self.user_id, run)
+        res = await run_command(self.plugin, "结束", self.user_id)
+        self.assertIn("灾厄降临", res)
+        self.assertIn("直接走向灭亡", res)
+        
+        run = self.plugin.save_manager.load_save(self.user_id)
+        self.assertEqual(len(run.enemies), 1)
+        self.assertEqual(run.enemies[0].name, "小骷髅")
+
     async def test_potion_non_battle_limit(self):
         await run_command(self.plugin, "start confirm", self.user_id)
         run = self.plugin.save_manager.load_save(self.user_id)

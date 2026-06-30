@@ -98,23 +98,23 @@ class PotionResolver:
                 
         elif potion_id == "poison_potion":
             if not is_throw:
-                self.engine.battle_engine.combat_resolver.damage_target(run, "p0", 10, source="potion:poison_potion", damage_type="true")
-                self.engine.battle_engine.combat_resolver.add_buff_to(p, "poison", "中毒", "每回合开始时受到真实伤害", 4)
-                return f"🧪 你喝下了【{name}】，中毒受创，受到了 10 点真实伤害并被施加 4 层【中毒】。"
+                self.engine.battle_engine.combat_resolver.damage_target(run, "p0", 10, source="potion:poison_potion", damage_type="poison")
+                self.engine.battle_engine.combat_resolver.add_buff_to(p, "poison", "中毒", "每回合开始时，受到层数点毒素伤害，层数减少 1", 4)
+                return f"🧪 你喝下了【{name}】，毒素入骨，受到了 10 点毒素伤害并被施加 4 层【中毒】。"
             else:
-                self.engine.battle_engine.combat_resolver.damage_target(run, target, 10, source="potion:poison_potion", damage_type="true")
+                self.engine.battle_engine.combat_resolver.damage_target(run, target, 10, source="potion:poison_potion", damage_type="poison")
                 if target.startswith("p") and target != "p0":
                     grid = target[1:]
                     if grid in p.minions:
-                        self.engine.battle_engine.combat_resolver.add_buff_to(p.minions[grid], "poison", "中毒", "每回合开始时受到真实伤害", 4)
+                        self.engine.battle_engine.combat_resolver.add_buff_to(p.minions[grid], "poison", "中毒", "每回合开始时，受到层数点毒素伤害，层数减少 1", 4)
                 elif target.startswith("e"):
                     try:
                         idx = int(target[1:]) - 1
                         if 0 <= idx < len(run.enemies):
-                            self.engine.battle_engine.combat_resolver.add_buff_to(run.enemies[idx], "poison", "中毒", "每回合开始时受到真实伤害", 4)
+                            self.engine.battle_engine.combat_resolver.add_buff_to(run.enemies[idx], "poison", "中毒", "每回合开始时，受到层数点毒素伤害，层数减少 1", 4)
                     except ValueError:
                         pass
-                return f"🧪 投掷了【{name}】，对【{target_name}】造成 10 点真实伤害并施加 4 层【中毒】。"
+                return f"🧪 投掷了【{name}】，对【{target_name}】造成 10 点毒素伤害并施加 4 层【中毒】。"
                 
         elif potion_id == "cleanse_potion":
             from ...data.buff_data import BUFF_CONFIG
