@@ -64,8 +64,7 @@ def render_query_info(query_str: str) -> str:
             pname = cfg.get("name", pid)
             rarity = cfg.get("rarity", "common")
             prarity_ch = rarity_map.get(rarity, rarity)
-            desc = cfg.get("desc", "")
-            lines.append(f"  • 【{pname}】 ({prarity_ch}) - 效果：{desc}")
+            lines.append(f"  • 【{pname}】 ({prarity_ch}) - 饮用：{cfg.get('drink_desc', '')} | 投掷：{cfg.get('throw_desc', '')}")
         lines.append("")
 
     for pid, cfg in POTION_CONFIG.items():
@@ -77,9 +76,9 @@ def render_query_info(query_str: str) -> str:
             pname = cfg.get("name", pid)
             rarity = cfg.get("rarity", "common")
             prarity_ch = rarity_map.get(rarity, rarity)
-            desc = cfg.get("desc", "")
             lines.append(f"🧪 药水：{pname} (ID: {pid}) ({prarity_ch})")
-            lines.append(f"效果：{desc}")
+            lines.append(f"  饮用效果：{cfg.get('drink_desc', '')}")
+            lines.append(f"  投掷效果：{cfg.get('throw_desc', '')}")
             lines.append("")
             
     if not tier_filter and q_search in ("buff", "buffs", "状态", "战斗效果", "效果"):
