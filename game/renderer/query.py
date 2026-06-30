@@ -6,6 +6,7 @@ from ..data.enemy_data import ENEMY_CONFIG
 from ..data.keyword_data import KEYWORD_CONFIG
 from ..data.gem_data import GEM_CONFIG
 from ..data.amulet_data import AMULET_CONFIG
+from ..data.potion_data import POTION_CONFIG
 from .menu import get_card_cost_str
 
 def render_query_info(query_str: str) -> str:
@@ -56,6 +57,31 @@ def render_query_info(query_str: str) -> str:
     lines = ["━━━━━━━━━━━━━━━━━━━━", f"🔍 查询结果：{query_str}", ""]
     found = False
     
+    if not tier_filter and q_search in ("potion", "potions", "药水", "药水一览"):
+        found = True
+        lines.append("🧪 【全体药水一览】")
+        for pid, cfg in POTION_CONFIG.items():
+            pname = cfg.get("name", pid)
+            rarity = cfg.get("rarity", "common")
+            prarity_ch = rarity_map.get(rarity, rarity)
+            desc = cfg.get("desc", "")
+            lines.append(f"  • 【{pname}】 ({prarity_ch}) - 效果：{desc}")
+        lines.append("")
+
+    for pid, cfg in POTION_CONFIG.items():
+        if tier_filter and cfg.get("rarity", "common").lower() != tier_filter:
+            continue
+        match_keyword = (not q_search) or (q_search == pid.lower()) or (q_search in cfg.get("name", "").lower())
+        if match_keyword:
+            found = True
+            pname = cfg.get("name", pid)
+            rarity = cfg.get("rarity", "common")
+            prarity_ch = rarity_map.get(rarity, rarity)
+            desc = cfg.get("desc", "")
+            lines.append(f"🧪 药水：{pname} (ID: {pid}) ({prarity_ch})")
+            lines.append(f"效果：{desc}")
+            lines.append("")
+            
     if not tier_filter and q_search in ("buff", "buffs", "状态", "战斗效果", "效果"):
         found = True
         lines.append("✨ 【全体战斗效果 (Buff) 一览】")

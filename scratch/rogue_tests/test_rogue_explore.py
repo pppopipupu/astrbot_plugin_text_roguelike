@@ -768,3 +768,78 @@ class TestRogueExplore(unittest.TestCase):
         engine.battle_engine.event_bus.dispatch(evt)
         self.assertEqual(player.bonus_actions, 3)
         plugin.save_manager.delete_save(user_id)
+
+    def test_redesigned_reward_flows(self):
+        plugin = MyPlugin(DummyContext())
+        user_id = "test_redesigned_rewards"
+        plugin.save_manager.delete_save(user_id)
+        
+        async def go():
+            player = PlayerState(
+                hp=30, max_hp=30, shield=0, gold=10, stage=4,
+                deck=["first_aid"], hand=[], draw_pile=[], discard_pile=[], exhaust_pile=[], graveyard=[]
+            )
+            run = GameRun(
+                user_id=user_id, node_type="reward", player=player, enemies=[]
+            )
+            plugin.save_manager.save_save(user_id, run)
+            
+            items = [
+                {"type": "gold", "amount": 50, "taken": False, "bind_group": "pack1", "force": True},
+                {"type": "relic", "relic_id": "lucky_coin", "taken": False, "bind_group": "pack1"},
+                {"type": "card_reward", "cards": ["fireball"], "taken": False, "group_id": "select1"},
+                {"type": "card_reward", "cards": ["magic_shield"], "taken": False, "group_id": "select1"}
+            ]
+            run.node_data = {"items": items}
+            plugin.save_manager.save_save(user_id, run)
+            
+            res_exit = await run_command(plugin, ".rogue 选择 exit", sender_id=user_id)
+            self.assertIn("你必须先拿取强制奖励", res_exit)
+            
+            res_take1 = await run_command(plugin, ".rogue 选择 1", sender_id=user_id)
+            self.assertIn("金币", res_take1)
+            
+            run_after = plugin.save_manager.load_save(user_id)
+            self.assertIn("lucky_coin", run_after.player.relics)
+            self.assertEqual(run_after.player.gold, 60)
+            self.assertTrue(run_after.node_data["items"][0]["taken"])
+            self.assertTrue(run_after.node_data["items"][1]["taken"])
+            
+            res_take_card = await run_command(plugin, ".rogue 选择 1", sender_id=user_id)
+            run_after = plugin.save_manager.load_save(user_id)
+            self.assertEqual(run_after.node_type, "card_select")
+            self.assertTrue(run_after.node_data["next_node_data"]["items"][2]["taken"])
+            self.assertTrue(run_after.node_data["next_node_data"]["items"][3]["taken"])
+            
+            res_skip = await run_command(plugin, ".rogue 选择 2", sender_id=user_id)
+            run_after = plugin.save_manager.load_save(user_id)
+            self.assertEqual(run_after.player.stage, 5)
+            
+            run_after.stage = 4
+            run_after.player.stage = 4
+            run_after.player.relics = ["trash_mountain"]
+            run_after.node_type = "reward"
+            run_after.node_data = {
+                "items": [
+                    {"type": "card_reward", "cards": ["fireball"], "taken": False, "force": True}
+                ]
+            }
+            plugin.save_manager.save_save(user_id, run_after)
+            
+            await run_command(plugin, ".rogue 选择 1", sender_id=user_id)
+            run_after = plugin.save_manager.load_save(user_id)
+            self.assertEqual(run_after.node_type, "card_select")
+            
+            res_skip_err = await run_command(plugin, ".rogue 选择 2", sender_id=user_id)
+            self.assertIn("由于遗物【垃圾山】的效果，你无法跳过", res_skip_err)
+            
+            await run_command(plugin, ".rogue 选择 1", sender_id=user_id)
+            run_after = plugin.save_manager.load_save(user_id)
+            self.assertEqual(run_after.player.stage, 5)
+            from game.models.state import ensure_card_state
+            last_card = ensure_card_state(run_after.player.deck[-1])
+            self.assertEqual(last_card.id, "fireball")
+            self.assertTrue(last_card.upgraded)
+            
+        asyncio.run(go())
+        plugin.save_manager.delete_save(user_id)

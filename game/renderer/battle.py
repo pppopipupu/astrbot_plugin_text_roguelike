@@ -37,11 +37,15 @@ def render_battle(run: GameRun) -> str:
     relics_str = ""
     if p.relics:
         relics_str = "\n🎒 遗物：" + " ".join([f"【{get_relic_name(r)}】" for r in p.relics])
+    potions_str = ""
+    if hasattr(p, "potions") and p.potions:
+        from ..data.potion_data import get_potion_name
+        potions_str = "\n🧪 药水：" + " ".join([f"[{idx}]【{get_potion_name(r)}】" for idx, r in enumerate(p.potions, 1)])
     turn_count = run.node_data.get("turn_count", 1)
     lines = [
         "━━━━━━━━━━━━━━━━━━━━",
         f"⚔️ 【第 {p.stage} 关：战斗阶段 (第 {turn_count} 回合)】",
-        f"{run.player.name}：❤️ HP {p.hp}/{cur_max} | 🛡️ 护盾 {p.shield} | ⚡ 动作 {p.actions}A {p.bonus_actions}BA" + relics_str
+        f"{run.player.name}：❤️ HP {p.hp}/{cur_max} | 🛡️ 护盾 {p.shield} | ⚡ 动作 {p.actions}A {p.bonus_actions}BA" + relics_str + potions_str
     ]
     if p.buffs:
         buff_strs = []
@@ -190,6 +194,10 @@ def render_detailed_battle(run: GameRun) -> str:
     will_stacks = will_buff.stacks if will_buff else 0
     cur_max = p.max_hp + will_stacks * 10
     turn_count = run.node_data.get("turn_count", 1)
+    detailed_potions = "无"
+    if hasattr(p, "potions") and p.potions:
+        from ..data.potion_data import get_potion_name, get_potion_desc
+        detailed_potions = " ".join([f"[{idx}]【{get_potion_name(r)}】({get_potion_desc(r)})" for idx, r in enumerate(p.potions, 1)])
     lines = [
         "━━━━━━━━━━━━━━━━━━━━",
         f"⚔️ 【实时战斗详细情报 (第 {turn_count} 回合)】",
@@ -198,6 +206,7 @@ def render_detailed_battle(run: GameRun) -> str:
         f"  生命值：HP {p.hp}/{cur_max}",
         f"  护盾值：{p.shield}",
         f"  动作资源：{p.actions}A {p.bonus_actions}BA",
+        f"  药水槽：{detailed_potions}",
         f"  牌堆状态：手牌 {len(p.hand)}张 | 抽牌堆 {len(p.draw_pile)}张 | 弃牌堆 {len(p.discard_pile)}张 | 消耗堆 {len(p.exhaust_pile)}张 | 随从墓地 {len(p.minion_graveyard)}个 | 敌人墓地 {len(p.enemy_graveyard)}个",
     ]
     if p.relics:

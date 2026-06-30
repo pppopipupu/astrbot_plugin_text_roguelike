@@ -5,14 +5,8 @@ from ..models.state import UserStats
 from ..entities import ALL_CARDS
 
 def _load_zh_cn() -> Dict[str, Any]:
-    current_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    town_dir = os.path.join(current_dir, "data", "town")
-    global_path = os.path.join(town_dir, "zh_cn_global.json")
-    try:
-        with open(global_path, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except:
-        return {}
+    from ..core.locale_manager import LocaleManager
+    return LocaleManager.get_all_translations()
 
 def render_bag(stats: UserStats) -> str:
     zh_cn = _load_zh_cn()

@@ -11,6 +11,8 @@ class GameEngine:
         self.save_manager = save_manager
         self.battle_engine = BattleEngine(save_manager)
         self.map_engine = MapEngine(save_manager, self.battle_engine)
+        from .core.battle.potion_resolver import PotionResolver
+        self.potion_resolver = PotionResolver(self)
 
     def start_new_game(self, user_id: str) -> GameRun:
         stats = self.save_manager.load_stats(user_id)

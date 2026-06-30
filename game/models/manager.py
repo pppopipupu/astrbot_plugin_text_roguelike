@@ -336,7 +336,8 @@ class SaveManager:
             buffs=p_buffs,
             relics=p_data.get("relics", []),
             subclass=p_data.get("subclass", ""),
-            selected_class=p_data.get("selected_class", "法师")
+            selected_class=p_data.get("selected_class", "法师"),
+            potions=p_data.get("potions", [])
         )
 
     def from_dict(self, d: dict) -> GameRun:

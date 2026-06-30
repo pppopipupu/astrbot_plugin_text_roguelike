@@ -161,6 +161,12 @@ RELIC_CONFIG = {
         "desc": "每当打出一张具有“消耗”属性的卡牌时，随机恢复3点生命值或获得5点护盾。",
         "price": 200
     },
+    "trash_mountain": {
+        "name": "垃圾山",
+        "rarity": "legendary",
+        "desc": "所有卡牌奖励都会被升级，但你无法在选择卡牌时点击跳过。",
+        "price": 200
+    },
     "void_lens": {
         "name": "虚空透镜",
         "rarity": "rare",

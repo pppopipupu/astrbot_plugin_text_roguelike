@@ -1,6 +1,7 @@
 from typing import Tuple
 from .base import ActionHandler
 from ...entities import ALL_CARDS
+from ...data.locale_data import get_locale_text
 
 class UseAction(ActionHandler, actions=["使用", "p"]):
     def execute(self, router, user_id: str, run, parts: list[str]) -> Tuple[str, bool, bool]:
@@ -109,18 +110,42 @@ class ChooseAction(ActionHandler, actions=["选择", "c"]):
             idx = int(parts[1])
         except ValueError:
             arg = parts[1].lower()
-            if arg in ("取消", "cancel", "返回", "quit", "exit", "0"):
+            if arg in ("取消", "cancel", "返回", "quit", "exit", "0", "离开", "退出"):
                 if run.node_data.get("pending_remove"):
                     run.node_data["pending_remove"] = False
                     router.save_manager.save_save(user_id, run)
-                    return "🧹 已取消卡牌移除操作。", False, True
+                    return get_locale_text("msg_cancel_remove"), False, True
                 if run.node_data.get("pending_upgrade"):
                     run.node_data["pending_upgrade"] = False
                     router.save_manager.save_save(user_id, run)
-                    return "🔨 已取消卡牌升级操作。", False, True
+                    return get_locale_text("msg_cancel_upgrade"), False, True
                 if run.node_type == "gem_insert":
                     res = router.engine.gem_insert_cancel(run)
                     return res, False, "❌" not in res
+                if run.node_type in ("reward", "treasure", "boss_chest", "rest", "shop"):
+                    items = run.node_data.get("items", [])
+                    forced_items = [it for it in items if it.get("force") and not it.get("taken")]
+                    if forced_items:
+                        forced_names = []
+                        for it in forced_items:
+                            itype = it.get("type")
+                            if itype == "card_reward":
+                                forced_names.append("卡牌奖励")
+                            elif itype == "gold":
+                                forced_names.append(f"{it.get('amount')} 金币")
+                            elif itype in ("relic", "quest_relic", "boss_relic"):
+                                from ....entities import get_relic_name
+                                rid = it.get("relic_id") or it.get("id")
+                                forced_names.append(f"遗物【{get_relic_name(rid)}】")
+                            elif itype == "gem":
+                                from ....entities import get_gem_name
+                                gid = it.get("gem_id")
+                                forced_names.append(f"宝石【{get_gem_name(gid)}】")
+                        names_str = "、".join(forced_names)
+                        return get_locale_text("err_must_claim_forced", names_str=names_str), False, False
+                    router.engine.map_engine.enter_next_stage(run)
+                    router.save_manager.save_save(run.user_id, run)
+                    return get_locale_text("msg_leave_node"), False, True
             if arg in ("wizard", "warrior", "wiz", "war", "法师", "战士", "选择", "时序法师", "塑能法师", "秘钥学者"):
                 return "❌ 切换职业请在局外使用 /rogue class 命令。\n💡 选择命令 c 仅用于局内选项选择，无法用于选择职业。", False, False
             return "❌ 序号必须是数字。", False, False
@@ -134,7 +159,7 @@ class ChooseAction(ActionHandler, actions=["选择", "c"]):
                 settle_msg = router.save_manager.settle_game_and_delete(user_id, run, is_victory=False)
                 return f"{res}\n💀 你在荒野的意外中丧生了！当前进度已清空。\n{settle_msg}", True, success
             return res, False, success
-        elif run.node_type == "shop" and run.node_data.get("pending_remove"):
+        elif run.node_data.get("pending_remove"):
             res = router.engine.remove_card_from_deck(run, idx)
             return res, False, "❌" not in res
         else:
@@ -146,7 +171,7 @@ class ChooseAction(ActionHandler, actions=["选择", "c"]):
             if res == "REMOVE_FLOW":
                 run.node_data["pending_remove"] = True
                 router.save_manager.save_save(user_id, run)
-                return "🧹 净化服务已启动。请查看你的卡组，并再次输入 c <卡牌序号> 来从卡组中移除该牌。可以通过 /rogue deck 查看卡牌序号。", False, True
+                return "🧹 净化服务已启动。请查看你的卡组，并输入 c <卡牌序号> 来从卡组中移除该牌。可以通过 /rogue deck 查看卡牌序号。", False, True
             elif res == "UPGRADE_FLOW":
                 run.node_data["pending_upgrade"] = True
                 router.save_manager.save_save(user_id, run)

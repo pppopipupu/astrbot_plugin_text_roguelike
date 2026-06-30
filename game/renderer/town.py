@@ -5,19 +5,8 @@ from ..models.state import UserStats
 from ..entities import ALL_CARDS
 
 def _load_zh_cn() -> Dict[str, Any]:
-    current_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    town_dir = os.path.join(current_dir, "data", "town")
-    global_path = os.path.join(town_dir, "zh_cn_global.json")
-    npcs_path = os.path.join(town_dir, "zh_cn_npcs.json")
-    try:
-        with open(global_path, "r", encoding="utf-8") as f:
-            zh_cn = json.load(f)
-        with open(npcs_path, "r", encoding="utf-8") as f:
-            npcs = json.load(f)
-        zh_cn["interactive_entities"] = npcs
-        return zh_cn
-    except:
-        return {}
+    from ..core.locale_manager import LocaleManager
+    return LocaleManager.get_all_translations()
 
 def get_display_width(s: str) -> int:
     width = 0

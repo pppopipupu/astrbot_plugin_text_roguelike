@@ -102,7 +102,8 @@ class CLIRouter:
                 "地图", "map",
                 "队列", "queue", "q",
                 "mode", "模式",
-                "qi", "queue_interrupt", "中断队列"
+                "qi", "queue_interrupt", "中断队列",
+                "药水", "喝药水", "potion", "drink", "use_potion", "丢弃药水", "discard_potion", "drop_potion", "丢药", "dp", "dr", "pot", "投掷", "投", "throw", "t"
             )
             if first_cmd in exempt_cmds:
                 handler = self._command_handlers.get(first_cmd)
@@ -213,7 +214,7 @@ class CLIRouter:
             else:
                 yield res
             return
-        if parts[0].isdigit():
+        if parts[0].isdigit() or parts[0].lower() in ("exit", "quit", "离开", "退出"):
             parts = ["选择"] + parts
         sub = parts[0]
         handler = self._command_handlers.get(sub)

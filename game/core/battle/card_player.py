@@ -750,44 +750,83 @@ class CardPlayer:
         difficulty = run.node_data.get("difficulty", "normal")
         quest = run.node_data.get("quest")
         quest_bonus = ""
+        items = []
         if quest == "knight_cave":
-            p.deck.append("shield_guard")
-            p.relics.append("heavy_armor")
-            quest_bonus = "\n🗡️ 任务完成！你帮奥术骑士夺回了长剑。作为谢礼，【盾卫】加入了你的卡组，你还获得了一个遗物【重装甲片】！"
+            items.append({
+                "type": "quest_card",
+                "card_id": "shield_guard",
+                "taken": False,
+                "bind_group": "quest_knight_cave"
+            })
+            items.append({
+                "type": "quest_relic",
+                "relic_id": "heavy_armor",
+                "taken": False,
+                "bind_group": "quest_knight_cave"
+            })
+            quest_bonus = "\n🗡️ 任务完成！你帮奥术骑士夺回了长剑。作为谢礼，你获得了卡牌【盾卫】与遗物【重装甲片】！"
         elif quest == "maze_fight":
             got_relic = random.choice(["whetstone", "ready_pack", "arcane_rune"])
-            p.relics.append(got_relic)
+            items.append({
+                "type": "relic",
+                "relic_id": got_relic,
+                "taken": False
+            })
             quest_bonus = f"\n🔥 任务完成！你击败了火元素守卫，在石门后获得稀有遗物【{get_relic_name(got_relic)}】！"
+        
+        elite_relic_map = {
+            "地精百夫长": "centurion_mail",
+            "石像鬼祭司": "priest_charm",
+            "狂暴兽王": "beastmaster_claw",
+            "黑曜石巨灵": "djinn_shard",
+            "幽灵大魔法师": "archmage_robe",
+            "暗影影魔": "shadow_tentacle",
+            "夺心魔": "mindflayer_brain",
+            "末日守卫": "doomsday_core",
+            "亡灵巫师": "necromancer_skull",
+            "夺心魔奥术师": "arcanist_hand",
+            "吉斯洋基至高指挥官": "commander_medal",
+            "虚空潜伏者": "stalker_eye",
+            "冷蛛": "leng_spider_venom",
+            "米·戈": "migo_lightning_gun",
+            "修格斯": "shoggoth_slime",
+            "星之精": "star_vampire_proboscis",
+            "克苏鲁之星之眷族": "starspawn_core"
+        }
+        
         if difficulty == "elite":
             reward_gold = 25 + random.randint(10, 20)
             elite_name = run.node_data.get("elite_name", "")
-            elite_relic_map = {
-                "地精百夫长": "centurion_mail",
-                "石像鬼祭司": "priest_charm",
-                "狂暴兽王": "beastmaster_claw",
-                "黑曜石巨灵": "djinn_shard",
-                "幽灵大魔法师": "archmage_robe",
-                "暗影影魔": "shadow_tentacle",
-                "夺心魔": "mindflayer_brain",
-                "末日守卫": "doomsday_core",
-                "亡灵巫师": "necromancer_skull",
-                "夺心魔奥术师": "arcanist_hand",
-                "吉斯洋基至高指挥官": "commander_medal",
-                "虚空潜伏者": "stalker_eye",
-                "冷蛛": "leng_spider_venom",
-                "米·戈": "migo_lightning_gun",
-                "修格斯": "shoggoth_slime",
-                "星之精": "star_vampire_proboscis",
-                "克苏鲁之星之眷族": "starspawn_core"
-            }
             if elite_name in elite_relic_map:
                 rid = elite_relic_map[elite_name]
                 if rid not in p.relics:
-                    p.relics.append(rid)
+                    items.append({
+                        "type": "relic",
+                        "relic_id": rid,
+                        "taken": False
+                    })
                     quest_bonus += f"\n🏆 击败精英【{elite_name}】，获得了它的专属遗物：【{get_relic_name(rid)}】！"
         else:
             reward_gold = 10 + random.randint(5, 15)
-        p.gold += reward_gold
+            
+        items.append({
+            "type": "gold",
+            "amount": reward_gold,
+            "taken": False
+        })
+        
+        potion_chance = 0.66 if difficulty == "elite" else 0.33
+        if random.random() < potion_chance:
+            from ...data.potion_data import roll_potion
+            tmp_stats = self.engine.save_manager.load_stats(run.user_id)
+            p_class = getattr(tmp_stats, "selected_class", "法师")
+            pid = roll_potion(p_class)
+            items.append({
+                "type": "potion",
+                "potion_id": pid,
+                "taken": False
+            })
+        
         stats = self.engine.save_manager.load_stats(run.user_id)
         has_gatekey = getattr(stats, "unlocked_gatekey", False)
         if p.stage == MapConfig.FINAL_BOSS_STAGE:
@@ -821,10 +860,22 @@ class CardPlayer:
             for c in chosen_cards:
                 options.append({"type": "card", "id": c})
                 
+            items = []
+            for opt in options:
+                items.append({
+                    "type": "boss_relic" if opt["type"] == "relic" else "boss_card",
+                    "id": opt["id"],
+                    "taken": False,
+                    "group_id": "boss_chest_group"
+                })
+            from game.models.events import RewardGenerateEvent
+            evt = RewardGenerateEvent(run, items)
+            self.engine.event_bus.dispatch(evt)
             run.node_data = {
                 "title": "🏆 BOSS 战利品：神话宝箱",
                 "desc": "你击败了第二阶段的守护者！在它的身后，一尊散发着七彩神圣微光的【神话宝箱】缓缓升起。\n请选择你要继承的一件神话秘宝：",
-                "options": options
+                "options": options,
+                "items": items
             }
             self.engine.save_manager.save_save(run.user_id, run)
         else:
@@ -849,9 +900,30 @@ class CardPlayer:
                     if random.random() < 0.35:
                         cid = "key_resonance"
                 final_reward_cards.append(cid)
+            
+            items.append({
+                "type": "card_reward",
+                "cards": final_reward_cards,
+                "taken": False,
+                "force": False
+            })
+            
+            pending_gems = run.node_data.get("pending_gems", [])
+            if pending_gems:
+                for gid in pending_gems:
+                    items.append({
+                        "type": "gem",
+                        "gem_id": gid,
+                        "taken": False
+                    })
+            
+            from game.models.events import RewardGenerateEvent
+            evt = RewardGenerateEvent(run, items)
+            self.engine.event_bus.dispatch(evt)
+            
             is_town = run.node_data.get("is_town_combat", False)
             npc_n = run.node_data.get("npc_name", "")
-            run.node_data = {"cards": final_reward_cards, "quest_bonus": quest_bonus}
+            run.node_data = {"items": items, "quest_bonus": quest_bonus}
             if is_town:
                 run.node_data["is_town_combat"] = True
                 run.node_data["npc_name"] = npc_n

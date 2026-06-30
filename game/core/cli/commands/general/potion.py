@@ -1,0 +1,98 @@
+from typing import Generator
+from ...base import CommandHandler
+from .....renderer import GameRenderer
+from .....data.potion_data import get_potion_name
+
+class PotionCommand(CommandHandler, names=["药水", "喝药水", "potion", "drink", "use_potion", "丢弃药水", "discard_potion", "drop_potion", "丢药", "dp", "dr", "pot", "投掷", "投", "throw", "t"], allowed_states=["battle", "explore", "town", "menu"]):
+    def execute(self, router, user_id: str, parts: list[str]) -> Generator[str, None, None]:
+        run = router.save_manager.load_save(user_id)
+        if not run:
+            yield "❌ 你当前没有正在进行的游戏。"
+            return
+        
+        p = run.player
+        if not hasattr(p, "potions"):
+            p.potions = []
+            
+        cmd = parts[0].lower()
+        is_discard = cmd in ("丢弃药水", "discard_potion", "drop_potion", "丢药", "dp")
+        
+        if len(parts) < 2:
+            if is_discard:
+                yield "❌ 请指定要丢弃的药水槽序号，例如：丢弃药水 1"
+            else:
+                yield "❌ 请指定要使用的药水槽序号，例如：喝药水 1 或 投掷 1 e1"
+            return
+            
+        try:
+            idx = int(parts[1]) - 1
+        except ValueError:
+            yield "❌ 无效的药水槽序号。"
+            return
+            
+        if idx < 0 or idx >= len(p.potions):
+            yield f"❌ 无效的药水槽序号，你当前拥有 {len(p.potions)} 瓶药水。"
+            return
+            
+        potion_id = p.potions[idx]
+        potion_name = get_potion_name(potion_id)
+        
+        if is_discard:
+            p.potions.pop(idx)
+            router.save_manager.save_save(user_id, run)
+            yield f"🧪 已丢弃了药水：【{potion_name}】。\n" + GameRenderer.render_game(run)
+            return
+
+        is_throw = cmd in ("投掷", "投", "throw", "t")
+        target = None
+        if is_throw:
+            if len(parts) < 3:
+                yield "❌ 请指定投掷目标，例如：投掷 1 e1"
+                return
+            target = parts[2]
+        else:
+            if len(parts) >= 3:
+                target = parts[2]
+                is_throw = True
+            else:
+                target = "p0"
+                
+        if target != "p0":
+            if run.node_type != "battle":
+                yield "❌ 只有在战斗中才能投掷药水。"
+                return
+            if isinstance(target, str) and target.isdigit():
+                target = f"e{target}"
+            if target == "0" or target == "e0":
+                target = "e1"
+            elif target == "p":
+                target = "p0"
+                is_throw = False
+                
+            if target.startswith("e"):
+                try:
+                    grid = int(target[1:]) - 1
+                except ValueError:
+                    grid = 0
+                if grid < 0 or grid >= len(run.enemies):
+                    yield f"❌ 敌方格子 [{target}] 没有敌人。"
+                    return
+            elif target.startswith("p"):
+                grid = target[1:]
+                if grid != "0" and grid not in p.minions:
+                    yield f"❌ 我方格子 [{grid}] 没有随从。"
+                    return
+            else:
+                yield "❌ 无效的目标选择。"
+                return
+
+        if run.node_type != "battle" and potion_id != "healing_potion":
+            yield "❌ 该药水只能在战斗中使用。"
+            return
+
+        p.potions.pop(idx)
+        res_msg = router.engine.potion_resolver.use_potion(run, potion_id, target, is_throw)
+        if run.node_type == "battle":
+            res_msg = router.engine.battle_engine._append_logs_to_res(run, res_msg)
+        router.save_manager.save_save(user_id, run)
+        yield res_msg + "\n" + GameRenderer.render_game(run)

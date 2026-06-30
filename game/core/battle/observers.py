@@ -3,7 +3,7 @@ from ...models.events import (
     CardPlayEvent, CardPlayedEvent, DamageCalculateEvent, DamageTakeEvent,
     HealEvent, MinionSummonEvent, ShieldGainEvent, ShieldDecayEvent,
     MinionDeathEvent, CardExhaustEvent, HealCalculateEvent, EnemyBeforeDeathEvent,
-    EnemySyncIntentsEvent
+    EnemySyncIntentsEvent, RewardGenerateEvent, CardSelectInitEvent, CardObtainEvent
 )
 
 class RelicTriggerHandler:
@@ -21,6 +21,9 @@ class RelicTriggerHandler:
         event_bus.subscribe(ShieldDecayEvent, self.on_shield_decay)
         event_bus.subscribe(TurnEndEvent, self.on_turn_end)
         event_bus.subscribe(MinionDeathEvent, self.on_minion_death)
+        event_bus.subscribe(RewardGenerateEvent, self.on_reward_generate)
+        event_bus.subscribe(CardSelectInitEvent, self.on_card_select_init)
+        event_bus.subscribe(CardObtainEvent, self.on_card_obtain)
 
     def on_battle_start(self, event):
         from ...entities.relics import get_relic_impl
@@ -109,6 +112,27 @@ class RelicTriggerHandler:
             impl = get_relic_impl(r)
             if impl and hasattr(impl, "on_minion_death"):
                 impl.on_minion_death(event, event.run, self.engine)
+
+    def on_reward_generate(self, event):
+        from ...entities.relics import get_relic_impl
+        for r in list(event.run.player.relics):
+            impl = get_relic_impl(r)
+            if impl and hasattr(impl, "on_reward_generate"):
+                impl.on_reward_generate(event, event.run, self.engine)
+
+    def on_card_select_init(self, event):
+        from ...entities.relics import get_relic_impl
+        for r in list(event.run.player.relics):
+            impl = get_relic_impl(r)
+            if impl and hasattr(impl, "on_card_select_init"):
+                impl.on_card_select_init(event, event.run, self.engine)
+
+    def on_card_obtain(self, event):
+        from ...entities.relics import get_relic_impl
+        for r in list(event.run.player.relics):
+            impl = get_relic_impl(r)
+            if impl and hasattr(impl, "on_card_obtain"):
+                impl.on_card_obtain(event, event.run, self.engine)
 
 class BuffTriggerHandler:
     def __init__(self, event_bus, engine):

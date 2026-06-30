@@ -127,3 +127,20 @@ class ShieldDecayEvent(GameEvent):
 class EnemySyncIntentsEvent(GameEvent):
     enemy: EnemyState
 
+@dataclass
+class RewardGenerateEvent(GameEvent):
+    run: GameRun
+    items: List[dict]
+
+@dataclass
+class CardSelectInitEvent(GameEvent):
+    run: GameRun
+    cards: List[str]
+    can_skip: bool = True
+    upgraded: bool = False
+
+@dataclass
+class CardObtainEvent(GameEvent):
+    run: GameRun
+    card_state: Any
+

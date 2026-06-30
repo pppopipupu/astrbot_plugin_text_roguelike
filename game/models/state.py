@@ -375,8 +375,11 @@ class PlayerState:
     relics: List[str] = field(default_factory=list)
     subclass: str = ""
     selected_class: str = "法师"
+    potions: List[str] = field(default_factory=list)
 
     def __post_init__(self):
+        if not hasattr(self, "potions") or self.potions is None:
+            self.potions = []
         self.deck = [self._ensure_card_state(c) for c in self.deck]
         self.draw_pile = [self._ensure_card_state(c) for c in self.draw_pile]
         self.discard_pile = [self._ensure_card_state(c) for c in self.discard_pile]

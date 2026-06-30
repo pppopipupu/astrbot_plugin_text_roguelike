@@ -12,3 +12,17 @@ class InfiniteHourglassRelic(RelicImpl):
         p = run.player
         p.bonus_actions += 1
         engine._log_event(run, "⏳ [无限沙漏] 触发：获得额外的 1BA。")
+
+@register_relic("trash_mountain")
+class TrashMountainRelic(RelicImpl):
+    def on_reward_generate(self, event, run, engine):
+        for item in event.items:
+            if item.get("type") == "card_reward":
+                item["force"] = True
+
+    def on_card_select_init(self, event, run, engine):
+        event.can_skip = False
+        event.upgraded = True
+
+    def on_card_obtain(self, event, run, engine):
+        event.card_state.upgraded = True

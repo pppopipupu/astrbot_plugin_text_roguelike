@@ -4,11 +4,106 @@ from ..models.state import GameRun, PlayerState
 from ..data.map_config import MapConfig
 from ..entities import ALL_CARDS, get_relic_name
 from ..entities.events import ALL_EVENTS, get_option_by_action
+from ..data.locale_data import get_locale_text
 
 class ExploreEngine:
     def __init__(self, save_manager, map_engine):
         self.save_manager = save_manager
         self.map_engine = map_engine
+
+    def _init_rest_node(self, run: GameRun):
+        run.node_data = {
+            "items": [
+                {"type": "rest_heal", "taken": False},
+                {"type": "rest_meditate", "taken": False},
+                {"type": "rest_upgrade", "taken": False}
+            ]
+        }
+
+    def _claim_single_item(self, run: GameRun, item_idx: int) -> str:
+        p = run.player
+        items = run.node_data.setdefault("items", [])
+        if item_idx < 0 or item_idx >= len(items):
+            return get_locale_text("err_invalid_option_idx")
+        item = items[item_idx]
+        if item.get("taken"):
+            return "❌ 已拿取。"
+        
+        item["taken"] = True
+        itype = item.get("type")
+        res = ""
+        
+        if itype == "potion":
+            pid = item.get("potion_id")
+            if not hasattr(p, "potions"):
+                p.potions = []
+            if len(p.potions) >= 3:
+                item["taken"] = False
+                from ..data.potion_data import get_potion_name
+                return f"❌ 药水槽已满！无法拿取【{get_potion_name(pid)}】。请先使用或丢弃现有药水。"
+            p.potions.append(pid)
+            from ..data.potion_data import get_potion_name
+            res = f"获得药水【{get_potion_name(pid)}】并放入药水槽。"
+        elif itype == "gold":
+            amt = item.get("amount", 0)
+            p.gold += amt
+            res = f"获得金币 🪙 {amt}。"
+        elif itype in ("relic", "quest_relic", "boss_relic"):
+            rid = item.get("relic_id") or item.get("id")
+            p.relics.append(rid)
+            if rid == "red_bottle":
+                p.max_hp += 5
+                p.hp += 5
+            res = f"获得遗物【{get_relic_name(rid)}】。"
+        elif itype in ("quest_card", "boss_card"):
+            cid = item.get("card_id") or item.get("id")
+            from ..models.state import CardState
+            c_state = CardState(id=cid)
+            from ..models.events import CardObtainEvent
+            obtain_evt = CardObtainEvent(run, c_state)
+            self.map_engine.battle_engine.event_bus.dispatch(obtain_evt)
+            p.deck.append(c_state)
+            res = f"获得卡牌【{ALL_CARDS[cid].name if cid in ALL_CARDS else cid}】并加入卡组。"
+        elif itype == "gem":
+            gem_id = item.get("gem_id")
+            self.start_gem_insert_flow(run, gem_id, run.node_type, run.node_data)
+            from ..entities import get_gem_name
+            res = f"开启宝石【{get_gem_name(gem_id)}】的强制镶嵌。"
+        elif itype == "card_reward":
+            reward_cards = item.get("cards", [])
+            from ..models.events import CardSelectInitEvent
+            init_evt = CardSelectInitEvent(run, reward_cards)
+            self.map_engine.battle_engine.event_bus.dispatch(init_evt)
+            run.node_type = "card_select"
+            run.node_data = {
+                "title": get_locale_text("render_card_select_title"),
+                "desc": "请从以下卡牌中挑选一张加入卡组：",
+                "cards": reward_cards,
+                "can_skip": init_evt.can_skip,
+                "force_upgraded": init_evt.upgraded,
+                "next_node_type": "reward" if run.node_type != "treasure" else "treasure",
+                "next_node_data": run.node_data
+            }
+            res = "开启卡牌三选一奖励。"
+        
+        bg = item.get("bind_group")
+        if bg:
+            bind_res_list = []
+            for i, other in enumerate(items):
+                if not other.get("taken") and other.get("bind_group") == bg:
+                    other_res = self._claim_single_item(run, i)
+                    if other_res:
+                        bind_res_list.append(other_res)
+            if bind_res_list:
+                res += "\n" + "\n".join(bind_res_list)
+                
+        gi = item.get("group_id")
+        if gi:
+            for other in items:
+                if not other.get("taken") and other.get("group_id") == gi:
+                    other["taken"] = True
+                    
+        return res
 
     def _init_event_node(self, run: GameRun):
         stage = run.player.stage
@@ -157,155 +252,221 @@ class ExploreEngine:
             return f"🌟 先古赐福！你获得了传奇卡牌【{ALL_CARDS[cid].name}】与珍奇遗物【{get_relic_name(rid)}】！"
 
         elif run.node_type == "treasure":
-            if run.node_data.get("state") == "pending_remove":
-                from ..models.state import ensure_card_state
-                counts = {}
-                for c_id in p.deck:
-                    c_state = ensure_card_state(c_id)
-                    counts[c_state] = counts.get(c_state, 0) + 1
-                def get_sort_key(item):
-                    return (item[0].id, 1 if item[0].upgraded else 0, tuple(item[0].gems or []))
-                sorted_items = sorted(counts.items(), key=get_sort_key)
-                if option_idx < 1 or option_idx > len(sorted_items):
-                    return "❌ 无效的卡牌序号。"
-                cid = sorted_items[option_idx - 1][0]
-                removed_name = ALL_CARDS[cid].name
-                p.deck.remove(cid)
-                
-                gold_gain = random.randint(20, 40)
-                p.gold += gold_gain
-                
-                relics_pool = ["lucky_coin", "red_bottle", "leather_armor", "whetstone", "ready_pack", "arcane_rune", "ancient_eye", "gold_compass", "dragon_blood", "energy_core", "heavy_armor"]
-                available_relics = [r for r in relics_pool if r not in p.relics]
-                got_relic = ""
-                if available_relics:
-                    got_relic = random.choice(available_relics)
-                    p.relics.append(got_relic)
-                    if got_relic == "red_bottle":
-                        p.max_hp += 5
-                        p.hp += 5
-                        
-                allowed_colors = ("warrior", "neutral") if getattr(p, "selected_class", "法师") == "战士" else ("wizard", "neutral")
-                stats = None
-                if hasattr(self.save_manager, "load_stats"):
+            items = run.node_data.setdefault("items", [])
+            if not items:
+                items.append({"type": "sacrifice", "taken": False})
+                run.node_data["items"] = items
+            state = run.node_data.get("state", "pending_remove")
+            if state == "pending_remove":
+                if option_idx > 1:
+                    from ..models.state import ensure_card_state
+                    counts = {}
+                    for c_id in p.deck:
+                        c_state = ensure_card_state(c_id)
+                        counts[c_state] = counts.get(c_state, 0) + 1
+                    def get_sort_key(item):
+                        return (item[0].id, 1 if item[0].upgraded else 0, tuple(item[0].gems or []))
+                    sorted_items = sorted(counts.items(), key=get_sort_key)
+                    if option_idx > len(sorted_items):
+                        return get_locale_text("err_invalid_option_idx")
+                    cid = sorted_items[option_idx - 1][0]
+                    removed_name = ALL_CARDS[cid].name
+                    p.deck.remove(cid)
+                    
+                    gold_gain = random.randint(20, 40)
+                    p.gold += gold_gain
+                    
+                    relics_pool = ["lucky_coin", "red_bottle", "leather_armor", "whetstone", "ready_pack", "arcane_rune", "ancient_eye", "gold_compass", "dragon_blood", "energy_core", "heavy_armor"]
+                    available_relics = [r for r in relics_pool if r not in p.relics]
+                    got_relic = random.choice(available_relics) if available_relics else ""
+                    if got_relic:
+                        p.relics.append(got_relic)
+                        if got_relic == "red_bottle":
+                            p.max_hp += 5
+                            p.hp += 5
+                    
+                    allowed_colors = ("warrior", "neutral") if getattr(p, "selected_class", "法师") == "战士" else ("wizard", "neutral")
                     stats = self.save_manager.load_stats(run.user_id)
-                from ..entities.cards.market import is_card_available
-                card_pool = [
-                    cid for cid, c in ALL_CARDS.items()
-                    if c.rarity == "epic"
-                    and getattr(c, "color", "") in allowed_colors
-                    and not cid.startswith("curse_")
-                    and not cid.startswith("duel_")
-                    and is_card_available(cid, stats)
-                ]
-                reward_cards = random.sample(card_pool, 3) if len(card_pool) >= 3 else card_pool
-                from ..models.state import check_and_replace_fireball
-                reward_cards = [check_and_replace_fireball(run, cid) for cid in reward_cards]
+                    from ..entities.cards.market import is_card_available
+                    card_pool = [
+                        cid_ for cid_ in ALL_CARDS.keys()
+                        if ALL_CARDS[cid_].rarity == "epic"
+                        and getattr(ALL_CARDS[cid_], "color", "") in allowed_colors
+                        and not cid_.startswith("curse_")
+                        and not cid_.startswith("duel_")
+                        and is_card_available(cid_, stats)
+                    ]
+                    reward_cards = random.sample(card_pool, 3) if len(card_pool) >= 3 else card_pool
+                    from ..models.state import check_and_replace_fireball
+                    reward_cards = [check_and_replace_fireball(run, cid_) for cid_ in reward_cards]
+                    
+                    from ..data.gem_data import GEM_CONFIG
+                    gift_gem_id = random.choice(list(GEM_CONFIG.keys()))
+                    
+                    box_items = [
+                        {"type": "gold", "amount": gold_gain, "taken": True},
+                        {"type": "card_reward", "cards": reward_cards, "taken": False, "force": False},
+                        {"type": "gem", "gem_id": gift_gem_id, "taken": False}
+                    ]
+                    if got_relic:
+                        box_items.append({"type": "relic", "relic_id": got_relic, "taken": True})
+                        
+                    from ..models.events import RewardGenerateEvent
+                    evt = RewardGenerateEvent(run, box_items)
+                    self.map_engine.battle_engine.event_bus.dispatch(evt)
+                    
+                    from ..models.events import CardSelectInitEvent
+                    card_select_evt = CardSelectInitEvent(run, reward_cards)
+                    self.map_engine.battle_engine.event_bus.dispatch(card_select_evt)
+                    
+                    next_node_data = {
+                        "title": get_locale_text("render_card_select_title"),
+                        "cards": reward_cards,
+                        "can_skip": card_select_evt.can_skip,
+                        "force_upgraded": card_select_evt.upgraded,
+                        "items": box_items
+                    }
+                    run.node_data["state"] = "opened"
+                    run.node_data["items"] = box_items
+                    self.start_gem_insert_flow(run, gift_gem_id, "card_select", next_node_data)
+                    return get_locale_text("msg_sacrifice_success", removed_name=removed_name)
                 
-                relic_msg = f"与遗物【{get_relic_name(got_relic)}】" if got_relic else ""
-                
-                from ..data.gem_data import GEM_CONFIG
-                gift_gem_id = random.choice(list(GEM_CONFIG.keys()))
-                gem_name = GEM_CONFIG[gift_gem_id]["name"]
-                
-                relic_msg = f"与遗物【{get_relic_name(got_relic)}】" if got_relic else ""
-                
-                next_node_data = {
-                    "title": "古老宝箱：请选择你的秘宝",
-                    "desc": f"🔓 宝箱上的锁链崩解脱落！你成功献祭了【{removed_name}】。\n宝箱缓缓开启，你获得了 🪙 {gold_gain}金币{relic_msg}，以及附赠的宝石【{gem_name}】！同时宝箱中露出了三张珍奇卡牌：",
-                    "cards": reward_cards
-                }
-                
-                self.start_gem_insert_flow(run, gift_gem_id, "card_select", next_node_data)
-        elif run.node_type == "boss_chest":
-            options = run.node_data.get("options", [])
-            if option_idx < 1 or option_idx > len(options):
-                return "❌ 无效的选择序号。"
-            chosen = options[option_idx - 1]
-            type_ = chosen["type"]
-            id_ = chosen["id"]
-            if type_ == "relic":
-                p.relics.append(id_)
-                msg = f"🏆 你获得了神话遗物【{get_relic_name(id_)}】！"
+                available_items = [it for it in items if not it.get("taken")]
+                if option_idx < 1 or option_idx > len(available_items):
+                    return get_locale_text("err_invalid_option_idx")
+                chosen = available_items[option_idx - 1]
+                if chosen.get("type") == "sacrifice":
+                    run.node_data["pending_remove"] = True
+                    run.node_data["remove_source"] = "treasure"
+                    self.save_manager.save_save(run.user_id, run)
+                    return get_locale_text("msg_sacrifice_started")
             else:
-                from ..models.state import CardState
-                p.deck.append(CardState(id=id_))
-                msg = f"🏆 你获得了神话卡牌【{ALL_CARDS[id_].name}】！"
-            
-            self.map_engine.enter_next_stage(run)
+                available_items = [it for it in items if not it.get("taken")]
+                if option_idx < 1 or option_idx > len(available_items):
+                    return get_locale_text("err_invalid_option_idx")
+                chosen = available_items[option_idx - 1]
+                real_idx = items.index(chosen)
+                res = self._claim_single_item(run, real_idx)
+                if run.node_type != "treasure":
+                    self.save_manager.save_save(run.user_id, run)
+                    return res
+                available = [it for it in items if not it.get("taken")]
+                if not available:
+                    self.map_engine.enter_next_stage(run)
+                    self.save_manager.save_save(run.user_id, run)
+                    return f"{res}\n{get_locale_text('msg_rewards_claimed_finished')}"
+                self.save_manager.save_save(run.user_id, run)
+                return res
+
+        elif run.node_type == "boss_chest":
+            items = run.node_data.setdefault("items", [])
+            available_items = [it for it in items if not it.get("taken")]
+            if option_idx < 1 or option_idx > len(available_items):
+                return get_locale_text("err_invalid_option_idx")
+            chosen = available_items[option_idx - 1]
+            real_idx = items.index(chosen)
+            res = self._claim_single_item(run, real_idx)
+            if run.node_type != "boss_chest":
+                self.save_manager.save_save(run.user_id, run)
+                return res
+            available = [it for it in items if not it.get("taken")]
+            if not available:
+                self.map_engine.enter_next_stage(run)
+                self.save_manager.save_save(run.user_id, run)
+                return f"{res}\n{get_locale_text('msg_boss_chest_finished')}"
             self.save_manager.save_save(run.user_id, run)
-            return f"{msg}神话宝箱在刺目的光芒中碎裂消逝，开启下一关。"
+            return res
 
         elif run.node_type == "reward":
             if run.node_data.get("no_reward"):
-                if option_idx != 1:
-                    return "❌ 无效的选择序号。你只有选择 1 继续前进。"
-                pending_gems = run.node_data.get("pending_gems", [])
-                if pending_gems:
-                    gem_id = pending_gems.pop(0)
-                    run.node_data["pending_gems"] = pending_gems
-                    self.start_gem_insert_flow(run, gem_id, "reward", {"no_reward": True, "pending_gems": pending_gems})
-                    self.save_manager.save_save(run.user_id, run)
-                    from ..entities import get_gem_name
-                    return f"你开启了战斗中额外收获的宝石【{get_gem_name(gem_id)}】的强制镶嵌流程。"
                 self.map_engine.enter_next_stage(run)
                 self.save_manager.save_save(run.user_id, run)
-                return "你确认了异界脱逃，空手离开了这片战场，开启下一关。"
-            cards = run.node_data.get("cards", [])
-            skip_idx = len(cards) + 1
-            if option_idx < 1 or option_idx > skip_idx:
-                return "❌ 无效的选择序号。"
-            if option_idx == skip_idx:
-                p.gold += 15
-                msg = "获得了 15 金币。"
-            else:
-                cid = cards[option_idx - 1]
-                card = ALL_CARDS.get(cid)
-                p.deck.append(cid)
-                msg = f"已将卡牌【{card.name}】加入你的卡组。"
-            pending_gems = run.node_data.get("pending_gems", [])
-            if pending_gems:
-                gem_id = pending_gems.pop(0)
-                run.node_data["pending_gems"] = pending_gems
-                self.start_gem_insert_flow(run, gem_id, "reward", {"no_reward": True, "pending_gems": pending_gems})
+                return get_locale_text("msg_escape_battle_win")
+            items = run.node_data.setdefault("items", [])
+            available_items = [it for it in items if not it.get("taken")]
+            if option_idx < 1 or option_idx > len(available_items):
+                return get_locale_text("err_invalid_option_idx")
+            chosen = available_items[option_idx - 1]
+            real_idx = items.index(chosen)
+            res = self._claim_single_item(run, real_idx)
+            if run.node_type != "reward":
                 self.save_manager.save_save(run.user_id, run)
-                from ..entities import get_gem_name
-                return f"{msg}\n💎 另外，你开启了战斗中额外收获的宝石【{get_gem_name(gem_id)}】的强制镶嵌流程。"
-            self.map_engine.enter_next_stage(run)
+                return res
+            available = [it for it in items if not it.get("taken")]
+            if not available:
+                self.map_engine.enter_next_stage(run)
+                self.save_manager.save_save(run.user_id, run)
+                return f"{res}\n{get_locale_text('msg_rewards_claimed_finished')}"
             self.save_manager.save_save(run.user_id, run)
-            return f"{msg}开启下一关。"
+            return res
 
         elif run.node_type == "card_select":
             cards = run.node_data.get("cards", [])
+            can_skip = run.node_data.get("can_skip", True)
             skip_idx = len(cards) + 1
-            if option_idx < 1 or option_idx > skip_idx:
-                return "❌ 无效的选择序号。"
+            if not can_skip:
+                if option_idx < 1 or option_idx > len(cards):
+                    return get_locale_text("err_cannot_skip_card_select")
+            else:
+                if option_idx < 1 or option_idx > skip_idx:
+                    return get_locale_text("err_invalid_option_idx")
             if option_idx == skip_idx:
-                self.map_engine.enter_next_stage(run)
-                self.save_manager.save_save(run.user_id, run)
-                return "已跳过卡牌选择，开启下一关。"
+                msg = get_locale_text("msg_card_select_skipped")
             else:
                 cid = cards[option_idx - 1]
+                from ..models.state import ensure_card_state
+                c_state = ensure_card_state(cid)
+                from ..models.events import CardObtainEvent
+                obtain_evt = CardObtainEvent(run, c_state)
+                self.map_engine.battle_engine.event_bus.dispatch(obtain_evt)
+                p.deck.append(c_state)
                 card = ALL_CARDS.get(cid)
-                p.deck.append(cid)
+                msg = get_locale_text("msg_card_added_to_deck", card_name=card.name if card else cid)
+            next_type = run.node_data.get("next_node_type")
+            next_data = run.node_data.get("next_node_data")
+            if next_type:
+                run.node_type = next_type
+                run.node_data = next_data
+                self.save_manager.save_save(run.user_id, run)
+                available = [it for it in run.node_data.setdefault("items", []) if not it.get("taken")]
+                if not available:
+                    self.map_engine.enter_next_stage(run)
+                    self.save_manager.save_save(run.user_id, run)
+                    return f"{msg}\n{get_locale_text('msg_rewards_claimed_finished')}"
+                return msg
+            else:
                 self.map_engine.enter_next_stage(run)
                 self.save_manager.save_save(run.user_id, run)
-                return f"已将卡牌【{card.name}】加入你的卡组，开启下一关。"
+                return f"{msg}开启下一关。"
 
         elif run.node_type == "rest":
-            if option_idx not in (1, 2, 3, 4):
-                return "❌ 无效的选择序号。"
+            items = run.node_data.setdefault("items", [])
+            if not items:
+                self._init_rest_node(run)
+                items = run.node_data["items"]
+            
+            # 支持旧用例的选项映射
+            itype = None
             if option_idx == 1:
+                itype = "rest_heal"
+            elif option_idx == 2:
+                itype = "rest_meditate"
+            elif option_idx in (3, 4):
+                itype = "rest_upgrade"
+            else:
+                return "❌ 无效的选择序号。"
+            
+            for it in items:
+                it["taken"] = True
+            if itype == "rest_heal":
                 heal = p.max_hp // 2
                 p.hp = min(p.max_hp, p.hp + heal)
                 self.map_engine.enter_next_stage(run)
                 self.save_manager.save_save(run.user_id, run)
-                return f"你感到精力充沛，恢复了 {heal} 点生命值，开启下一关。"
-            elif option_idx == 2:
+                return f"你感到精力充沛，恢复了 {heal} 点生命值。\n整顿完毕，开启下一关。"
+            elif itype == "rest_meditate":
                 class_color = "warrior" if getattr(p, "selected_class", "法师") == "战士" else "wizard"
-                stats = None
-                if hasattr(self.save_manager, "load_stats"):
-                    stats = self.save_manager.load_stats(run.user_id)
+                stats = self.save_manager.load_stats(run.user_id)
                 from ..entities.cards.market import is_card_available
                 class_cards = [
                     cid for cid, c in ALL_CARDS.items()
@@ -323,17 +484,16 @@ class ExploreEngine:
                 run.node_data = {
                     "title": "冥想感悟：请选择你想领悟的卡牌",
                     "desc": "你面对篝火静静冥想，脑海中浮现出了三道奥术灵光：",
-                    "cards": reward_cards
+                    "cards": reward_cards,
+                    "next_node_type": "rest",
+                    "next_node_data": run.node_data
                 }
                 self.save_manager.save_save(run.user_id, run)
                 return "你开始冥想，寻找领悟。"
-            elif option_idx == 4:
+            elif itype == "rest_upgrade":
                 run.node_data["upgrade_source"] = "rest"
-                return "UPGRADE_FLOW"
-            else:
-                self.map_engine.enter_next_stage(run)
                 self.save_manager.save_save(run.user_id, run)
-                return "你整理了行囊直接出发，开启下一关。"
+                return "UPGRADE_FLOW"
 
         elif run.node_type == "event":
             options = run.node_data.get("options", [])
@@ -408,25 +568,70 @@ class ExploreEngine:
             return (item[0].id, 1 if item[0].upgraded else 0, tuple(item[0].gems or []))
         sorted_items = sorted(counts.items(), key=get_sort_key)
         if deck_idx < 1 or deck_idx > len(sorted_items):
-            return "❌ 无效的卡牌序号。"
+            return get_locale_text("err_invalid_option_idx")
         c_state = sorted_items[deck_idx - 1][0]
         removed_name = ALL_CARDS[c_state].name
         p.deck.remove(c_state)
         
-        discount = 1.0
-        if "gold_compass" in p.relics:
-            discount *= 0.6
-        if "greedy_contract" in p.relics:
-            discount *= 0.6
-        p.gold -= int(30 * discount)
-        
-        items = run.node_data.get("items", [])
-        for item in items:
-            if item.get("type") == "remove":
-                item["sold"] = True
-        run.node_data["pending_remove"] = False
-        self.save_manager.save_save(run.user_id, run)
-        return f"已成功从你的卡组中移除了【{removed_name}】。"
+        source = run.node_data.get("remove_source", "shop")
+        if source == "treasure":
+            gold_gain = random.randint(20, 40)
+            relics_pool = ["lucky_coin", "red_bottle", "leather_armor", "whetstone", "ready_pack", "arcane_rune", "ancient_eye", "gold_compass", "dragon_blood", "energy_core", "heavy_armor"]
+            available_relics = [r for r in relics_pool if r not in p.relics]
+            got_relic = random.choice(available_relics) if available_relics else ""
+            
+            allowed_colors = ("warrior", "neutral") if getattr(p, "selected_class", "法师") == "战士" else ("wizard", "neutral")
+            stats = self.save_manager.load_stats(run.user_id)
+            from ..entities.cards.market import is_card_available
+            card_pool = [
+                cid for cid, c in ALL_CARDS.items()
+                if c.rarity == "epic"
+                and getattr(c, "color", "") in allowed_colors
+                and not cid.startswith("curse_")
+                and not cid.startswith("duel_")
+                and is_card_available(cid, stats)
+            ]
+            reward_cards = random.sample(card_pool, 3) if len(card_pool) >= 3 else card_pool
+            from ..models.state import check_and_replace_fireball
+            reward_cards = [check_and_replace_fireball(run, cid) for cid in reward_cards]
+            
+            from ..data.gem_data import GEM_CONFIG
+            gift_gem_id = random.choice(list(GEM_CONFIG.keys()))
+            
+            items = [
+                {"type": "gold", "amount": gold_gain, "taken": False},
+                {"type": "card_reward", "cards": reward_cards, "taken": False, "force": False},
+                {"type": "gem", "gem_id": gift_gem_id, "taken": False}
+            ]
+            if got_relic:
+                items.append({"type": "relic", "relic_id": got_relic, "taken": False})
+                
+            from ..models.events import RewardGenerateEvent
+            evt = RewardGenerateEvent(run, items)
+            self.map_engine.battle_engine.event_bus.dispatch(evt)
+            
+            run.node_data = {
+                "state": "opened",
+                "items": items,
+                "text": f"🔓 宝箱上的锁链崩解脱落！你成功献祭了【{removed_name}】。\n宝箱缓缓开启，里面露出了丰厚的秘宝奖励！请选择拿取："
+            }
+            self.save_manager.save_save(run.user_id, run)
+            return get_locale_text("msg_sacrifice_success", removed_name=removed_name)
+        else:
+            discount = 1.0
+            if "gold_compass" in p.relics:
+                discount *= 0.6
+            if "greedy_contract" in p.relics:
+                discount *= 0.6
+            p.gold -= int(30 * discount)
+            
+            items = run.node_data.get("items", [])
+            for item in items:
+                if item.get("type") == "remove":
+                    item["sold"] = True
+            run.node_data["pending_remove"] = False
+            self.save_manager.save_save(run.user_id, run)
+            return get_locale_text("msg_card_removed_success", removed_name=removed_name)
 
     def upgrade_card_in_deck(self, run: GameRun, deck_idx: int) -> str:
         p = run.player
@@ -440,15 +645,15 @@ class ExploreEngine:
         sorted_items = sorted(counts.items(), key=get_sort_key)
         
         if deck_idx < 1 or deck_idx > len(sorted_items):
-            return "❌ 无效的卡牌序号。"
+            return get_locale_text("err_invalid_card_idx")
         
         c_state = sorted_items[deck_idx - 1][0]
         if c_state.upgraded:
-            return "❌ 该卡牌已经升级过了，无法重复升级。"
+            return get_locale_text("err_card_already_upgraded")
             
         from ..data.card_upgrade_data import CARD_UPGRADE_CONFIG
         if c_state.id not in CARD_UPGRADE_CONFIG:
-            return "❌ 该卡牌无法被升级。"
+            return get_locale_text("err_card_cannot_upgrade")
             
         import copy
         new_state = copy.copy(c_state)
@@ -462,10 +667,17 @@ class ExploreEngine:
         old_card_name = ALL_CARDS[c_state].name
         new_card_name = ALL_CARDS[new_state].name
         
-        if source in ("rest", "event"):
+        if source == "rest":
+            if "items" in run.node_data:
+                for it in run.node_data["items"]:
+                    it["taken"] = True
             self.map_engine.enter_next_stage(run)
             self.save_manager.save_save(run.user_id, run)
-            return f"🔨 升级成功！你的【{old_card_name}】已成功升级为强力变体【{new_card_name}】。你离开此地继续赶路，开启下一关。"
+            return get_locale_text("msg_upgrade_success_rest", old_card_name=old_card_name, new_card_name=new_card_name)
+        elif source == "event":
+            self.map_engine.enter_next_stage(run)
+            self.save_manager.save_save(run.user_id, run)
+            return get_locale_text("msg_upgrade_success_event", old_card_name=old_card_name, new_card_name=new_card_name)
         else:
             items = run.node_data.get("items", [])
             for item in items:
@@ -474,7 +686,7 @@ class ExploreEngine:
             price = run.node_data.get("upgrade_price", 30)
             p.gold -= price
             self.save_manager.save_save(run.user_id, run)
-            return f"🔨 升级成功！已将【{old_card_name}】永久升级为强力变体【{new_card_name}】。"
+            return get_locale_text("msg_upgrade_success_shop", old_card_name=old_card_name, new_card_name=new_card_name)
 
     def start_gem_insert_flow(self, run: GameRun, gem_id: str, next_node_type: str, next_node_data: dict) -> str:
         from ..data.gem_data import GEM_CONFIG

@@ -114,7 +114,7 @@
     "welcome": "🐟 pppopipupu：为什么我的中指腱鞘炎还不好",
     "idle_talk": [
       "🐟 pppopipupu：'vibe虽然不可靠，但真的很爽...但是爽之后的擦屁股就难受了，必须找到一个平衡'",
-      "🐟 pppopipupu：'你知道吗，anima base v1模型真的很好用，我已经对跑的图不知道🦌晕几次了。记住一定要在负面提示词加bad feet missing finger，这模型很容易崩手崩脚'"
+      "🐟 pppopipupu：'你知道吗，anima base v1模型真的很好用，我已经对跑的图不知道麓晕几次了。记住一定要在负面提示词加bad feet missing finger，这模型很容易崩手崩脚'"
     ],
     "option_idle": "与pppopipupu闲聊",
     "option_challenge": "发起切磋挑战",
@@ -131,7 +131,7 @@
   },
   "Fountain": {
     "name": "许愿喷泉",
-    "desc": "清澈的许愿池，汇聚着纯净的甘露水。可以将硬币丢入祈愿，或者在此洗净带有虚空污染的物件。",
+    "desc": "清澈的许愿池，汇聚着纯净 of 甘露水。可以将硬币丢入祈愿，或者在此洗净带有虚空污染的物件。",
     "welcome": "泉水自龙口倾泻而下，水花在阳光下闪烁，池底躺着不少亮闪闪的硬币。",
     "option_wish": "投掷 【幸运硬币】 许愿",
     "option_wash_herb": "在泉水中冲刷洗练 【虚空草药】",

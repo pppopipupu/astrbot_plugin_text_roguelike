@@ -2,6 +2,7 @@ from ..models.state import GameRun
 from ..entities import get_relic_name, get_relic_desc
 from ..cards import ALL_CARDS
 from .menu import get_card_cost_str
+from ..data.locale_data import get_locale_text
 
 def render_event(run: GameRun) -> str:
     p = run.player
@@ -76,25 +77,31 @@ def render_shop(run: GameRun) -> str:
 
 def render_rest(run: GameRun) -> str:
     p = run.player
+    data = run.node_data
     relics_str = ""
     if p.relics:
         relics_str = "\n🎒 遗物：" + " ".join([f"【{get_relic_name(r)}】" for r in p.relics])
     lines = [
         "━━━━━━━━━━━━━━━━━━━━",
-        f"🔥 【第 {p.stage} 关：篝火营地】",
+        get_locale_text("render_rest_title", stage=p.stage),
         f"{run.player.name}：❤️ HP {p.hp}/{p.max_hp}" + relics_str,
         "",
-        "温暖的篝火跳跃着，你感到有些疲惫。你可以选择：",
-        " [1] 🍖 休息：恢复 50% 最大生命值",
-        " [2] 🔮 冥想：获得一张随机蓝色法术牌并加入卡组",
-        " [3] 🚪 离开：不做整顿直接出发",
-        " [4] 🔨 强化：选择你卡组里的一张卡牌进行升级",
-        "━━━━━━━━━━━━━━━━━━━━"
+        get_locale_text("render_rest_desc")
     ]
-    if p.fold_guide:
-        lines.append("💬 提示：操作指南已折叠。输入 /rogue 折叠 可展开。")
-    else:
-        lines.append("💬 选择指令：/rogue c <序号>")
+    items = data.get("items", [])
+    available_items = [it for it in items if not it.get("taken")]
+    for idx, it in enumerate(available_items, 1):
+        itype = it.get("type")
+        if itype == "rest_heal":
+            lines.append(f" [{idx}] {get_locale_text('render_rest_heal')}")
+        elif itype == "rest_meditate":
+            lines.append(f" [{idx}] {get_locale_text('render_rest_meditate')}")
+        elif itype == "rest_upgrade":
+            lines.append(f" [{idx}] {get_locale_text('render_rest_upgrade')}")
+    lines.append("━━━━━━━━━━━━━━━━━━━━")
+    if not available_items:
+        lines.append(get_locale_text("render_rest_completed"))
+    lines.append(get_locale_text("render_rest_exit"))
     lines.append("━━━━━━━━━━━━━━━━━━━━")
     return "\n".join(lines)
 
@@ -109,35 +116,61 @@ def render_reward(run: GameRun) -> str:
             "🔮 你咏唱了【异界传送】，狼狈地穿过传送门逃离了战场。",
             "由于你半途脱逃，本场遭遇战你没有获得任何战利品与金币！",
             "",
-            " [1] 🚪 确认并继续前进",
             "━━━━━━━━━━━━━━━━━━━━",
-            "💬 继续指令：/rogue c 1",
+            get_locale_text("render_reward_exit_normal"),
             "━━━━━━━━━━━━━━━━━━━━"
         ]
         return "\n".join(lines)
     quest_bonus = data.get("quest_bonus", "")
     lines = [
         "━━━━━━━━━━━━━━━━━━━━",
-        "🎁 【战斗胜利！请选择你的战利品】",
+        get_locale_text("render_reward_title"),
+        f"{run.player.name}：❤️ HP {p.hp}/{p.max_hp} | 🪙 金币 {p.gold}",
         ""
     ]
     if quest_bonus:
         lines.append(quest_bonus)
         lines.append("")
-    cards = data.get("cards", [])
-    for idx, cid in enumerate(cards, 1):
-        card = ALL_CARDS.get(cid)
-        if card:
-            color_ch = "⚫" if card.color == "curse" else ("🔵" if card.color == "wizard" else "⚪")
-            cost_str = get_card_cost_str(card)
-            lines.append(f" [{idx}] {color_ch} {card.name} (消耗: {cost_str}) - {card.desc}")
-    skip_idx = len(cards) + 1
-    lines.append(f" [{skip_idx}] 🪙 跳过奖励卡牌 (获得 15 金币)")
+    items = data.get("items", [])
+    available_items = [it for it in items if not it.get("taken")]
+    has_forced = False
+    for idx, it in enumerate(available_items, 1):
+        prefix = ""
+        if it.get("force"):
+            prefix += get_locale_text("label_forced")
+            has_forced = True
+        if it.get("group_id"):
+            prefix += get_locale_text("label_multi_choice")
+        if it.get("bind_group"):
+            prefix += get_locale_text("label_bundle")
+        itype = it.get("type")
+        if itype == "gold":
+            lines.append(f" [{idx}] {prefix}🪙 {it.get('amount')} 金币")
+        elif itype == "card_reward":
+            lines.append(f" [{idx}] {prefix}🃏 卡牌奖励")
+        elif itype in ("relic", "quest_relic", "boss_relic"):
+            rid = it.get("relic_id") or it.get("id")
+            lines.append(f" [{idx}] {prefix}🎒 {get_relic_name(rid)} (遗物) - {get_relic_desc(rid)}")
+        elif itype == "gem":
+            from ..data.gem_data import GEM_CONFIG
+            gid = it.get("gem_id")
+            g_cfg = GEM_CONFIG.get(gid, {})
+            lines.append(f" [{idx}] {prefix}💎 {g_cfg.get('name', gid)} (宝石) - {g_cfg.get('desc', '')}")
+        elif itype == "quest_card":
+            cid = it.get("card_id")
+            lines.append(f" [{idx}] {prefix}🃏 任务卡牌【{ALL_CARDS[cid].name if cid in ALL_CARDS else cid}】")
+        elif itype == "potion":
+            from ..data.potion_data import get_potion_name, get_potion_desc
+            pid = it.get("potion_id")
+            lines.append(f" [{idx}] {prefix}🧪 {get_potion_name(pid)} (药水) - {get_potion_desc(pid)}")
     lines.append("━━━━━━━━━━━━━━━━━━━━")
-    if p.fold_guide:
-        lines.append("💬 提示：操作指南已折叠。输入 /rogue 折叠 可展开。")
+    if not available_items:
+        lines.append(get_locale_text("render_reward_completed"))
     else:
-        lines.append("💬 选择指令：/rogue c <序号>")
+        if has_forced:
+            lines.append(get_locale_text("render_reward_exit_forced"))
+        else:
+            lines.append(get_locale_text("render_reward_exit_normal"))
     lines.append("━━━━━━━━━━━━━━━━━━━━")
     return "\n".join(lines)
 
@@ -148,19 +181,53 @@ def render_treasure(run: GameRun) -> str:
     state = data.get("state", "pending_remove")
     lines = [
         "━━━━━━━━━━━━━━━━━━━━",
-        f"🎁 【第 {p.stage} 关：古老宝箱】",
+        get_locale_text("render_treasure_title", stage=p.stage),
         f"{run.player.name}：❤️ HP {p.hp}/{p.max_hp} | 🪙 金币 {p.gold}",
         "",
         text,
         ""
     ]
-    if state == "opened":
-        lines.append(" [1] 🚪 离开宝箱房，继续冒险")
+    if state == "pending_remove":
+        lines.append(get_locale_text("render_treasure_sacrifice"))
+    else:
+        items = data.get("items", [])
+        available_items = [it for it in items if not it.get("taken")]
+        has_forced = False
+        for idx, it in enumerate(available_items, 1):
+            prefix = ""
+            if it.get("force"):
+                prefix += get_locale_text("label_forced")
+                has_forced = True
+            if it.get("group_id"):
+                prefix += get_locale_text("label_multi_choice")
+            if it.get("bind_group"):
+                prefix += get_locale_text("label_bundle")
+            itype = it.get("type")
+            if itype == "gold":
+                lines.append(f" [{idx}] {prefix}🪙 {it.get('amount')} 金币")
+            elif itype == "card_reward":
+                lines.append(f" [{idx}] {prefix}🃏 卡牌奖励")
+            elif itype in ("relic", "quest_relic", "boss_relic"):
+                rid = it.get("relic_id") or it.get("id")
+                lines.append(f" [{idx}] {prefix}🎒 {get_relic_name(rid)} (遗物) - {get_relic_desc(rid)}")
+            elif itype == "gem":
+                from ..data.gem_data import GEM_CONFIG
+                gid = it.get("gem_id")
+                g_cfg = GEM_CONFIG.get(gid, {})
+                lines.append(f" [{idx}] {prefix}💎 {g_cfg.get('name', gid)} (宝石) - {g_cfg.get('desc', '')}")
     lines.append("━━━━━━━━━━━━━━━━━━━━")
     if state == "pending_remove":
-        lines.append("💬 选择要献祭（移除）的卡牌序号指令：/rogue c <卡牌序号>")
+        lines.append(get_locale_text("render_treasure_exit_sacrifice"))
     else:
-        lines.append("💬 离开指令：/rogue c 1")
+        available_items = [it for it in data.get("items", []) if not it.get("taken")]
+        if not available_items:
+            lines.append(get_locale_text("render_treasure_completed"))
+        else:
+            has_forced = any(it.get("force") for it in available_items)
+            if has_forced:
+                lines.append(get_locale_text("render_treasure_exit_forced"))
+            else:
+                lines.append(get_locale_text("render_treasure_exit_normal"))
     lines.append("━━━━━━━━━━━━━━━━━━━━")
     return "\n".join(lines)
 
@@ -187,9 +254,14 @@ def render_card_select(run: GameRun) -> str:
         if card:
             color_ch = "⚫" if card.color == "curse" else ("🔵" if card.color == "wizard" else "⚪")
             cost_str = get_card_cost_str(card)
-            lines.append(f" [{idx}] {color_ch} {card.name} (消耗: {cost_str}) - {card.desc}")
+            card_name = f"{card.name}+" if data.get("force_upgraded", False) else card.name
+            lines.append(f" [{idx}] {color_ch} {card_name} (消耗: {cost_str}) - {card.desc}")
     skip_idx = len(cards) + 1
-    lines.append(f" [{skip_idx}] 🚪 跳过卡牌选择")
+    can_skip = data.get("can_skip", True)
+    if not can_skip:
+        lines.append(get_locale_text("render_card_select_cannot_skip"))
+    else:
+        lines.append(get_locale_text("render_card_select_skip", skip_idx=skip_idx))
     lines.append("━━━━━━━━━━━━━━━━━━━━")
     if p.fold_guide:
         lines.append("💬 提示：操作指南已折叠。输入 /rogue 折叠 可展开。")
@@ -214,23 +286,26 @@ def render_boss_chest(run: GameRun) -> str:
         desc,
         ""
     ]
-    options = data.get("options", [])
-    from ..entities import get_relic_desc
-    for idx, opt in enumerate(options, 1):
-        type_ = opt.get("type")
-        id_ = opt.get("id")
-        if type_ == "relic":
-            lines.append(f" [{idx}] 🎒 神话遗物【{get_relic_name(id_)}】 - {get_relic_desc(id_)}")
-        elif type_ == "card":
+    items = data.get("items", [])
+    available_items = [it for it in items if not it.get("taken")]
+    for idx, it in enumerate(available_items, 1):
+        prefix = ""
+        if it.get("group_id"):
+            prefix += get_locale_text("label_multi_choice")
+        itype = it.get("type")
+        id_ = it.get("id")
+        if itype == "boss_relic":
+            lines.append(f" [{idx}] {prefix}🎒 神话遗物【{get_relic_name(id_)}】 - {get_relic_desc(id_)}")
+        elif itype == "boss_card":
             card = ALL_CARDS.get(id_)
             if card:
                 color_ch = "⚫" if card.color == "curse" else ("🔵" if card.color == "wizard" else "⚪")
                 cost_str = get_card_cost_str(card)
-                lines.append(f" [{idx}] {color_ch} 神话卡牌【{card.name}】 (消耗: {cost_str}) - {card.desc}")
+                lines.append(f" [{idx}] {prefix}{color_ch} 神话卡牌【{card.name}】 (消耗: {cost_str}) - {card.desc}")
     lines.append("━━━━━━━━━━━━━━━━━━━━")
-    if p.fold_guide:
-        lines.append("💬 提示：操作指南已折叠。输入 /rogue 折叠 可展开。")
+    if not available_items:
+        lines.append(get_locale_text("render_reward_completed"))
     else:
-        lines.append("💬 选择指令：/rogue c <序号>")
+        lines.append(get_locale_text("render_boss_chest_exit"))
     lines.append("━━━━━━━━━━━━━━━━━━━━")
     return "\n".join(lines)

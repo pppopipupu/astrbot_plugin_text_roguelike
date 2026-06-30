@@ -144,6 +144,7 @@ class MapEngine:
                     item["card"] = check_and_replace_fireball(run, item["card"])
             options = selected_relics + selected_cards
             random.shuffle(options)
+            options.append({"type": "double", "relic": "trash_mountain"})
             run.node_data = {"options": options, "style": style}
         elif p.stage in MapConfig.CAFE_STAGES:
             from .cafe_engine import CafeEngine
@@ -398,4 +399,5 @@ class MapEngine:
                 "card": check_and_replace_fireball(run, legends_pool[i % len(legends_pool)]),
                 "relic": available_relics[i % len(available_relics)]
             })
+        options.append({"type": "double", "relic": "trash_mountain"})
         run.node_data = {"options": options, "style": style}
