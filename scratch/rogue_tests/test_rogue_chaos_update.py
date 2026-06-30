@@ -1,7 +1,7 @@
 import unittest
 import random
 from scratch.rogue_tests.base import *
-from game.models.state import PlayerState, GameRun, EnemyState
+from game.models.state import PlayerState, GameRun, EnemyState, CardState
 from game.entities.cards.base import ALL_CARDS
 from game.core.battle_engine import BattleEngine
 from game.entities.events.chaos_events import (
@@ -287,8 +287,8 @@ class TestRogueChaosUpdate(unittest.TestCase):
         ge = GameEngine(sm)
         player = PlayerState(
             hp=40, max_hp=40, shield=0, gold=100, stage=1,
-            deck=["tactical_focus:gems:gem_shield_add_8", "fire_bolt:gems:gem_shield_add_8"],
-            hand=["tactical_focus:gems:gem_shield_add_8", "fire_bolt:gems:gem_shield_add_8"],
+            deck=[CardState(id="tactical_focus", gems=["gem_shield_add_8"]), CardState(id="fire_bolt", gems=["gem_shield_add_8"])],
+            hand=[CardState(id="tactical_focus", gems=["gem_shield_add_8"]), CardState(id="fire_bolt", gems=["gem_shield_add_8"])],
             actions=3, bonus_actions=3, buffs=[]
         )
         run = GameRun(user_id="test_gems", node_type="battle", player=player, enemies=[EnemyState("e1", 20, 20, 0)])
@@ -311,8 +311,8 @@ class TestRogueChaosUpdate(unittest.TestCase):
         ge = GameEngine(sm)
         player = PlayerState(
             hp=40, max_hp=40, shield=0, gold=100, stage=1,
-            deck=["neutral_emperor_eye:gems:gem_copy_1", "fire_bolt", "warrior_defend"],
-            hand=["neutral_emperor_eye:gems:gem_copy_1", "fire_bolt", "warrior_defend"],
+            deck=[CardState(id="neutral_emperor_eye", gems=["gem_copy_1"]), CardState(id="fire_bolt"), CardState(id="warrior_defend")],
+            hand=[CardState(id="neutral_emperor_eye", gems=["gem_copy_1"]), CardState(id="fire_bolt"), CardState(id="warrior_defend")],
             actions=3, bonus_actions=2, buffs=[]
         )
         run = GameRun(user_id="test_eye_suspend", node_type="battle", player=player, enemies=[EnemyState("e1", 10, 10, 0)])
@@ -334,8 +334,8 @@ class TestRogueChaosUpdate(unittest.TestCase):
         ge = GameEngine(sm)
         player = PlayerState(
             hp=40, max_hp=40, shield=0, gold=100, stage=1,
-            deck=["discover:gems:gem_copy_1"],
-            hand=["discover:gems:gem_copy_1"],
+            deck=[CardState(id="discover", gems=["gem_copy_1"])],
+            hand=[CardState(id="discover", gems=["gem_copy_1"])],
             exhaust_pile=["fire_bolt", "warrior_defend"],
             actions=3, bonus_actions=2, buffs=[]
         )
@@ -353,7 +353,7 @@ class TestRogueChaosUpdate(unittest.TestCase):
         router._execute_sub_action("test_discover_resolve", run, parts)
         self.assertEqual(len(run.node_data.get("state_stack", [])), 0)
         self.assertIn("fire_bolt", player.hand)
-        self.assertIn("discover:no_copy:1", player.hand)
+        self.assertTrue(any(c.id == "discover" and getattr(c, "no_copy", False) for c in player.hand))
 
     def test_discover_suspend_and_cancel(self):
         class DummySaveManager:
@@ -363,8 +363,8 @@ class TestRogueChaosUpdate(unittest.TestCase):
         ge = GameEngine(sm)
         player = PlayerState(
             hp=40, max_hp=40, shield=0, gold=100, stage=1,
-            deck=["discover:gems:gem_copy_1", "fire_bolt"],
-            hand=["discover:gems:gem_copy_1", "fire_bolt"],
+            deck=[CardState(id="discover", gems=["gem_copy_1"]), CardState(id="fire_bolt")],
+            hand=[CardState(id="discover", gems=["gem_copy_1"]), CardState(id="fire_bolt")],
             exhaust_pile=["warrior_defend"],
             actions=3, bonus_actions=2, buffs=[]
         )
@@ -379,4 +379,4 @@ class TestRogueChaosUpdate(unittest.TestCase):
         router._execute_sub_action("test_discover_cancel", run, parts)
         self.assertEqual(len(run.node_data.get("state_stack", [])), 0)
         self.assertEqual(player.actions, 3)
-        self.assertEqual(player.hand[0], "discover:gems:gem_copy_1")
+        self.assertTrue(player.hand[0].id == "discover" and "gem_copy_1" in player.hand[0].gems)

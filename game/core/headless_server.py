@@ -328,6 +328,7 @@ class HeadlessGameServer:
             else:
                 return "❌ 错误：无效指令。请使用 /rogueadmin add_card <卡牌名称/ID> [玩家ID]"
             
+            upgraded = card_input.endswith("+")
             card_id = resolve_card_id(card_input)
             if not card_id:
                 return f"❌ 错误：未找到卡牌【{card_input}】"
@@ -340,11 +341,15 @@ class HeadlessGameServer:
                 
                 card_obj = ALL_CARDS.get(card_id)
                 card_name = card_obj.name if card_obj else card_id
+                if upgraded:
+                    card_name += "+"
                 
-                run.player.deck.append(card_id)
+                from ..models.state import CardState
+                card_state = CardState(id=card_id, upgraded=upgraded)
+                run.player.deck.append(card_state)
                 in_battle = (run.node_type == "battle")
                 if in_battle:
-                    run.player.hand.append(card_id)
+                    run.player.hand.append(card_state)
                     
                 self.save_manager.save_save(target_user_id, run)
                 

@@ -109,7 +109,7 @@ class TestRogueCafe(unittest.TestCase):
             await run_command(plugin, ".rogue c 1", user_id)
             latest_run2 = plugin.save_manager.load_save(user_id)
             self.assertEqual(latest_run2.node_type, "cafe")
-            self.assertIn("fire_bolt:gems:gem_return_5", latest_run2.player.deck)
+            self.assertTrue(any(c.id == "fire_bolt" and "gem_return_5" in c.gems for c in latest_run2.player.deck))
             
         asyncio.run(go())
         plugin.save_manager.delete_save(user_id)

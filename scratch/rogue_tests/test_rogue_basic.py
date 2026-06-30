@@ -414,7 +414,7 @@ class TestRogueBasic(unittest.TestCase):
             self.assertIn("成功将卡牌", res_text_alt)
 
             run_other = plugin.save_manager.load_save("user_other")
-            self.assertIn("warrior_strike+", run_other.player.deck)
+            self.assertTrue(any(c.id == "warrior_strike" and c.upgraded for c in run_other.player.deck))
 
             run = plugin.save_manager.load_save(user_id)
             run.node_type = "battle"
@@ -428,8 +428,8 @@ class TestRogueBasic(unittest.TestCase):
             self.assertIn("直接加入手牌", res_battle)
 
             run = plugin.save_manager.load_save(user_id)
-            self.assertIn("fireball+", run.player.deck)
-            self.assertIn("fireball+", run.player.hand)
+            self.assertTrue(any(c.id == "fireball" and c.upgraded for c in run.player.deck))
+            self.assertTrue(any(c.id == "fireball" and c.upgraded for c in run.player.hand))
 
             plugin.save_manager.delete_save(user_id)
             plugin.save_manager.delete_save("user_other")

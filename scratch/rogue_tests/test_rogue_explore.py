@@ -168,15 +168,16 @@ class TestRogueExplore(unittest.TestCase):
         self.assertEqual(len(player.deck), 3)
 
     def test_card_upgrade_and_forge(self):
+        from game.models.state import CardState
         mhw = ALL_CARDS.get("mass_healing_word")
-        mhw_plus = ALL_CARDS.get("mass_healing_word+")
+        mhw_plus = ALL_CARDS[CardState(id="mass_healing_word", upgraded=True)]
         self.assertIsNotNone(mhw)
         self.assertIsNotNone(mhw_plus)
         self.assertTrue(mhw_plus.upgraded)
         self.assertEqual(mhw_plus.heal_amount, 12)
 
         fb = ALL_CARDS.get("fireball")
-        fb_plus = ALL_CARDS.get("fireball+")
+        fb_plus = ALL_CARDS[CardState(id="fireball", upgraded=True)]
         self.assertIsNotNone(fb)
         self.assertIsNotNone(fb_plus)
         self.assertTrue(fb_plus.upgraded)
@@ -184,7 +185,7 @@ class TestRogueExplore(unittest.TestCase):
         q_res_normal = render_query_info("fireball")
         self.assertIn("升级变体", q_res_normal)
         self.assertIn("24", q_res_normal)
-        q_res_plus = render_query_info("fireball+")
+        q_res_plus = render_query_info("fireball")
         self.assertIn("升级变体", q_res_plus)
         self.assertIn("24", q_res_plus)
         plugin = MyPlugin(DummyContext())
