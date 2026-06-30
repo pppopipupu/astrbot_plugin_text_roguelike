@@ -7,6 +7,30 @@ class DummyTemplate(EnemyTemplate):
     def roll_intents(self, run, engine, enemy) -> List[EnemyIntentState]:
         return []
 
+@register_enemy("测试训练假人")
+class TestDummyTemplate(EnemyTemplate):
+    def roll_intents(self, run, engine, enemy) -> List[EnemyIntentState]:
+        turn = run.node_data.get("test_dummy_turn", 1)
+        run.node_data["test_dummy_turn"] = turn + 1
+        intents_list = []
+        if turn % 2 == 1:
+            intents_list.append(EnemyIntentState(
+                type="attack",
+                val=10,
+                desc="横扫击打 (造成 10 点钝击伤害)",
+                cost_a=1,
+                cost_ba=0
+            ))
+        else:
+            intents_list.append(EnemyIntentState(
+                type="defend",
+                val=10,
+                desc="自我修复 (获得 10 点护盾)",
+                cost_a=1,
+                cost_ba=0
+            ))
+        return intents_list
+
 @register_enemy("NoobSlayer99")
 class NoobSlayer99Template(EnemyTemplate):
     def roll_intents(self, run, engine, enemy) -> List[EnemyIntentState]:

@@ -980,5 +980,57 @@ class TestRogueEnemyStage(unittest.TestCase):
         self.assertEqual(enemy.name, "【万物归一】虚空之门·尤格-索托斯")
         self.assertEqual(enemy.hp, 2147483647)
 
+    def test_test_dummy_creation_and_intents(self):
+        from game.entities import get_enemy_template
+        from game.data.enemy_data import ENEMY_CONFIG
+        
+        self.assertIn("测试训练假人", ENEMY_CONFIG)
+        cfg = ENEMY_CONFIG["测试训练假人"]
+        self.assertEqual(cfg["hp"], "999999")
+        
+        template = get_enemy_template("测试训练假人")
+        self.assertIsNotNone(template)
+        
+        class DummySaveManager:
+            def save_save(self, user_id, run):
+                pass
+            def delete_save(self, user_id):
+                pass
+        save_mgr = DummySaveManager()
+        engine = BattleEngine(save_mgr)
+        
+        player = PlayerState(hp=100, max_hp=100, shield=0, gold=100, stage=1, deck=[], hand=[])
+        test_dummy = EnemyState(name="测试训练假人", hp=999999, max_hp=999999, shield=0)
+        run = GameRun(
+            user_id="test_user",
+            node_type="battle",
+            player=player,
+            enemies=[test_dummy]
+        )
+        
+        self.assertEqual(test_dummy.hp, 999999)
+        self.assertEqual(test_dummy.max_hp, 999999)
+        
+        intents_1 = template.roll_intents(run, engine, test_dummy)
+        self.assertEqual(len(intents_1), 1)
+        self.assertEqual(intents_1[0].type, "attack")
+        self.assertEqual(intents_1[0].val, 10)
+        
+        intents_2 = template.roll_intents(run, engine, test_dummy)
+        self.assertEqual(len(intents_2), 1)
+        self.assertEqual(intents_2[0].type, "defend")
+        self.assertEqual(intents_2[0].val, 10)
+        
+        run.player.hp = 100
+        run.player.shield = 0
+        logs = []
+        template.execute_intent(run, engine, test_dummy, intents_1[0], logs)
+        self.assertEqual(run.player.hp, 90)
+        
+        test_dummy.shield = 0
+        logs = []
+        template.execute_intent(run, engine, test_dummy, intents_2[0], logs)
+        self.assertEqual(test_dummy.shield, 10)
+
 
 

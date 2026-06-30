@@ -313,6 +313,7 @@ class MapEngine:
             self.save_manager.save_save(run.user_id, run)
             return f"你选择前往【{chosen['desc']}】。你来到了奇妙商店，店主热情地向你招手。"
         elif node_type == "rest":
+            self.explore_engine._init_rest_node(run)
             self.save_manager.save_save(run.user_id, run)
             return f"你选择前往【{chosen['desc']}】。篝火在噼啪作响，你可以在此整顿休息。"
         elif node_type == "treasure":

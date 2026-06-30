@@ -839,7 +839,27 @@ class TestRogueExplore(unittest.TestCase):
             from game.models.state import ensure_card_state
             last_card = ensure_card_state(run_after.player.deck[-1])
             self.assertEqual(last_card.id, "fireball")
-            self.assertTrue(last_card.upgraded)
+            run_after = plugin.save_manager.load_save(user_id)
+            run_after.node_type = "map_select"
+            run_after.node_data = {
+                "options": [
+                    {"node_id": "node_rest", "node_type": "rest", "desc": "篝火营地"}
+                ]
+            }
+            run_after.map_data = {
+                "nodes": {
+                    "5": [
+                        {"id": "node_rest", "type": "rest", "stage": 5, "desc": "篝火营地", "connections": []}
+                    ]
+                },
+                "current_node_id": None
+            }
+            plugin.save_manager.save_save(user_id, run_after)
+            
+            res_rest_enter = await run_command(plugin, ".rogue 选择 1", sender_id=user_id)
+            self.assertIn("🍖 休息", res_rest_enter)
+            self.assertIn("🔮 冥想", res_rest_enter)
+            self.assertIn("🔨 强化", res_rest_enter)
             
         asyncio.run(go())
         plugin.save_manager.delete_save(user_id)

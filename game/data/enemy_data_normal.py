@@ -6,6 +6,16 @@ ENEMY_NORMAL_CONFIG = {
         "actions": "1A 0BA",
         "intents": []
     },
+    "测试训练假人": {
+        "name": "测试训练假人",
+        "type": "normal",
+        "hp": "999999",
+        "actions": "1A 0BA",
+        "intents": [
+            {"id": "test_sweep", "val": 10, "desc": "横扫击打 (造成 10 点钝击伤害)"},
+            {"id": "test_heal", "val": 10, "desc": "自我修复 (获得 10 点护盾)"}
+        ]
+    },
     "NoobSlayer99": {
         "name": "NoobSlayer99",
         "type": "normal",
