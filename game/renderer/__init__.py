@@ -80,8 +80,8 @@ class GameRenderer:
         return "未知关卡状态"
 
     @staticmethod
-    def render_query_info(query_str: str) -> str:
-        return render_query_info(query_str)
+    def render_query_info(query_str: str, user_id: str | None = None) -> str:
+        return render_query_info(query_str, user_id)
 
     @staticmethod
     def render_detailed_battle(run: GameRun) -> str:

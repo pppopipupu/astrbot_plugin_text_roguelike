@@ -9,10 +9,16 @@ from ..data.amulet_data import AMULET_CONFIG
 from ..data.potion_data import POTION_CONFIG
 from .menu import get_card_cost_str
 
-def render_query_info(query_str: str) -> str:
+def render_query_info(query_str: str, user_id: str | None = None) -> str:
     from ..models.manager import SaveManager
     boss_cfg = SaveManager().load_admin_config()
     icerainboww_enabled = boss_cfg.get("icerainboww_enabled", True)
+    
+    killed_yog = False
+    if user_id:
+        stats = SaveManager().load_stats(user_id)
+        if stats and getattr(stats, "yog_sothoth_kill_count", 0) > 0:
+            killed_yog = True
     
     query_str_lower = query_str.strip().lower()
     if not query_str_lower:
@@ -218,6 +224,8 @@ def render_query_info(query_str: str) -> str:
             card_obj = ALL_CARDS.get(cid)
             cost_str = get_card_cost_str(card_obj) if card_obj else "免费"
             desc = cfg.get("desc", "")
+            if cid == "neutral_button_magic" and not killed_yog:
+                desc = "此卡牌的细节将在以后揭晓..."
             lines.append(f"📜 卡牌：{cname} (ID: {cid}) ({ctype_ch} | {rname_rarity})")
             lines.append(f"消耗：{cost_str}")
             lines.append(f"效果：{desc}")
@@ -228,9 +236,12 @@ def render_query_info(query_str: str) -> str:
                 up_card = ALL_CARDS.get(cid + "+")
                 if up_card:
                     up_cost_str = get_card_cost_str(up_card)
+                    up_desc = up_card.desc
+                    if cid == "neutral_button_magic" and not killed_yog:
+                        up_desc = "此卡牌的细节将在以后揭晓..."
                     lines.append(f"🔨 升级变体：{up_card.name} (ID: {cid}+) ({ctype_ch} | {rname_rarity})")
                     lines.append(f"升级消耗：{up_cost_str}")
-                    lines.append(f"升级效果：{up_card.desc}")
+                    lines.append(f"升级效果：{up_desc}")
                     lines.append("")
                     
     for aid, cfg in AMULET_CONFIG.items():

@@ -743,6 +743,213 @@ class BardEpicCard(Card):
         engine._add_buff_to(p, "double_tap_buff", "双发", "打出的物理伤害牌会额外打出 1 次", 1)
         return f"🎵 迷路的诗人为你高歌一曲英雄绝响之歌！歌声穿透灵魂，使你获得了 2 层【力量】与 1 层【双发】状态！"
 
+@register_card("neutral_button_magic")
+class NeutralButtonMagicCard(Card):
+    def execute(self, run, target, engine) -> str:
+        X = run.node_data.get("last_x_cost_a", 0)
+        X_eff = X + 2 if self.upgraded else X
+        if X_eff > 10:
+            X_eff = 10
+        if X_eff <= 0:
+            return "按下了按钮，但什么也没有发生。"
+            
+        import random
+        from ...models.state import ensure_card_state
+        from ...entities import ALL_CARDS
+        
+        logs = []
+        
+        if not self.upgraded:
+            def eff1():
+                for e in run.enemies:
+                    e.hp = 1
+                return "✨【天界惩戒】所有敌人的生命值被设为 1 点！"
+            
+            def eff2():
+                engine._damage_target(run, "p0", 10, damage_type="true", card=self)
+                return "💥【命运逆反】命运的逆折反噬了你！你受到了 10 点真实伤害！"
+            
+            def eff3():
+                for e in run.enemies:
+                    e.max_hp = max(1, e.max_hp // 2)
+                    if e.hp > e.max_hp:
+                        e.hp = e.max_hp
+                return "🌀【维数减半】维度坍缩！所有敌人的生命值上限被削减了一半！"
+            
+            def eff4():
+                engine._gain_shield(run, "p0", 30)
+                engine._add_buff_to(run.player, "buffer", "缓冲", "免疫接下来的伤害，受到一次伤害减少一层", 5)
+                return "🛡️【庇护结界】庇护之光笼罩了你！你获得了 30 点护盾与 5 层【缓冲】！"
+            
+            def eff5():
+                for idx in range(len(run.enemies)):
+                    engine._gain_shield(run, f"e{idx+1}", 30)
+                    engine._add_buff_to(run.enemies[idx], "strength", "力量", "造成的伤害增加", 2)
+                    engine._add_buff_to(run.enemies[idx], "buffer", "缓冲", "免疫接下来的伤害，受到一次伤害减少一层", 2)
+                return "⚠️【混乱侵蚀】虚空涌动！所有敌人获得了 30 点护盾、2 层【力量】与 2 层【缓冲】！"
+            
+            def eff6():
+                engine._add_buff_to(run.player, "strength", "力量", "造成的伤害增加", 5)
+                engine._add_buff_to(run.player, "double_tap_buff", "双发", "打出的物理伤害牌会额外打出 1 次", 2)
+                return "🔥【战斗本能】狂暴之力在体内奔涌！你获得了 5 层【力量】与 2 层【双发】！"
+            
+            def eff7():
+                engine._add_buff_to(run.player, "weak", "虚弱", "造成的伤害减少 50%", 3)
+                engine._add_buff_to(run.player, "vulnerable", "易伤", "受到的所有类型伤害翻倍", 3)
+                return "👁️【战意低迷】虚空低语萦绕，你的意志变得消沉！你受到了 3 层【虚弱】与 3 层【易伤】！"
+            
+            def eff8():
+                engine._draw_cards(run.player, 5, run)
+                run.player.actions += 2
+                run.player.bonus_actions += 2
+                return "🃏【战术重整】你抽了 5 张牌，并获得了 2 点动作点 (A) 与 2 点附赠动作点 (BA)！"
+            
+            def eff9():
+                free_grid = engine._get_free_grid(run.player)
+                if free_grid is not None:
+                    engine._summon_minion(run, "gate_guard", "门扉守卫", 30, 6, 0)
+                    return "🦁【救兵登场】命运的契约生效，一位【门扉守卫】加入了战场！"
+                else:
+                    return "🦁【救兵登场】战场格子已满，【门扉守卫】无法登场！"
+            
+            def eff10():
+                p = run.player
+                old_shield = p.shield
+                p.shield = 0
+                lost = old_shield
+                dmg = max(10, lost)
+                engine._damage_target(run, "p0", dmg, damage_type="true", card=self)
+                return f"💧【负能超载】护盾碎裂，负能反噬！你失去了所有护盾，并受到了 {dmg} 点真实伤害！"
+            
+            effects_pool = [eff1, eff2, eff3, eff4, eff5, eff6, eff7, eff8, eff9, eff10]
+            
+        else:
+            def eff1():
+                for e in run.enemies:
+                    e.hp = 1
+                engine._add_buff_to(run.player, "double_tap_buff", "双发", "打出的物理伤害牌会额外打出 1 次", 3)
+                return "✨【天界终结】所有敌人的生命值被设为 1 点，且你获得了 3 层【双发】！"
+            
+            def eff2():
+                engine._damage_target(run, "p0", 5, damage_type="true", card=self)
+                return "💥【命运回响】强化的气流减轻了反噬！你受到了 5 点真实伤害！"
+            
+            def eff3():
+                for e in run.enemies:
+                    e.max_hp = max(1, e.max_hp // 4)
+                    if e.hp > e.max_hp:
+                        e.hp = e.max_hp
+                return "🌀【维数坍缩】绝对维度降维！所有敌人的生命值上限被削减了 75%！"
+            
+            def eff4():
+                engine._gain_shield(run, "p0", 60)
+                engine._add_buff_to(run.player, "buffer", "缓冲", "免疫接下来的伤害，受到一次伤害减少一层", 10)
+                return "🛡️【绝对壁垒】神圣护盾环绕，你获得了 60 点护盾与 10 层【缓冲】！"
+            
+            def eff5():
+                for idx in range(len(run.enemies)):
+                    engine._gain_shield(run, f"e{idx+1}", 60)
+                    engine._add_buff_to(run.enemies[idx], "strength", "力量", "造成的伤害增加", 4)
+                    engine._add_buff_to(run.enemies[idx], "buffer", "缓冲", "免疫接下来的伤害，受到一次伤害减少一层", 4)
+                return "⚠️【混沌洪流】混沌的虚空扭曲了战局！所有敌人获得了 60 点护盾、4 层【力量】与 4 层【缓冲】！"
+            
+            def eff6():
+                engine._add_buff_to(run.player, "strength", "力量", "造成的伤害增加", 10)
+                engine._add_buff_to(run.player, "double_tap_buff", "双发", "打出的物理伤害牌会额外打出 1 次", 5)
+                return "🔥【毁灭暴怒】无尽怒火在燃烧！你获得了 10 层【力量】与 5 层【双发】！"
+            
+            def eff7():
+                engine._add_buff_to(run.player, "weak", "虚弱", "造成的伤害减少 50%", 5)
+                engine._add_buff_to(run.player, "vulnerable", "易伤", "受到的所有类型伤害翻倍", 5)
+                return "👁️【意志崩溃】虚空狂潮彻底撕碎了你的防御！你受到了 5 层【虚弱】与 5 层【易伤】！"
+            
+            def eff8():
+                engine._draw_cards(run.player, 8, run)
+                run.player.actions += 5
+                run.player.bonus_actions += 5
+                return "🃏【无限超越】超越限界！你补充了大量手牌，并获得了 5 点动作点 (A) 与 5 点附赠动作点 (BA)！"
+            
+            def eff9():
+                free_grid_1 = engine._get_free_grid(run.player)
+                summoned = 0
+                if free_grid_1 is not None:
+                    engine._summon_minion(run, "gate_guard+", "门扉守卫+", 45, 8, 0)
+                    summoned += 1
+                    free_grid_2 = engine._get_free_grid(run.player)
+                    if free_grid_2 is not None:
+                        engine._summon_minion(run, "gate_guard+", "门扉守卫+", 45, 8, 0)
+                        summoned += 1
+                if summoned == 2:
+                    return "🦁【终焉降临】法阵大开！两位【门扉守卫+】强势降临战场！"
+                elif summoned == 1:
+                    return "🦁【终焉降临】法阵大开！一位【门扉守卫+】降临战场！（另一个位置已满）"
+                else:
+                    return "🦁【终焉降临】战场格子已满，召唤失败！"
+            
+            def eff10():
+                p = run.player
+                old_shield = p.shield
+                p.shield = 0
+                lost = old_shield
+                dmg = max(30, lost * 2)
+                engine._damage_target(run, "p0", dmg, damage_type="true", card=self)
+                return f"💧【死星湮灭】星核坍缩！你失去了所有护盾，并受到了极具毁灭性的 {dmg} 点真实伤害！"
+                
+            def eff11():
+                for idx in range(len(run.enemies) - 1, -1, -1):
+                    engine._damage_target(run, f"e{idx+1}", 99, damage_type="force", card=self)
+                engine._add_buff_to(run.player, "buffer", "缓冲", "免疫接下来的伤害，受到一次伤害减少一层", 3)
+                return "💫【霸瞳天星】星光降临，对所有敌人造成 99 点力场伤害，并使你获得 3 层【缓冲】！"
+                
+            def eff12():
+                engine._draw_cards(run.player, 5, run)
+                run.player.actions += 3
+                run.player.bonus_actions += 3
+                return "⏳【宇宙静止】时空停滞！你额外抽取 5 张卡牌，并获得了 3 点动作点 (A) 与 3 点附赠动作点 (BA)！"
+                
+            def eff13():
+                p = run.player
+                lost_hand_count = len(p.hand)
+                p.hand.clear()
+                removed_names = []
+                non_mythic_deck_cards = [c for c in p.deck if getattr(ALL_CARDS.get(ensure_card_state(c).id), "rarity", "common") != "mythic"]
+                if len(non_mythic_deck_cards) >= 2:
+                    to_remove = random.sample(non_mythic_deck_cards, 2)
+                else:
+                    to_remove = non_mythic_deck_cards
+                for c in to_remove:
+                    if c in p.deck:
+                        p.deck.remove(c)
+                        card_name = getattr(ALL_CARDS.get(ensure_card_state(c).id), "name", str(c))
+                        removed_names.append(card_name)
+                removed_str = "、".join(removed_names) if removed_names else "无"
+                return f"🌀【时空抹除】时空风暴带走了你手里的 {lost_hand_count} 张牌，并且永久抹去了大牌组中的卡牌：【{removed_str}】！"
+                
+            def eff14():
+                p = run.player
+                for idx in range(len(run.enemies) - 1, -1, -1):
+                    engine._damage_target(run, f"e{idx+1}", 999, damage_type="true", card=self)
+                for grid in list(p.minions.keys()):
+                    engine._damage_target(run, f"p{grid}", 999, damage_type="true", card=self)
+                return "🌋【万物俱灭】末日熔岩吞噬了一切！对场上所有敌人和随从造成 999 点真实伤害！"
+                
+            def eff15():
+                p = run.player
+                p.max_hp = p.max_hp * 2
+                p.hp = p.hp * 2
+                engine._gain_shield(run, "p0", 100)
+                return f"⚖️【真理审判】你触碰了宇宙的终极真理！你的生命上限与当前生命值直接翻倍（上限变为 {p.max_hp}），并获得了 100 点护盾！"
+                
+            effects_pool = [eff1, eff2, eff3, eff4, eff5, eff6, eff7, eff8, eff9, eff10, eff11, eff12, eff13, eff14, eff15]
+            
+        for i in range(X_eff):
+            eff_fn = random.choice(effects_pool)
+            res = eff_fn()
+            logs.append(f"第 {i+1} 次按钮：{res}")
+            
+        return "🔮 按下了命运的按钮，触发了以下效果：\n" + "\n".join(logs)
+
+
 
 
 

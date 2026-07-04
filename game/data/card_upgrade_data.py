@@ -489,5 +489,8 @@ CARD_UPGRADE_CONFIG = {
     },
     "warrior_hematopoiesis": {
         "desc": "将现有的所有护盾变为在这场战斗生效的 1.5 倍临时生命值，抽取护盾数除10（向上取整）数量的卡牌。消耗。"
+    },
+    "neutral_button_magic": {
+        "desc": "随机触发 X+2 个按钮效果（上限 10 个）。即逝。"
     }
 }

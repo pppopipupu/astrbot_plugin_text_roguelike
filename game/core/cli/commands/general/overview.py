@@ -10,7 +10,7 @@ class OverviewCommand(CommandHandler, names=["总览", "overview"], allowed_stat
             stats.reader_title = "🎒 魔法肉鸽遗物总览"
         else:
             from .....renderer.menu import get_rogue_card_library_items
-            items = get_rogue_card_library_items()
+            items = get_rogue_card_library_items(user_id)
             stats.reader_title = "📜 魔法肉鸽卡牌总览"
         stats.reader_items = items
         stats.reader_page = 1

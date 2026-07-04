@@ -43,7 +43,7 @@ class QueryCommand(CommandHandler, names=["查询", "query", "info", "i"]):
                 else:
                     yield GameRenderer.render_enemy_graveyard(run)
             else:
-                yield GameRenderer.render_query_info(" ".join(parts[1:]).strip())
+                yield GameRenderer.render_query_info(" ".join(parts[1:]).strip(), user_id)
         else:
             if not run:
                 yield "❌ 你当前没有正在进行的游戏。输入 /rogue start 开始新游戏。\n💡 提示：你可以通过 /rogue i <名称>（如：/rogue i 力量）或 /rogue i buff 来查看相关效果描述。"

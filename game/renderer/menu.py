@@ -57,11 +57,17 @@ def get_card_cost_str(card) -> str:
             cost_str += f"{card.cost_ba}BA "
     return cost_str.strip() or "免费"
 
-def get_rogue_card_library_items() -> list:
+def get_rogue_card_library_items(user_id: str | None = None) -> list:
     from ..cards import ALL_CARDS
     from ..models.manager import SaveManager
     boss_cfg = SaveManager().load_admin_config()
     icerainboww_enabled = boss_cfg.get("icerainboww_enabled", True)
+    
+    killed_yog = False
+    if user_id:
+        stats = SaveManager().load_stats(user_id)
+        if stats and getattr(stats, "yog_sothoth_kill_count", 0) > 0:
+            killed_yog = True
     neutrals = []
     blue_spells = []
     red_cards = []
@@ -77,6 +83,8 @@ def get_rogue_card_library_items() -> list:
     }
     for cid, card in ALL_CARDS.items():
         if card.upgraded:
+            continue
+        if cid == "neutral_button_magic" and not killed_yog:
             continue
         if not icerainboww_enabled and cid in ("minion_icerainboww", "minion_icerainboww+"):
             continue

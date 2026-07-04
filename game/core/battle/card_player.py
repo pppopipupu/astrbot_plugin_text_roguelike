@@ -842,6 +842,8 @@ class CardPlayer:
             run.node_type = "boss_chest"
             p_class = getattr(stats, "selected_class", "法师")
             class_mythic_cards = ["neutral_plane_shift", "neutral_omega"]
+            if getattr(stats, "yog_sothoth_kill_count", 0) > 0:
+                class_mythic_cards.append("neutral_button_magic")
             if p_class == "战士":
                 class_mythic_cards.append("warrior_hematopoiesis")
             else:

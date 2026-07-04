@@ -481,6 +481,18 @@ NEUTRAL_CARD_SPELLS = {
         "retain": True,
         "exhaust": True,
         "feedback": "你被打出的【无形低语】所蛊惑，思维产生了剧烈动摇！"
+    },
+    "neutral_button_magic": {
+        "name": "按钮术",
+        "color": "neutral",
+        "type": "spell",
+        "cost_a": -1,
+        "cost_ba": 0,
+        "desc": "随机触发 X 个按钮效果（上限 10 个）。即逝。",
+        "rarity": "mythic",
+        "fleeting": True,
+        "feedback": "使用了【按钮术】，按下了命运的按钮！"
     }
 }
+
 

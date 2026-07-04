@@ -8,7 +8,15 @@ class ReadVoidTomeOption(EventOption, action="read_void_tome", text="强行阅�
         p = run.player
         p.hp = max(1, p.hp - 10)
         p.deck.append("curse_dimensional_tear")
+        stats = None
+        if hasattr(engine.save_manager, "load_stats"):
+            stats = engine.save_manager.load_stats(run.user_id)
+        killed_yog = False
+        if stats and getattr(stats, "yog_sothoth_kill_count", 0) > 0:
+            killed_yog = True
         legends = [cid for cid, c in ALL_CARDS.items() if c.rarity in ("legendary", "mythic", "artifact") and not cid.startswith("curse_")]
+        if not killed_yog:
+            legends = [cid for cid in legends if cid != "neutral_button_magic"]
         got_card = random.choice(legends) if legends else "doomsday_judgment"
         p.deck.append(got_card)
         engine.enter_next_stage(run)
