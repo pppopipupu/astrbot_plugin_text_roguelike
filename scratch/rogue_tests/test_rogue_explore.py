@@ -827,9 +827,11 @@ class TestRogueExplore(unittest.TestCase):
             }
             plugin.save_manager.save_save(user_id, run_after)
             
-            await run_command(plugin, ".rogue 选择 1", sender_id=user_id)
+            card_select_res = await run_command(plugin, ".rogue 选择 1", sender_id=user_id)
             run_after = plugin.save_manager.load_save(user_id)
             self.assertEqual(run_after.node_type, "card_select")
+            self.assertIn("造成 24 点", card_select_res)
+            self.assertNotIn("造成 18 点", card_select_res)
             
             res_skip_err = await run_command(plugin, ".rogue 选择 2", sender_id=user_id)
             self.assertIn("由于遗物【垃圾山】的效果，你无法跳过", res_skip_err)

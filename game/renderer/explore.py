@@ -248,14 +248,15 @@ def render_card_select(run: GameRun) -> str:
     if desc:
         lines.append(desc)
         lines.append("")
+    from ..models.state import CardState
+    is_upgraded = data.get("force_upgraded", False)
     cards = data.get("cards", [])
     for idx, cid in enumerate(cards, 1):
-        card = ALL_CARDS.get(cid)
+        card = ALL_CARDS.get(CardState(id=cid, upgraded=is_upgraded))
         if card:
             color_ch = "⚫" if card.color == "curse" else ("🔵" if card.color == "wizard" else "⚪")
             cost_str = get_card_cost_str(card)
-            card_name = f"{card.name}+" if data.get("force_upgraded", False) else card.name
-            lines.append(f" [{idx}] {color_ch} {card_name} (消耗: {cost_str}) - {card.desc}")
+            lines.append(f" [{idx}] {color_ch} {card.name} (消耗: {cost_str}) - {card.desc}")
     skip_idx = len(cards) + 1
     can_skip = data.get("can_skip", True)
     if not can_skip:
