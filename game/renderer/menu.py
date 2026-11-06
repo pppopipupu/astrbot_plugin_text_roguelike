@@ -434,7 +434,7 @@ def render_tutorial() -> str:
 
 
 def render_shop(stats: UserStats) -> str:
-    from game.data.shop_data import SHOP_ITEMS
+    from ..data.shop_data import SHOP_ITEMS
     import random
     gp = getattr(stats, "gp", 0)
     unlocked = getattr(stats, "unlocked_subclasses", [])

@@ -870,7 +870,7 @@ class CardPlayer:
                     "taken": False,
                     "group_id": "boss_chest_group"
                 })
-            from game.models.events import RewardGenerateEvent
+            from ...models.events import RewardGenerateEvent
             evt = RewardGenerateEvent(run, items)
             self.engine.event_bus.dispatch(evt)
             run.node_data = {
@@ -919,7 +919,7 @@ class CardPlayer:
                         "taken": False
                     })
             
-            from game.models.events import RewardGenerateEvent
+            from ...models.events import RewardGenerateEvent
             evt = RewardGenerateEvent(run, items)
             self.engine.event_bus.dispatch(evt)
             
