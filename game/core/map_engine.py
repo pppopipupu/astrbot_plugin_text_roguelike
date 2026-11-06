@@ -397,6 +397,7 @@ class MapEngine:
         from ..models.state import check_and_replace_fireball
         for i in range(3):
             options.append({
+                "type": "blessing",
                 "card": check_and_replace_fireball(run, legends_pool[i % len(legends_pool)]),
                 "relic": available_relics[i % len(available_relics)]
             })

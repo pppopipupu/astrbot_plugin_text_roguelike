@@ -242,14 +242,18 @@ class ExploreEngine:
                 return "❌ 无效的选择序号。"
             chosen = options[option_idx - 1]
             
-            cid = chosen["card"]
             rid = chosen["relic"]
-            p.deck.append(cid)
+            cid = chosen.get("card")
             p.relics.append(rid)
+            if cid:
+                p.deck.append(cid)
+                bonus_str = f"传奇卡牌【{ALL_CARDS[cid].name}】与珍奇遗物【{get_relic_name(rid)}】"
+            else:
+                bonus_str = f"珍奇遗物【{get_relic_name(rid)}】"
             
             self.map_engine.enter_next_stage(run)
             self.save_manager.save_save(run.user_id, run)
-            return f"🌟 先古赐福！你获得了传奇卡牌【{ALL_CARDS[cid].name}】与珍奇遗物【{get_relic_name(rid)}】！"
+            return f"🌟 先古赐福！你获得了{bonus_str}！"
 
         elif run.node_type == "treasure":
             items = run.node_data.setdefault("items", [])

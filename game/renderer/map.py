@@ -143,12 +143,15 @@ def render_ancient(run: GameRun) -> str:
         ""
     ]
     for idx, opt in enumerate(options, 1):
-        cid = opt["card"]
         rid = opt["relic"]
-        cname = ALL_CARDS[cid].name
-        cdesc = ALL_CARDS[cid].desc
         rname = get_relic_name(rid)
         rdesc = get_relic_desc(rid)
+        if opt.get("type") == "double":
+            lines.append(f" [{idx}] ⚖️ {name_str}遗物：【{rname}】\n     效果：{rdesc}")
+            continue
+        cid = opt["card"]
+        cname = ALL_CARDS[cid].name
+        cdesc = ALL_CARDS[cid].desc
         lines.append(f" [{idx}] 🎁 赐福包：【{rname}】 ➕ 传奇卡牌【{cname}】\n     效果：获得被动遗物（{rdesc}）与卡牌（{cdesc}）")
     lines.append("")
     lines.append("━━━━━━━━━━━━━━━━━━━━")
