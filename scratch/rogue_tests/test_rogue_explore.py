@@ -865,4 +865,51 @@ class TestRogueExplore(unittest.TestCase):
             self.assertIn("🔨 强化", res_rest_enter)
             
         asyncio.run(go())
+
+    def test_rest_node_bare_exit_and_cancel(self):
+        plugin = MyPlugin(DummyContext())
+        user_id = "test_rest_bare_exit"
+        plugin.save_manager.delete_save(user_id)
+
+        async def go():
+            def setup_rest_node():
+                player = PlayerState(
+                    hp=60, max_hp=80, shield=0, gold=10, stage=9,
+                    deck=["first_aid", "fireball"], hand=[], draw_pile=[], discard_pile=[], exhaust_pile=[], graveyard=[]
+                )
+                run = GameRun(user_id=user_id, node_type="map_select", player=player, enemies=[])
+                run.node_data = {"options": [{"node_id": "node_rest", "node_type": "rest", "desc": "篝火营地 (恢复生命值或冥想领悟卡牌)"}]}
+                run.map_data = {
+                    "nodes": {"9": [{"id": "node_rest", "type": "rest", "next": []}]},
+                    "current_node_id": None
+                }
+                plugin.save_manager.save_save(user_id, run)
+
+            stats = plugin.save_manager.load_stats(user_id)
+            stats.rogue_mode = True
+            plugin.save_manager.save_stats(user_id, stats)
+
+            for alias in ("exit", "离开", "退出", "quit"):
+                setup_rest_node()
+                enter_res = await run_command(plugin, "1", sender_id=user_id)
+                self.assertIn("篝火营地", enter_res)
+                exit_res = await run_command(plugin, alias, sender_id=user_id)
+                self.assertNotEqual(exit_res, "")
+                self.assertIn("你离开了当前节点", exit_res)
+                run_after = plugin.save_manager.load_save(user_id)
+                self.assertEqual(run_after.node_type, "map_select")
+
+            setup_rest_node()
+            await run_command(plugin, "1", sender_id=user_id)
+            upgrade_res = await run_command(plugin, "3", sender_id=user_id)
+            self.assertIn("卡牌升级强化已启动", upgrade_res)
+            cancel_res = await run_command(plugin, "取消", sender_id=user_id)
+            self.assertIn("已取消卡牌升级操作", cancel_res)
+            run_after = plugin.save_manager.load_save(user_id)
+            self.assertFalse(run_after.node_data.get("pending_upgrade"))
+            self.assertEqual(run_after.node_type, "rest")
+            self.assertIn("🍖 休息", cancel_res)
+            self.assertIn("🔨 强化", cancel_res)
+
+        asyncio.run(go())
         plugin.save_manager.delete_save(user_id)

@@ -3,8 +3,12 @@ from typing import Optional, List, Dict
 from ..models.manager import SaveManager
 from ..engine import GameEngine
 from .cli_router import CLIRouter
-from ..renderer import GameRenderer
+from .cli.base.aliases import (
+    NODE_EXIT_ALIASES, NODE_CANCEL_ALIASES,
+    STATE_STACK_CANCEL_ALIASES, has_pending_node_cancel,
+)
 from ..renderer.menu import render_reader_page
+from ..renderer import GameRenderer
 from ..cards import resolve_card_id, ALL_CARDS
 
 class HeadlessGameServer:
@@ -146,8 +150,7 @@ class HeadlessGameServer:
 
         first_word = parts[0].lower()
         is_game_cmd = False
-        cancel_cmds = {"取消", "cancel", "abandon", "放弃", "exit", "quit", "退出"}
-        if run and run.node_data.get("state_stack") and first_word in cancel_cmds:
+        if run and run.node_data.get("state_stack") and first_word in STATE_STACK_CANCEL_ALIASES:
             is_game_cmd = True
         curr_state = self._get_current_state(user_id, run, stats)
 
@@ -220,9 +223,14 @@ class HeadlessGameServer:
                 handler = self.cli_router._command_handlers[first_word]
                 if curr_state in getattr(handler, "allowed_states", []):
                     is_game_cmd = True
-            elif first_word.isdigit():
-                if run is not None:
+            if not is_game_cmd and run is not None:
+                if first_word.isdigit():
                     is_game_cmd = True
+                elif curr_state == "explore" and not run.node_data.get("state_stack"):
+                    if first_word in NODE_EXIT_ALIASES:
+                        is_game_cmd = True
+                    elif first_word in NODE_CANCEL_ALIASES and has_pending_node_cancel(run):
+                        is_game_cmd = True
 
         if is_game_cmd:
             lock = self._get_user_lock(user_id)

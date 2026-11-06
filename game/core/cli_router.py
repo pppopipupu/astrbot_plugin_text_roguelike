@@ -5,7 +5,9 @@ from .cli.base import ActionHandler, CommandHandler
 from .cli.action_router import ActionRouter
 from .cli.command_router import CommandRouter
 from .cli.queue_processor import QueueProcessor
+from .cli.base.aliases import normalize_node_alias, STATE_STACK_CANCEL_ALIASES
 from .town_engine import TownEngine
+
 
 class CLIRouter:
     def __init__(self, save_manager, engine):
@@ -214,8 +216,7 @@ class CLIRouter:
             else:
                 yield res
             return
-        if parts[0].isdigit() or parts[0].lower() in ("exit", "quit", "离开", "退出"):
-            parts = ["选择"] + parts
+        parts = normalize_node_alias(run, parts)
         sub = parts[0]
         handler = self._command_handlers.get(sub)
         if handler:

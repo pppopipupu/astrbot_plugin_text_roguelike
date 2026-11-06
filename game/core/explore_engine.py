@@ -456,8 +456,9 @@ class ExploreEngine:
             else:
                 return "❌ 无效的选择序号。"
             
-            for it in items:
-                it["taken"] = True
+            if itype != "rest_upgrade":
+                for it in items:
+                    it["taken"] = True
             if itype == "rest_heal":
                 heal = p.max_hp // 2
                 p.hp = min(p.max_hp, p.hp + heal)

@@ -2,6 +2,7 @@ from typing import Tuple
 from ...models.state import set_user_id
 from ...entities import ALL_CARDS
 from ..cli.base import ActionHandler
+from .base.aliases import normalize_node_alias
 
 class ActionRouter:
     def __init__(self, save_manager, engine):
@@ -221,8 +222,7 @@ class ActionRouter:
                     else:
                         return f"{res}\n🎉 战斗胜利！你击败了敌方所有单位。", True, success
                 return res, False, success
-        if parts[0].isdigit():
-            parts = ["选择"] + parts
+        parts = normalize_node_alias(run, parts)
         sub = parts[0]
         handler = self._action_handlers.get(sub)
         if handler:
