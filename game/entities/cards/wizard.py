@@ -337,8 +337,8 @@ class ArcaneTorrentCard(Card):
         cfg = CARD_CONFIG.get(self.id.replace("+", ""), {})
         feedback_tmpl = cfg.get("feedback")
         if feedback_tmpl:
-            return feedback_tmpl.format(count=count)
-        return f"释放了奥术洪流，对所有敌人造成了 {count} 次真实伤害。"
+            return feedback_tmpl.format(count=count, dmg=single_dmg)
+        return f"释放了奥术洪流，对所有敌人造成了 {count} 次 {single_dmg} 点真实伤害。"
 
 @register_card("arcane_barrier")
 class ArcaneBarrierCard(Card):

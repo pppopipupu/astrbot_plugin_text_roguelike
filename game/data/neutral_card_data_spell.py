@@ -173,7 +173,7 @@ NEUTRAL_CARD_SPELLS = {
         "cost_ba": 0,
         "desc": "使你战场中所有护符的吟唱时间减少 2。",
         "rarity": "rare",
-        "feedback": "使用了万能钥匙，所有护符的吟唱时间减少 2。"
+        "feedback": "使用了万能钥匙，所有护符的吟唱时间减少 {reduction}。"
     },
     "ancient_wisdom": {
         "name": "古老智慧",

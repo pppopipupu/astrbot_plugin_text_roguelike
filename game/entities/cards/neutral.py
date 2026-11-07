@@ -432,7 +432,7 @@ class MasterKeyCard(Card):
         if self.upgraded:
             engine._draw_cards(p, 1, run)
         cfg = CARD_CONFIG.get(self.id.replace("+", ""), {})
-        res_str = cfg.get("feedback", "使用了万能钥匙，所有护符的吟唱时间减少了。")
+        res_str = cfg.get("feedback", "使用了万能钥匙，所有护符的吟唱时间减少 {reduction}。").format(reduction=reduction)
         if lw_logs:
             res_str += "\n" + "\n".join(lw_logs)
         return res_str

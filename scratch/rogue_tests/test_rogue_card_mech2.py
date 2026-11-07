@@ -404,6 +404,51 @@ class TestRogueCardMech2(unittest.TestCase):
         card_torrent.execute(run, None, engine)
         self.assertEqual(enemies[0].hp, 14)
         self.assertEqual(enemies[1].hp, 14)
+        
+        enemies[0].hp = 50
+        enemies[1].hp = 50
+        run.node_data["last_x_cost_a"] = 1
+        engine._add_buff_to(player, "wish_power", "祈愿奥术", "本场战斗法术伤害 +4", 1)
+        res_buffed = card_torrent.execute(run, None, engine)
+        self.assertEqual(enemies[0].hp, 36)
+        self.assertEqual(enemies[1].hp, 36)
+        self.assertIn("2 次 7 点真实伤害", res_buffed)
+
+    def test_master_key_chant_reduction_feedback(self):
+        class DummySaveManager:
+            def save_save(self, user_id, run):
+                pass
+            def delete_save(self, user_id):
+                pass
+        sm = DummySaveManager()
+        engine = BattleEngine(sm)
+        card_key = ALL_CARDS["master_key"]
+        for upgraded, reduction in ((False, 2), (True, 3)):
+            player = PlayerState(
+                hp=30,
+                max_hp=30,
+                shield=0,
+                gold=10,
+                stage=1,
+                deck=["master_key"],
+                hand=["master_key"],
+                draw_pile=["thorns_necklace"],
+                actions=3,
+                bonus_actions=3
+            )
+            run = GameRun(
+                user_id="test_master_key_reduction_user",
+                node_type="battle",
+                player=player,
+                enemies=[EnemyState("测试敌人A", 50, 50, 0)]
+            )
+            from game.models.state import AmuletState
+            player.amulets["1"] = AmuletState(id="some_amulet", name="测试护符", countdown=6, desc="测试描述")
+            card_key.upgraded = upgraded
+            res = card_key.execute(run, None, engine)
+            self.assertEqual(player.amulets["1"].countdown, 6 - reduction)
+            self.assertIn(f"吟唱时间减少 {reduction}", res)
+        card_key.upgraded = False
 
     def test_flow_more_special_cards_and_buffs(self):
         class DummySaveManager:

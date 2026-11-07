@@ -346,7 +346,7 @@ WIZARD_CARD_CONFIG = {
         "desc": "对所有敌人造成多次 3 点真实伤害（穿透护盾）。若最终X不大于2，则造成X*2次伤害；若最终X大于2，则造成X*4次伤害。",
         "rarity": "rare",
         "damage_type": "true",
-        "feedback": "释放了奥术洪流，对所有敌人造成了 {count} 次 3 点真实伤害。"
+        "feedback": "释放了奥术洪流，对所有敌人造成了 {count} 次 {dmg} 点真实伤害。"
     },
     "arcane_barrier": {
         "name": "奥法屏障",
