@@ -5,12 +5,7 @@ from game.renderer.query import render_query_info
 
 class TestRoguePotions(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
-        try:
-            from astrbot.api.star import Context
-            dummy_ctx = Context()
-        except ImportError:
-            dummy_ctx = None
-        self.plugin = MyPlugin(dummy_ctx)
+        self.plugin = MyPlugin(DummyContext())
         self.user_id = "test_user_potions"
         self.plugin.save_manager.delete_save(self.user_id)
         
