@@ -470,4 +470,99 @@ class TestRogueBasic(unittest.TestCase):
 
         asyncio.run(go())
 
+    def test_play_card_by_pinyin_initials(self):
+        from game.models.state import CardState
+
+        class DummySaveManager:
+            def __init__(self):
+                self.stats = UserStats()
+                self.stats.rogue_mode = True
+                self.saved_run = None
+            def load_stats(self, user_id):
+                return self.stats
+            def save_stats(self, user_id, stats):
+                self.stats = stats
+                return True
+            def load_save(self, user_id):
+                return self.saved_run
+            def save_save(self, user_id, run):
+                self.saved_run = run
+            def settle_game_and_delete(self, user_id, run, is_victory=False):
+                self.saved_run = None
+                return "游戏已结算。"
+
+        def build():
+            mgr = DummySaveManager()
+            plugin = MyPlugin(DummyContext())
+            plugin.save_manager = mgr
+            plugin.engine.save_manager = mgr
+            plugin.cli_router.save_manager = mgr
+            plugin.cli_router.engine.save_manager = mgr
+            plugin.cli_router.town_engine.save_manager = mgr
+            player = PlayerState(
+                hp=30,
+                max_hp=30,
+                shield=0,
+                gold=100,
+                stage=2,
+                deck=[],
+                hand=[
+                    CardState(id="adrenaline", upgraded=True),
+                    CardState(id="thunderwave"),
+                    CardState(id="adrenaline")
+                ],
+                draw_pile=[],
+                discard_pile=[],
+                exhaust_pile=[],
+                graveyard=[],
+                minions={},
+                amulets={},
+                buffs=[],
+                actions=3,
+                bonus_actions=2
+            )
+            enemies = [EnemyState("测试敌人A", 50, 50, 2), EnemyState("测试敌人B", 50, 50, 2)]
+            mgr.saved_run = GameRun(user_id="test_user_pinyin", node_type="battle", player=player, enemies=enemies)
+            return plugin, mgr
+
+        async def go():
+            for cmd in ("p ssxs", "p SSXS", "p sxs"):
+                plugin, mgr = build()
+                run = mgr.saved_run
+                res = await run_command(plugin, cmd)
+                self.assertNotIn("❌", res)
+                self.assertEqual(run.player.hp, 27)
+                self.assertEqual(run.player.actions, 4)
+                self.assertEqual(run.player.bonus_actions, 3)
+                self.assertEqual(run.player.hand[0].id, "thunderwave")
+                self.assertEqual(len(run.player.hand), 2)
+
+            plugin, mgr = build()
+            run = mgr.saved_run
+            res = await run_command(plugin, "p lmb")
+            self.assertNotIn("❌", res)
+            self.assertEqual([c.id for c in run.player.hand], ["adrenaline", "adrenaline"])
+            self.assertTrue(all(e.hp < 50 for e in run.enemies))
+
+            plugin, mgr = build()
+            run = mgr.saved_run
+            res = await run_command(plugin, "p zz")
+            self.assertIn("❌", res)
+            self.assertEqual(len(run.player.hand), 3)
+            self.assertEqual(run.player.hp, 30)
+
+            plugin, mgr = build()
+            run = mgr.saved_run
+            res = await run_command(plugin, "p 3")
+            self.assertNotIn("❌", res)
+            self.assertEqual(run.player.hp, 28)
+            self.assertEqual(run.player.bonus_actions, 2)
+
+            plugin, mgr = build()
+            run = mgr.saved_run
+            res = await run_command(plugin, "q [p ssxs, p lmb]")
+            self.assertEqual([c.id for c in run.player.hand], ["adrenaline"])
+
+        asyncio.run(go())
+
 

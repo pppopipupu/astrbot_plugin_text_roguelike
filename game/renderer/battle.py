@@ -180,7 +180,7 @@ def render_battle(run: GameRun) -> str:
         lines.append("💬 提示：操作指南已折叠。输入 /rogue 折叠 可展开。")
     else:
         lines.append("💬 战斗指令指南：")
-        lines.append("• 使用卡牌：/rogue p <手牌序号> [目标]")
+        lines.append("• 使用卡牌：/rogue p <手牌序号|拼音首字母> [目标]")
         lines.append("• 指向目标：敌方 e1-eN (对应敌方格子) | 我方 p0-p6 (p0为自己，p1-p6为随从)")
         lines.append("• 队列打牌：/rogue q [p 1, p 2:e1, p 3]")
         lines.append("• 随从指令：/rogue m <我方格子> a/s <目标格子/技能序号> [技能目标]")

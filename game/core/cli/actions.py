@@ -1,16 +1,22 @@
 from typing import Tuple
-from .base import ActionHandler
+from .base import ActionHandler, find_hand_index_by_initials, normalize_initial_query
 from ...entities import ALL_CARDS
 from ...data.locale_data import get_locale_text
 
 class UseAction(ActionHandler, actions=["使用", "p"]):
     def execute(self, router, user_id: str, run, parts: list[str]) -> Tuple[str, bool, bool]:
         if len(parts) < 2:
-            return "❌ 请提供手牌序号，例如：使用 1", False, False
+            return "❌ 请提供手牌序号或卡牌名称拼音首字母，例如：使用 1 或 使用 ssxs", False, False
+        arg = parts[1]
         try:
-            idx = int(parts[1])
+            idx = int(arg)
         except ValueError:
-            return "❌ 序号必须是数字。", False, False
+            query = normalize_initial_query(arg)
+            if not query:
+                return "❌ 参数必须是手牌序号或卡牌名称的拼音首字母。", False, False
+            idx = find_hand_index_by_initials(run.player.hand, query)
+            if idx is None:
+                return f"❌ 手牌中没有拼音首字母为【{query}】的卡牌。", False, False
         target = " ".join(parts[2:]) if len(parts) > 2 else None
         res = router.engine.play_card(run, idx, target)
         success = "❌" not in res

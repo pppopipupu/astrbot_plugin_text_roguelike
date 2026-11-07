@@ -9,7 +9,7 @@ class UseCommand(CommandHandler, names=["使用", "p"], allowed_states=["battle"
             yield "❌ 你当前没有正在进行的游戏。"
             return
         if len(parts) < 2:
-            yield "❌ 请提供手牌序号，例如：/rogue 使用 1"
+            yield "❌ 请提供手牌序号或卡牌名称拼音首字母，例如：/rogue 使用 1 或 /rogue 使用 ssxs"
             return
         full_arg = " ".join(parts[1:])
         is_queue = False
